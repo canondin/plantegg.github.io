@@ -82,8 +82,6 @@
 
 
 
-  
-
 
   <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml" />
 
@@ -97,18 +95,18 @@
 
 
 
-<meta name="description" content="问题：在wireshark中看到一个tcp会话中的两台机器突然一直互相发dup ack包，但是没有触发重传。每次重复ack都是间隔精确的20秒 如下截图： client都一直在回复收到2号包（ack=2）了，可是server跟傻了一样居然还发seq=1的包（按理，应该发比2大的包啊） 系统配置：net.ipv4.tcp_keepalive_time = 20 net.ipv4.tcp_keepal">
+<meta name="description" content="wireshark-dup-ack-issue and keepalive问题：在wireshark中看到一个tcp会话中的两台机器突然一直互相发dup ack包，但是没有触发重传。每次重复ack都是间隔精确的20秒 如下截图： client都一直在回复收到2号包（ack=2）了，可是server跟傻了一样居然还发seq=1的包（按理，应该发比2大的包啊） 系统配置：net.ipv4.tcp_ke">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Hexo">
+<meta property="og:title" content="wireshark-dup-ack-issue and keepalive">
 <meta property="og:url" content="http://yoursite.com/2017/06/02/wireshark-dup-ack-issue/index.html">
 <meta property="og:site_name" content="Hexo">
-<meta property="og:description" content="问题：在wireshark中看到一个tcp会话中的两台机器突然一直互相发dup ack包，但是没有触发重传。每次重复ack都是间隔精确的20秒 如下截图： client都一直在回复收到2号包（ack=2）了，可是server跟傻了一样居然还发seq=1的包（按理，应该发比2大的包啊） 系统配置：net.ipv4.tcp_keepalive_time = 20 net.ipv4.tcp_keepal">
+<meta property="og:description" content="wireshark-dup-ack-issue and keepalive问题：在wireshark中看到一个tcp会话中的两台机器突然一直互相发dup ack包，但是没有触发重传。每次重复ack都是间隔精确的20秒 如下截图： client都一直在回复收到2号包（ack=2）了，可是server跟傻了一样居然还发seq=1的包（按理，应该发比2大的包啊） 系统配置：net.ipv4.tcp_ke">
 <meta property="og:image" content="http://i.imgur.com/bm3W68Q.png">
 <meta property="og:image" content="http://i.imgur.com/DsTWFZr.png">
-<meta property="og:updated_time" content="2017-06-02T10:55:22.000Z">
+<meta property="og:updated_time" content="2017-06-02T11:08:43.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Hexo">
-<meta name="twitter:description" content="问题：在wireshark中看到一个tcp会话中的两台机器突然一直互相发dup ack包，但是没有触发重传。每次重复ack都是间隔精确的20秒 如下截图： client都一直在回复收到2号包（ack=2）了，可是server跟傻了一样居然还发seq=1的包（按理，应该发比2大的包啊） 系统配置：net.ipv4.tcp_keepalive_time = 20 net.ipv4.tcp_keepal">
+<meta name="twitter:title" content="wireshark-dup-ack-issue and keepalive">
+<meta name="twitter:description" content="wireshark-dup-ack-issue and keepalive问题：在wireshark中看到一个tcp会话中的两台机器突然一直互相发dup ack包，但是没有触发重传。每次重复ack都是间隔精确的20秒 如下截图： client都一直在回复收到2号包（ack=2）了，可是server跟傻了一样居然还发seq=1的包（按理，应该发比2大的包啊） 系统配置：net.ipv4.tcp_ke">
 <meta name="twitter:image" content="http://i.imgur.com/bm3W68Q.png">
 
 
@@ -143,7 +141,7 @@
 
 
 
-  <title> | Hexo</title>
+  <title>wireshark-dup-ack-issue and keepalive | Hexo</title>
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" lang="">
@@ -280,7 +278,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline"></h1>
+          <h1 class="post-title" itemprop="name headline">wireshark-dup-ack-issue and keepalive</h1>
         
 
         <div class="post-meta">
@@ -292,7 +290,7 @@
               
                 <span class="post-meta-item-text">Veröffentlicht am</span>
               
-              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-06-02T19:06:34+08:00">
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-06-02T17:30:03+08:00">
                 2017-06-02
               </time>
             
@@ -327,7 +325,7 @@
       
 
       
-        <h2 id="问题："><a href="#问题：" class="headerlink" title="问题："></a>问题：</h2><p>在wireshark中看到一个tcp会话中的两台机器突然一直互相发dup ack包，但是没有触发重传。每次重复ack都是间隔精确的20秒</p>
+        <h1 id="wireshark-dup-ack-issue-and-keepalive"><a href="#wireshark-dup-ack-issue-and-keepalive" class="headerlink" title="wireshark-dup-ack-issue and keepalive"></a>wireshark-dup-ack-issue and keepalive</h1><h2 id="问题："><a href="#问题：" class="headerlink" title="问题："></a>问题：</h2><p>在wireshark中看到一个tcp会话中的两台机器突然一直互相发dup ack包，但是没有触发重传。每次重复ack都是间隔精确的20秒</p>
 <h2 id="如下截图："><a href="#如下截图：" class="headerlink" title="如下截图："></a>如下截图：</h2><p><img src="http://i.imgur.com/bm3W68Q.png" alt=""></p>
 <p>client都一直在回复收到2号包（ack=2）了，可是server跟傻了一样居然还发seq=1的包（按理，应该发比2大的包啊）</p>
 <h2 id="系统配置："><a href="#系统配置：" class="headerlink" title="系统配置："></a>系统配置：</h2><pre><code>net.ipv4.tcp_keepalive_time = 20
@@ -377,8 +375,8 @@ net.ipv4.tcp_keepalive_intvl = 3
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2017/06/02/SSH花式玩法/" rel="next" title="SSH advance features">
-                <i class="fa fa-chevron-left"></i> SSH advance features
+              <a href="/2017/06/02/就是要你懂 TCP--最经典的TCP性能问题/" rel="next" title="就是要你懂 TCP-- 最经典的TCP性能问题">
+                <i class="fa fa-chevron-left"></i> 就是要你懂 TCP-- 最经典的TCP性能问题
               </a>
             
           </div>
@@ -386,6 +384,10 @@ net.ipv4.tcp_keepalive_intvl = 3
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/06/02/tcp-queue/" rel="prev" title="tcp queue">
+                tcp queue <i class="fa fa-chevron-right"></i>
+              </a>
             
           </div>
         </div>
@@ -503,7 +505,7 @@ net.ipv4.tcp_keepalive_intvl = 3
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#问题："><span class="nav-number">1.</span> <span class="nav-text">问题：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#如下截图："><span class="nav-number">2.</span> <span class="nav-text">如下截图：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#系统配置："><span class="nav-number">3.</span> <span class="nav-text">系统配置：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#原因："><span class="nav-number">4.</span> <span class="nav-text">原因：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#构造重现"><span class="nav-number">5.</span> <span class="nav-text">构造重现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#正常的keep-alive-Case："><span class="nav-number">6.</span> <span class="nav-text">正常的keep-alive Case：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Duplication-ack是指："><span class="nav-number">7.</span> <span class="nav-text">Duplication ack是指：</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#wireshark-dup-ack-issue-and-keepalive"><span class="nav-number">1.</span> <span class="nav-text">wireshark-dup-ack-issue and keepalive</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#问题："><span class="nav-number">1.1.</span> <span class="nav-text">问题：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#如下截图："><span class="nav-number">1.2.</span> <span class="nav-text">如下截图：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#系统配置："><span class="nav-number">1.3.</span> <span class="nav-text">系统配置：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#原因："><span class="nav-number">1.4.</span> <span class="nav-text">原因：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#构造重现"><span class="nav-number">1.5.</span> <span class="nav-text">构造重现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#正常的keep-alive-Case："><span class="nav-number">1.6.</span> <span class="nav-text">正常的keep-alive Case：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Duplication-ack是指："><span class="nav-number">1.7.</span> <span class="nav-text">Duplication ack是指：</span></a></li></ol></li></ol></div>
             
 
           </div>
