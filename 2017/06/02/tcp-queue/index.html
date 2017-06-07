@@ -77,7 +77,7 @@
 <link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="tcp queue," />
+  <meta name="keywords" content="tcp queue,accept queue,syn queue,syn flood,netstat,ss,overflows,dropped," />
 
 
 
@@ -96,7 +96,7 @@
 
 
 <meta name="description" content="关于TCP 半连接队列和全连接队列 最近碰到一个client端连接异常问题，然后定位分析并查阅各种资料文章，对TCP连接队列有个深入的理解 查资料过程中发现没有文章把这两个队列以及怎么观察他们的指标说清楚，希望通过这篇文章能把他们说清楚一点  问题描述JAVA的client和server，使用socket通信。server使用NIO。 1.间歇性的出现client向server建立连接三次握手已经">
-<meta name="keywords" content="tcp queue">
+<meta name="keywords" content="tcp queue,accept queue,syn queue,syn flood,netstat,ss,overflows,dropped">
 <meta property="og:type" content="article">
 <meta property="og:title" content="tcp queue">
 <meta property="og:url" content="http://yoursite.com/2017/06/02/tcp-queue/index.html">
@@ -107,7 +107,7 @@
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/3f5f1eeb0646a3af8afd6bbff2a9ea0b.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/a5616904df3a505572d99d557b534db2.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/0c6bbb5d4a10f40c8b3c4ba6cab82292.png">
-<meta property="og:updated_time" content="2017-06-05T08:58:55.000Z">
+<meta property="og:updated_time" content="2017-06-07T05:11:02.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="tcp queue">
 <meta name="twitter:description" content="关于TCP 半连接队列和全连接队列 最近碰到一个client端连接异常问题，然后定位分析并查阅各种资料文章，对TCP连接队列有个深入的理解 查资料过程中发现没有文章把这两个队列以及怎么观察他们的指标说清楚，希望通过这篇文章能把他们说清楚一点  问题描述JAVA的client和server，使用socket通信。server使用NIO。 1.间歇性的出现client向server建立连接三次握手已经">
@@ -212,7 +212,27 @@
             
               <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
             
-            Home
+            Startseite
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            Kategorien
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            Über
           </a>
         </li>
       
@@ -222,7 +242,7 @@
             
               <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
             
-            Archives
+            Archiv
           </a>
         </li>
       
@@ -292,7 +312,7 @@
                 <i class="fa fa-calendar-o"></i>
               </span>
               
-                <span class="post-meta-item-text">Posted on</span>
+                <span class="post-meta-item-text">Veröffentlicht am</span>
               
               <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-06-02T17:30:03+08:00">
                 2017-06-02
@@ -304,6 +324,28 @@
             
           </span>
 
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">in</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/tcp/" itemprop="url" rel="index">
+                    <span itemprop="name">tcp</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
           
 
           
@@ -484,6 +526,20 @@ server5
           
             <a href="/tags/tcp-queue/" rel="tag"># tcp queue</a>
           
+            <a href="/tags/accept-queue/" rel="tag"># accept queue</a>
+          
+            <a href="/tags/syn-queue/" rel="tag"># syn queue</a>
+          
+            <a href="/tags/syn-flood/" rel="tag"># syn flood</a>
+          
+            <a href="/tags/netstat/" rel="tag"># netstat</a>
+          
+            <a href="/tags/ss/" rel="tag"># ss</a>
+          
+            <a href="/tags/overflows/" rel="tag"># overflows</a>
+          
+            <a href="/tags/dropped/" rel="tag"># dropped</a>
+          
         </div>
       
 
@@ -556,10 +612,10 @@ server5
       
         <ul class="sidebar-nav motion-element">
           <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
-            Table of Contents
+            Inhaltsverzeichnis
           </li>
           <li class="sidebar-nav-overview" data-target="site-overview">
-            Overview
+            Übersicht
           </li>
         </ul>
       
@@ -571,7 +627,7 @@ server5
                alt="Plantegg" />
           <p class="site-author-name" itemprop="name">Plantegg</p>
            
-              <p class="site-description motion-element" itemprop="description">java mysql tcp performance network Linux</p>
+              <p class="site-description motion-element" itemprop="description">java mysql tcp performance network docker Linux</p>
           
         </div>
         <nav class="site-state motion-element">
@@ -580,11 +636,20 @@ server5
             <div class="site-state-item site-state-posts">
               <a href="/archives">
                 <span class="site-state-item-count">5</span>
-                <span class="site-state-item-name">posts</span>
+                <span class="site-state-item-name">Artikel</span>
               </a>
             </div>
           
 
+          
+            
+            
+            <div class="site-state-item site-state-categories">
+              
+                <span class="site-state-item-count">1</span>
+                <span class="site-state-item-name">Kategorien</span>
+              
+            </div>
           
 
           
@@ -592,8 +657,8 @@ server5
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">4</span>
-                <span class="site-state-item-name">tags</span>
+                <span class="site-state-item-count">16</span>
+                <span class="site-state-item-name">Tags</span>
               
             </div>
           
@@ -666,7 +731,7 @@ server5
 
 
 <div class="powered-by">
-  Powered by <a class="theme-link" href="https://hexo.io">Hexo</a>
+  Erstellt mit  <a class="theme-link" href="https://hexo.io">Hexo</a>
 </div>
 
 <div class="theme-info">

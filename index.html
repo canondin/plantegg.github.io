@@ -95,15 +95,15 @@
 
 
 
-<meta name="description" content="java mysql tcp performance network Linux">
+<meta name="description" content="java mysql tcp performance network docker Linux">
 <meta property="og:type" content="website">
 <meta property="og:title" content="plantegg blogs">
 <meta property="og:url" content="http://yoursite.com/index.html">
 <meta property="og:site_name" content="plantegg blogs">
-<meta property="og:description" content="java mysql tcp performance network Linux">
+<meta property="og:description" content="java mysql tcp performance network docker Linux">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="plantegg blogs">
-<meta name="twitter:description" content="java mysql tcp performance network Linux">
+<meta name="twitter:description" content="java mysql tcp performance network docker Linux">
 
 
 
@@ -206,7 +206,27 @@
             
               <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
             
-            Home
+            Startseite
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            Kategorien
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            Über
           </a>
         </li>
       
@@ -216,7 +236,7 @@
             
               <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
             
-            Archives
+            Archiv
           </a>
         </li>
       
@@ -288,7 +308,7 @@
                 <i class="fa fa-calendar-o"></i>
               </span>
               
-                <span class="post-meta-item-text">Posted on</span>
+                <span class="post-meta-item-text">Veröffentlicht am</span>
               
               <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-06-02T17:30:03+08:00">
                 2017-06-02
@@ -327,79 +347,18 @@
       
         
           
-            <h1 id="SSH-你没见过的花式玩法"><a href="#SSH-你没见过的花式玩法" class="headerlink" title="SSH 你没见过的花式玩法"></a>SSH 你没见过的花式玩法</h1><blockquote>
-<p>ssh是指的openSSH 命令工具，程序员每天基本都需要敲很多次。这篇文章提供一些基本的技巧和方法来提升工作效率。比如我自己碰到莫名其妙的问题就会看 ssh debug日志 。<br>比如多机房总是要走跳板机，太麻烦了； 动态密码也很浪费时间 ……</p>
-</blockquote>
-<h3 id="公司内部跳板机每次ssh登录都需要-密码-动态码，太复杂了，怎么解？"><a href="#公司内部跳板机每次ssh登录都需要-密码-动态码，太复杂了，怎么解？" class="headerlink" title="公司内部跳板机每次ssh登录都需要 密码+动态码，太复杂了，怎么解？"></a>公司内部跳板机每次ssh登录都需要 密码+动态码，太复杂了，怎么解？</h3><pre><code>ren@ren-VirtualBox:~$ cat ~/.ssh/config 
+          SSH 你没见过的花式玩法
+ssh是指的openSSH 命令工具，程序员每天基本都需要敲很多次。这篇文章提供一些基本的技巧和方法来提升工作效率。比如我自己碰到莫名其妙的问题就会看 ssh debug日志 。比如多机房总是要走跳板机，太麻烦了； 动态密码也很浪费时间 ……
 
-#reuse the same connection
-ControlMaster auto
-ControlPath ~/tmp/ssh_mux_%h_%p_%r
-
-#keep one connection in 72hour
-ControlPersist 72h
-</code></pre><p>在你的ssh配置文件增加上述参数，意味着72小时内登录同一台跳板机只有第一次需要输入密码，以后都是重用之前的连接，所以也就不再需要输入密码了。</p>
-<p>加了如上参数后的登录过程就有这样的东东：</p>
-<pre><code>debug1: setting up multiplex master socket
-debug3: muxserver_listen: temporary control path /home/ren/tmp/ssh_mux_10.16.*.*_22_alibaba.86g3C34vy36tvCtn
-debug2: fd 3 setting O_NONBLOCK
-debug3: fd 3 is O_NONBLOCK
-debug3: fd 3 is O_NONBLOCK
-debug1: channel 0: new [/home/ren/tmp/ssh_mux_10.16.*.*_22_alibaba]
-debug3: muxserver_listen: mux listener channel 0 fd 3
-debug1: control_persist_detach: backgrounding master process
-debug2: control_persist_detach: background process is 15154
-debug2: fd 3 setting O_NONBLOCK
-debug1: forking to background
-debug1: Entering interactive session.
-debug2: set_control_persist_exit_time: schedule exit in 259200 seconds
-debug1: multiplexing control connection
-</code></pre><p> /home/ren/tmp/ssh_mux_10.16.<em>.</em>_22_alibaba 这个就是保存好的socket，下次可以重用，免密码。 in 259200 seconds 对应 72小时</p>
-<h3 id="我有很多不同机房（或者说不同客户）的机器都需要跳板机来登录，能一次直接ssh上去吗？"><a href="#我有很多不同机房（或者说不同客户）的机器都需要跳板机来登录，能一次直接ssh上去吗？" class="headerlink" title="我有很多不同机房（或者说不同客户）的机器都需要跳板机来登录，能一次直接ssh上去吗？"></a>我有很多不同机房（或者说不同客户）的机器都需要跳板机来登录，能一次直接ssh上去吗？</h3><p>比如有一批客户机房的机器IP都是192.168.<em>.</em>, 然后需要走跳板机100.10.1.2才能访问到，那么我希望以后在笔记本上直接 ssh 192.168.1.5 就能连上</p>
-<pre><code>$ cat /etc/ssh/ssh_config
-
-Host 192.168.*.*
-ProxyCommand ssh -l ali-renxijun 100.10.1.2 exec /usr/bin/nc %h %p
-</code></pre><p>上面配置的意思是执行 ssh 192.168.1.5的时候命中规则 Host 192.168.<em>.</em> 所以执行 ProxyCommand 先连上跳板机再通过跳板机连向192.168.1.5 。这样在你的笔记本上就跟192.168.<em>.</em> 的机器仿佛在一起</p>
-<p>比如我的跳板配置：</p>
-<pre><code>#到美国的机器用美国的跳板机速度更快
-Host 10.74.*
-ProxyCommand ssh -l user us.jump exec /bin/nc %h %p 2&gt;/dev/null
-
-Host 192.168.0.*
-ProxyCommand ssh -l user 1.1.1.1 exec /usr/bin/nc %h %p
-</code></pre><p>来看一个例子 </p>
-<pre><code>ren@ren-VirtualBox:~$ ssh -l alibaba 10.16.1.* -vvv
-OpenSSH_6.7p1 Ubuntu-5ubuntu1, OpenSSL 1.0.1f 6 Jan 2014
-debug1: Reading configuration data /home/ren/.ssh/config
-debug1: Reading configuration data /etc/ssh/ssh_config
-debug1: /etc/ssh/ssh_config line 28: Applying options for *
-debug1: /etc/ssh/ssh_config line 44: Applying options for 10.16.*.*
-debug1: /etc/ssh/ssh_config line 68: Applying options for *
-debug1: auto-mux: Trying existing master
-debug1: Control socket &quot;/home/ren/tmp/ssh_mux_10.16.1.*_22_alibaba&quot; does not exist
-debug1: Executing proxy command: exec ssh -l alibaba 139.*.*.* exec /usr/bin/nc 10.16.1.* 22
-</code></pre><p>本来我的笔记本跟 10.16.1.<em> 是不通的，ssh登录过程中自动走跳板机139.</em>.<em>.</em> 就连上了</p>
-<h3 id="为什么有时候ssh-比较慢，比如总是需要30秒钟后才能正常登录"><a href="#为什么有时候ssh-比较慢，比如总是需要30秒钟后才能正常登录" class="headerlink" title="为什么有时候ssh 比较慢，比如总是需要30秒钟后才能正常登录"></a>为什么有时候ssh 比较慢，比如总是需要30秒钟后才能正常登录</h3><p>先了解如下知识点，在 ~/.ssh/config 配置文件中：</p>
-<pre><code>GSSAPIAuthentication=no
-</code></pre><p>禁掉 GSSAPI认证，GSSAPIAuthentication是个什么鬼东西请自行 Google。 这里要理解ssh登录的时候有很多种认证方式（公钥、密码等等），具体怎么调试请记住强大的命令参数 ssh -vvv 上面讲到的技巧都能通过 -vvv 看到具体过程。</p>
-<p>比如我第一次碰到ssh 比较慢总是需要30秒后才登录，不能忍受，于是登录的时候加上 -vvv明显看到控制台停在了：GSSAPIAuthentication 然后Google了一下，禁掉就好了</p>
-<h3 id="批量打通所有机器之间的ssh登录免密码"><a href="#批量打通所有机器之间的ssh登录免密码" class="headerlink" title="批量打通所有机器之间的ssh登录免密码"></a>批量打通所有机器之间的ssh登录免密码</h3><p>ssh免密码的原理是将本机的pub key复制到目标机器的 ~/.ssh/authorized_keys 里面。可以手工复制粘贴，也可以 ssh-copy-id 等</p>
-<p>如果有100台机器，互相两两打通还是比较费事（大概需要100*99次copy key）。 下面通过 expect 来解决输入密码，然后配合shell脚本来批量解决这个问题。</p>
-<p><img src="http://i.imgur.com/S9jLW7B.png" alt=""></p>
-<p>这个脚本需要四个参数：目标IP、用户名、密码、home目录，也就是ssh到一台机器的时候帮我们自动填上yes，和密码，这样就不需要人肉一个个输入了。</p>
-<p>再在外面写一个循环对每个IP执行如下操作：</p>
-<p><img src="http://i.imgur.com/4SZcnvc.png" alt=""></p>
-<p>if代码部分检查本机~/.ssh/下有没有id_rsa.pub，也就是是否以前生成过秘钥对，没生成的话就帮忙生成一次。</p>
-<p>for循环部分一次把生成的密钥对和authorized_keys复制到所有机器上，这样所有机器之间都不需要输入密码就能互相登陆了（当然本机也不需要输入密码登录所有机器）</p>
-<p>最后一行代码： </p>
-<pre><code>ssh $user@$n &quot;hostname -i&quot;
-</code></pre><p>验证一下没有输密码是否能成功ssh上去。</p>
-<p><strong>思考一下，为什么这么做就可以打通两两之间的免密码登录，这里没有把所有机器的pub key复制到其他所有机器上去啊</strong></p>
-<h4 id="留个作业：第一次ssh某台机器的时候总是出来一个警告，需要yes确认才能往下走，怎么干掉他？"><a href="#留个作业：第一次ssh某台机器的时候总是出来一个警告，需要yes确认才能往下走，怎么干掉他？" class="headerlink" title="留个作业：第一次ssh某台机器的时候总是出来一个警告，需要yes确认才能往下走，怎么干掉他？"></a>留个作业：第一次ssh某台机器的时候总是出来一个警告，需要yes确认才能往下走，怎么干掉他？</h4><hr>
-<p><strong>这里只是帮大家入门了解ssh，掌握好这些配置文件和-vvv后有好多好玩的可以去挖掘，同时也请在留言中说出你的黑技能</strong></p>
-
-          
+公司内部跳板机每次ssh登
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2017/06/02/SSH花式玩法/#more" rel="contents">
+              Weiterlesen &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -470,7 +429,7 @@ debug1: Executing proxy command: exec ssh -l alibaba 139.*.*.* exec /usr/bin/nc 
                 <i class="fa fa-calendar-o"></i>
               </span>
               
-                <span class="post-meta-item-text">Posted on</span>
+                <span class="post-meta-item-text">Veröffentlicht am</span>
               
               <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-06-02T17:30:03+08:00">
                 2017-06-02
@@ -482,6 +441,28 @@ debug1: Executing proxy command: exec ssh -l alibaba 139.*.*.* exec /usr/bin/nc 
             
           </span>
 
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">in</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/tcp/" itemprop="url" rel="index">
+                    <span itemprop="name">tcp</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
           
 
           
@@ -509,132 +490,19 @@ debug1: Executing proxy command: exec ssh -l alibaba 139.*.*.* exec /usr/bin/nc 
       
         
           
-            <h1 id="关于TCP-半连接队列和全连接队列"><a href="#关于TCP-半连接队列和全连接队列" class="headerlink" title="关于TCP 半连接队列和全连接队列"></a>关于TCP 半连接队列和全连接队列</h1><blockquote>
-<p>最近碰到一个client端连接异常问题，然后定位分析并查阅各种资料文章，对TCP连接队列有个深入的理解</p>
-<p>查资料过程中发现没有文章把这两个队列以及怎么观察他们的指标说清楚，希望通过这篇文章能把他们说清楚一点</p>
-</blockquote>
-<h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><pre><code>JAVA的client和server，使用socket通信。server使用NIO。
-1.间歇性的出现client向server建立连接三次握手已经完成，但server的selector没有响应到这连接。
-2.出问题的时间点，会同时有很多连接出现这个问题。
-3.selector没有销毁重建，一直用的都是一个。
-4.程序刚启动的时候必会出现一些，之后会间歇性出现。
-</code></pre><h3 id="分析问题"><a href="#分析问题" class="headerlink" title="分析问题"></a>分析问题</h3><h4 id="正常TCP建连接三次握手过程："><a href="#正常TCP建连接三次握手过程：" class="headerlink" title="正常TCP建连接三次握手过程："></a>正常TCP建连接三次握手过程：</h4><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/159a331ff8cdd4b8994dfe6a209d035f.png" alt="image.png"></p>
-<ul>
-<li>第一步：client 发送 syn 到server 发起握手；</li>
-<li>第二步：server 收到 syn后回复syn+ack给client；</li>
-<li>第三步：client 收到syn+ack后，回复server一个ack表示收到了server的syn+ack（此时client的56911端口的连接已经是established）</li>
-</ul>
-<p>从问题的描述来看，有点像TCP建连接的时候全连接队列（accept队列）满了，尤其是症状2、4. 为了证明是这个原因，马上通过 ss -s 去看队列的溢出统计数据：</p>
-<pre><code>667399 times the listen queue of a socket overflowed
-</code></pre><p>反复看了几次之后发现这个overflowed 一直在增加，那么可以明确的是server上全连接队列一定溢出了</p>
-<p>接着查看溢出后，OS怎么处理：</p>
-<pre><code># cat /proc/sys/net/ipv4/tcp_abort_on_overflow
-0
-</code></pre><p><strong>tcp_abort_on_overflow 为0表示如果三次握手第三步的时候全连接队列满了那么server扔掉client 发过来的ack（在server端认为连接还没建立起来）</strong></p>
-<p>为了证明客户端应用代码的异常跟全连接队列满有关系，我先把tcp_abort_on_overflow修改成 1，1表示第三步的时候如果全连接队列满了，server发送一个reset包给client，表示废掉这个握手过程和这个连接（本来在server端这个连接就还没建立起来）。</p>
-<p>接着测试然后在客户端异常中可以看到很多connection reset by peer的错误，到此证明客户端错误是这个原因导致的。</p>
-<p>于是开发同学翻看java 源代码发现socket 默认的backlog（这个值控制全连接队列的大小，后面再详述）是50，于是改大重新跑，经过12个小时以上的压测，这个错误一次都没出现过，同时 overflowed 也不再增加了。</p>
-<p>到此问题解决，简单来说TCP三次握手后有个accept队列，进到这个队列才能从Listen变成accept，默认backlog 值是50，很容易就满了。满了之后握手第三步的时候server就忽略了client发过来的ack包（隔一段时间server重发握手第二步的syn+ack包给client），如果这个连接一直排不上队就异常了。</p>
-<h3 id="深入理解TCP握手过程中建连接的流程和队列"><a href="#深入理解TCP握手过程中建连接的流程和队列" class="headerlink" title="深入理解TCP握手过程中建连接的流程和队列"></a>深入理解TCP握手过程中建连接的流程和队列</h3><p><img src="http://img2.cnxct.com/2015/06/tcp-sync-queue-and-accept-queue-small-1024x747.jpg" alt=""><br>（图片来源：<a href="http://www.cnxct.com/something-about-phpfpm-s-backlog/）" target="_blank" rel="external">http://www.cnxct.com/something-about-phpfpm-s-backlog/）</a></p>
-<p>如上图所示，这里有两个队列：syns queue(半连接队列）；accept queue（全连接队列）</p>
-<p>三次握手中，在第一步server收到client的syn后，把相关信息放到半连接队列中，同时回复syn+ack给client（第二步）；</p>
-<pre><code>比如syn floods 攻击就是针对半连接队列的，攻击方不停地建连接，但是建连接的时候只做第一步，第二步中攻击方收到server的syn+ack后故意扔掉什么也不做，导致server上这个队列满其它正常请求无法进来
-</code></pre><p>第三步的时候server收到client的ack，如果这时全连接队列没满，那么从半连接队列拿出相关信息放入到全连接队列中，否则按tcp_abort_on_overflow指示的执行。</p>
-<p>这时如果全连接队列满了并且tcp_abort_on_overflow是0的话，server过一段时间再次发送syn+ack给client（也就是重新走握手的第二步），如果client超时等待比较短，就很容易异常了。</p>
-<p>在我们的os中retry 第二步的默认次数是2（centos默认是5次）：</p>
-<pre><code>net.ipv4.tcp_synack_retries = 2
-</code></pre><h3 id="如果TCP连接队列溢出，有哪些指标可以看呢？"><a href="#如果TCP连接队列溢出，有哪些指标可以看呢？" class="headerlink" title="如果TCP连接队列溢出，有哪些指标可以看呢？"></a>如果TCP连接队列溢出，有哪些指标可以看呢？</h3><p>上述解决过程有点绕，那么下次再出现类似问题有什么更快更明确的手段来确认这个问题呢？</p>
-<h4 id="netstat-s"><a href="#netstat-s" class="headerlink" title="netstat -s"></a>netstat -s</h4><pre><code>[root@server ~]#  netstat -s | egrep &quot;listen|LISTEN&quot; 
-667399 times the listen queue of a socket overflowed
-667399 SYNs to LISTEN sockets ignored
-</code></pre><p>比如上面看到的 667399 times ，表示全连接队列溢出的次数，隔几秒钟执行下，如果这个数字一直在增加的话肯定全连接队列偶尔满了。</p>
-<h4 id="ss-命令"><a href="#ss-命令" class="headerlink" title="ss 命令"></a>ss 命令</h4><pre><code>[root@server ~]# ss -lnt
-Recv-Q Send-Q Local Address:Port  Peer Address:Port 
-0        50               *:3306             *:* 
-</code></pre><p><strong>上面看到的第二列Send-Q 表示第三列的listen端口上的全连接队列最大为50，第一列Recv-Q为全连接队列当前使用了多少</strong></p>
-<p><strong>全连接队列的大小取决于：min(backlog, somaxconn) . backlog是在socket创建的时候传入的，somaxconn是一个os级别的系统参数</strong></p>
-<p><strong>半连接队列的大小取决于：max(64,  /proc/sys/net/ipv4/tcp_max_syn_backlog)。 不同版本的os会有些差异</strong></p>
-<h3 id="实践验证下上面的理解"><a href="#实践验证下上面的理解" class="headerlink" title="实践验证下上面的理解"></a>实践验证下上面的理解</h3><p>把java中backlog改成10（越小越容易溢出），继续跑压力，这个时候client又开始报异常了，然后在server上通过 ss 命令观察到：</p>
-<pre><code>Fri May  5 13:50:23 CST 2017
-Recv-Q Send-QLocal Address:Port  Peer Address:Port
-11         10         *:3306               *:*
-</code></pre><p>按照前面的理解，这个时候我们能看到3306这个端口上的服务全连接队列最大是10，但是现在有11个在队列中和等待进队列的，肯定有一个连接进不去队列要overflow掉</p>
-<h3 id="容器中的Accept队列参数"><a href="#容器中的Accept队列参数" class="headerlink" title="容器中的Accept队列参数"></a>容器中的Accept队列参数</h3><p>Tomcat默认短连接，backlog（Tomcat里面的术语是Accept count）Ali-tomcat默认是200, Apache Tomcat默认100. </p>
-<pre><code>#ss -lnt
-Recv-Q Send-Q   Local Address:Port Peer Address:Port
-0       100                 *:8080            *:*
-</code></pre><p>Nginx默认是511</p>
-<pre><code>$sudo ss -lnt
-State  Recv-Q Send-Q Local Address:PortPeer Address:Port
-LISTEN    0     511              *:8085           *:*
-LISTEN    0     511              *:8085           *:*
-</code></pre><p>因为Nginx是多进程模式，也就是多个进程都监听同一个端口以尽量避免上下文切换来提升性能   </p>
-<h3 id="进一步思考"><a href="#进一步思考" class="headerlink" title="进一步思考"></a>进一步思考</h3><p>如果client走完第三步在client看来连接已经建立好了，但是server上的对应连接实际没有准备好，这个时候如果client发数据给server，server会怎么处理呢？（有同学说会reset，还是实践看看）</p>
-<p>先来看一个例子：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/3f5f1eeb0646a3af8afd6bbff2a9ea0b.png" alt="image.png"><br>（图片来自：<a href="http://blog.chinaunix.net/uid-20662820-id-4154399.html）" target="_blank" rel="external">http://blog.chinaunix.net/uid-20662820-id-4154399.html）</a></p>
-<p>如上图，150166号包是三次握手中的第三步client发送ack给server，然后150167号包中client发送了一个长度为816的包给server，因为在这个时候client认为连接建立成功，但是server上这个连接实际没有ready，所以server没有回复，一段时间后client认为丢包了然后重传这816个字节的包，一直到超时，client主动发fin包断开该连接。</p>
-<p>这个问题也叫client fooling，可以看这里：<a href="https://github.com/torvalds/linux/commit/5ea8ea2cb7f1d0db15762c9b0bb9e7330425a071" target="_blank" rel="external">https://github.com/torvalds/linux/commit/5ea8ea2cb7f1d0db15762c9b0bb9e7330425a071</a> （感谢 @刘欢(浅奕(16:00后答疑) 的提示) </p>
-<p><strong>从上面的实际抓包来看不是reset，而是server忽略这些包，然后client重传，一定次数后client认为异常，然后断开连接。
-</strong></p>
-<h3 id="过程中发现的一个奇怪问题"><a href="#过程中发现的一个奇怪问题" class="headerlink" title="过程中发现的一个奇怪问题"></a>过程中发现的一个奇怪问题</h3><pre><code>[root@server ~]# date; netstat -s | egrep &quot;listen|LISTEN&quot; 
-Fri May  5 15:39:58 CST 2017
-1641685 times the listen queue of a socket overflowed
-1641685 SYNs to LISTEN sockets ignored
+          关于TCP 半连接队列和全连接队列
+最近碰到一个client端连接异常问题，然后定位分析并查阅各种资料文章，对TCP连接队列有个深入的理解
+查资料过程中发现没有文章把这两个队列以及怎么观察他们的指标说清楚，希望通过这篇文章能把他们说清楚一点
 
-[root@server ~]# date; netstat -s | egrep &quot;listen|LISTEN&quot; 
-Fri May  5 15:39:59 CST 2017
-1641906 times the listen queue of a socket overflowed
-1641906 SYNs to LISTEN sockets ignored
-</code></pre><p>如上所示：<br>overflowed和ignored居然总是一样多，并且都是同步增加，overflowed表示全连接队列溢出次数，socket ignored表示半连接队列溢出次数，没这么巧吧。</p>
-<p>翻看内核源代码（<a href="http://elixir.free-electrons.com/linux/v3.18/source/net/ipv4/tcp_ipv4.c）：" target="_blank" rel="external">http://elixir.free-electrons.com/linux/v3.18/source/net/ipv4/tcp_ipv4.c）：</a></p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/a5616904df3a505572d99d557b534db2.png" alt="image.png"></p>
-<p>可以看到overflow的时候一定会drop++（socket ignored），也就是drop一定大于等于overflow。</p>
-<p>同时我也查看了另外几台server的这两个值来证明drop一定大于等于overflow：</p>
-<pre><code>server1
-150 SYNs to LISTEN sockets dropped
-
-server2
-193 SYNs to LISTEN sockets dropped
-
-server3
-16329 times the listen queue of a socket overflowed
-16422 SYNs to LISTEN sockets dropped
-
-server4
-20 times the listen queue of a socket overflowed
-51 SYNs to LISTEN sockets dropped
-
-server5
-984932 times the listen queue of a socket overflowed
-988003 SYNs to LISTEN sockets dropped
-</code></pre><h3 id="那么全连接队列满了会影响半连接队列吗？"><a href="#那么全连接队列满了会影响半连接队列吗？" class="headerlink" title="那么全连接队列满了会影响半连接队列吗？"></a>那么全连接队列满了会影响半连接队列吗？</h3><p>来看三次握手第一步的源代码（<a href="http://elixir.free-electrons.com/linux/v2.6.33/source/net/ipv4/tcp_ipv4.c#L1249）：" target="_blank" rel="external">http://elixir.free-electrons.com/linux/v2.6.33/source/net/ipv4/tcp_ipv4.c#L1249）：</a></p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/0c6bbb5d4a10f40c8b3c4ba6cab82292.png" alt="image.png"></p>
-<p>TCP三次握手第一步的时候如果全连接队列满了会影响第一步drop 半连接的发生。大概流程的如下：</p>
-<pre><code>tcp_v4_do_rcv-&gt;tcp_rcv_state_process-&gt;tcp_v4_conn_request
-//如果accept backlog队列已满，且未超时的request socket的数量大于1，则丢弃当前请求  
-  if(sk_acceptq_is_full(sk) &amp;&amp; inet_csk_reqsk_queue_yong(sk)&gt;1)
-      goto drop;
-</code></pre><h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>全连接队列、半连接队列溢出这种问题很容易被忽视，但是又很关键，特别是对于一些短连接应用（比如Nginx、PHP，当然他们也是支持长连接的）更容易爆发。 一旦溢出，从cpu、线程状态看起来都比较正常，但是压力上不去，在client看来rt也比较高（rt=网络+排队+真正服务时间），但是从server日志记录的真正服务时间来看rt又很短。</p>
-<p>另外就是jdk、netty等一些框架默认backlog比较小，可能有些情况下导致性能上不去，比如 @毕玄 碰到的这个 <a href="https://www.atatech.org/articles/12919" target="_blank" rel="external">《netty新建连接并发数很小的case》 </a><br>都是类似原因</p>
-<p>希望通过本文能够帮大家理解TCP连接过程中的半连接队列和全连接队列的概念、原理和作用，更关键的是有哪些指标可以明确看到这些问题。</p>
-<p>另外每个具体问题都是最好学习的机会，光看书理解肯定是不够深刻的，请珍惜每个具体问题，碰到后能够把来龙去脉弄清楚。</p>
-<p>我的其他几篇跟网络问题相关的文章，也很有趣，借着案例来理解好概念和原理，希望对大家也有点帮助</p>
-<p><a href="https://www.atatech.org/articles/60633" target="_blank" rel="external">https://www.atatech.org/articles/60633</a></p>
-<p><a href="https://www.atatech.org/articles/73174" target="_blank" rel="external">https://www.atatech.org/articles/73174</a></p>
-<p><a href="https://www.atatech.org/articles/73289" target="_blank" rel="external">https://www.atatech.org/articles/73289</a></p>
-<p><a href="https://www.atatech.org/articles/76138" target="_blank" rel="external">https://www.atatech.org/articles/76138</a></p>
-<p>最后感谢 @梦实 在这个过程中提供的帮助</p>
-<hr>
-<p>参考文章：</p>
-<p><a href="http://veithen.github.io/2014/01/01/how-tcp-backlog-works-in-linux.html" target="_blank" rel="external">http://veithen.github.io/2014/01/01/how-tcp-backlog-works-in-linux.html</a></p>
-<p><a href="http://www.cnblogs.com/zengkefu/p/5606696.html" target="_blank" rel="external">http://www.cnblogs.com/zengkefu/p/5606696.html</a></p>
-<p><a href="http://www.cnxct.com/something-about-phpfpm-s-backlog/" target="_blank" rel="external">http://www.cnxct.com/something-about-phpfpm-s-backlog/</a></p>
-<p><a href="http://jaseywang.me/2014/07/20/tcp-queue-%E7%9A%84%E4%B8%80%E4%BA%9B%E9%97%AE%E9%A2%98/" target="_blank" rel="external">http://jaseywang.me/2014/07/20/tcp-queue-%E7%9A%84%E4%B8%80%E4%BA%9B%E9%97%AE%E9%A2%98/</a></p>
-<p><a href="http://jin-yang.github.io/blog/network-synack-queue.html#" target="_blank" rel="external">http://jin-yang.github.io/blog/network-synack-queue.html#</a></p>
-<p><a href="http://blog.chinaunix.net/uid-20662820-id-4154399.html" target="_blank" rel="external">http://blog.chinaunix.net/uid-20662820-id-4154399.html</a></p>
-<p><a href="https://www.atatech.org/articles/12919" target="_blank" rel="external">https://www.atatech.org/articles/12919</a></p>
-
-          
+问题描述JAVA的client和server，使用soc
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2017/06/02/tcp-queue/#more" rel="contents">
+              Weiterlesen &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -705,7 +573,7 @@ server5
                 <i class="fa fa-calendar-o"></i>
               </span>
               
-                <span class="post-meta-item-text">Posted on</span>
+                <span class="post-meta-item-text">Veröffentlicht am</span>
               
               <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-06-02T17:30:03+08:00">
                 2017-06-02
@@ -744,22 +612,17 @@ server5
       
         
           
-            <h1 id="wireshark-dup-ack-issue-and-keepalive"><a href="#wireshark-dup-ack-issue-and-keepalive" class="headerlink" title="wireshark-dup-ack-issue and keepalive"></a>wireshark-dup-ack-issue and keepalive</h1><h2 id="问题："><a href="#问题：" class="headerlink" title="问题："></a>问题：</h2><p>在wireshark中看到一个tcp会话中的两台机器突然一直互相发dup ack包，但是没有触发重传。每次重复ack都是间隔精确的20秒</p>
-<h2 id="如下截图："><a href="#如下截图：" class="headerlink" title="如下截图："></a>如下截图：</h2><p><img src="http://i.imgur.com/bm3W68Q.png" alt=""></p>
-<p>client都一直在回复收到2号包（ack=2）了，可是server跟傻了一样居然还发seq=1的包（按理，应该发比2大的包啊）</p>
-<h2 id="系统配置："><a href="#系统配置：" class="headerlink" title="系统配置："></a>系统配置：</h2><pre><code>net.ipv4.tcp_keepalive_time = 20
-net.ipv4.tcp_keepalive_probes = 5
-net.ipv4.tcp_keepalive_intvl = 3
-</code></pre><h2 id="原因："><a href="#原因：" class="headerlink" title="原因："></a>原因：</h2><p>抓包不全的话wireshark有缺陷，把keepalive包识别成了dup ack包，看内容这种dup ack和keepalive似乎是一样的，flags都是0x010。keep alive的定义的是后退一格(seq少1）。</p>
-<p>2、4、6、8……号包，都有一个“tcp acked unseen segment”。这个一般表示它ack的这个包，没有被抓到。Wirshark如何作出此判断呢？前面一个包是seq=1, len=0，所以正常情况下是ack = seq + len = 1，然而Wireshark看到的确是ack = 2, 它只能判断有一个seq =1, len = 1的包没有抓到。<br>dup ack也是类似道理，这些包完全符合dup ack的定义，因为“ack = ” 某个数连续多次出现了。</p>
-<p>这一切都是因为keep alive的特殊性导致的。打开66号包的tcp层（见后面的截图），可以看到它的 next sequence number = 12583，表示正常情况下server发出的下一个包应该是seq = 12583。可是在下一个包，也就是68号包中，却是seq = 12582。keep alive的定义的确是这样，即后退一格。<br>Wireshark只有在抓到数据包（66号包）和keep alive包的情况下才有可能正确识别，前面的抓包中恰好在keep alive之前丢失了数据包，所以Wireshark就蒙了。</p>
-<h2 id="构造重现"><a href="#构造重现" class="headerlink" title="构造重现"></a>构造重现</h2><p>如果用“frame.number &gt;= 68” 过滤这个包，然后File–&gt;export specified packets保存成一个新文件，再打开那个新文件，就会发现Wireshark又蒙了。本来能够正常识别的keep alive包又被错看成dup ack了，所以一旦碰到这种情况不要慌要稳</p>
-<p>下面是知识点啦</p>
-<h2 id="正常的keep-alive-Case："><a href="#正常的keep-alive-Case：" class="headerlink" title="正常的keep-alive Case："></a>正常的keep-alive Case：</h2><p><img src="http://i.imgur.com/DsTWFZr.png" alt=""></p>
-<p>keep-alive 通过发一个比实际seq小1的包，比如server都已经 ack 12583了，client故意发一个seq 12582来标识这是一个keep-Alive包</p>
-<h2 id="Duplication-ack是指："><a href="#Duplication-ack是指：" class="headerlink" title="Duplication ack是指："></a>Duplication ack是指：</h2><p>server收到了3和8号包，但是没有收到中间的4/5/6/7，那么server就会ack 3，如果client还是继续发8/9号包，那么server会继续发dup ack 3#1 ; dup ack 3#2 来向客户端说明只收到了3号包，不要着急发后面的大包，把4/5/6/7给我发过来</p>
-
-          
+          wireshark-dup-ack-issue and keepalive问题：在wireshark中看到一个tcp会话中的两台机器突然一直互相发dup ack包，但是没有触发重传。每次重复ack都是间隔精确的20秒
+如下截图：
+client都一直在回复收到2号包（ack=2）了，可是server跟
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2017/06/02/wireshark-dup-ack-issue/#more" rel="contents">
+              Weiterlesen &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -830,7 +693,7 @@ net.ipv4.tcp_keepalive_intvl = 3
                 <i class="fa fa-calendar-o"></i>
               </span>
               
-                <span class="post-meta-item-text">Posted on</span>
+                <span class="post-meta-item-text">Veröffentlicht am</span>
               
               <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-06-02T17:30:03+08:00">
                 2017-06-02
@@ -869,95 +732,16 @@ net.ipv4.tcp_keepalive_intvl = 3
       
         
           
-            <h1 id="就是要你懂-TCP–-最经典的TCP性能问题"><a href="#就是要你懂-TCP–-最经典的TCP性能问题" class="headerlink" title="就是要你懂 TCP– 最经典的TCP性能问题"></a>就是要你懂 TCP– 最经典的TCP性能问题</h1><h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><p>某个PHP服务通过Nginx将后面的tair封装了一下，让其他应用可以通过http协议访问Nginx来get、set 操作tair</p>
-<p>上线后测试一切正常，每次操作几毫秒，但是有一次有个应用的value是300K，这个时候set一次需要300毫秒以上。 在没有任何并发压力单线程单次操作也需要这么久，这个延迟是没有道理和无法接受的。</p>
-<h3 id="问题的原因"><a href="#问题的原因" class="headerlink" title="问题的原因"></a>问题的原因</h3><p>是因为TCP协议为了做一些带宽利用率、性能方面的优化，而做了一些特殊处理。比如Delay Ack和Nagle算法。</p>
-<p>这个原因对大家理解TCP基本的概念后能在实战中了解一些TCP其它方面的性能和影响。</p>
-<h3 id="什么是delay-ack"><a href="#什么是delay-ack" class="headerlink" title="什么是delay ack"></a>什么是delay ack</h3><p>由我前面的TCP介绍文章大家都知道，TCP是可靠传输，可靠的核心是收到包后回复一个ack来告诉对方收到了。</p>
-<p>来看一个例子：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/06e6b04614ce57e4624346ea6311a411.png" alt="image.png"></p>
-<p>截图中的Nignx(8085端口），收到了一个http request请求，然后立即回复了一个ack包给client，接着又回复了一个http response 给client。大家注意回复的ack包长度66，实际内容长度为0，ack信息放在TCP包头里面，也就是这里发了一个66字节的空包给客户端来告诉客户端我收到你的请求了。</p>
-<p>这里没毛病，逻辑很对，符合TCP的核心可靠传输的意义。但是带来的一个问题是：带宽效率不高。那能不能优化呢？</p>
-<p>这里的优化就是delay ack。</p>
-<p>delay ack是指收到包后不立即ack，而是等一小会（比如40毫秒）看看，如果这40毫秒以内正好有一个包（比如上面的http response）发给client，那么我这个ack包就跟着发过去（顺风车，http reponse包不需要增加任何大小），这样节省了资源。 当然如果超过这个时间还没有包发给client（比如nginx处理需要40毫秒以上），那么这个ack也要发给client了（即使为空，要不client以为丢包了，又要重发http request，划不来）。</p>
-<p>假如这个时候ack包还在等待延迟发送的时候，又收到了client的一个包，那么这个时候server有两个ack包要回复，那么os会把这两个ack包合起来<strong>立即</strong>回复一个ack包给client，告诉client前两个包都收到了。</p>
-<p><strong>也就是delay ack开启的情况下：ack包有顺风车就搭；如果凑两个ack包自己包个车也立即发车；再如果等了40毫秒以上也没顺风车，那么自己打个车也发车。</strong></p>
-<p>截图中Nginx<strong>没有开delay ack</strong>，所以你看红框中的ack是完全可以跟着绿框（http response）一起发给client的，但是没有，红框的ack立即打车跑了</p>
-<h3 id="什么是Nagle算法"><a href="#什么是Nagle算法" class="headerlink" title="什么是Nagle算法"></a>什么是Nagle算法</h3><p><a href="https://en.wikipedia.org/wiki/Nagle%27s_algorithm" target="_blank" rel="external">下面的伪代码就是Nagle算法的基本逻辑，摘自wiki</a>：</p>
-<pre><code>if there is new data to send
-  if the window size &gt;= MSS and available data is &gt;= MSS
-        send complete MSS segment now
-  else
-    if there is unconfirmed data still in the pipe
-          enqueue data in the buffer until an acknowledge is received
-    else
-          send data immediately
-    end if
-  end if
-end if
-</code></pre><p>这段代码的意思是如果要发送的数据大于 MSS的话，立即发送。<br>否则：<br>   看看前面发出去的包是不是还有没有ack的，如果有没有ack的那么我这个小包不急着发送，等前面的ack回来再发送</p>
-<p>我总结下Nagle算法逻辑就是：如果发送的包很小（不足MSS），又有包发给了对方对方还没回复说收到了，那我也不急着发，等前面的包回复收到了再发。这样可以优化带宽利用率（早些年带宽资源还是很宝贵的），Nagle算法也是用来优化改进tcp传输效率的。</p>
-<h2 id="如果client启用Nagle，并且server端启用了delay-ack会有什么后果呢？"><a href="#如果client启用Nagle，并且server端启用了delay-ack会有什么后果呢？" class="headerlink" title="如果client启用Nagle，并且server端启用了delay ack会有什么后果呢？"></a>如果client启用Nagle，并且server端启用了delay ack会有什么后果呢？</h2><p>假如client要发送一个http请求给server，这个请求有1600个bytes，握手的MSS是1460，那么这1600个bytes就会分成2个TCP包，第一个包1460，剩下的140bytes放在第二个包。第一个包发出去后，server收到第一个包，因为delay ack所以没有回复ack，同时因为server没有收全这个HTTP请求，所以也没法回复HTTP response（server等一个完整的HTTP请求，或者40毫秒的delay时间）。client这边开启了Nagle算法（默认开启）第二个包比较小（140&lt;MSS),第一个包的ack还没有回来，那么第二个包就不发了，等！互相等！一直到Delay Ack的Delay时间到了！</p>
-<p>这就是悲剧的核心原因。</p>
-<h3 id="再来看一个经典例子和数据分析"><a href="#再来看一个经典例子和数据分析" class="headerlink" title="再来看一个经典例子和数据分析"></a>再来看一个经典例子和数据分析</h3><p>这个案例来自：<a href="http://www.stuartcheshire.org/papers/nagledelayedack/" target="_blank" rel="external">http://www.stuartcheshire.org/papers/nagledelayedack/</a></p>
-<p>案例核心奇怪的问题是，如果传输的数据是 99,900 bytes，速度5.2M/秒；<br>如果传输的数据是 100,000 bytes 速度2.7M/秒，多了10个bytes，不至于传输速度差这么多。</p>
-<p>原因就是：</p>
-<pre><code> 99,900 bytes = 68 full-sized 1448-byte packets, plus 1436 bytes extra
-100,000 bytes = 69 full-sized 1448-byte packets, plus   88 bytes extra
-</code></pre><p>99,900 bytes：</p>
-<blockquote>
-<p>68个整包会立即发送（都是整包，不受Nagle算法的影响），因为68是偶数，对方收到最后两个包后立即回复ack（delay ack凑够两个也立即ack），那么剩下的1436也很快发出去（根据Nagle算法，没有没ack的包了，立即发）</p>
-</blockquote>
-<p>100,000 bytes:</p>
-<blockquote>
-<p>前面68个整包很快发出去也收到ack回复了，然后发了第69个整包，剩下88bytes（不够一个整包）根据Nagle算法要等一等，server收到第69个ack后，因为delay ack不回复（手里只攒下一个没有回复的包），所以client、server两边等在等，一直等到server的delay ack超时了。</p>
-</blockquote>
-<p>挺奇怪和挺有意思吧，作者还给出了传输数据的图表：</p>
-<p><img src="http://www.stuartcheshire.org/papers/nagledelayedack/Fail.jpg" alt=""></p>
-<p>这是有问题的传输图，明显有个平台层，这个平台层就是两边在互相等，整个速度肯定就上不去。</p>
-<p>如果传输的都是99,900，那么整个图形就很平整：</p>
-<p><img src="http://www.stuartcheshire.org/papers/nagledelayedack/Pass.jpg" alt=""></p>
-<h3 id="回到前面的问题"><a href="#回到前面的问题" class="headerlink" title="回到前面的问题"></a>回到前面的问题</h3><p>服务写好后，开始测试都没有问题，rt很正常（一般测试的都是小对象），没有触发这个问题。后来碰到一个300K的rt就到几百毫秒了，就是因为这个原因。</p>
-<p>另外有些http post会故意把包头和包内容分成两个包，再加一个Expect参数之类的，更容易触发这个问题。</p>
-<p>这是修改后的C代码</p>
-<pre><code>struct curl_slist *list = NULL;
-//合并post包
-list = curl_slist_append(list, &quot;Expect:&quot;);  
-
-CURLcode code(CURLE_FAILED_INIT);
-if (CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_URL, oss.str().c_str())) &amp;&amp;
-        CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, timeout)) &amp;&amp;
-        CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &amp;write_callback)) &amp;&amp;
-        CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L)) &amp;&amp;
-        CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_POST, 1L)) &amp;&amp;
-        CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, pooh.sizeleft)) &amp;&amp;
-        CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_READFUNCTION, read_callback)) &amp;&amp;
-        CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_READDATA, &amp;pooh)) &amp;&amp;                
-        CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L)) &amp;&amp; //1000 ms curl bug
-        CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list))                
-        ) {
-
-        //这里如果是小包就不开delay ack，实际不科学
-        if (request.size() &lt; 1024) {
-                code = curl_easy_setopt(curl, CURLOPT_TCP_NODELAY, 1L);
-        } else {
-                code = curl_easy_setopt(curl, CURLOPT_TCP_NODELAY, 0L);
-        }
-        if(CURLE_OK == code) {
-                code = curl_easy_perform(curl);
-        }
-</code></pre><p>上面中文注释的部分是后来的改进，然后经过测试同一个300K的对象也能在几毫米以内完成get、set了。</p>
-<p>尤其是在Post请求将HTTP Header和Body内容分成两个包后，容易出现这种延迟问题</p>
-<hr>
-<p>就是要你懂TCP相关文章：</p>
-<p> <a href="https://www.atatech.org/articles/78858" target="_blank" rel="external">关于TCP 半连接队列和全连接队列</a><br> <a href="https://www.atatech.org/articles/60633" target="_blank" rel="external">MSS和MTU导致的悲剧</a><br> <a href="https://www.atatech.org/articles/73174" target="_blank" rel="external">2016年双11通过网络优化提升10倍性能</a><br> <a href="https://www.atatech.org/articles/79660" target="_blank" rel="external">就是要你懂TCP的握手和挥手</a></p>
-<hr>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这个问题确实经典，非常隐晦一般不容易碰到，碰到一次决不放过她。文中所有client、server的概念都是相对的，client也有delay ack的问题。 Nagle算法一般默认开启的</p>
-<p>参考文章:<br><a href="https://access.redhat.com/solutions/407743" target="_blank" rel="external">https://access.redhat.com/solutions/407743</a></p>
-<p><a href="http://www.stuartcheshire.org/papers/nagledelayedack/" target="_blank" rel="external">http://www.stuartcheshire.org/papers/nagledelayedack/</a></p>
-<p><a href="https://en.wikipedia.org/wiki/Nagle%27s_algorithm" target="_blank" rel="external">https://en.wikipedia.org/wiki/Nagle%27s_algorithm</a></p>
-<p><a href="https://en.wikipedia.org/wiki/TCP_delayed_acknowledgment" target="_blank" rel="external">https://en.wikipedia.org/wiki/TCP_delayed_acknowledgment</a></p>
-
-          
+          就是要你懂 TCP– 最经典的TCP性能问题问题描述某个PHP服务通过Nginx将后面的tair封装了一下，让其他应用可以通过http协议访问Nginx来get、set 操作tair
+上线后测试一切正常，每次操作几毫秒，但是有一次有个应用的value是300K，这个时候set一次需要300毫秒以上。
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2017/06/02/就是要你懂 TCP--最经典的TCP性能问题/#more" rel="contents">
+              Weiterlesen &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -1028,7 +812,7 @@ if (CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_URL, oss.str().c_str())) 
                 <i class="fa fa-calendar-o"></i>
               </span>
               
-                <span class="post-meta-item-text">Posted on</span>
+                <span class="post-meta-item-text">Veröffentlicht am</span>
               
               <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-06-02T17:30:03+08:00">
                 2017-06-02
@@ -1040,6 +824,28 @@ if (CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_URL, oss.str().c_str())) 
             
           </span>
 
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">in</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/tcp/" itemprop="url" rel="index">
+                    <span itemprop="name">tcp</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
           
 
           
@@ -1067,74 +873,22 @@ if (CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_URL, oss.str().c_str())) 
       
         
           
-            <h1 id="就是要你懂-TCP"><a href="#就是要你懂-TCP" class="headerlink" title="就是要你懂 TCP"></a>就是要你懂 TCP</h1><pre><code>看过太多tcp相关文章，但是看完总是不过瘾，似懂非懂，反复考虑过后，我觉得是那些文章太过理论，看起来没有体感，所以吸收不了。
+          就是要你懂 TCP看过太多tcp相关文章，但是看完总是不过瘾，似懂非懂，反复考虑过后，我觉得是那些文章太过理论，看起来没有体感，所以吸收不了。
 
 希望这篇文章能做到言简意赅，帮助大家透过案例来理解原理
-</code></pre><h2 id="tcp的特点"><a href="#tcp的特点" class="headerlink" title="tcp的特点"></a>tcp的特点</h2><p>这个大家基本都能说几句，面试的时候候选人也肯定会告诉你这些：</p>
-<ul>
-<li>三次握手</li>
-<li>四次挥手</li>
-<li>可靠连接</li>
-<li>丢包重传</li>
-</ul>
-<p>但是我只希望大家记住一个核心的：<strong>tcp是可以可靠传输协议，它的所有特点都为这个可靠传输服务</strong>。</p>
-<h3 id="那么tcp是怎么样来保障可靠传输呢？"><a href="#那么tcp是怎么样来保障可靠传输呢？" class="headerlink" title="那么tcp是怎么样来保障可靠传输呢？"></a>那么tcp是怎么样来保障可靠传输呢？</h3><p>tcp在传输过程中都有一个ack，接收方通过ack告诉发送方收到那些包了。这样发送方能知道有没有丢包，进而确定重传</p>
-<h3 id="tcp建连接的三次握手"><a href="#tcp建连接的三次握手" class="headerlink" title="tcp建连接的三次握手"></a>tcp建连接的三次握手</h3><p>来看一个java代码连接数据库的三次握手过程</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/6d66dadecb72e11e3e5ab765c6c3ea2e.png" alt="image.png"></p>
-<p>三个红框表示建立连接的三次握手：</p>
-<ul>
-<li>第一步：client 发送 syn 到server 发起握手；</li>
-<li>第二步：server 收到 syn后回复syn+ack给client；</li>
-<li>第三步：client 收到syn+ack后，回复server一个ack表示收到了server的syn+ack（此时client的48287端口的连接已经是established）</li>
-</ul>
-<p>握手的核心目的是告知对方seq（绿框是client的初始seq，蓝色框是server 的初始seq），对方回复ack（收到的seq+包的大小），这样发送端就知道有没有丢包了</p>
-<p>握手的次要目的是告知和协商一些信息，图中黄框。</p>
-<ul>
-<li>MSS–最大传输包</li>
-<li>SACK_PERM–是否支持Selective ack(用户优化重传效率）</li>
-<li>WS–窗口计算指数（有点复杂的话先不用管）</li>
-</ul>
-<p><strong>这就是tcp为什么要握手建立连接，就是为了解决tcp的可靠传输</strong></p>
-<h3 id="tcp断开连接的四次挥手"><a href="#tcp断开连接的四次挥手" class="headerlink" title="tcp断开连接的四次挥手"></a>tcp断开连接的四次挥手</h3><p>再来看java连上mysql后，执行了一个SQL： select sleep(2); 然后就断开了连接</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/b6f4a952cdf8ffbb8f6e9434d1432e05.png" alt="image.png"></p>
-<p>四个红框表示断开连接的四次挥手：</p>
-<ul>
-<li>第一步： client主动发送fin包给server</li>
-<li>第二步： server回复ack（对应第一步fin包的ack）给client，表示server知道client要断开了</li>
-<li>第三步： server发送fin包给client，表示server也可以断开了</li>
-<li>第四部： client回复ack给server，表示既然双发都发送fin包表示断开，那么就真的断开吧</li>
-</ul>
-<h3 id="为什么握手三次、挥手四次"><a href="#为什么握手三次、挥手四次" class="headerlink" title="为什么握手三次、挥手四次"></a>为什么握手三次、挥手四次</h3><p>这个问题太恶心，面试官太喜欢问，其实他也许只能背诵：因为……。</p>
-<p>我也不知道怎么回答。网上都说tcp是双向的，所以断开要四次。但是我认为建连接也是双向的（双向都协调告知对方自己的seq号），为什么不需要四次握手呢，所以网上说的不一定精准。</p>
-<p>你再看三次握手的第二步发 syn+ack，如果拆分成两步先发ack再发syn完全也是可以的（效率略低），这样三次握手也变成四次握手了。</p>
-<p>看起来挥手的时候多一次，主要是收到第一个fin包后单独回复了一个ack包，如果能回复fin+ack那么四次挥手也就变成三次了。 来看一个案例：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/9db33f9304f8236b1ebcb215064bb2af.png" alt="image.png"></p>
-<p>图中第二个红框就是回复的fin+ack，这样四次挥手变成三次了（如果一个包就是一次的话）。</p>
-<p>我的理解：之所以绝大数时候我们看到的都是四次挥手，是因为收到fin后，知道对方要关闭了，然后OS通知应用层要关闭啥的，这里应用层可能需要做些准备工作，有一些延时，所以先回ack，准备好了再发fin 。 握手过程没有这个准备过程所以可以立即发送syn+ack</p>
-<h3 id="ack-seq-len"><a href="#ack-seq-len" class="headerlink" title="ack=seq+len"></a>ack=seq+len</h3><p>ack总是seq+len（包的大小），这样发送方明确知道server收到那些东西了</p>
-<p>但是特例是三次握手和四次挥手，虽然len都是0，但是syn和fin都要占用一个seq号，所以这里的ack都是seq+1</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/45c6d36ce8b17a5c0442e66fce002ab4.png" alt="image.png"></p>
-<p>看图中左边红框里的len+seq就是接收方回复的ack的数字，表示这个包接收方收到了。然后下一个包的seq就是前一个包的len+seq，依次增加，一旦中间发出去的东西没有收到ack就是丢包了，过一段时间（或者其他方式）触发重传，保障了tcp传输的可靠性。</p>
-<h3 id="三次握手中协商的其它信息"><a href="#三次握手中协商的其它信息" class="headerlink" title="三次握手中协商的其它信息"></a>三次握手中协商的其它信息</h3><p>MSS 最大一个包中能传输的信息（不含tcp、ip包头），MSS+包头就是MTU（最大传输单元），如果MTU过大可能在传输的过程中被卡住过不去造成卡死（这个大小的包一直传输不过去），跟丢包还不一样</p>
-<p>MSS的问题具体可以看我这篇文章： <a href="https://www.atatech.org/articles/60633" target="_blank" rel="external">scp某个文件的时候卡死问题的解决过程</a></p>
-<p>SACK_PERM 用于丢包的话提升重传效率，比如client一次发了1、2、3、4、5 这5个包给server，实际server收到了 1、3、4、5这四个包，中间2丢掉了。这个时候server回复ack的时候，都只能回复2，表示2前面所有的包都收到了，给我发第二个包吧，如果server 收到3、4、5还是没有收到2的话，也是回复ack 2而不是回复ack 3、4、5、6的，表示快点发2过来。</p>
-<p>但是这个时候client虽然知道2丢了，然后会重发2，但是不知道3、4、5有没有丢啊，实际3、4、5 server都收到了，如果支持sack，那么可以ack 2的时候同时告诉client 3、4、5都收到了，这样client重传的时候只重传2就可以，如果没有sack的话那么可能会重传2、3、4、5，这样效率就低了。</p>
-<p>来看一个例子：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/5322d0cf77a3a1ae6c87a972cc5843d0.png" alt="image.png"></p>
-<p>图中的红框就是SACK。</p>
-<p>知识点：ack数字表示这个数字前面的数据<strong>都</strong>收到了</p>
-<h2 id="总结下"><a href="#总结下" class="headerlink" title="总结下"></a>总结下</h2><p>tcp所有特性基本上核心都是为了<strong>可靠传输</strong>这个目标来服务的，然后有一些是出于优化性能的目的</p>
-<p>三次握手建连接的详细过程可以参考我这篇： <a href="https://www.atatech.org/articles/78858" target="_blank" rel="external">关于TCP 半连接队列和全连接队列</a></p>
-<p>后续希望再通过几个案例来深化一下上面的知识。</p>
-<hr>
-<p>说点关于学习的题外话</p>
-<h2 id="什么是工程效率，什么是知识效率"><a href="#什么是工程效率，什么是知识效率" class="headerlink" title="什么是工程效率，什么是知识效率"></a>什么是工程效率，什么是知识效率</h2><p>有些人纯看理论就能掌握好一门技能，还能举一反三，这是知识效率，这种人非常少；</p>
-<p>大多数普通人都是看点知识然后结合实践来强化理论，要经过反反复复才能比较好地掌握一个知识，这就是工程效率，讲究技巧、工具来达到目的。</p>
-<p>肯定知识效率最牛逼，但是拥有这种技能的人毕竟非常少。从小我们周边那种不怎么学的学霸型基本都是这类，这种学霸都还能触类旁通非常快的掌握一个新知识，非常气人。剩下的绝大部分只能拼时间+方法+总结等也能掌握一些知识</p>
-<p>非常遗憾我就是工程效率型，只能羡慕那些知识效率型的学霸。但是这事又不能独立看待有些人在某些方向上是工程效率型，有些方向就又是知识效率型（有一种知识效率型是你掌握的实在太多也就比较容易触类旁通了，这算灰色知识效率型）</p>
-<p>使劲挖掘自己在知识效率型方面的能力吧，即使灰色地带也行啊</p>
+tcp的特点这个大家基本都能说几句，面试的时候候选人也肯定会告诉你这些：
 
-          
+三次握手
+四次挥手
+可
+          ...
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2017/06/02/就是要你懂TCP连接/#more" rel="contents">
+              Weiterlesen &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -1204,7 +958,7 @@ if (CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_URL, oss.str().c_str())) 
                alt="Plantegg" />
           <p class="site-author-name" itemprop="name">Plantegg</p>
            
-              <p class="site-description motion-element" itemprop="description">java mysql tcp performance network Linux</p>
+              <p class="site-description motion-element" itemprop="description">java mysql tcp performance network docker Linux</p>
           
         </div>
         <nav class="site-state motion-element">
@@ -1213,11 +967,20 @@ if (CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_URL, oss.str().c_str())) 
             <div class="site-state-item site-state-posts">
               <a href="/archives">
                 <span class="site-state-item-count">5</span>
-                <span class="site-state-item-name">posts</span>
+                <span class="site-state-item-name">Artikel</span>
               </a>
             </div>
           
 
+          
+            
+            
+            <div class="site-state-item site-state-categories">
+              
+                <span class="site-state-item-count">1</span>
+                <span class="site-state-item-name">Kategorien</span>
+              
+            </div>
           
 
           
@@ -1225,8 +988,8 @@ if (CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_URL, oss.str().c_str())) 
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">4</span>
-                <span class="site-state-item-name">tags</span>
+                <span class="site-state-item-count">16</span>
+                <span class="site-state-item-name">Tags</span>
               
             </div>
           
@@ -1283,7 +1046,7 @@ if (CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_URL, oss.str().c_str())) 
 
 
 <div class="powered-by">
-  Powered by <a class="theme-link" href="https://hexo.io">Hexo</a>
+  Erstellt mit  <a class="theme-link" href="https://hexo.io">Hexo</a>
 </div>
 
 <div class="theme-info">

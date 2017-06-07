@@ -77,7 +77,7 @@
 <link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="tcp connection," />
+  <meta name="keywords" content="tcp connection,tcp," />
 
 
 
@@ -96,7 +96,7 @@
 
 
 <meta name="description" content="就是要你懂 TCP看过太多tcp相关文章，但是看完总是不过瘾，似懂非懂，反复考虑过后，我觉得是那些文章太过理论，看起来没有体感，所以吸收不了。  希望这篇文章能做到言简意赅，帮助大家透过案例来理解原理 tcp的特点这个大家基本都能说几句，面试的时候候选人也肯定会告诉你这些：  三次握手 四次挥手 可靠连接 丢包重传  但是我只希望大家记住一个核心的：tcp是可以可靠传输协议，它的所有特点都为这个可">
-<meta name="keywords" content="tcp connection">
+<meta name="keywords" content="tcp connection,tcp">
 <meta property="og:type" content="article">
 <meta property="og:title" content="tcp connection">
 <meta property="og:url" content="http://yoursite.com/2017/06/02/就是要你懂TCP连接/index.html">
@@ -107,7 +107,7 @@
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/9db33f9304f8236b1ebcb215064bb2af.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/45c6d36ce8b17a5c0442e66fce002ab4.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/5322d0cf77a3a1ae6c87a972cc5843d0.png">
-<meta property="og:updated_time" content="2017-06-05T08:59:58.000Z">
+<meta property="og:updated_time" content="2017-06-07T05:11:14.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="tcp connection">
 <meta name="twitter:description" content="就是要你懂 TCP看过太多tcp相关文章，但是看完总是不过瘾，似懂非懂，反复考虑过后，我觉得是那些文章太过理论，看起来没有体感，所以吸收不了。  希望这篇文章能做到言简意赅，帮助大家透过案例来理解原理 tcp的特点这个大家基本都能说几句，面试的时候候选人也肯定会告诉你这些：  三次握手 四次挥手 可靠连接 丢包重传  但是我只希望大家记住一个核心的：tcp是可以可靠传输协议，它的所有特点都为这个可">
@@ -212,7 +212,27 @@
             
               <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
             
-            Home
+            Startseite
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            Kategorien
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            Über
           </a>
         </li>
       
@@ -222,7 +242,7 @@
             
               <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
             
-            Archives
+            Archiv
           </a>
         </li>
       
@@ -292,7 +312,7 @@
                 <i class="fa fa-calendar-o"></i>
               </span>
               
-                <span class="post-meta-item-text">Posted on</span>
+                <span class="post-meta-item-text">Veröffentlicht am</span>
               
               <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-06-02T17:30:03+08:00">
                 2017-06-02
@@ -304,6 +324,28 @@
             
           </span>
 
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">in</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/tcp/" itemprop="url" rel="index">
+                    <span itemprop="name">tcp</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
           
 
           
@@ -426,6 +468,8 @@
           
             <a href="/tags/tcp-connection/" rel="tag"># tcp connection</a>
           
+            <a href="/tags/tcp/" rel="tag"># tcp</a>
+          
         </div>
       
 
@@ -494,10 +538,10 @@
       
         <ul class="sidebar-nav motion-element">
           <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
-            Table of Contents
+            Inhaltsverzeichnis
           </li>
           <li class="sidebar-nav-overview" data-target="site-overview">
-            Overview
+            Übersicht
           </li>
         </ul>
       
@@ -509,7 +553,7 @@
                alt="Plantegg" />
           <p class="site-author-name" itemprop="name">Plantegg</p>
            
-              <p class="site-description motion-element" itemprop="description">java mysql tcp performance network Linux</p>
+              <p class="site-description motion-element" itemprop="description">java mysql tcp performance network docker Linux</p>
           
         </div>
         <nav class="site-state motion-element">
@@ -518,11 +562,20 @@
             <div class="site-state-item site-state-posts">
               <a href="/archives">
                 <span class="site-state-item-count">5</span>
-                <span class="site-state-item-name">posts</span>
+                <span class="site-state-item-name">Artikel</span>
               </a>
             </div>
           
 
+          
+            
+            
+            <div class="site-state-item site-state-categories">
+              
+                <span class="site-state-item-count">1</span>
+                <span class="site-state-item-name">Kategorien</span>
+              
+            </div>
           
 
           
@@ -530,8 +583,8 @@
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">4</span>
-                <span class="site-state-item-name">tags</span>
+                <span class="site-state-item-count">16</span>
+                <span class="site-state-item-name">Tags</span>
               
             </div>
           
@@ -604,7 +657,7 @@
 
 
 <div class="powered-by">
-  Powered by <a class="theme-link" href="https://hexo.io">Hexo</a>
+  Erstellt mit  <a class="theme-link" href="https://hexo.io">Hexo</a>
 </div>
 
 <div class="theme-info">
