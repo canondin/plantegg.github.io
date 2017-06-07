@@ -330,7 +330,15 @@
           SSH 你没见过的花式玩法
 ssh是指的openSSH 命令工具，程序员每天基本都需要敲很多次。这篇文章提供一些基本的技巧和方法来提升工作效率。比如我自己碰到莫名其妙的问题就会看 ssh debug日志 。比如多机房总是要走跳板机，太麻烦了； 动态密码也很浪费时间 ……
 
-公司内部跳板机每次ssh登
+公司内部跳板机每次ssh登录都需要 密码+动态码，太复杂了，怎么解？ren@ren-VirtualBox:~$ cat ~/.ssh/config 
+
+#reuse the same connection
+ControlMaster auto
+ControlPath ~/tmp/ssh_mux_%h_%p_%r
+
+#keep one connection in 72hour
+ControlPersist 72h
+在你的ss
           ...
           <!--noindex-->
           <div class="post-button text-center">
@@ -474,7 +482,14 @@ ssh是指的openSSH 命令工具，程序员每天基本都需要敲很多次。
 最近碰到一个client端连接异常问题，然后定位分析并查阅各种资料文章，对TCP连接队列有个深入的理解
 查资料过程中发现没有文章把这两个队列以及怎么观察他们的指标说清楚，希望通过这篇文章能把他们说清楚一点
 
-问题描述JAVA的client和server，使用soc
+问题描述JAVA的client和server，使用socket通信。server使用NIO。
+1.间歇性的出现client向server建立连接三次握手已经完成，但server的selector没有响应到这连接。
+2.出问题的时间点，会同时有很多连接出现这个问题。
+3.selector没有销毁重建，一直用的都是一个。
+4.程序刚启动的时候必会出现一些，之后会间歇性出现。
+分析问题正常TCP建连接三次握手过程：
+
+第一步：client 发送 syn 到s
           ...
           <!--noindex-->
           <div class="post-button text-center">
@@ -594,7 +609,11 @@ ssh是指的openSSH 命令工具，程序员每天基本都需要敲很多次。
           
           wireshark-dup-ack-issue and keepalive问题：在wireshark中看到一个tcp会话中的两台机器突然一直互相发dup ack包，但是没有触发重传。每次重复ack都是间隔精确的20秒
 如下截图：
-client都一直在回复收到2号包（ack=2）了，可是server跟
+client都一直在回复收到2号包（ack=2）了，可是server跟傻了一样居然还发seq=1的包（按理，应该发比2大的包啊）
+系统配置：net.ipv4.tcp_keepalive_time = 20
+net.ipv4.tcp_keepalive_probes = 5
+net.ipv4.tcp_keepalive_intvl = 3
+原因：抓包不全的话wireshark有缺陷，把keepalive包识别成了dup ack包，看内容这种dup ack和keepal
           ...
           <!--noindex-->
           <div class="post-button text-center">
@@ -713,7 +732,10 @@ client都一直在回复收到2号包（ack=2）了，可是server跟
         
           
           就是要你懂 TCP– 最经典的TCP性能问题问题描述某个PHP服务通过Nginx将后面的tair封装了一下，让其他应用可以通过http协议访问Nginx来get、set 操作tair
-上线后测试一切正常，每次操作几毫秒，但是有一次有个应用的value是300K，这个时候set一次需要300毫秒以上。
+上线后测试一切正常，每次操作几毫秒，但是有一次有个应用的value是300K，这个时候set一次需要300毫秒以上。 在没有任何并发压力单线程单次操作也需要这么久，这个延迟是没有道理和无法接受的。
+问题的原因是因为TCP协议为了做一些带宽利用率、性能方面的优化，而做了一些特殊处理。比如Delay Ack和Nagle算法。
+这个原因对大家理解TCP基本的概念后能在实战中了解一些TCP其它方面的性能和影响。
+什么是delay ack由我前面的TCP介绍文章大家都知道，TCP是可靠传输，可靠的核心是收到包后回复一个a
           ...
           <!--noindex-->
           <div class="post-button text-center">
@@ -860,7 +882,16 @@ tcp的特点这个大家基本都能说几句，面试的时候候选人也肯�
 
 三次握手
 四次挥手
-可
+可靠连接
+丢包重传
+
+但是我只希望大家记住一个核心的：tcp是可以可靠传输协议，它的所有特点都为这个可靠传输服务。
+那么tcp是怎么样来保障可靠传输呢？tcp在传输过程中都有一个ack，接收方通过ack告诉发送方收到那些包了。这样发送方能知道有没有丢包，进而确定重传
+tcp建连接的三次握手来看一个java代码连接数据库的三次握手过程
+
+三个红框表示建立连接的三次握手：
+
+第一步：client 发送 
           ...
           <!--noindex-->
           <div class="post-button text-center">
