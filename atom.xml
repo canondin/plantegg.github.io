@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://yoursite.com/"/>
-  <updated>2017-06-14T03:21:33.000Z</updated>
+  <updated>2017-06-14T03:24:27.000Z</updated>
   <id>http://yoursite.com/</id>
   
   <author>
@@ -16,11 +16,11 @@
   <generator uri="http://hexo.io/">Hexo</generator>
   
   <entry>
-    <title></title>
+    <title>High Load and Low CPU usage</title>
     <link href="http://yoursite.com/2017/06/14/high_load/"/>
     <id>http://yoursite.com/2017/06/14/high_load/</id>
-    <published>2017-06-14T03:21:53.066Z</published>
-    <updated>2017-06-14T03:21:33.000Z</updated>
+    <published>2017-06-14T02:30:03.000Z</published>
+    <updated>2017-06-14T03:24:27.000Z</updated>
     
     <content type="html"><![CDATA[<h1 id="Load很高，CPU使用率很低"><a href="#Load很高，CPU使用率很低" class="headerlink" title="Load很高，CPU使用率很低"></a>Load很高，CPU使用率很低</h1><blockquote>
 <p>第一次碰到这种Case：物理机的Load很高，CPU使用率很低</p>
@@ -33,7 +33,7 @@
 <h3 id="同一时间段的网络流量、TCP连接相关数据很平稳："><a href="#同一时间段的网络流量、TCP连接相关数据很平稳：" class="headerlink" title="同一时间段的网络流量、TCP连接相关数据很平稳："></a>同一时间段的网络流量、TCP连接相关数据很平稳：</h3><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/8f7ff0bf2f313409f521f6863f2375aa.png" alt="image.png"></p>
 <p>所以分析到此，可以得出：<strong>Load高跟磁盘、网络、压力都没啥关系</strong></p>
 <h3 id="物理机上是跑的Docker，分析了一下CPUSet情况："><a href="#物理机上是跑的Docker，分析了一下CPUSet情况：" class="headerlink" title="物理机上是跑的Docker，分析了一下CPUSet情况："></a>物理机上是跑的Docker，分析了一下CPUSet情况：</h3><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/e7996a82da2c140594835e3264c6ef4b.png" alt="image.png"></p>
-<p><strong>发现基本上所有容器都绑定在CPU1上（感谢 @辺客 发现这个问题）</strong></p>
+<p><strong>发现基本上所有容器都绑定在CPU1上</strong></p>
 <h3 id="进而检查top每个核的状态，果然CPU1-的idle一直为0"><a href="#进而检查top每个核的状态，果然CPU1-的idle一直为0" class="headerlink" title="进而检查top每个核的状态，果然CPU1 的idle一直为0"></a>进而检查top每个核的状态，果然CPU1 的idle一直为0</h3><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2b32adb2071b3fdb334e0735db899a2e.png" alt="image.png"></p>
 <p>看到这里大致明白了，虽然CPU整体很闲但是因为很多进程都绑定在CPU1上，导致CPU1上排队很长，看前面tsar的–load负载截图的 等待运行进程排队长度（runq）确实也很长。</p>
 <blockquote>
@@ -64,6 +64,14 @@
     
     </summary>
     
+      <category term="performance" scheme="http://yoursite.com/categories/performance/"/>
+    
+    
+      <category term="Load" scheme="http://yoursite.com/tags/Load/"/>
+    
+      <category term="CPU" scheme="http://yoursite.com/tags/CPU/"/>
+    
+      <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
     
   </entry>
   
@@ -357,7 +365,7 @@ net.ipv4.tcp_keepalive_intvl = 3
     <link href="http://yoursite.com/2017/06/02/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82%20TCP--%E6%9C%80%E7%BB%8F%E5%85%B8%E7%9A%84TCP%E6%80%A7%E8%83%BD%E9%97%AE%E9%A2%98/"/>
     <id>http://yoursite.com/2017/06/02/就是要你懂 TCP--最经典的TCP性能问题/</id>
     <published>2017-06-02T09:30:03.000Z</published>
-    <updated>2017-06-07T05:08:22.000Z</updated>
+    <updated>2017-06-14T03:26:00.000Z</updated>
     
     <content type="html"><![CDATA[<h1 id="就是要你懂-TCP–-最经典的TCP性能问题"><a href="#就是要你懂-TCP–-最经典的TCP性能问题" class="headerlink" title="就是要你懂 TCP– 最经典的TCP性能问题"></a>就是要你懂 TCP– 最经典的TCP性能问题</h1><h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><p>某个PHP服务通过Nginx将后面的tair封装了一下，让其他应用可以通过http协议访问Nginx来get、set 操作tair</p>
 <p>上线后测试一切正常，每次操作几毫秒，但是有一次有个应用的value是300K，这个时候set一次需要300毫秒以上。 在没有任何并发压力单线程单次操作也需要这么久，这个延迟是没有道理和无法接受的。</p>
@@ -453,6 +461,10 @@ if (CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_URL, oss.str().c_str())) 
       &lt;h1 id=&quot;就是要你懂-TCP–-最经典的TCP性能问题&quot;&gt;&lt;a href=&quot;#就是要你懂-TCP–-最经典的TCP性能问题&quot; class=&quot;headerlink&quot; title=&quot;就是要你懂 TCP– 最经典的TCP性能问题&quot;&gt;&lt;/a&gt;就是要你懂 TCP– 最经典的TCP性能
     
     </summary>
+    
+      <category term="performance" scheme="http://yoursite.com/categories/performance/"/>
+    
+      <category term="tcp" scheme="http://yoursite.com/categories/performance/tcp/"/>
     
     
       <category term="tcp" scheme="http://yoursite.com/tags/tcp/"/>
