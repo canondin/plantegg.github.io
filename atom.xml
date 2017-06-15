@@ -80,7 +80,7 @@
     <link href="http://yoursite.com/2017/06/07/tcp-queue/"/>
     <id>http://yoursite.com/2017/06/07/tcp-queue/</id>
     <published>2017-06-07T09:30:03.000Z</published>
-    <updated>2017-06-07T05:33:16.000Z</updated>
+    <updated>2017-06-14T03:26:24.000Z</updated>
     
     <content type="html"><![CDATA[<h1 id="关于TCP-半连接队列和全连接队列"><a href="#关于TCP-半连接队列和全连接队列" class="headerlink" title="关于TCP 半连接队列和全连接队列"></a>关于TCP 半连接队列和全连接队列</h1><blockquote>
 <p>最近碰到一个client端连接异常问题，然后定位分析并查阅各种资料文章，对TCP连接队列有个深入的理解</p>
@@ -563,9 +563,9 @@ if (CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_URL, oss.str().c_str())) 
       <category term="tcp" scheme="http://yoursite.com/categories/tcp/"/>
     
     
-      <category term="tcp connection" scheme="http://yoursite.com/tags/tcp-connection/"/>
-    
       <category term="tcp" scheme="http://yoursite.com/tags/tcp/"/>
+    
+      <category term="tcp connection" scheme="http://yoursite.com/tags/tcp-connection/"/>
     
   </entry>
   
