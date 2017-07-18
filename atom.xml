@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://yoursite.com/"/>
-  <updated>2017-07-17T04:53:24.000Z</updated>
+  <updated>2017-07-18T05:07:41.000Z</updated>
   <id>http://yoursite.com/</id>
   
   <author>
@@ -14,6 +14,68 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>通过案例来理解MSS、MTU等相关TCP概念</title>
+    <link href="http://yoursite.com/2017/07/18/%E9%80%9A%E8%BF%87%E6%A1%88%E4%BE%8B%E6%9D%A5%E7%90%86%E8%A7%A3MSS%E3%80%81MTU%E7%AD%89%E7%9B%B8%E5%85%B3TCP%E6%A6%82%E5%BF%B5/"/>
+    <id>http://yoursite.com/2017/07/18/通过案例来理解MSS、MTU等相关TCP概念/</id>
+    <published>2017-07-18T09:30:03.000Z</published>
+    <updated>2017-07-18T05:07:41.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="通过案例来理解MSS、MTU等相关TCP概念"><a href="#通过案例来理解MSS、MTU等相关TCP概念" class="headerlink" title="通过案例来理解MSS、MTU等相关TCP概念"></a>通过案例来理解MSS、MTU等相关TCP概念</h1><h2 id="问题的描述"><a href="#问题的描述" class="headerlink" title="问题的描述"></a>问题的描述</h2><ul>
+<li>最近要通过Docker的方式把产品部署到客户机房， 过程中需要部署一个hbase集群，hbase总是部署失败（在我们自己的环境没有问题）</li>
+<li>发现hbase卡在同步文件，人工登上hbase 所在的容器中看到在hbase节点之间scp同步一些文件的时候，同样总是失败（稳定重现） </li>
+<li>手工尝试scp那些文件，发现总是在传送某个文件的时候scp卡死了</li>
+<li>尝试单独scp这个文件依然卡死</li>
+<li>在这个容器上scp其它文件没问题</li>
+<li>换一个容器scp这个文件没问题</li>
+</ul>
+<h2 id="分析过程"><a href="#分析过程" class="headerlink" title="分析过程"></a>分析过程</h2><blockquote>
+<p>实在很难理解为什么单单这个文件在这个容器上scp就卡死了，既然scp网络传输卡死，那么就同时在两个容器上tcpdump抓包，想看看为什么传不动了</p>
+</blockquote>
+<h4 id="在客户端抓包如下：（33端口是服务端的sshd端口，10-16-11-108是客户端ip）"><a href="#在客户端抓包如下：（33端口是服务端的sshd端口，10-16-11-108是客户端ip）" class="headerlink" title="在客户端抓包如下：（33端口是服务端的sshd端口，10.16.11.108是客户端ip）"></a>在客户端抓包如下：（33端口是服务端的sshd端口，10.16.11.108是客户端ip）</h4><p><img src="http://img4.tbcdn.cn/L1/461/1/1d010b9937198aee9e798bb02913603874f19ddc" alt="screenshot"></p>
+<h4 id="从抓包中可以得到这样一些结论："><a href="#从抓包中可以得到这样一些结论：" class="headerlink" title="从抓包中可以得到这样一些结论："></a>从抓包中可以得到这样一些结论：</h4><ul>
+<li>从抓包中可以明显知道scp之所以卡死是因为丢包了，客户端一直在重传，图中绿框</li>
+<li>图中篮框显示时间间隔，时间都是花在在丢包重传等待的过程</li>
+<li>奇怪的问题是图中橙色框中看到的，网络这时候是联通的，客户端跟服务端在这个会话中依然有些包能顺利到达（Keep-Alive包）</li>
+<li>同时注意到重传的包长是1442，包比较大了，看了一下tcp建立连接的时候MSS是1500，应该没有问题</li>
+<li>查看了scp的两个容器的网卡mtu都是1500，正常</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">基本上看到这里，能想到是因为丢包导致的scp卡死，因为两个容器mtu都正常，包也小于mss，那只能是网络路由上某个环节mtu太小导致这个1442的包太大过不去，所以一直重传，看到的现状就是scp卡死了</div></pre></td></tr></table></figure>
+<h2 id="接下来分析网络传输链路"><a href="#接下来分析网络传输链路" class="headerlink" title="接下来分析网络传输链路"></a>接下来分析网络传输链路</h2><h4 id="scp传输的时候实际路由大概是这样的"><a href="#scp传输的时候实际路由大概是这样的" class="headerlink" title="scp传输的时候实际路由大概是这样的"></a>scp传输的时候实际路由大概是这样的</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">容器A---&gt; 宿主机1 ---&gt; ……中间的路由设备 …… ---&gt; 宿主机2 ---&gt; 容器B</div></pre></td></tr></table></figure>
+<ul>
+<li>前面提过其它容器scp同一个文件到容器B没问题，所以我认为中间的路由设备没问题，问题出在两台宿主机上</li>
+<li>在宿主机1上抓包发现抓不到丢失的那个长度为 1442 的包，也就是问题出在了  容器A—&gt; 宿主机1 上</li>
+</ul>
+<h2 id="查看宿主机1的dmesg看到了这样一些信息"><a href="#查看宿主机1的dmesg看到了这样一些信息" class="headerlink" title="查看宿主机1的dmesg看到了这样一些信息"></a>查看宿主机1的dmesg看到了这样一些信息</h2><pre><code>2016-08-08T08:15:27.125951+00:00 server kernel: openvswitch: ens2f0.627: dropped over-mtu packet: 1428 &gt; 1400
+2016-08-08T08:15:27.536517+00:00 server kernel: openvswitch: ens2f0.627: dropped over-mtu packet: 1428 &gt; 1400
+</code></pre><h2 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h2><ul>
+<li>到这里问题已经很明确了 openvswitch 收到了 一个1428大小的包因为比mtu1400要大，所以扔掉了，接着查看宿主机1的网卡mtu设置果然是1400，悲催，马上修改mtu到1500，问题解决。</li>
+</ul>
+<h2 id="最后的总结"><a href="#最后的总结" class="headerlink" title="最后的总结"></a>最后的总结</h2><ul>
+<li>因为这是客户给的同一批宿主机默认想当然的认为他们的配置到一样，尤其是mtu这种值，只要不是故意捣乱就不应该乱修改才对，我只检查了两个容器的mtu，没看宿主机的mtu，导致诊断中走了一些弯路</li>
+<li>通过这个案例对mtu/mss等有了进一步的了解</li>
+<li>从这个案例也理解了vlan模式下容器、宿主机、交换机之间的网络传输链路</li>
+<li>其实抓包还发现了比1500大得多的包顺利通过，反而更小的包无法通过，这是因为网卡基本都有拆包的功能了</li>
+</ul>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;通过案例来理解MSS、MTU等相关TCP概念&quot;&gt;&lt;a href=&quot;#通过案例来理解MSS、MTU等相关TCP概念&quot; class=&quot;headerlink&quot; title=&quot;通过案例来理解MSS、MTU等相关TCP概念&quot;&gt;&lt;/a&gt;通过案例来理解MSS、MTU等相关TCP
+    
+    </summary>
+    
+      <category term="tcp" scheme="http://yoursite.com/categories/tcp/"/>
+    
+    
+      <category term="tcp" scheme="http://yoursite.com/tags/tcp/"/>
+    
+      <category term="MTU" scheme="http://yoursite.com/tags/MTU/"/>
+    
+      <category term="MSS" scheme="http://yoursite.com/tags/MSS/"/>
+    
+  </entry>
   
   <entry>
     <title>10+倍性能提升全过程</title>
