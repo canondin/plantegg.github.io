@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://yoursite.com/"/>
-  <updated>2017-08-01T03:30:28.000Z</updated>
+  <updated>2017-08-04T01:39:49.000Z</updated>
   <id>http://yoursite.com/</id>
   
   <author>
@@ -14,6 +14,40 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>一个没有遵守tcp规则导致的问题</title>
+    <link href="http://yoursite.com/2017/08/03/%E4%B8%80%E4%B8%AA%E6%B2%A1%E6%9C%89%E9%81%B5%E5%AE%88tcp%E8%A7%84%E5%88%99%E5%AF%BC%E8%87%B4%E7%9A%84%E9%97%AE%E9%A2%98/"/>
+    <id>http://yoursite.com/2017/08/03/一个没有遵守tcp规则导致的问题/</id>
+    <published>2017-08-03T11:30:03.000Z</published>
+    <updated>2017-08-04T01:39:49.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="一个没有遵守tcp规则导致的问题"><a href="#一个没有遵守tcp规则导致的问题" class="headerlink" title="一个没有遵守tcp规则导致的问题"></a>一个没有遵守tcp规则导致的问题</h1><h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><p>应用连接数据库一段时间后，执行SQL的时候总是抛出异常，通过抓包分析发现每次发送SQL给数据的时候，数据库总是Reset这个连接</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/3ea1a415f772af24d8f619a38542eb7e.png" alt="image.png"></p>
+<p>注意图中34号包，server（5029）发了一个fin包给client ，想要断开连接。client没断开，接着发了一个查询SQL给server。</p>
+<p>进一步分析所有断开连接（发送第一个fin包）的时间点，得到如图：</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/0ac00bfe8dcf87fa5c4997c89a16eb59.png" alt="image.png"></p>
+<p>基本上可以猜测，server（5029端口）在建立连接100秒终止后如果没有任何请求过来就主动发送fin包给client，要断开连接，但是这个时候client比较无耻，收到端口请求后没搭理（除非是故意的），这个时候意味着server准备好关闭了，也不会再给client发送数据了（ack除外）。</p>
+<p>但是client虽然收到了fin断开连接的请求不但不理，过一会还不识时务发SQL查询给server，server一看不懂了（server早就申明连接关闭，没法发数据给client了），就只能回复reset，强制告诉client断开连接吧，client这时才迫于无奈断开了这次连接（图一绿框）</p>
+<p>client的应用代码层肯定会抛出异常。</p>
+<h3 id="server强行断开连接"><a href="#server强行断开连接" class="headerlink" title="server强行断开连接"></a>server强行断开连接</h3><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/eca804fbb71e9cdfb033a9c072d8b72d.png" alt="image.png"></p>
+<p>18745号包，client发了一个查询SQL给server，server先是回复ack 18941号包，然后回复fin 19604号包，强行断开连接，client端只能抛异常了</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;一个没有遵守tcp规则导致的问题&quot;&gt;&lt;a href=&quot;#一个没有遵守tcp规则导致的问题&quot; class=&quot;headerlink&quot; title=&quot;一个没有遵守tcp规则导致的问题&quot;&gt;&lt;/a&gt;一个没有遵守tcp规则导致的问题&lt;/h1&gt;&lt;h3 id=&quot;问题描述&quot;&gt;&lt;a 
+    
+    </summary>
+    
+      <category term="tcp" scheme="http://yoursite.com/categories/tcp/"/>
+    
+    
+      <category term="tcp" scheme="http://yoursite.com/tags/tcp/"/>
+    
+      <category term="network" scheme="http://yoursite.com/tags/network/"/>
+    
+  </entry>
   
   <entry>
     <title>如何徒手撕Bug</title>
@@ -493,6 +527,125 @@ server5
   </entry>
   
   <entry>
+    <title>就是要你懂 TCP-- 最经典的TCP性能问题</title>
+    <link href="http://yoursite.com/2017/06/02/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82%20TCP--%E6%9C%80%E7%BB%8F%E5%85%B8%E7%9A%84TCP%E6%80%A7%E8%83%BD%E9%97%AE%E9%A2%98/"/>
+    <id>http://yoursite.com/2017/06/02/就是要你懂 TCP--最经典的TCP性能问题/</id>
+    <published>2017-06-02T09:30:03.000Z</published>
+    <updated>2017-06-14T03:26:00.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="就是要你懂-TCP–-最经典的TCP性能问题"><a href="#就是要你懂-TCP–-最经典的TCP性能问题" class="headerlink" title="就是要你懂 TCP– 最经典的TCP性能问题"></a>就是要你懂 TCP– 最经典的TCP性能问题</h1><h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><p>某个PHP服务通过Nginx将后面的tair封装了一下，让其他应用可以通过http协议访问Nginx来get、set 操作tair</p>
+<p>上线后测试一切正常，每次操作几毫秒，但是有一次有个应用的value是300K，这个时候set一次需要300毫秒以上。 在没有任何并发压力单线程单次操作也需要这么久，这个延迟是没有道理和无法接受的。</p>
+<h3 id="问题的原因"><a href="#问题的原因" class="headerlink" title="问题的原因"></a>问题的原因</h3><p>是因为TCP协议为了做一些带宽利用率、性能方面的优化，而做了一些特殊处理。比如Delay Ack和Nagle算法。</p>
+<p>这个原因对大家理解TCP基本的概念后能在实战中了解一些TCP其它方面的性能和影响。</p>
+<h3 id="什么是delay-ack"><a href="#什么是delay-ack" class="headerlink" title="什么是delay ack"></a>什么是delay ack</h3><p>由我前面的TCP介绍文章大家都知道，TCP是可靠传输，可靠的核心是收到包后回复一个ack来告诉对方收到了。</p>
+<p>来看一个例子：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/06e6b04614ce57e4624346ea6311a411.png" alt="image.png"></p>
+<p>截图中的Nignx(8085端口），收到了一个http request请求，然后立即回复了一个ack包给client，接着又回复了一个http response 给client。大家注意回复的ack包长度66，实际内容长度为0，ack信息放在TCP包头里面，也就是这里发了一个66字节的空包给客户端来告诉客户端我收到你的请求了。</p>
+<p>这里没毛病，逻辑很对，符合TCP的核心可靠传输的意义。但是带来的一个问题是：带宽效率不高。那能不能优化呢？</p>
+<p>这里的优化就是delay ack。</p>
+<p>delay ack是指收到包后不立即ack，而是等一小会（比如40毫秒）看看，如果这40毫秒以内正好有一个包（比如上面的http response）发给client，那么我这个ack包就跟着发过去（顺风车，http reponse包不需要增加任何大小），这样节省了资源。 当然如果超过这个时间还没有包发给client（比如nginx处理需要40毫秒以上），那么这个ack也要发给client了（即使为空，要不client以为丢包了，又要重发http request，划不来）。</p>
+<p>假如这个时候ack包还在等待延迟发送的时候，又收到了client的一个包，那么这个时候server有两个ack包要回复，那么os会把这两个ack包合起来<strong>立即</strong>回复一个ack包给client，告诉client前两个包都收到了。</p>
+<p><strong>也就是delay ack开启的情况下：ack包有顺风车就搭；如果凑两个ack包自己包个车也立即发车；再如果等了40毫秒以上也没顺风车，那么自己打个车也发车。</strong></p>
+<p>截图中Nginx<strong>没有开delay ack</strong>，所以你看红框中的ack是完全可以跟着绿框（http response）一起发给client的，但是没有，红框的ack立即打车跑了</p>
+<h3 id="什么是Nagle算法"><a href="#什么是Nagle算法" class="headerlink" title="什么是Nagle算法"></a>什么是Nagle算法</h3><p><a href="https://en.wikipedia.org/wiki/Nagle%27s_algorithm" target="_blank" rel="external">下面的伪代码就是Nagle算法的基本逻辑，摘自wiki</a>：</p>
+<pre><code>if there is new data to send
+  if the window size &gt;= MSS and available data is &gt;= MSS
+        send complete MSS segment now
+  else
+    if there is unconfirmed data still in the pipe
+          enqueue data in the buffer until an acknowledge is received
+    else
+          send data immediately
+    end if
+  end if
+end if
+</code></pre><p>这段代码的意思是如果要发送的数据大于 MSS的话，立即发送。<br>否则：<br>   看看前面发出去的包是不是还有没有ack的，如果有没有ack的那么我这个小包不急着发送，等前面的ack回来再发送</p>
+<p>我总结下Nagle算法逻辑就是：如果发送的包很小（不足MSS），又有包发给了对方对方还没回复说收到了，那我也不急着发，等前面的包回复收到了再发。这样可以优化带宽利用率（早些年带宽资源还是很宝贵的），Nagle算法也是用来优化改进tcp传输效率的。</p>
+<h2 id="如果client启用Nagle，并且server端启用了delay-ack会有什么后果呢？"><a href="#如果client启用Nagle，并且server端启用了delay-ack会有什么后果呢？" class="headerlink" title="如果client启用Nagle，并且server端启用了delay ack会有什么后果呢？"></a>如果client启用Nagle，并且server端启用了delay ack会有什么后果呢？</h2><p>假如client要发送一个http请求给server，这个请求有1600个bytes，握手的MSS是1460，那么这1600个bytes就会分成2个TCP包，第一个包1460，剩下的140bytes放在第二个包。第一个包发出去后，server收到第一个包，因为delay ack所以没有回复ack，同时因为server没有收全这个HTTP请求，所以也没法回复HTTP response（server等一个完整的HTTP请求，或者40毫秒的delay时间）。client这边开启了Nagle算法（默认开启）第二个包比较小（140&lt;MSS),第一个包的ack还没有回来，那么第二个包就不发了，等！互相等！一直到Delay Ack的Delay时间到了！</p>
+<p>这就是悲剧的核心原因。</p>
+<h3 id="再来看一个经典例子和数据分析"><a href="#再来看一个经典例子和数据分析" class="headerlink" title="再来看一个经典例子和数据分析"></a>再来看一个经典例子和数据分析</h3><p>这个案例来自：<a href="http://www.stuartcheshire.org/papers/nagledelayedack/" target="_blank" rel="external">http://www.stuartcheshire.org/papers/nagledelayedack/</a></p>
+<p>案例核心奇怪的问题是，如果传输的数据是 99,900 bytes，速度5.2M/秒；<br>如果传输的数据是 100,000 bytes 速度2.7M/秒，多了10个bytes，不至于传输速度差这么多。</p>
+<p>原因就是：</p>
+<pre><code> 99,900 bytes = 68 full-sized 1448-byte packets, plus 1436 bytes extra
+100,000 bytes = 69 full-sized 1448-byte packets, plus   88 bytes extra
+</code></pre><p>99,900 bytes：</p>
+<blockquote>
+<p>68个整包会立即发送（都是整包，不受Nagle算法的影响），因为68是偶数，对方收到最后两个包后立即回复ack（delay ack凑够两个也立即ack），那么剩下的1436也很快发出去（根据Nagle算法，没有没ack的包了，立即发）</p>
+</blockquote>
+<p>100,000 bytes:</p>
+<blockquote>
+<p>前面68个整包很快发出去也收到ack回复了，然后发了第69个整包，剩下88bytes（不够一个整包）根据Nagle算法要等一等，server收到第69个ack后，因为delay ack不回复（手里只攒下一个没有回复的包），所以client、server两边等在等，一直等到server的delay ack超时了。</p>
+</blockquote>
+<p>挺奇怪和挺有意思吧，作者还给出了传输数据的图表：</p>
+<p><img src="http://www.stuartcheshire.org/papers/nagledelayedack/Fail.jpg" alt=""></p>
+<p>这是有问题的传输图，明显有个平台层，这个平台层就是两边在互相等，整个速度肯定就上不去。</p>
+<p>如果传输的都是99,900，那么整个图形就很平整：</p>
+<p><img src="http://www.stuartcheshire.org/papers/nagledelayedack/Pass.jpg" alt=""></p>
+<h3 id="回到前面的问题"><a href="#回到前面的问题" class="headerlink" title="回到前面的问题"></a>回到前面的问题</h3><p>服务写好后，开始测试都没有问题，rt很正常（一般测试的都是小对象），没有触发这个问题。后来碰到一个300K的rt就到几百毫秒了，就是因为这个原因。</p>
+<p>另外有些http post会故意把包头和包内容分成两个包，再加一个Expect参数之类的，更容易触发这个问题。</p>
+<p>这是修改后的C代码</p>
+<pre><code>struct curl_slist *list = NULL;
+//合并post包
+list = curl_slist_append(list, &quot;Expect:&quot;);  
+
+CURLcode code(CURLE_FAILED_INIT);
+if (CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_URL, oss.str().c_str())) &amp;&amp;
+        CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, timeout)) &amp;&amp;
+        CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &amp;write_callback)) &amp;&amp;
+        CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L)) &amp;&amp;
+        CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_POST, 1L)) &amp;&amp;
+        CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, pooh.sizeleft)) &amp;&amp;
+        CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_READFUNCTION, read_callback)) &amp;&amp;
+        CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_READDATA, &amp;pooh)) &amp;&amp;                
+        CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L)) &amp;&amp; //1000 ms curl bug
+        CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list))                
+        ) {
+
+        //这里如果是小包就不开delay ack，实际不科学
+        if (request.size() &lt; 1024) {
+                code = curl_easy_setopt(curl, CURLOPT_TCP_NODELAY, 1L);
+        } else {
+                code = curl_easy_setopt(curl, CURLOPT_TCP_NODELAY, 0L);
+        }
+        if(CURLE_OK == code) {
+                code = curl_easy_perform(curl);
+        }
+</code></pre><p>上面中文注释的部分是后来的改进，然后经过测试同一个300K的对象也能在几毫米以内完成get、set了。</p>
+<p>尤其是在Post请求将HTTP Header和Body内容分成两个包后，容易出现这种延迟问题</p>
+<hr>
+<p>就是要你懂TCP相关文章：</p>
+<p> <a href="https://www.atatech.org/articles/78858" target="_blank" rel="external">关于TCP 半连接队列和全连接队列</a><br> <a href="https://www.atatech.org/articles/60633" target="_blank" rel="external">MSS和MTU导致的悲剧</a><br> <a href="https://www.atatech.org/articles/73174" target="_blank" rel="external">2016年双11通过网络优化提升10倍性能</a><br> <a href="https://www.atatech.org/articles/79660" target="_blank" rel="external">就是要你懂TCP的握手和挥手</a></p>
+<hr>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这个问题确实经典，非常隐晦一般不容易碰到，碰到一次决不放过她。文中所有client、server的概念都是相对的，client也有delay ack的问题。 Nagle算法一般默认开启的</p>
+<p>参考文章:<br><a href="https://access.redhat.com/solutions/407743" target="_blank" rel="external">https://access.redhat.com/solutions/407743</a></p>
+<p><a href="http://www.stuartcheshire.org/papers/nagledelayedack/" target="_blank" rel="external">http://www.stuartcheshire.org/papers/nagledelayedack/</a></p>
+<p><a href="https://en.wikipedia.org/wiki/Nagle%27s_algorithm" target="_blank" rel="external">https://en.wikipedia.org/wiki/Nagle%27s_algorithm</a></p>
+<p><a href="https://en.wikipedia.org/wiki/TCP_delayed_acknowledgment" target="_blank" rel="external">https://en.wikipedia.org/wiki/TCP_delayed_acknowledgment</a></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;就是要你懂-TCP–-最经典的TCP性能问题&quot;&gt;&lt;a href=&quot;#就是要你懂-TCP–-最经典的TCP性能问题&quot; class=&quot;headerlink&quot; title=&quot;就是要你懂 TCP– 最经典的TCP性能问题&quot;&gt;&lt;/a&gt;就是要你懂 TCP– 最经典的TCP性能
+    
+    </summary>
+    
+      <category term="performance" scheme="http://yoursite.com/categories/performance/"/>
+    
+      <category term="tcp" scheme="http://yoursite.com/categories/performance/tcp/"/>
+    
+    
+      <category term="tcp" scheme="http://yoursite.com/tags/tcp/"/>
+    
+      <category term="performance" scheme="http://yoursite.com/tags/performance/"/>
+    
+      <category term="delay ack" scheme="http://yoursite.com/tags/delay-ack/"/>
+    
+      <category term="nagles" scheme="http://yoursite.com/tags/nagles/"/>
+    
+      <category term="network" scheme="http://yoursite.com/tags/network/"/>
+    
+  </entry>
+  
+  <entry>
     <title>SSH advance features</title>
     <link href="http://yoursite.com/2017/06/02/SSH%E8%8A%B1%E5%BC%8F%E7%8E%A9%E6%B3%95/"/>
     <id>http://yoursite.com/2017/06/02/SSH花式玩法/</id>
@@ -613,125 +766,6 @@ net.ipv4.tcp_keepalive_intvl = 3
     
     </summary>
     
-    
-  </entry>
-  
-  <entry>
-    <title>就是要你懂 TCP-- 最经典的TCP性能问题</title>
-    <link href="http://yoursite.com/2017/06/02/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82%20TCP--%E6%9C%80%E7%BB%8F%E5%85%B8%E7%9A%84TCP%E6%80%A7%E8%83%BD%E9%97%AE%E9%A2%98/"/>
-    <id>http://yoursite.com/2017/06/02/就是要你懂 TCP--最经典的TCP性能问题/</id>
-    <published>2017-06-02T09:30:03.000Z</published>
-    <updated>2017-06-14T03:26:00.000Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="就是要你懂-TCP–-最经典的TCP性能问题"><a href="#就是要你懂-TCP–-最经典的TCP性能问题" class="headerlink" title="就是要你懂 TCP– 最经典的TCP性能问题"></a>就是要你懂 TCP– 最经典的TCP性能问题</h1><h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><p>某个PHP服务通过Nginx将后面的tair封装了一下，让其他应用可以通过http协议访问Nginx来get、set 操作tair</p>
-<p>上线后测试一切正常，每次操作几毫秒，但是有一次有个应用的value是300K，这个时候set一次需要300毫秒以上。 在没有任何并发压力单线程单次操作也需要这么久，这个延迟是没有道理和无法接受的。</p>
-<h3 id="问题的原因"><a href="#问题的原因" class="headerlink" title="问题的原因"></a>问题的原因</h3><p>是因为TCP协议为了做一些带宽利用率、性能方面的优化，而做了一些特殊处理。比如Delay Ack和Nagle算法。</p>
-<p>这个原因对大家理解TCP基本的概念后能在实战中了解一些TCP其它方面的性能和影响。</p>
-<h3 id="什么是delay-ack"><a href="#什么是delay-ack" class="headerlink" title="什么是delay ack"></a>什么是delay ack</h3><p>由我前面的TCP介绍文章大家都知道，TCP是可靠传输，可靠的核心是收到包后回复一个ack来告诉对方收到了。</p>
-<p>来看一个例子：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/06e6b04614ce57e4624346ea6311a411.png" alt="image.png"></p>
-<p>截图中的Nignx(8085端口），收到了一个http request请求，然后立即回复了一个ack包给client，接着又回复了一个http response 给client。大家注意回复的ack包长度66，实际内容长度为0，ack信息放在TCP包头里面，也就是这里发了一个66字节的空包给客户端来告诉客户端我收到你的请求了。</p>
-<p>这里没毛病，逻辑很对，符合TCP的核心可靠传输的意义。但是带来的一个问题是：带宽效率不高。那能不能优化呢？</p>
-<p>这里的优化就是delay ack。</p>
-<p>delay ack是指收到包后不立即ack，而是等一小会（比如40毫秒）看看，如果这40毫秒以内正好有一个包（比如上面的http response）发给client，那么我这个ack包就跟着发过去（顺风车，http reponse包不需要增加任何大小），这样节省了资源。 当然如果超过这个时间还没有包发给client（比如nginx处理需要40毫秒以上），那么这个ack也要发给client了（即使为空，要不client以为丢包了，又要重发http request，划不来）。</p>
-<p>假如这个时候ack包还在等待延迟发送的时候，又收到了client的一个包，那么这个时候server有两个ack包要回复，那么os会把这两个ack包合起来<strong>立即</strong>回复一个ack包给client，告诉client前两个包都收到了。</p>
-<p><strong>也就是delay ack开启的情况下：ack包有顺风车就搭；如果凑两个ack包自己包个车也立即发车；再如果等了40毫秒以上也没顺风车，那么自己打个车也发车。</strong></p>
-<p>截图中Nginx<strong>没有开delay ack</strong>，所以你看红框中的ack是完全可以跟着绿框（http response）一起发给client的，但是没有，红框的ack立即打车跑了</p>
-<h3 id="什么是Nagle算法"><a href="#什么是Nagle算法" class="headerlink" title="什么是Nagle算法"></a>什么是Nagle算法</h3><p><a href="https://en.wikipedia.org/wiki/Nagle%27s_algorithm" target="_blank" rel="external">下面的伪代码就是Nagle算法的基本逻辑，摘自wiki</a>：</p>
-<pre><code>if there is new data to send
-  if the window size &gt;= MSS and available data is &gt;= MSS
-        send complete MSS segment now
-  else
-    if there is unconfirmed data still in the pipe
-          enqueue data in the buffer until an acknowledge is received
-    else
-          send data immediately
-    end if
-  end if
-end if
-</code></pre><p>这段代码的意思是如果要发送的数据大于 MSS的话，立即发送。<br>否则：<br>   看看前面发出去的包是不是还有没有ack的，如果有没有ack的那么我这个小包不急着发送，等前面的ack回来再发送</p>
-<p>我总结下Nagle算法逻辑就是：如果发送的包很小（不足MSS），又有包发给了对方对方还没回复说收到了，那我也不急着发，等前面的包回复收到了再发。这样可以优化带宽利用率（早些年带宽资源还是很宝贵的），Nagle算法也是用来优化改进tcp传输效率的。</p>
-<h2 id="如果client启用Nagle，并且server端启用了delay-ack会有什么后果呢？"><a href="#如果client启用Nagle，并且server端启用了delay-ack会有什么后果呢？" class="headerlink" title="如果client启用Nagle，并且server端启用了delay ack会有什么后果呢？"></a>如果client启用Nagle，并且server端启用了delay ack会有什么后果呢？</h2><p>假如client要发送一个http请求给server，这个请求有1600个bytes，握手的MSS是1460，那么这1600个bytes就会分成2个TCP包，第一个包1460，剩下的140bytes放在第二个包。第一个包发出去后，server收到第一个包，因为delay ack所以没有回复ack，同时因为server没有收全这个HTTP请求，所以也没法回复HTTP response（server等一个完整的HTTP请求，或者40毫秒的delay时间）。client这边开启了Nagle算法（默认开启）第二个包比较小（140&lt;MSS),第一个包的ack还没有回来，那么第二个包就不发了，等！互相等！一直到Delay Ack的Delay时间到了！</p>
-<p>这就是悲剧的核心原因。</p>
-<h3 id="再来看一个经典例子和数据分析"><a href="#再来看一个经典例子和数据分析" class="headerlink" title="再来看一个经典例子和数据分析"></a>再来看一个经典例子和数据分析</h3><p>这个案例来自：<a href="http://www.stuartcheshire.org/papers/nagledelayedack/" target="_blank" rel="external">http://www.stuartcheshire.org/papers/nagledelayedack/</a></p>
-<p>案例核心奇怪的问题是，如果传输的数据是 99,900 bytes，速度5.2M/秒；<br>如果传输的数据是 100,000 bytes 速度2.7M/秒，多了10个bytes，不至于传输速度差这么多。</p>
-<p>原因就是：</p>
-<pre><code> 99,900 bytes = 68 full-sized 1448-byte packets, plus 1436 bytes extra
-100,000 bytes = 69 full-sized 1448-byte packets, plus   88 bytes extra
-</code></pre><p>99,900 bytes：</p>
-<blockquote>
-<p>68个整包会立即发送（都是整包，不受Nagle算法的影响），因为68是偶数，对方收到最后两个包后立即回复ack（delay ack凑够两个也立即ack），那么剩下的1436也很快发出去（根据Nagle算法，没有没ack的包了，立即发）</p>
-</blockquote>
-<p>100,000 bytes:</p>
-<blockquote>
-<p>前面68个整包很快发出去也收到ack回复了，然后发了第69个整包，剩下88bytes（不够一个整包）根据Nagle算法要等一等，server收到第69个ack后，因为delay ack不回复（手里只攒下一个没有回复的包），所以client、server两边等在等，一直等到server的delay ack超时了。</p>
-</blockquote>
-<p>挺奇怪和挺有意思吧，作者还给出了传输数据的图表：</p>
-<p><img src="http://www.stuartcheshire.org/papers/nagledelayedack/Fail.jpg" alt=""></p>
-<p>这是有问题的传输图，明显有个平台层，这个平台层就是两边在互相等，整个速度肯定就上不去。</p>
-<p>如果传输的都是99,900，那么整个图形就很平整：</p>
-<p><img src="http://www.stuartcheshire.org/papers/nagledelayedack/Pass.jpg" alt=""></p>
-<h3 id="回到前面的问题"><a href="#回到前面的问题" class="headerlink" title="回到前面的问题"></a>回到前面的问题</h3><p>服务写好后，开始测试都没有问题，rt很正常（一般测试的都是小对象），没有触发这个问题。后来碰到一个300K的rt就到几百毫秒了，就是因为这个原因。</p>
-<p>另外有些http post会故意把包头和包内容分成两个包，再加一个Expect参数之类的，更容易触发这个问题。</p>
-<p>这是修改后的C代码</p>
-<pre><code>struct curl_slist *list = NULL;
-//合并post包
-list = curl_slist_append(list, &quot;Expect:&quot;);  
-
-CURLcode code(CURLE_FAILED_INIT);
-if (CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_URL, oss.str().c_str())) &amp;&amp;
-        CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, timeout)) &amp;&amp;
-        CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &amp;write_callback)) &amp;&amp;
-        CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L)) &amp;&amp;
-        CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_POST, 1L)) &amp;&amp;
-        CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, pooh.sizeleft)) &amp;&amp;
-        CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_READFUNCTION, read_callback)) &amp;&amp;
-        CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_READDATA, &amp;pooh)) &amp;&amp;                
-        CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L)) &amp;&amp; //1000 ms curl bug
-        CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list))                
-        ) {
-
-        //这里如果是小包就不开delay ack，实际不科学
-        if (request.size() &lt; 1024) {
-                code = curl_easy_setopt(curl, CURLOPT_TCP_NODELAY, 1L);
-        } else {
-                code = curl_easy_setopt(curl, CURLOPT_TCP_NODELAY, 0L);
-        }
-        if(CURLE_OK == code) {
-                code = curl_easy_perform(curl);
-        }
-</code></pre><p>上面中文注释的部分是后来的改进，然后经过测试同一个300K的对象也能在几毫米以内完成get、set了。</p>
-<p>尤其是在Post请求将HTTP Header和Body内容分成两个包后，容易出现这种延迟问题</p>
-<hr>
-<p>就是要你懂TCP相关文章：</p>
-<p> <a href="https://www.atatech.org/articles/78858" target="_blank" rel="external">关于TCP 半连接队列和全连接队列</a><br> <a href="https://www.atatech.org/articles/60633" target="_blank" rel="external">MSS和MTU导致的悲剧</a><br> <a href="https://www.atatech.org/articles/73174" target="_blank" rel="external">2016年双11通过网络优化提升10倍性能</a><br> <a href="https://www.atatech.org/articles/79660" target="_blank" rel="external">就是要你懂TCP的握手和挥手</a></p>
-<hr>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这个问题确实经典，非常隐晦一般不容易碰到，碰到一次决不放过她。文中所有client、server的概念都是相对的，client也有delay ack的问题。 Nagle算法一般默认开启的</p>
-<p>参考文章:<br><a href="https://access.redhat.com/solutions/407743" target="_blank" rel="external">https://access.redhat.com/solutions/407743</a></p>
-<p><a href="http://www.stuartcheshire.org/papers/nagledelayedack/" target="_blank" rel="external">http://www.stuartcheshire.org/papers/nagledelayedack/</a></p>
-<p><a href="https://en.wikipedia.org/wiki/Nagle%27s_algorithm" target="_blank" rel="external">https://en.wikipedia.org/wiki/Nagle%27s_algorithm</a></p>
-<p><a href="https://en.wikipedia.org/wiki/TCP_delayed_acknowledgment" target="_blank" rel="external">https://en.wikipedia.org/wiki/TCP_delayed_acknowledgment</a></p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;就是要你懂-TCP–-最经典的TCP性能问题&quot;&gt;&lt;a href=&quot;#就是要你懂-TCP–-最经典的TCP性能问题&quot; class=&quot;headerlink&quot; title=&quot;就是要你懂 TCP– 最经典的TCP性能问题&quot;&gt;&lt;/a&gt;就是要你懂 TCP– 最经典的TCP性能
-    
-    </summary>
-    
-      <category term="performance" scheme="http://yoursite.com/categories/performance/"/>
-    
-      <category term="tcp" scheme="http://yoursite.com/categories/performance/tcp/"/>
-    
-    
-      <category term="tcp" scheme="http://yoursite.com/tags/tcp/"/>
-    
-      <category term="performance" scheme="http://yoursite.com/tags/performance/"/>
-    
-      <category term="delay ack" scheme="http://yoursite.com/tags/delay-ack/"/>
-    
-      <category term="nagles" scheme="http://yoursite.com/tags/nagles/"/>
-    
-      <category term="network" scheme="http://yoursite.com/tags/network/"/>
     
   </entry>
   
