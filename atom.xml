@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://yoursite.com/"/>
-  <updated>2017-08-31T03:46:26.000Z</updated>
+  <updated>2017-08-31T03:49:46.000Z</updated>
   <id>http://yoursite.com/</id>
   
   <author>
@@ -20,7 +20,7 @@
     <link href="http://yoursite.com/2017/08/31/vxlan%E7%BD%91%E7%BB%9C%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95/"/>
     <id>http://yoursite.com/2017/08/31/vxlan网络性能测试/</id>
     <published>2017-08-31T04:30:03.000Z</published>
-    <updated>2017-08-31T03:46:26.000Z</updated>
+    <updated>2017-08-31T03:49:46.000Z</updated>
     
     <content type="html"><![CDATA[<h1 id="vxlan网络性能测试"><a href="#vxlan网络性能测试" class="headerlink" title="vxlan网络性能测试"></a>vxlan网络性能测试</h1><hr>
 <h2 id="缘起"><a href="#缘起" class="headerlink" title="缘起"></a>缘起</h2><blockquote>
@@ -74,9 +74,9 @@ Connecting to host 192.168.6.6, port 5201
 [ ID] Interval   Transfer Bandwidth   Retr
 [  4]   0.00-10.00  sec   460 MBytes   386 Mbits/sec7 sender
 [  4]   0.00-10.00  sec   458 MBytes   384 Mbits/sec  receiver
-</code></pre><h3 id="两宿主机之间测试"><a href="#两宿主机之间测试" class="headerlink" title="两宿主机之间测试"></a>两宿主机之间测试</h3><pre><code>$iperf3 -c 10.125.26.108
-Connecting to host 10.125.26.108, port 5201
-[  4] local 10.125.12.174 port 24309 connected to 10.125.26.108 port 5201
+</code></pre><h3 id="两宿主机之间测试"><a href="#两宿主机之间测试" class="headerlink" title="两宿主机之间测试"></a>两宿主机之间测试</h3><pre><code>$iperf3 -c 10.0.26.108
+Connecting to host 10.0.26.108, port 5201
+[  4] local 10.0.12.174 port 24309 connected to 10.0.26.108 port 5201
 [ ID] Interval   Transfer Bandwidth   Retr
 [  4]   0.00-10.00  sec   471 MBytes   395 Mbits/sec0 sender
 [  4]   0.00-10.00  sec   469 MBytes   393 Mbits/sec  receiver
@@ -105,23 +105,23 @@ Connecting to host 192.168.6.6, port 5201
 </code></pre><h2 id="netperf-安装依赖-automake-1-14-环境无法升级，放弃"><a href="#netperf-安装依赖-automake-1-14-环境无法升级，放弃" class="headerlink" title="netperf 安装依赖 automake-1.14, 环境无法升级，放弃"></a>netperf 安装依赖 automake-1.14, 环境无法升级，放弃</h2><h2 id="qperf-测试工具"><a href="#qperf-测试工具" class="headerlink" title="qperf 测试工具"></a>qperf 测试工具</h2><ul>
 <li>sudo yum install qperf -y</li>
 </ul>
-<h3 id="两台宿主机之间"><a href="#两台宿主机之间" class="headerlink" title="两台宿主机之间"></a>两台宿主机之间</h3><pre><code>$qperf -t 10  10.125.26.108 tcp_bw tcp_lat
+<h3 id="两台宿主机之间"><a href="#两台宿主机之间" class="headerlink" title="两台宿主机之间"></a>两台宿主机之间</h3><pre><code>$qperf -t 10  10.0.26.108 tcp_bw tcp_lat
 tcp_bw:
 bw  =  50.5 MB/sec
 tcp_lat:
 latency  =  332 us
-</code></pre><h4 id="包的大小分别为1和128"><a href="#包的大小分别为1和128" class="headerlink" title="包的大小分别为1和128"></a>包的大小分别为1和128</h4><pre><code>$qperf  -oo msg_size:1   10.125.26.108 tcp_bw tcp_lat
+</code></pre><h4 id="包的大小分别为1和128"><a href="#包的大小分别为1和128" class="headerlink" title="包的大小分别为1和128"></a>包的大小分别为1和128</h4><pre><code>$qperf  -oo msg_size:1   10.0.26.108 tcp_bw tcp_lat
 tcp_bw:
 bw  =  1.75 MB/sec
 tcp_lat:
 latency  =  428 us
 
-$qperf  -oo msg_size:128   10.125.26.108 tcp_bw tcp_lat
+$qperf  -oo msg_size:128   10.0.26.108 tcp_bw tcp_lat
 tcp_bw:
 bw  =  57.8 MB/sec
 tcp_lat:
 latency  =  504 us
-</code></pre><h4 id="两台宿主机之间，包的大小从一个字节每次翻倍测试"><a href="#两台宿主机之间，包的大小从一个字节每次翻倍测试" class="headerlink" title="两台宿主机之间，包的大小从一个字节每次翻倍测试"></a>两台宿主机之间，包的大小从一个字节每次翻倍测试</h4><pre><code>$qperf  -oo msg_size:1:4K:*2 -vu  10.125.26.108 tcp_bw tcp_lat 
+</code></pre><h4 id="两台宿主机之间，包的大小从一个字节每次翻倍测试"><a href="#两台宿主机之间，包的大小从一个字节每次翻倍测试" class="headerlink" title="两台宿主机之间，包的大小从一个字节每次翻倍测试"></a>两台宿主机之间，包的大小从一个字节每次翻倍测试</h4><pre><code>$qperf  -oo msg_size:1:4K:*2 -vu  10.0.26.108 tcp_bw tcp_lat 
 tcp_bw:
 bw=  1.86 MB/sec
 msg_size  = 1 bytes

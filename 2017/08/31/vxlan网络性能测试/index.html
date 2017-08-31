@@ -104,7 +104,7 @@
 <meta property="og:url" content="http://yoursite.com/2017/08/31/vxlan网络性能测试/index.html">
 <meta property="og:site_name" content="任喜军的博客">
 <meta property="og:description" content="vxlan网络性能测试 缘起 Docker集群中需要给每个容器分配一个独立的IP，同时在不同宿主机环境上的容器IP又要能够互相联通，所以需要一个overlay的网络（vlan也可以解决这个问题） overlay网络就是把容器之间的网络包重新打包在宿主机的IP包里面，传到目的容器所在的宿主机后，再把这个overlay的网络包还原成容器包交给容器 这里多了一次封包解包的过程，所以性能上必然有些损耗 封">
-<meta property="og:updated_time" content="2017-08-31T03:46:26.000Z">
+<meta property="og:updated_time" content="2017-08-31T03:49:46.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="vxlan网络性能测试">
 <meta name="twitter:description" content="vxlan网络性能测试 缘起 Docker集群中需要给每个容器分配一个独立的IP，同时在不同宿主机环境上的容器IP又要能够互相联通，所以需要一个overlay的网络（vlan也可以解决这个问题） overlay网络就是把容器之间的网络包重新打包在宿主机的IP包里面，传到目的容器所在的宿主机后，再把这个overlay的网络包还原成容器包交给容器 这里多了一次封包解包的过程，所以性能上必然有些损耗 封">
@@ -417,9 +417,9 @@ Connecting to host 192.168.6.6, port 5201
 [ ID] Interval   Transfer Bandwidth   Retr
 [  4]   0.00-10.00  sec   460 MBytes   386 Mbits/sec7 sender
 [  4]   0.00-10.00  sec   458 MBytes   384 Mbits/sec  receiver
-</code></pre><h3 id="两宿主机之间测试"><a href="#两宿主机之间测试" class="headerlink" title="两宿主机之间测试"></a>两宿主机之间测试</h3><pre><code>$iperf3 -c 10.125.26.108
-Connecting to host 10.125.26.108, port 5201
-[  4] local 10.125.12.174 port 24309 connected to 10.125.26.108 port 5201
+</code></pre><h3 id="两宿主机之间测试"><a href="#两宿主机之间测试" class="headerlink" title="两宿主机之间测试"></a>两宿主机之间测试</h3><pre><code>$iperf3 -c 10.0.26.108
+Connecting to host 10.0.26.108, port 5201
+[  4] local 10.0.12.174 port 24309 connected to 10.0.26.108 port 5201
 [ ID] Interval   Transfer Bandwidth   Retr
 [  4]   0.00-10.00  sec   471 MBytes   395 Mbits/sec0 sender
 [  4]   0.00-10.00  sec   469 MBytes   393 Mbits/sec  receiver
@@ -448,23 +448,23 @@ Connecting to host 192.168.6.6, port 5201
 </code></pre><h2 id="netperf-安装依赖-automake-1-14-环境无法升级，放弃"><a href="#netperf-安装依赖-automake-1-14-环境无法升级，放弃" class="headerlink" title="netperf 安装依赖 automake-1.14, 环境无法升级，放弃"></a>netperf 安装依赖 automake-1.14, 环境无法升级，放弃</h2><h2 id="qperf-测试工具"><a href="#qperf-测试工具" class="headerlink" title="qperf 测试工具"></a>qperf 测试工具</h2><ul>
 <li>sudo yum install qperf -y</li>
 </ul>
-<h3 id="两台宿主机之间"><a href="#两台宿主机之间" class="headerlink" title="两台宿主机之间"></a>两台宿主机之间</h3><pre><code>$qperf -t 10  10.125.26.108 tcp_bw tcp_lat
+<h3 id="两台宿主机之间"><a href="#两台宿主机之间" class="headerlink" title="两台宿主机之间"></a>两台宿主机之间</h3><pre><code>$qperf -t 10  10.0.26.108 tcp_bw tcp_lat
 tcp_bw:
 bw  =  50.5 MB/sec
 tcp_lat:
 latency  =  332 us
-</code></pre><h4 id="包的大小分别为1和128"><a href="#包的大小分别为1和128" class="headerlink" title="包的大小分别为1和128"></a>包的大小分别为1和128</h4><pre><code>$qperf  -oo msg_size:1   10.125.26.108 tcp_bw tcp_lat
+</code></pre><h4 id="包的大小分别为1和128"><a href="#包的大小分别为1和128" class="headerlink" title="包的大小分别为1和128"></a>包的大小分别为1和128</h4><pre><code>$qperf  -oo msg_size:1   10.0.26.108 tcp_bw tcp_lat
 tcp_bw:
 bw  =  1.75 MB/sec
 tcp_lat:
 latency  =  428 us
 
-$qperf  -oo msg_size:128   10.125.26.108 tcp_bw tcp_lat
+$qperf  -oo msg_size:128   10.0.26.108 tcp_bw tcp_lat
 tcp_bw:
 bw  =  57.8 MB/sec
 tcp_lat:
 latency  =  504 us
-</code></pre><h4 id="两台宿主机之间，包的大小从一个字节每次翻倍测试"><a href="#两台宿主机之间，包的大小从一个字节每次翻倍测试" class="headerlink" title="两台宿主机之间，包的大小从一个字节每次翻倍测试"></a>两台宿主机之间，包的大小从一个字节每次翻倍测试</h4><pre><code>$qperf  -oo msg_size:1:4K:*2 -vu  10.125.26.108 tcp_bw tcp_lat 
+</code></pre><h4 id="两台宿主机之间，包的大小从一个字节每次翻倍测试"><a href="#两台宿主机之间，包的大小从一个字节每次翻倍测试" class="headerlink" title="两台宿主机之间，包的大小从一个字节每次翻倍测试"></a>两台宿主机之间，包的大小从一个字节每次翻倍测试</h4><pre><code>$qperf  -oo msg_size:1:4K:*2 -vu  10.0.26.108 tcp_bw tcp_lat 
 tcp_bw:
 bw=  1.86 MB/sec
 msg_size  = 1 bytes
