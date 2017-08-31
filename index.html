@@ -370,14 +370,7 @@
 <p>封包解包可以在应用层（比如Flannel的UDP封装），但是需要将每个网络包从内核态复制到应用态进行封包，所以性能非常差</p>
 <p>比较新的Linux内核带了vxlan功能，也就是将网络包直接在内核态完成封包，所以性能要好很多，本文vxlan指的就是这种方式</p>
 </blockquote>
-<h2 id="本文主要是比较通过vxlan实现的overlay网络之间的性能（相对宿主机之间而言）"><a href="#本文主要是比较通过vxlan实现的overlay网络之间的性能（相对宿主机之间而言）" class="headerlink" title="本文主要是比较通过vxlan实现的overlay网络之间的性能（相对宿主机之间而言）"></a>本文主要是比较通过vxlan实现的overlay网络之间的性能（相对宿主机之间而言）</h2><h2 id="iperf3-下载和安装"><a href="#iperf3-下载和安装" class="headerlink" title="iperf3 下载和安装"></a>iperf3 下载和安装</h2><ul>
-<li>wget <a href="http://downloads.es.net/pub/iperf/iperf-3.0.6.tar.gz" target="_blank" rel="external">http://downloads.es.net/pub/iperf/iperf-3.0.6.tar.gz</a></li>
-<li>tar zxvf iperf-3.0.6.tar.gz</li>
-<li>cd iperf-3.0.6</li>
-<li>./configure</li>
-<li>make install</li>
-</ul>
-<h2 id="测试环境宿主机的基本配置情况"><a href="#测试环境宿主机的基本配置情况" class="headerlink" title="测试环境宿主机的基本配置情况"></a>测试环境宿主机的基本配置情况</h2><pre><code>conf:
+<h2 id="本文主要是比较通过vxlan实现的overlay网络之间的性能（相对宿主机之间而言）"><a href="#本文主要是比较通过vxlan实现的overlay网络之间的性能（相对宿主机之间而言）" class="headerlink" title="本文主要是比较通过vxlan实现的overlay网络之间的性能（相对宿主机之间而言）"></a>本文主要是比较通过vxlan实现的overlay网络之间的性能（相对宿主机之间而言）</h2><h2 id="测试环境宿主机的基本配置情况"><a href="#测试环境宿主机的基本配置情况" class="headerlink" title="测试环境宿主机的基本配置情况"></a>测试环境宿主机的基本配置情况</h2><pre><code>conf:
 loc_node   =  e12174.bja
 loc_cpu=  2 Cores: Intel Xeon E5-2430 0 @ 2.20GHz
 loc_os =  Linux 3.10.0-327.ali2010.alios7.x86_64
@@ -386,7 +379,14 @@ rem_node   =  e26108.bja
 rem_cpu=  2 Cores: Intel Xeon E5-2430 0 @ 2.20GHz
 rem_os =  Linux 3.10.0-327.ali2010.alios7.x86_64
 rem_qperf  =  0.4.9
-</code></pre><h3 id="容器到自身宿主机之间-跟两容器在同一宿主机，速度差不多"><a href="#容器到自身宿主机之间-跟两容器在同一宿主机，速度差不多" class="headerlink" title="容器到自身宿主机之间, 跟两容器在同一宿主机，速度差不多"></a>容器到自身宿主机之间, 跟两容器在同一宿主机，速度差不多</h3><pre><code>$iperf3 -c 192.168.6.6 
+</code></pre><h2 id="iperf3-下载和安装"><a href="#iperf3-下载和安装" class="headerlink" title="iperf3 下载和安装"></a>iperf3 下载和安装</h2><ul>
+<li>wget <a href="http://downloads.es.net/pub/iperf/iperf-3.0.6.tar.gz" target="_blank" rel="external">http://downloads.es.net/pub/iperf/iperf-3.0.6.tar.gz</a></li>
+<li>tar zxvf iperf-3.0.6.tar.gz</li>
+<li>cd iperf-3.0.6</li>
+<li>./configure</li>
+<li>make install</li>
+</ul>
+<h3 id="容器到自身宿主机之间-跟两容器在同一宿主机，速度差不多"><a href="#容器到自身宿主机之间-跟两容器在同一宿主机，速度差不多" class="headerlink" title="容器到自身宿主机之间, 跟两容器在同一宿主机，速度差不多"></a>容器到自身宿主机之间, 跟两容器在同一宿主机，速度差不多</h3><pre><code>$iperf3 -c 192.168.6.6 
 Connecting to host 192.168.6.6, port 5201
 [  4] local 192.168.6.1 port 21112 connected to 192.168.6.6 port 5201
 [ ID] Interval   Transfer Bandwidth   Retr
