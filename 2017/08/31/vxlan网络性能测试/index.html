@@ -82,8 +82,6 @@
 
 
 
-  
-
 
   <link rel="alternate" href="/atom.xml" title="任喜军的博客" type="application/atom+xml" />
 
@@ -104,7 +102,7 @@
 <meta property="og:url" content="http://yoursite.com/2017/08/31/vxlan网络性能测试/index.html">
 <meta property="og:site_name" content="任喜军的博客">
 <meta property="og:description" content="vxlan网络性能测试 缘起 Docker集群中需要给每个容器分配一个独立的IP，同时在不同宿主机环境上的容器IP又要能够互相联通，所以需要一个overlay的网络（vlan也可以解决这个问题） overlay网络就是把容器之间的网络包重新打包在宿主机的IP包里面，传到目的容器所在的宿主机后，再把这个overlay的网络包还原成容器包交给容器 这里多了一次封包解包的过程，所以性能上必然有些损耗 封">
-<meta property="og:updated_time" content="2017-08-31T03:51:50.000Z">
+<meta property="og:updated_time" content="2017-08-31T03:53:48.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="vxlan网络性能测试">
 <meta name="twitter:description" content="vxlan网络性能测试 缘起 Docker集群中需要给每个容器分配一个独立的IP，同时在不同宿主机环境上的容器IP又要能够互相联通，所以需要一个overlay的网络（vlan也可以解决这个问题） overlay网络就是把容器之间的网络包重新打包在宿主机的IP包里面，传到目的容器所在的宿主机后，再把这个overlay的网络包还原成容器包交给容器 这里多了一次封包解包的过程，所以性能上必然有些损耗 封">
@@ -645,8 +643,7 @@ msg_size  =4 KiB (4,096)
 <li>由上面的结论猜测：物理带宽更大的情况下vxlan跟宿主机的差别会扩大</li>
 </ul>
 <p><strong>qperf安装更容易，功能更强大，推荐</strong></p>
-<h2 id="参考文章："><a href="#参考文章：" class="headerlink" title="参考文章："></a>参考文章：</h2><p><a href="https://linoxide.com/monitoring-2/install-iperf-test-network-speed-bandwidth/" target="_blank" rel="external">https://linoxide.com/monitoring-2/install-iperf-test-network-speed-bandwidth/</a></p>
-<p><a href="http://blog.yufeng.info/archives/2234" target="_blank" rel="external">http://blog.yufeng.info/archives/2234</a></p>
+<h2 id="参考文章："><a href="#参考文章：" class="headerlink" title="参考文章："></a>参考文章：</h2><p><a href="https://linoxide.com/monitoring-2/install-iperf-test-network-speed-bandwidth/" target="_blank" rel="external">https://linoxide.com/monitoring-2/install-iperf-test-network-speed-bandwidth/</a><br><a href="http://blog.yufeng.info/archives/2234" target="_blank" rel="external">http://blog.yufeng.info/archives/2234</a></p>
 
       
     </div>
@@ -712,6 +709,10 @@ msg_size  =4 KiB (4,096)
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/12/06/nslookup-OK-but-ping-fail/" rel="prev" title="nslookup is ok but ping fail">
+                nslookup is ok but ping fail <i class="fa fa-chevron-right"></i>
+              </a>
             
           </div>
         </div>
@@ -790,7 +791,7 @@ msg_size  =4 KiB (4,096)
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">13</span>
+                <span class="site-state-item-count">14</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -801,7 +802,7 @@ msg_size  =4 KiB (4,096)
             
             <div class="site-state-item site-state-categories">
               
-                <span class="site-state-item-count">4</span>
+                <span class="site-state-item-count">5</span>
                 <span class="site-state-item-name">分类</span>
               
             </div>
@@ -812,7 +813,7 @@ msg_size  =4 KiB (4,096)
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">31</span>
+                <span class="site-state-item-count">33</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>
