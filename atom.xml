@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://yoursite.com/"/>
-  <updated>2018-02-09T11:30:13.000Z</updated>
+  <updated>2018-02-09T11:33:56.000Z</updated>
   <id>http://yoursite.com/</id>
   
   <author>
@@ -16,11 +16,11 @@
   <generator uri="http://hexo.io/">Hexo</generator>
   
   <entry>
-    <title></title>
+    <title>nslookup 域名结果正确，但是 ping 域名 返回 unknown host</title>
     <link href="http://yoursite.com/2018/02/09/nslookup-OK-but-ping-fail/"/>
     <id>http://yoursite.com/2018/02/09/nslookup-OK-but-ping-fail/</id>
-    <published>2018-02-09T11:30:51.075Z</published>
-    <updated>2018-02-09T11:30:13.000Z</updated>
+    <published>2018-02-09T02:30:03.000Z</published>
+    <updated>2018-02-09T11:33:56.000Z</updated>
     
     <content type="html"><![CDATA[<h1 id="nslookup-域名结果正确，但是-ping-域名-返回-unknown-host"><a href="#nslookup-域名结果正确，但是-ping-域名-返回-unknown-host" class="headerlink" title="nslookup 域名结果正确，但是 ping 域名 返回 unknown host"></a>nslookup 域名结果正确，但是 ping 域名 返回 unknown host</h1><blockquote>
 <p>最近两周碰到了不同场景下四个DNS问题，所以记录一下</p>
@@ -88,6 +88,16 @@
     
     </summary>
     
+      <category term="dns" scheme="http://yoursite.com/categories/dns/"/>
+    
+    
+      <category term="DNS" scheme="http://yoursite.com/tags/DNS/"/>
+    
+      <category term="ping" scheme="http://yoursite.com/tags/ping/"/>
+    
+      <category term="dig" scheme="http://yoursite.com/tags/dig/"/>
+    
+      <category term="nslookup" scheme="http://yoursite.com/tags/nslookup/"/>
     
   </entry>
   
