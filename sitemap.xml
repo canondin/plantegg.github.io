@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>http://yoursite.com/2018/02/09/nslookup-OK-but-ping-fail/</loc>
+    
+    <lastmod>2018-02-09T11:30:13.000Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://yoursite.com/2017/12/13/Docker%E4%B8%AD%E7%9A%84DNS%E8%A7%A3%E6%9E%90%E8%BF%87%E7%A8%8B/</loc>
     
     <lastmod>2018-01-23T02:55:23.000Z</lastmod>
@@ -19,13 +26,6 @@
     <loc>http://yoursite.com/2017/12/13/windows7%E7%9A%84wifi%E6%80%BB%E6%98%AF%E6%8A%A5DNS%E5%9F%9F%E5%90%8D%E5%BC%82%E5%B8%B8%E6%97%A0%E6%B3%95%E4%B8%8A%E7%BD%91/</loc>
     
     <lastmod>2017-12-13T07:00:45.000Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>http://yoursite.com/2017/12/06/nslookup-OK-but-ping-fail/</loc>
-    
-    <lastmod>2017-12-06T06:12:44.000Z</lastmod>
     
   </url>
   
