@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://yoursite.com/"/>
-  <updated>2018-02-09T11:33:56.000Z</updated>
+  <updated>2018-02-09T13:19:08.000Z</updated>
   <id>http://yoursite.com/</id>
   
   <author>
@@ -20,7 +20,7 @@
     <link href="http://yoursite.com/2018/02/09/nslookup-OK-but-ping-fail/"/>
     <id>http://yoursite.com/2018/02/09/nslookup-OK-but-ping-fail/</id>
     <published>2018-02-09T02:30:03.000Z</published>
-    <updated>2018-02-09T11:33:56.000Z</updated>
+    <updated>2018-02-09T13:19:08.000Z</updated>
     
     <content type="html"><![CDATA[<h1 id="nslookup-域名结果正确，但是-ping-域名-返回-unknown-host"><a href="#nslookup-域名结果正确，但是-ping-域名-返回-unknown-host" class="headerlink" title="nslookup 域名结果正确，但是 ping 域名 返回 unknown host"></a>nslookup 域名结果正确，但是 ping 域名 返回 unknown host</h1><blockquote>
 <p>最近两周碰到了不同场景下四个DNS问题，所以记录一下</p>
@@ -69,6 +69,12 @@
 <li>如果 /etc/resolv.conf 中配置了多个nameserver，默认使用第一个，只有第一个失败【如53端口不响应、查不到域名后再用后面的nameserver顶上】</li>
 <li>如果 /etc/resolv.conf 中配置了rotate，那么多个nameserver轮流使用. <a href="https://access.redhat.com/solutions/1426263" target="_blank" rel="external">但是因为底层库的原因用了rotate 会触发nameserver排序的时候第二个总是排在第一位</a></li>
 </ul>
+<h2 id="下面是glibc的实现："><a href="#下面是glibc的实现：" class="headerlink" title="下面是glibc的实现："></a>下面是glibc的实现：</h2><p>这是2.2.5(2010年的版本），大致是把第一个nameserver总是丢到最后一个去（为了均衡nameserver的负载，保护第一个nameserver）：</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2a8116a867726e3fea20e0f45e9ed9fa.png" alt="image.png"></p>
+<p>我看到 2017年这个逻辑终于改了，不过还不是默认用第一个，而是随机取一个，rotate搞成random了，这样更不好排查问题了</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/b0d3f9bb8cc2a4bdcd2378e173ba8cf1.png" alt="image.png"></p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/245e70b53aee4bfcdc9a921993ddad6f.png" alt="image.png"></p>
+<p>也就是2010年之前的版本都是把第一个默认挪到最后一个（为了保护第一个nameserver），到2017年改掉了这个问题，不过改成随机取nameserver, 作者不认为这是一个bug，他觉得配置rotate就是要平衡多个nameserver的性能，所以random最公平，因为大多程序都是查一次域名缓存好久，不随机轮询的话第一个nameserver压力太大</p>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
 <li>/etc/resolv.conf rotate的关键作用</li>
 <li>nscd对域名解析的cache</li>

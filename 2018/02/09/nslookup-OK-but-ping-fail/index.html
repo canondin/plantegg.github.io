@@ -105,7 +105,10 @@
 <meta property="og:site_name" content="plantegg">
 <meta property="og:description" content="nslookup 域名结果正确，但是 ping 域名 返回 unknown host 最近两周碰到了不同场景下四个DNS问题，所以记录一下  这几个Case描述如下：  一批ECS nslookup 域名结果正确，但是 ping 域名 返回 unknown host 在公司网下，我的windows7笔记本的wifi总是报dns域名异常无法上网（通过IP地址可以上网） Docker容器中的域名解析过">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/ca466bb6430f1149958ceb41b9ffe591.png">
-<meta property="og:updated_time" content="2018-02-09T11:33:56.000Z">
+<meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2a8116a867726e3fea20e0f45e9ed9fa.png">
+<meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/b0d3f9bb8cc2a4bdcd2378e173ba8cf1.png">
+<meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/245e70b53aee4bfcdc9a921993ddad6f.png">
+<meta property="og:updated_time" content="2018-02-09T13:19:08.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="nslookup 域名结果正确，但是 ping 域名 返回 unknown host">
 <meta name="twitter:description" content="nslookup 域名结果正确，但是 ping 域名 返回 unknown host 最近两周碰到了不同场景下四个DNS问题，所以记录一下  这几个Case描述如下：  一批ECS nslookup 域名结果正确，但是 ping 域名 返回 unknown host 在公司网下，我的windows7笔记本的wifi总是报dns域名异常无法上网（通过IP地址可以上网） Docker容器中的域名解析过">
@@ -414,6 +417,12 @@
 <li>如果 /etc/resolv.conf 中配置了多个nameserver，默认使用第一个，只有第一个失败【如53端口不响应、查不到域名后再用后面的nameserver顶上】</li>
 <li>如果 /etc/resolv.conf 中配置了rotate，那么多个nameserver轮流使用. <a href="https://access.redhat.com/solutions/1426263" target="_blank" rel="external">但是因为底层库的原因用了rotate 会触发nameserver排序的时候第二个总是排在第一位</a></li>
 </ul>
+<h2 id="下面是glibc的实现："><a href="#下面是glibc的实现：" class="headerlink" title="下面是glibc的实现："></a>下面是glibc的实现：</h2><p>这是2.2.5(2010年的版本），大致是把第一个nameserver总是丢到最后一个去（为了均衡nameserver的负载，保护第一个nameserver）：</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2a8116a867726e3fea20e0f45e9ed9fa.png" alt="image.png"></p>
+<p>我看到 2017年这个逻辑终于改了，不过还不是默认用第一个，而是随机取一个，rotate搞成random了，这样更不好排查问题了</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/b0d3f9bb8cc2a4bdcd2378e173ba8cf1.png" alt="image.png"></p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/245e70b53aee4bfcdc9a921993ddad6f.png" alt="image.png"></p>
+<p>也就是2010年之前的版本都是把第一个默认挪到最后一个（为了保护第一个nameserver），到2017年改掉了这个问题，不过改成随机取nameserver, 作者不认为这是一个bug，他觉得配置rotate就是要平衡多个nameserver的性能，所以random最公平，因为大多程序都是查一次域名缓存好久，不随机轮询的话第一个nameserver压力太大</p>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
 <li>/etc/resolv.conf rotate的关键作用</li>
 <li>nscd对域名解析的cache</li>
@@ -624,7 +633,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#nslookup-域名结果正确，但是-ping-域名-返回-unknown-host"><span class="nav-number">1.</span> <span class="nav-text">nslookup 域名结果正确，但是 ping 域名 返回 unknown host</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#nslookup-域名结果正确，但是-ping-域名-返回-unknown-host-1"><span class="nav-number">1.1.</span> <span class="nav-text">nslookup 域名结果正确，但是 ping 域名 返回 unknown host</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#那就抓包看为什么解析不了"><span class="nav-number">1.1.1.</span> <span class="nav-text">那就抓包看为什么解析不了</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#风波再起"><span class="nav-number">1.1.2.</span> <span class="nav-text">风波再起</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#connect函数返回值的说明："><span class="nav-number">1.1.2.1.</span> <span class="nav-text">connect函数返回值的说明：</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#原理分析"><span class="nav-number">1.2.</span> <span class="nav-text">原理分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">1.3.</span> <span class="nav-text">总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#参考资料"><span class="nav-number">1.3.1.</span> <span class="nav-text">参考资料</span></a></li></ol></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#nslookup-域名结果正确，但是-ping-域名-返回-unknown-host"><span class="nav-number">1.</span> <span class="nav-text">nslookup 域名结果正确，但是 ping 域名 返回 unknown host</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#nslookup-域名结果正确，但是-ping-域名-返回-unknown-host-1"><span class="nav-number">1.1.</span> <span class="nav-text">nslookup 域名结果正确，但是 ping 域名 返回 unknown host</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#那就抓包看为什么解析不了"><span class="nav-number">1.1.1.</span> <span class="nav-text">那就抓包看为什么解析不了</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#风波再起"><span class="nav-number">1.1.2.</span> <span class="nav-text">风波再起</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#connect函数返回值的说明："><span class="nav-number">1.1.2.1.</span> <span class="nav-text">connect函数返回值的说明：</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#原理分析"><span class="nav-number">1.2.</span> <span class="nav-text">原理分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#下面是glibc的实现："><span class="nav-number">1.3.</span> <span class="nav-text">下面是glibc的实现：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">1.4.</span> <span class="nav-text">总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#参考资料"><span class="nav-number">1.4.1.</span> <span class="nav-text">参考资料</span></a></li></ol></li></ol></li></ol></div>
             
 
           </div>
