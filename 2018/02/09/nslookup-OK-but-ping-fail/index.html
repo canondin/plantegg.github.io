@@ -82,8 +82,6 @@
 
 
 
-  
-
 
   <link rel="alternate" href="/atom.xml" title="plantegg" type="application/atom+xml" />
 
@@ -108,7 +106,7 @@
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2a8116a867726e3fea20e0f45e9ed9fa.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/b0d3f9bb8cc2a4bdcd2378e173ba8cf1.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/245e70b53aee4bfcdc9a921993ddad6f.png">
-<meta property="og:updated_time" content="2018-02-09T13:19:08.000Z">
+<meta property="og:updated_time" content="2018-02-09T13:33:25.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="nslookup 域名结果正确，但是 ping 域名 返回 unknown host">
 <meta name="twitter:description" content="nslookup 域名结果正确，但是 ping 域名 返回 unknown host 最近两周碰到了不同场景下四个DNS问题，所以记录一下  这几个Case描述如下：  一批ECS nslookup 域名结果正确，但是 ping 域名 返回 unknown host 在公司网下，我的windows7笔记本的wifi总是报dns域名异常无法上网（通过IP地址可以上网） Docker容器中的域名解析过">
@@ -423,6 +421,7 @@
 <p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/b0d3f9bb8cc2a4bdcd2378e173ba8cf1.png" alt="image.png"></p>
 <p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/245e70b53aee4bfcdc9a921993ddad6f.png" alt="image.png"></p>
 <p>也就是2010年之前的版本都是把第一个默认挪到最后一个（为了保护第一个nameserver），到2017年改掉了这个问题，不过改成随机取nameserver, 作者不认为这是一个bug，他觉得配置rotate就是要平衡多个nameserver的性能，所以random最公平，因为大多程序都是查一次域名缓存好久，不随机轮询的话第一个nameserver压力太大</p>
+<p><a href="https://sourceware.org/bugzilla/show_bug.cgi?id=19570" target="_blank" rel="external">参考 glibc bug</a></p>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
 <li>/etc/resolv.conf rotate的关键作用</li>
 <li>nscd对域名解析的cache</li>
@@ -491,6 +490,10 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2018/03/14/如何设置git Proxy/" rel="prev" title="Git HTTP Proxy and SSH Proxy">
+                Git HTTP Proxy and SSH Proxy <i class="fa fa-chevron-right"></i>
+              </a>
             
           </div>
         </div>
@@ -569,7 +572,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">16</span>
+                <span class="site-state-item-count">17</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -580,7 +583,7 @@
             
             <div class="site-state-item site-state-categories">
               
-                <span class="site-state-item-count">7</span>
+                <span class="site-state-item-count">8</span>
                 <span class="site-state-item-name">分类</span>
               
             </div>
@@ -591,7 +594,7 @@
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">40</span>
+                <span class="site-state-item-count">44</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>

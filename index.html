@@ -261,6 +261,178 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/03/14/如何设置git Proxy/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/03/14/如何设置git Proxy/" itemprop="url">Git HTTP Proxy and SSH Proxy</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-03-14T10:30:03+08:00">
+                2018-03-14
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/ssh/" itemprop="url" rel="index">
+                    <span itemprop="name">ssh</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/03/14/如何设置git Proxy/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2018/03/14/如何设置git Proxy/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="如何让git-clone-从每秒10K到3M"><a href="#如何让git-clone-从每秒10K到3M" class="headerlink" title="如何让git clone 从每秒10K到3M"></a>如何让git clone 从每秒10K到3M</h1><h2 id="git-http-proxy"><a href="#git-http-proxy" class="headerlink" title="git http proxy"></a>git http proxy</h2><blockquote>
+<p>首先你要有一个socks5代理服务器，从 github.com 拉代码的话海外的代理速度才快，可以自己配置shadowsocks这样的代理。</p>
+<p>下面的例子假设你的socks5代理是： 127.0.0.1:13658</p>
+</blockquote>
+<h3 id="执行如下命令"><a href="#执行如下命令" class="headerlink" title="执行如下命令"></a>执行如下命令</h3><pre><code>git config --global http.proxy socks5://127.0.0.1:13658
+</code></pre><p>上面的命令实际上是修改了 .gitconfig：</p>
+<pre><code>$cat ~/.gitconfig   
+[http]
+    proxy = socks5://127.0.0.1:13658
+</code></pre><p>现在git的http代理就配置好了， git clone <a href="https://github.com/torvalds/linux.git" target="_blank" rel="external">https://github.com/torvalds/linux.git</a> 速度会快到你流泪（取决于你的代理速度），我这里是从每秒10K到了3M 。</p>
+<p>注意：</p>
+<ul>
+<li>http.proxy就可以了，不需要配置https.proxy</li>
+<li>这个http代理仅仅针对 git clone <strong>https://</strong> 的方式生效</li>
+</ul>
+<h2 id="配置git-ssh-proxy"><a href="#配置git-ssh-proxy" class="headerlink" title="配置git ssh proxy"></a>配置git ssh proxy</h2><p>如果想要 git clone <strong>git@</strong>github.com:torvalds/linux.git 也要快起来的话 需要配置 ssh proxy</p>
+<blockquote>
+<p>这里要求你有一台海外的服务器，能ssh登陆，做好免密码，假设这台服务器的IP是：2.2.2.2</p>
+</blockquote>
+<p>修改（如果没有就创建这个文件）~/.ssh/config, 内容如下：</p>
+<pre><code>$cat ~/.ssh/config 
+host github.com
+#LogLevel DEBUG3
+ProxyCommand ssh -l root 2.2.2.2 exec /usr/bin/nc %h %p
+</code></pre><p>然后 git clone git@github.com:torvalds/linux.git 也能飞起来了</p>
+<p>需要注意你的代理服务器2.2.2.2上nc有没有安装，没有的话yum装上，装上后再检查一下安装的位置，对应配置中的 /usr/bin/nc</p>
+<p>写这些主要是从Google上搜索到的一些文章，http的倒还是靠谱，但是ssh的就有点乱，还要在本地安装东西，对nc版本有要求之类的，于是就折腾了一下，上面的方式都是靠谱的。</p>
+<p>整个原理还是穿墙术。</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/02/09/nslookup-OK-but-ping-fail/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -415,6 +587,7 @@
 <p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/b0d3f9bb8cc2a4bdcd2378e173ba8cf1.png" alt="image.png"></p>
 <p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/245e70b53aee4bfcdc9a921993ddad6f.png" alt="image.png"></p>
 <p>也就是2010年之前的版本都是把第一个默认挪到最后一个（为了保护第一个nameserver），到2017年改掉了这个问题，不过改成随机取nameserver, 作者不认为这是一个bug，他觉得配置rotate就是要平衡多个nameserver的性能，所以random最公平，因为大多程序都是查一次域名缓存好久，不随机轮询的话第一个nameserver压力太大</p>
+<p><a href="https://sourceware.org/bugzilla/show_bug.cgi?id=19570" target="_blank" rel="external">参考 glibc bug</a></p>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
 <li>/etc/resolv.conf rotate的关键作用</li>
 <li>nscd对域名解析的cache</li>
@@ -3550,7 +3723,7 @@ debug1: Executing proxy command: exec ssh -l alibaba 139.*.*.* exec /usr/bin/nc 
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">16</span>
+                <span class="site-state-item-count">17</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -3561,7 +3734,7 @@ debug1: Executing proxy command: exec ssh -l alibaba 139.*.*.* exec /usr/bin/nc 
             
             <div class="site-state-item site-state-categories">
               
-                <span class="site-state-item-count">7</span>
+                <span class="site-state-item-count">8</span>
                 <span class="site-state-item-name">分类</span>
               
             </div>
@@ -3572,7 +3745,7 @@ debug1: Executing proxy command: exec ssh -l alibaba 139.*.*.* exec /usr/bin/nc 
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">40</span>
+                <span class="site-state-item-count">44</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>
