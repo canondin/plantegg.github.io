@@ -77,7 +77,7 @@
 <link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="DNS,ping,dig,nslookup," />
+  <meta name="keywords" content="ping,nslookup,dns,glibc,rotate," />
 
 
 
@@ -95,21 +95,21 @@
 
 
 
-<meta name="description" content="nslookup 域名结果正确，但是 ping 域名 返回 unknown host 最近两周碰到了不同场景下四个DNS问题，所以记录一下  这几个Case描述如下：  一批ECS nslookup 域名结果正确，但是 ping 域名 返回 unknown host 在公司网下，我的windows7笔记本的wifi总是报dns域名异常无法上网（通过IP地址可以上网） Docker容器中的域名解析过">
-<meta name="keywords" content="DNS,ping,dig,nslookup">
+<meta name="description" content="nslookup 域名结果正确，但是ping域名返回 unknown host 最近两周碰到了不同场景下四个DNS问题，所以记录一下  这几个Case描述如下：  一批ECS nslookup 域名结果正确，但是 ping 域名 返回 unknown host 在公司网下，我的windows7笔记本的wifi总是报dns域名异常无法上网（通过IP地址可以上网） Docker容器中的域名解析过程和原">
+<meta name="keywords" content="ping,nslookup,dns,glibc,rotate">
 <meta property="og:type" content="article">
-<meta property="og:title" content="nslookup 域名结果正确，但是 ping 域名 返回 unknown host">
+<meta property="og:title" content="nslookup-OK-but-ping-fail">
 <meta property="og:url" content="http://yoursite.com/2018/02/09/nslookup-OK-but-ping-fail/index.html">
 <meta property="og:site_name" content="plantegg">
-<meta property="og:description" content="nslookup 域名结果正确，但是 ping 域名 返回 unknown host 最近两周碰到了不同场景下四个DNS问题，所以记录一下  这几个Case描述如下：  一批ECS nslookup 域名结果正确，但是 ping 域名 返回 unknown host 在公司网下，我的windows7笔记本的wifi总是报dns域名异常无法上网（通过IP地址可以上网） Docker容器中的域名解析过">
+<meta property="og:description" content="nslookup 域名结果正确，但是ping域名返回 unknown host 最近两周碰到了不同场景下四个DNS问题，所以记录一下  这几个Case描述如下：  一批ECS nslookup 域名结果正确，但是 ping 域名 返回 unknown host 在公司网下，我的windows7笔记本的wifi总是报dns域名异常无法上网（通过IP地址可以上网） Docker容器中的域名解析过程和原">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/ca466bb6430f1149958ceb41b9ffe591.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2a8116a867726e3fea20e0f45e9ed9fa.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/b0d3f9bb8cc2a4bdcd2378e173ba8cf1.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/245e70b53aee4bfcdc9a921993ddad6f.png">
-<meta property="og:updated_time" content="2018-02-09T13:33:25.000Z">
+<meta property="og:updated_time" content="2018-03-24T10:30:09.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="nslookup 域名结果正确，但是 ping 域名 返回 unknown host">
-<meta name="twitter:description" content="nslookup 域名结果正确，但是 ping 域名 返回 unknown host 最近两周碰到了不同场景下四个DNS问题，所以记录一下  这几个Case描述如下：  一批ECS nslookup 域名结果正确，但是 ping 域名 返回 unknown host 在公司网下，我的windows7笔记本的wifi总是报dns域名异常无法上网（通过IP地址可以上网） Docker容器中的域名解析过">
+<meta name="twitter:title" content="nslookup-OK-but-ping-fail">
+<meta name="twitter:description" content="nslookup 域名结果正确，但是ping域名返回 unknown host 最近两周碰到了不同场景下四个DNS问题，所以记录一下  这几个Case描述如下：  一批ECS nslookup 域名结果正确，但是 ping 域名 返回 unknown host 在公司网下，我的windows7笔记本的wifi总是报dns域名异常无法上网（通过IP地址可以上网） Docker容器中的域名解析过程和原">
 <meta name="twitter:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/ca466bb6430f1149958ceb41b9ffe591.png">
 
 
@@ -144,7 +144,7 @@
 
 
 
-  <title>nslookup 域名结果正确，但是 ping 域名 返回 unknown host | plantegg</title>
+  <title>nslookup-OK-but-ping-fail | plantegg</title>
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
@@ -283,7 +283,7 @@
 
         
         
-          <h2 class="post-title" itemprop="name headline">nslookup 域名结果正确，但是 ping 域名 返回 unknown host</h2>
+          <h2 class="post-title" itemprop="name headline">nslookup-OK-but-ping-fail</h2>
         
 
         <div class="post-meta">
@@ -368,18 +368,18 @@
       
 
       
-        <h1 id="nslookup-域名结果正确，但是-ping-域名-返回-unknown-host"><a href="#nslookup-域名结果正确，但是-ping-域名-返回-unknown-host" class="headerlink" title="nslookup 域名结果正确，但是 ping 域名 返回 unknown host"></a>nslookup 域名结果正确，但是 ping 域名 返回 unknown host</h1><blockquote>
+        <h1 id="nslookup-域名结果正确，但是ping域名返回-unknown-host"><a href="#nslookup-域名结果正确，但是ping域名返回-unknown-host" class="headerlink" title="nslookup 域名结果正确，但是ping域名返回 unknown host"></a>nslookup 域名结果正确，但是ping域名返回 unknown host</h1><blockquote>
 <p>最近两周碰到了不同场景下四个DNS问题，所以记录一下</p>
 </blockquote>
 <p>这几个Case描述如下：</p>
 <ol>
 <li>一批ECS nslookup 域名结果正确，但是 ping 域名 返回 unknown host</li>
-<li><a href="https://www.atatech.org/articles/98900" target="_blank" rel="external">在公司网下，我的windows7笔记本的wifi总是报dns域名异常无法上网（通过IP地址可以上网）</a></li>
+<li>在公司网下，我的windows7笔记本的wifi总是报dns域名异常无法上网（通过IP地址可以上网）</li>
 <li>Docker容器中的域名解析过程和原理</li>
 <li>中间件的VipClient服务在centos7上域名解析失败</li>
 </ol>
 <p>因为这些问题都不一样，但是都跟DNS服务相关所以打算分四篇文章挨个介绍，希望看完后DNS这块的问题应该是基本可以解决了。</p>
-<h2 id="nslookup-域名结果正确，但是-ping-域名-返回-unknown-host-1"><a href="#nslookup-域名结果正确，但是-ping-域名-返回-unknown-host-1" class="headerlink" title="nslookup 域名结果正确，但是 ping 域名 返回 unknown host"></a>nslookup 域名结果正确，但是 ping 域名 返回 unknown host</h2><p>赶紧Google一下: nslookup ok but ping fail, 这个关键词居然Google自动提示了，看来碰到这个问题同学的好多好多</p>
+<h2 id="nslookup-域名结果正确，但是-ping-域名-返回-unknown-host"><a href="#nslookup-域名结果正确，但是-ping-域名-返回-unknown-host" class="headerlink" title="nslookup 域名结果正确，但是 ping 域名 返回 unknown host"></a>nslookup 域名结果正确，但是 ping 域名 返回 unknown host</h2><p>赶紧Google一下: nslookup ok but ping fail, 这个关键词居然Google自动提示了，看来碰到这个问题同学的好多好多</p>
 <p>Google到的帖子大概有如下原因：</p>
 <ul>
 <li>域名最后没有加 . 然后被自动追加了 tbsite.net aliyun.com alidc.net，自然 ping不到了</li>
@@ -410,29 +410,31 @@
    If  the  connection or binding succeeds, zero is returned.  On error, -1 is returned,and errno is set appropriately.
 </code></pre><p>Windows下客户端是默认有dns cache的，但是Linux Client上默认没有dns cache，DNS Server上是有cache的，所以忽视了这个问题。这个nscd是之前看ping不通，google到这么一个命令，但是应该没有搞明白它的作用，就执行了一个网上的命令，把nscd拉起来，然后ping 因为rotate的问题，还是不通，同时nscd cache了这个不通的结果，导致了新的问题</p>
 <h2 id="原理分析"><a href="#原理分析" class="headerlink" title="原理分析"></a>原理分析</h2><ul>
-<li>DNS域名解析的时候先根据 /etc/nsswitch.conf 配置的顺序进行dns解析，一般是这样配置：hosts: files dns 【files代表 /etc/hosts  dns 代表 /etc/resolv.conf】</li>
+<li>DNS域名解析的时候先根据 /etc/nsswitch.conf 配置的顺序进行dns解析，一般是这样配置：hosts: files dns 【files代表 /etc/hosts ； dns 代表 /etc/resolv.conf】</li>
 <li>如果本地有DNS Client Cache，先走Cache查询，所以有时候看不到DNS网络包。Linux下nscd可以做这个cache，Windows下有 ipconfig /displaydns ipconfig /flushdns </li>
 <li>如果 /etc/resolv.conf 中配置了多个nameserver，默认使用第一个，只有第一个失败【如53端口不响应、查不到域名后再用后面的nameserver顶上】</li>
 <li>如果 /etc/resolv.conf 中配置了rotate，那么多个nameserver轮流使用. <a href="https://access.redhat.com/solutions/1426263" target="_blank" rel="external">但是因为底层库的原因用了rotate 会触发nameserver排序的时候第二个总是排在第一位</a></li>
 </ul>
-<h2 id="下面是glibc的实现："><a href="#下面是glibc的实现：" class="headerlink" title="下面是glibc的实现："></a>下面是glibc的实现：</h2><p>这是2.2.5(2010年的版本），大致是把第一个nameserver总是丢到最后一个去（为了均衡nameserver的负载，保护第一个nameserver）：</p>
+<h2 id="下面是glibc中对rotate的处理："><a href="#下面是glibc中对rotate的处理：" class="headerlink" title="下面是glibc中对rotate的处理："></a>下面是glibc中对rotate的处理：</h2><p>这是glibc 2.2.5(2010年的版本），如果有rotate逻辑就是把第一个nameserver总是丢到最后一个去（为了均衡nameserver的负载，保护第一个nameserver）：</p>
 <p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2a8116a867726e3fea20e0f45e9ed9fa.png" alt="image.png"></p>
-<p>我看到 2017年这个逻辑终于改了，不过还不是默认用第一个，而是随机取一个，rotate搞成random了，这样更不好排查问题了</p>
+<p>在2017年这个代码逻辑终于改了，不过还不是默认用第一个，而是随机取一个，rotate搞成random了，这样更不好排查问题了</p>
 <p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/b0d3f9bb8cc2a4bdcd2378e173ba8cf1.png" alt="image.png"></p>
 <p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/245e70b53aee4bfcdc9a921993ddad6f.png" alt="image.png"></p>
 <p>也就是2010年之前的版本都是把第一个默认挪到最后一个（为了保护第一个nameserver），到2017年改掉了这个问题，不过改成随机取nameserver, 作者不认为这是一个bug，他觉得配置rotate就是要平衡多个nameserver的性能，所以random最公平，因为大多程序都是查一次域名缓存好久，不随机轮询的话第一个nameserver压力太大</p>
+<p>也就是2010年之前的glibc版本在rotate模式下都是把第一个nameserver默认挪到最后一个（为了保护第一个nameserver），这样rotate模式下默认第一个nameserver总是/etc/resolov.conf配置文件中的第二个，到2017年改掉了这个问题，不过改成随机取nameserver, 作者不认为这是一个bug，他觉得配置rotate就是要平衡多个nameserver的性能，所以random最公平，因为大多程序都是查一次域名缓存好久，不随机轮询的话第一个nameserver压力太大</p>
 <p><a href="https://sourceware.org/bugzilla/show_bug.cgi?id=19570" target="_blank" rel="external">参考 glibc bug</a></p>
+<p><a href="https://www.byvoid.com/zhs/blog/linux-kernel-and-glibc" target="_blank" rel="external">Linux内核与glibc</a></p>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
 <li>/etc/resolv.conf rotate的关键作用</li>
 <li>nscd对域名解析的cache</li>
-<li>nslookup背后执行原理和ping不一样</li>
+<li>nslookup背后执行原理和ping不一样（调用的底层库不一样）</li>
 <li>在没有源代码的情况下strace和抓包能够看到问题的本质</li>
 </ul>
 <p>下一篇介绍《在公司网下，我的windows7笔记本的wifi总是报dns域名异常无法上网（通过IP地址可以上网）》困扰了我两年，最近换了新笔记本还是有这个问题才痛下决心咬牙解决</p>
 <h3 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h3><p><a href="https://superuser.com/questions/495759/why-is-ping-unable-to-resolve-a-name-when-nslookup-works-fine" target="_blank" rel="external">https://superuser.com/questions/495759/why-is-ping-unable-to-resolve-a-name-when-nslookup-works-fine</a></p>
 <p><a href="https://stackoverflow.com/questions/330395/dns-problem-nslookup-works-ping-doesnt" target="_blank" rel="external">https://stackoverflow.com/questions/330395/dns-problem-nslookup-works-ping-doesnt</a></p>
 <p><a href="https://www.atatech.org/articles/46211" target="_blank" rel="external">DNS缓存介绍</a></p>
-<p><a href="https://access.redhat.com/solutions/1426263" target="_blank" rel="external">来自redhat上最根本原因的描述，目前还未解决</a></p>
+<p><a href="https://access.redhat.com/solutions/1426263" target="_blank" rel="external">来自redhat上原因的描述，从代码的原作者的描述来看，他认为rotate下这是合理的</a></p>
 
       
     </div>
@@ -462,13 +464,15 @@
       
         <div class="post-tags">
           
-            <a href="/tags/DNS/" rel="tag"># DNS</a>
-          
             <a href="/tags/ping/" rel="tag"># ping</a>
           
-            <a href="/tags/dig/" rel="tag"># dig</a>
-          
             <a href="/tags/nslookup/" rel="tag"># nslookup</a>
+          
+            <a href="/tags/dns/" rel="tag"># dns</a>
+          
+            <a href="/tags/glibc/" rel="tag"># glibc</a>
+          
+            <a href="/tags/rotate/" rel="tag"># rotate</a>
           
         </div>
       
@@ -594,7 +598,7 @@
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">47</span>
+                <span class="site-state-item-count">50</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>
@@ -636,7 +640,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#nslookup-域名结果正确，但是-ping-域名-返回-unknown-host"><span class="nav-number">1.</span> <span class="nav-text">nslookup 域名结果正确，但是 ping 域名 返回 unknown host</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#nslookup-域名结果正确，但是-ping-域名-返回-unknown-host-1"><span class="nav-number">1.1.</span> <span class="nav-text">nslookup 域名结果正确，但是 ping 域名 返回 unknown host</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#那就抓包看为什么解析不了"><span class="nav-number">1.1.1.</span> <span class="nav-text">那就抓包看为什么解析不了</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#风波再起"><span class="nav-number">1.1.2.</span> <span class="nav-text">风波再起</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#connect函数返回值的说明："><span class="nav-number">1.1.2.1.</span> <span class="nav-text">connect函数返回值的说明：</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#原理分析"><span class="nav-number">1.2.</span> <span class="nav-text">原理分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#下面是glibc的实现："><span class="nav-number">1.3.</span> <span class="nav-text">下面是glibc的实现：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">1.4.</span> <span class="nav-text">总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#参考资料"><span class="nav-number">1.4.1.</span> <span class="nav-text">参考资料</span></a></li></ol></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#nslookup-域名结果正确，但是ping域名返回-unknown-host"><span class="nav-number">1.</span> <span class="nav-text">nslookup 域名结果正确，但是ping域名返回 unknown host</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#nslookup-域名结果正确，但是-ping-域名-返回-unknown-host"><span class="nav-number">1.1.</span> <span class="nav-text">nslookup 域名结果正确，但是 ping 域名 返回 unknown host</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#那就抓包看为什么解析不了"><span class="nav-number">1.1.1.</span> <span class="nav-text">那就抓包看为什么解析不了</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#风波再起"><span class="nav-number">1.1.2.</span> <span class="nav-text">风波再起</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#connect函数返回值的说明："><span class="nav-number">1.1.2.1.</span> <span class="nav-text">connect函数返回值的说明：</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#原理分析"><span class="nav-number">1.2.</span> <span class="nav-text">原理分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#下面是glibc中对rotate的处理："><span class="nav-number">1.3.</span> <span class="nav-text">下面是glibc中对rotate的处理：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">1.4.</span> <span class="nav-text">总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#参考资料"><span class="nav-number">1.4.1.</span> <span class="nav-text">参考资料</span></a></li></ol></li></ol></li></ol></div>
             
 
           </div>
@@ -811,7 +815,7 @@
         var disqus_config = function () {
           this.page.url = 'http://yoursite.com/2018/02/09/nslookup-OK-but-ping-fail/';
           this.page.identifier = '2018/02/09/nslookup-OK-but-ping-fail/';
-          this.page.title = 'nslookup 域名结果正确，但是 ping 域名 返回 unknown host';
+          this.page.title = 'nslookup-OK-but-ping-fail';
         };
         var d = document, s = d.createElement('script');
         s.src = 'https://.disqus.com/embed.js';
