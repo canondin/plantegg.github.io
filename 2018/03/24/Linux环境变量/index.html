@@ -77,10 +77,12 @@
 <link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="Hexo, NexT" />
+  <meta name="keywords" content="Linux,ssh,env,ansible," />
 
 
 
+
+  
 
 
   <link rel="alternate" href="/atom.xml" title="plantegg" type="application/atom+xml" />
@@ -95,19 +97,17 @@
 
 
 
-<meta name="description" content="wireshark-dup-ack-issue and keepalive问题：在wireshark中看到一个tcp会话中的两台机器突然一直互相发dup ack包，但是没有触发重传。每次重复ack都是间隔精确的20秒 如下截图： client都一直在回复收到2号包（ack=2）了，可是server跟傻了一样居然还发seq=1的包（按理，应该发比2大的包啊） 系统配置：net.ipv4.tcp_ke">
+<meta name="description" content="Linux环境变量测试好的脚本放到 crontab 里就报错，找不到命令写好一个脚本，测试没有问题，然后放到crontab 想要定时执行，但是总是报错，去看日志的话显示某些命令找不到，这种一般都是因为PATH环境变量变了导致的 自己在shell命令行下测试的时候当前环境变量就是这个用户的环境变量，可以通过命令：env 看到，脚本放到crontab 里面后一般都加了sudo 这个时候 env 变了。">
+<meta name="keywords" content="Linux,ssh,env,ansible">
 <meta property="og:type" content="article">
-<meta property="og:title" content="wireshark-dup-ack-issue and keepalive">
-<meta property="og:url" content="http://yoursite.com/2017/06/02/wireshark-dup-ack-issue/index.html">
+<meta property="og:title" content="Linux环境变量">
+<meta property="og:url" content="http://yoursite.com/2018/03/24/Linux环境变量/index.html">
 <meta property="og:site_name" content="plantegg">
-<meta property="og:description" content="wireshark-dup-ack-issue and keepalive问题：在wireshark中看到一个tcp会话中的两台机器突然一直互相发dup ack包，但是没有触发重传。每次重复ack都是间隔精确的20秒 如下截图： client都一直在回复收到2号包（ack=2）了，可是server跟傻了一样居然还发seq=1的包（按理，应该发比2大的包啊） 系统配置：net.ipv4.tcp_ke">
-<meta property="og:image" content="http://i.imgur.com/bm3W68Q.png">
-<meta property="og:image" content="http://i.imgur.com/DsTWFZr.png">
-<meta property="og:updated_time" content="2017-06-02T11:08:43.000Z">
+<meta property="og:description" content="Linux环境变量测试好的脚本放到 crontab 里就报错，找不到命令写好一个脚本，测试没有问题，然后放到crontab 想要定时执行，但是总是报错，去看日志的话显示某些命令找不到，这种一般都是因为PATH环境变量变了导致的 自己在shell命令行下测试的时候当前环境变量就是这个用户的环境变量，可以通过命令：env 看到，脚本放到crontab 里面后一般都加了sudo 这个时候 env 变了。">
+<meta property="og:updated_time" content="2018-03-24T10:09:06.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="wireshark-dup-ack-issue and keepalive">
-<meta name="twitter:description" content="wireshark-dup-ack-issue and keepalive问题：在wireshark中看到一个tcp会话中的两台机器突然一直互相发dup ack包，但是没有触发重传。每次重复ack都是间隔精确的20秒 如下截图： client都一直在回复收到2号包（ack=2）了，可是server跟傻了一样居然还发seq=1的包（按理，应该发比2大的包啊） 系统配置：net.ipv4.tcp_ke">
-<meta name="twitter:image" content="http://i.imgur.com/bm3W68Q.png">
+<meta name="twitter:title" content="Linux环境变量">
+<meta name="twitter:description" content="Linux环境变量测试好的脚本放到 crontab 里就报错，找不到命令写好一个脚本，测试没有问题，然后放到crontab 想要定时执行，但是总是报错，去看日志的话显示某些命令找不到，这种一般都是因为PATH环境变量变了导致的 自己在shell命令行下测试的时候当前环境变量就是这个用户的环境变量，可以通过命令：env 看到，脚本放到crontab 里面后一般都加了sudo 这个时候 env 变了。">
 
 
 
@@ -135,13 +135,13 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/2017/06/02/wireshark-dup-ack-issue/"/>
+  <link rel="canonical" href="http://yoursite.com/2018/03/24/Linux环境变量/"/>
 
 
 
 
 
-  <title>wireshark-dup-ack-issue and keepalive | plantegg</title>
+  <title>Linux环境变量 | plantegg</title>
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
@@ -263,7 +263,7 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/06/02/wireshark-dup-ack-issue/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/03/24/Linux环境变量/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="weibo @plantegg">
@@ -280,7 +280,7 @@
 
         
         
-          <h2 class="post-title" itemprop="name headline">wireshark-dup-ack-issue and keepalive</h2>
+          <h2 class="post-title" itemprop="name headline">Linux环境变量</h2>
         
 
         <div class="post-meta">
@@ -292,8 +292,8 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-06-02T17:30:03+08:00">
-                2017-06-02
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-03-24T17:30:03+08:00">
+                2018-03-24
               </time>
             
 
@@ -303,6 +303,28 @@
           </span>
 
           
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
 
           
             
@@ -311,9 +333,9 @@
                 <span class="post-meta-item-icon">
                   <i class="fa fa-comment-o"></i>
                 </span>
-                <a href="/2017/06/02/wireshark-dup-ack-issue/#comments" itemprop="discussionUrl">
+                <a href="/2018/03/24/Linux环境变量/#comments" itemprop="discussionUrl">
                   <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2017/06/02/wireshark-dup-ack-issue/" itemprop="commentCount"></span>
+                        data-disqus-identifier="2018/03/24/Linux环境变量/" itemprop="commentCount"></span>
                 </a>
               </span>
             
@@ -343,20 +365,124 @@
       
 
       
-        <h1 id="wireshark-dup-ack-issue-and-keepalive"><a href="#wireshark-dup-ack-issue-and-keepalive" class="headerlink" title="wireshark-dup-ack-issue and keepalive"></a>wireshark-dup-ack-issue and keepalive</h1><h2 id="问题："><a href="#问题：" class="headerlink" title="问题："></a>问题：</h2><p>在wireshark中看到一个tcp会话中的两台机器突然一直互相发dup ack包，但是没有触发重传。每次重复ack都是间隔精确的20秒</p>
-<h2 id="如下截图："><a href="#如下截图：" class="headerlink" title="如下截图："></a>如下截图：</h2><p><img src="http://i.imgur.com/bm3W68Q.png" alt=""></p>
-<p>client都一直在回复收到2号包（ack=2）了，可是server跟傻了一样居然还发seq=1的包（按理，应该发比2大的包啊）</p>
-<h2 id="系统配置："><a href="#系统配置：" class="headerlink" title="系统配置："></a>系统配置：</h2><pre><code>net.ipv4.tcp_keepalive_time = 20
-net.ipv4.tcp_keepalive_probes = 5
-net.ipv4.tcp_keepalive_intvl = 3
-</code></pre><h2 id="原因："><a href="#原因：" class="headerlink" title="原因："></a>原因：</h2><p>抓包不全的话wireshark有缺陷，把keepalive包识别成了dup ack包，看内容这种dup ack和keepalive似乎是一样的，flags都是0x010。keep alive的定义的是后退一格(seq少1）。</p>
-<p>2、4、6、8……号包，都有一个“tcp acked unseen segment”。这个一般表示它ack的这个包，没有被抓到。Wirshark如何作出此判断呢？前面一个包是seq=1, len=0，所以正常情况下是ack = seq + len = 1，然而Wireshark看到的确是ack = 2, 它只能判断有一个seq =1, len = 1的包没有抓到。<br>dup ack也是类似道理，这些包完全符合dup ack的定义，因为“ack = ” 某个数连续多次出现了。</p>
-<p>这一切都是因为keep alive的特殊性导致的。打开66号包的tcp层（见后面的截图），可以看到它的 next sequence number = 12583，表示正常情况下server发出的下一个包应该是seq = 12583。可是在下一个包，也就是68号包中，却是seq = 12582。keep alive的定义的确是这样，即后退一格。<br>Wireshark只有在抓到数据包（66号包）和keep alive包的情况下才有可能正确识别，前面的抓包中恰好在keep alive之前丢失了数据包，所以Wireshark就蒙了。</p>
-<h2 id="构造重现"><a href="#构造重现" class="headerlink" title="构造重现"></a>构造重现</h2><p>如果用“frame.number &gt;= 68” 过滤这个包，然后File–&gt;export specified packets保存成一个新文件，再打开那个新文件，就会发现Wireshark又蒙了。本来能够正常识别的keep alive包又被错看成dup ack了，所以一旦碰到这种情况不要慌要稳</p>
-<p>下面是知识点啦</p>
-<h2 id="正常的keep-alive-Case："><a href="#正常的keep-alive-Case：" class="headerlink" title="正常的keep-alive Case："></a>正常的keep-alive Case：</h2><p><img src="http://i.imgur.com/DsTWFZr.png" alt=""></p>
-<p>keep-alive 通过发一个比实际seq小1的包，比如server都已经 ack 12583了，client故意发一个seq 12582来标识这是一个keep-Alive包</p>
-<h2 id="Duplication-ack是指："><a href="#Duplication-ack是指：" class="headerlink" title="Duplication ack是指："></a>Duplication ack是指：</h2><p>server收到了3和8号包，但是没有收到中间的4/5/6/7，那么server就会ack 3，如果client还是继续发8/9号包，那么server会继续发dup ack 3#1 ; dup ack 3#2 来向客户端说明只收到了3号包，不要着急发后面的大包，把4/5/6/7给我发过来</p>
+        <h1 id="Linux环境变量"><a href="#Linux环境变量" class="headerlink" title="Linux环境变量"></a>Linux环境变量</h1><h3 id="测试好的脚本放到-crontab-里就报错，找不到命令"><a href="#测试好的脚本放到-crontab-里就报错，找不到命令" class="headerlink" title="测试好的脚本放到 crontab 里就报错，找不到命令"></a>测试好的脚本放到 crontab 里就报错，找不到命令</h3><p>写好一个脚本，测试没有问题，然后放到crontab 想要定时执行，但是总是报错，去看日志的话显示某些命令找不到，这种一般都是因为PATH环境变量变了导致的</p>
+<p>自己在shell命令行下测试的时候当前环境变量就是这个用户的环境变量，可以通过命令：env 看到，脚本放到crontab 里面后一般都加了sudo 这个时候 env 变了。比如你可以在命令行下执行 env 和 sudo env 比较一下就发现他们很不一样</p>
+<p>为了解决这个问题 sudo有一个参数 -E （–preserver-env）就是为了解决这个问题的。</p>
+<p>这个时候再比较一下 </p>
+<ul>
+<li>env</li>
+<li>sudo env</li>
+<li>sudo -E env</li>
+</ul>
+<p>大概就能理解这里的区别了</p>
+<h3 id="同样一个命令ssh执行不了，-报找不到命令"><a href="#同样一个命令ssh执行不了，-报找不到命令" class="headerlink" title="同样一个命令ssh执行不了， 报找不到命令"></a>同样一个命令ssh执行不了， 报找不到命令</h3><p>比如：</p>
+<p>ssh user@ip “ ip a “  报错： bash: ip: command not found</p>
+<p>但是你要是先执行 ssh user@ip 连上服务器后，再执行 ip a 就可以，这里是同一个命令通过两种不同的方式但是环境变量也不一样了。</p>
+<p>同样想要解决这个问题的话可以先 ssh 连上服务器，再执行 which ip ; env | grep PATH  </p>
+<pre><code>$ which ip
+/usr/sbin/ip
+$ env | grep PATH
+PATH=/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
+</code></pre><p>很明显这里因为 ip在/usr/sbin下，而/usr/sbin又在PATH变量中，所以可以找到。</p>
+<p>那么接下来我们看看 </p>
+<pre><code>$ssh user@ip &quot;env | grep PATH&quot;
+PATH=/usr/local/bin:/usr/bin
+</code></pre><p>很明显这里的PATH比上面的PATH短了一截，/usr/sbin也没有在里面，所以/usr/sbin 下的ip命令自然也找不到了，这里虽然都是同一个用户，但是他们的环境变量还不一样，有点出乎我的意料之外。</p>
+<p>主要原因是我们的shell 分为login shell 和 no-login shell , 先ssh 登陆上去再执行命令就是一个login shell，Linux要为这个终端分配资源。</p>
+<p>而下面的直接在ssh 里面放执行命令实际上就不需要login，所以这是一个no-login shell.</p>
+<h4 id="login-shell-和-no-login-shell又有什么区别呢？"><a href="#login-shell-和-no-login-shell又有什么区别呢？" class="headerlink" title="login shell 和 no-login shell又有什么区别呢？"></a>login shell 和 no-login shell又有什么区别呢？</h4><ul>
+<li>login shell加载环境变量的顺序是：① /etc/profile ② ~/.bash_profile ③ ~/.bashrc ④ /etc/bashrc </li>
+<li>而non-login shell加载环境变量的顺序是： ① ~/.bashrc ② /etc/bashrc</li>
+</ul>
+<p>也就是nog-login少了前面两步，我们先看后面两步。</p>
+<p>下面是一个 .bashrc 的内容：</p>
+<pre><code>[ ~]$ cat .bashrc 
+# .bashrc
+
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+    . /etc/bashrc
+fi
+</code></pre><p>基本没有什么内容，它主要是去加载 /etc/bashrc  而他里面也没有看到sbin相关的东西</p>
+<p>那我们再看non-login少的两步： ① /etc/profile ② ~/.bash_profile </p>
+<p>cat /etc/profile :</p>
+<pre><code>if [ &quot;$EUID&quot; = &quot;0&quot; ]; then
+    pathmunge /usr/sbin
+    pathmunge /usr/local/sbin
+else
+    pathmunge /usr/local/sbin after
+    pathmunge /usr/sbin after
+fi
+</code></pre><p>这几行代码就是把 /usr/sbin 添加到 PATH 变量中，正是他们的区别决定了这里的环境变量不一样。</p>
+<p>像 ansible 这种自动化工具，或者我们自己写的自动化脚本，依赖ssh，那么都有可能碰到这个问题，如何修复呢？</p>
+<p>在 /etc/profile.d/ 下创建一个文件：/etc/profile.d/my_bashenv.sh 内容如下：</p>
+<pre><code>$cat /etc/profile.d/my_bashenv.sh 
+
+pathmunge () {
+if ! echo $PATH | /bin/egrep -q &quot;(^|:)$1($|:)&quot; ; then
+   if [ &quot;$2&quot; = &quot;after&quot; ] ; then
+  PATH=$PATH:$1
+   else
+  PATH=$1:$PATH
+   fi
+fi
+}
+
+pathmunge /sbin
+pathmunge /usr/sbin
+pathmunge /usr/local/sbin
+pathmunge /usr/local/bin
+pathmunge /usr/X11R6/bin after
+
+unset pathmunge
+
+complete -cf sudo
+
+
+alias chgrp=&apos;chgrp --preserve-root&apos;
+alias chown=&apos;chown --preserve-root&apos;
+alias chmod=&apos;chmod --preserve-root&apos;
+alias rm=&apos;rm -i --preserve-root&apos;
+
+
+HISTTIMEFORMAT=&apos;[%F %T] &apos;
+HISTSIZE=1000
+
+export EDITOR=vim
+
+
+export PS1=&apos;\n\e[1;37m[\e[m\e[1;32m\u\e[m\e[1;33m@\e[m\e[1;35m\H\e[m \e[4m`pwd`\e[m\e[1;37m]\e[m\e[1;36m\e[m\n\$&apos;
+</code></pre><p>通过前面我们可以看到 /etc/bashrc 总是会去加载 /etc/profile.d/ 下的所有 *.sh 文件，同时我们还可以在这个文件中修改我们喜欢的 shell 配色方案等等 </p>
+<h3 id="export"><a href="#export" class="headerlink" title="export"></a>export</h3><p>Linux 中export是一种命令工具通过export命令把shell变量中包含的用户变量导入给用户变量的那些变量.</p>
+<p>我们来看一个例子， 有一个变量，名字 abc 内容123 如果没有export ，那么通过bash创建一个新的shell，在新的shell里面就没有abc这个变量， export之后在新的 shell 里面才可以 看到这个变量，但是退出重新login 后abc变量都不在了</p>
+<pre><code>$echo $abc
+
+
+$abc=&quot;123&quot;
+
+
+$echo $abc
+123
+
+$bash
+
+$echo $abc
+
+
+$exit
+exit
+
+$export abc
+
+$echo $abc
+123
+
+$bash
+
+$echo $abc
+123
+</code></pre><p>参考文章：</p>
+<p><a href="https://blog.csdn.net/u010871982/article/details/78525367" target="_blank" rel="external">https://blog.csdn.net/u010871982/article/details/78525367</a></p>
 
       
     </div>
@@ -384,6 +510,18 @@ net.ipv4.tcp_keepalive_intvl = 3
 
     <footer class="post-footer">
       
+        <div class="post-tags">
+          
+            <a href="/tags/Linux/" rel="tag"># Linux</a>
+          
+            <a href="/tags/ssh/" rel="tag"># ssh</a>
+          
+            <a href="/tags/env/" rel="tag"># env</a>
+          
+            <a href="/tags/ansible/" rel="tag"># ansible</a>
+          
+        </div>
+      
 
       
       
@@ -393,8 +531,8 @@ net.ipv4.tcp_keepalive_intvl = 3
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2017/06/02/SSH花式玩法/" rel="next" title="SSH advance features">
-                <i class="fa fa-chevron-left"></i> SSH advance features
+              <a href="/2018/03/14/如何设置git Proxy/" rel="next" title="Git HTTP Proxy and SSH Proxy">
+                <i class="fa fa-chevron-left"></i> Git HTTP Proxy and SSH Proxy
               </a>
             
           </div>
@@ -402,10 +540,6 @@ net.ipv4.tcp_keepalive_intvl = 3
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2017/06/02/就是要你懂 TCP--最经典的TCP性能问题/" rel="prev" title="就是要你懂 TCP-- 最经典的TCP性能问题">
-                就是要你懂 TCP-- 最经典的TCP性能问题 <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -548,7 +682,7 @@ net.ipv4.tcp_keepalive_intvl = 3
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#wireshark-dup-ack-issue-and-keepalive"><span class="nav-number">1.</span> <span class="nav-text">wireshark-dup-ack-issue and keepalive</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#问题："><span class="nav-number">1.1.</span> <span class="nav-text">问题：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#如下截图："><span class="nav-number">1.2.</span> <span class="nav-text">如下截图：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#系统配置："><span class="nav-number">1.3.</span> <span class="nav-text">系统配置：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#原因："><span class="nav-number">1.4.</span> <span class="nav-text">原因：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#构造重现"><span class="nav-number">1.5.</span> <span class="nav-text">构造重现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#正常的keep-alive-Case："><span class="nav-number">1.6.</span> <span class="nav-text">正常的keep-alive Case：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Duplication-ack是指："><span class="nav-number">1.7.</span> <span class="nav-text">Duplication ack是指：</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Linux环境变量"><span class="nav-number">1.</span> <span class="nav-text">Linux环境变量</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#测试好的脚本放到-crontab-里就报错，找不到命令"><span class="nav-number">1.0.1.</span> <span class="nav-text">测试好的脚本放到 crontab 里就报错，找不到命令</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#同样一个命令ssh执行不了，-报找不到命令"><span class="nav-number">1.0.2.</span> <span class="nav-text">同样一个命令ssh执行不了， 报找不到命令</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#login-shell-和-no-login-shell又有什么区别呢？"><span class="nav-number">1.0.2.1.</span> <span class="nav-text">login shell 和 no-login shell又有什么区别呢？</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#export"><span class="nav-number">1.0.3.</span> <span class="nav-text">export</span></a></li></ol></li></ol></li></ol></div>
             
 
           </div>
@@ -721,9 +855,9 @@ net.ipv4.tcp_keepalive_intvl = 3
     
       <script type="text/javascript">
         var disqus_config = function () {
-          this.page.url = 'http://yoursite.com/2017/06/02/wireshark-dup-ack-issue/';
-          this.page.identifier = '2017/06/02/wireshark-dup-ack-issue/';
-          this.page.title = 'wireshark-dup-ack-issue and keepalive';
+          this.page.url = 'http://yoursite.com/2018/03/24/Linux环境变量/';
+          this.page.identifier = '2018/03/24/Linux环境变量/';
+          this.page.title = 'Linux环境变量';
         };
         var d = document, s = d.createElement('script');
         s.src = 'https://.disqus.com/embed.js';
