@@ -2,16 +2,23 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
-    <loc>http://yoursite.com/2018/02/09/nslookup-OK-but-ping-fail/</loc>
+    <loc>http://yoursite.com/2017/06/07/tcp-queue/</loc>
     
-    <lastmod>2018-03-24T10:30:09.000Z</lastmod>
+    <lastmod>2018-04-09T11:20:52.000Z</lastmod>
     
   </url>
   
   <url>
     <loc>http://yoursite.com/2018/03/24/Linux%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F/</loc>
     
-    <lastmod>2018-03-24T10:09:06.000Z</lastmod>
+    <lastmod>2018-04-09T11:19:05.000Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>http://yoursite.com/2018/02/09/nslookup-OK-but-ping-fail/</loc>
+    
+    <lastmod>2018-03-24T10:30:09.000Z</lastmod>
     
   </url>
   
@@ -89,13 +96,6 @@
     <loc>http://yoursite.com/2017/06/14/high_load/</loc>
     
     <lastmod>2017-07-04T06:43:01.000Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>http://yoursite.com/2017/06/07/tcp-queue/</loc>
-    
-    <lastmod>2017-06-14T03:26:24.000Z</lastmod>
     
   </url>
   
