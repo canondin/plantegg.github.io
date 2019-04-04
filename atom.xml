@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://yoursite.com/"/>
-  <updated>2019-04-04T04:33:01.000Z</updated>
+  <updated>2019-04-04T04:34:58.000Z</updated>
   <id>http://yoursite.com/</id>
   
   <author>
@@ -16,13 +16,13 @@
   <generator uri="http://hexo.io/">Hexo</generator>
   
   <entry>
-    <title>Linux环境变量问题汇总</title>
+    <title>通过tcpdump对Unix Socket 进行抓包解析</title>
     <link href="http://yoursite.com/2019/04/04/Unix-Socket%E6%8A%93%E5%8C%85/"/>
     <id>http://yoursite.com/2019/04/04/Unix-Socket抓包/</id>
     <published>2019-04-04T03:30:03.000Z</published>
-    <updated>2019-04-04T04:33:01.000Z</updated>
+    <updated>2019-04-04T04:34:58.000Z</updated>
     
-    <content type="html"><![CDATA[<h1 id="Unix-Socket-抓包"><a href="#Unix-Socket-抓包" class="headerlink" title="Unix Socket 抓包"></a>Unix Socket 抓包</h1><h2 id="背景介绍"><a href="#背景介绍" class="headerlink" title="背景介绍"></a>背景介绍</h2><p>大多时候我们可以通过tcpdump对网络抓包分析一些访问数据，以及反向解析一些数据，也就是希望看到具体请求、想用内容。但是如果程序是通过Unix Socket方式来访问的那么tcpdump就看不到Unix Socket里面具体流淌的内容了，本文希望找到一种方法达到如同查看网卡内容一样来查看Unix Socket上具体的请求、响应数据</p>
+    <content type="html"><![CDATA[<h1 id="通过tcpdump对Unix-Socket-进行抓包解析"><a href="#通过tcpdump对Unix-Socket-进行抓包解析" class="headerlink" title="通过tcpdump对Unix Socket 进行抓包解析"></a>通过tcpdump对Unix Socket 进行抓包解析</h1><h2 id="背景介绍"><a href="#背景介绍" class="headerlink" title="背景介绍"></a>背景介绍</h2><p>大多时候我们可以通过tcpdump对网络抓包分析一些访问数据，以及反向解析一些数据，也就是希望看到具体请求、想用内容。但是如果程序是通过Unix Socket方式来访问的那么tcpdump就看不到Unix Socket里面具体流淌的内容了，本文希望找到一种方法达到如同查看网卡内容一样来查看Unix Socket上具体的请求、响应数据</p>
 <h2 id="通过socat-启动一个tcp端口来代理unix-socket"><a href="#通过socat-启动一个tcp端口来代理unix-socket" class="headerlink" title="通过socat 启动一个tcp端口来代理unix socket"></a>通过socat 启动一个tcp端口来代理unix socket</h2><p>启动本地8080端口，将docker.sock映射到8080端口,8080收到的东西都会转给docker.sock，docker.sock收到的东西都通过抓8080的包看到,但是要求应用访问8080而不是docker.sock。</p>
 <pre><code>socat -d -d TCP-LISTEN:8080,fork,bind=127.0.0.1 UNIX:/var/run/docker.sock
 </code></pre><p><strong>缺点：需要修改客户端的访问方式</strong></p>
@@ -65,7 +65,7 @@ sudo curl --unix-socket /var/run/docker.sock http://localhost/images/json
     
     <summary type="html">
     
-      &lt;h1 id=&quot;Unix-Socket-抓包&quot;&gt;&lt;a href=&quot;#Unix-Socket-抓包&quot; class=&quot;headerlink&quot; title=&quot;Unix Socket 抓包&quot;&gt;&lt;/a&gt;Unix Socket 抓包&lt;/h1&gt;&lt;h2 id=&quot;背景介绍&quot;&gt;&lt;a href=&quot;#背
+      &lt;h1 id=&quot;通过tcpdump对Unix-Socket-进行抓包解析&quot;&gt;&lt;a href=&quot;#通过tcpdump对Unix-Socket-进行抓包解析&quot; class=&quot;headerlink&quot; title=&quot;通过tcpdump对Unix Socket 进行抓包解析&quot;&gt;&lt;/a&gt;通过
     
     </summary>
     
