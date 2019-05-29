@@ -1,0 +1,1033 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="Hexo, NexT" />
+
+
+
+
+  
+
+
+  <link rel="alternate" href="/atom.xml" title="plantegg" type="application/atom+xml" />
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.1" />
+
+
+
+
+
+
+<meta name="description" content="TCP性能和发送接收Buffer的关系系统相关参数如下$sudo sysctl -a | egrep &amp;quot;rmem|wmem|adv_win|moderate&amp;quot; net.core.rmem_default = 212992 net.core.rmem_max = 212992 net.core.wmem_default = 212992 net.core.wmem_max = 2">
+<meta property="og:type" content="article">
+<meta property="og:title" content="plantegg">
+<meta property="og:url" content="http://yoursite.com/2019/05/29/TCP性能和发送接收Buffer的关系/index.html">
+<meta property="og:site_name" content="plantegg">
+<meta property="og:description" content="TCP性能和发送接收Buffer的关系系统相关参数如下$sudo sysctl -a | egrep &amp;quot;rmem|wmem|adv_win|moderate&amp;quot; net.core.rmem_default = 212992 net.core.rmem_max = 212992 net.core.wmem_default = 212992 net.core.wmem_max = 2">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1558603861745-190dadd2-cff2-49c9-8bc3-5856fdfb2d44.png">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1558603861610-e9b14af0-2400-4207-8bec-dfc96430ca58.png">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1558603861781-2e236663-2909-44eb-84a3-82ddf5f3af9d.png">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/jpeg/162611/1558603861602-0133aea1-66d2-4365-90ec-25fab36ea12e.jpeg">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/jpeg/162611/1558603861618-604cd640-2003-4672-84de-a7865ed7cc94.jpeg">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1558603861595-39197d54-4e04-4a61-8687-f549bdaa883b.png">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1559025761962-cf422801-1d67-4665-a12e-8419ffb1e27a.png">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1559025983487-bf6bde7b-6cb1-4d18-b0a0-ea63ddf538e4.png">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1559026080137-38bd9712-eb07-4fc1-82e7-649cde233cfd.png">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1559027684431-4b47d1be-6bf9-4a5a-b041-bf675ff36f4a.png">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1559026228698-b5749b94-6083-451a-ac1e-a95150d93b82.png">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1559027225308-61d25bd1-9270-4762-b0cf-721a34d8689a.png">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1559027854127-2049facb-7708-49b5-a165-141549cc7e6b.png">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1559028098375-d1e8ab50-d3c0-47c3-8326-53afe8ba0116.png">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1558922856836-92aca189-2b5c-46b9-ae06-cbb0db50baf4.png">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1558923047361-de371658-b656-4566-9e20-5958919ee1fe.png">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/gif/162611/1559030833230-72b44e6d-5c3c-413b-91ff-26074bd2bdbe.gif">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1559043502992-97c4c823-8cd1-4ae7-9883-203e553604ff.png">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1559097931609-28c0fc94-09ca-4564-8f47-432f9b5e2c5b.png">
+<meta property="og:updated_time" content="2019-05-29T04:41:36.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="plantegg">
+<meta name="twitter:description" content="TCP性能和发送接收Buffer的关系系统相关参数如下$sudo sysctl -a | egrep &amp;quot;rmem|wmem|adv_win|moderate&amp;quot; net.core.rmem_default = 212992 net.core.rmem_max = 212992 net.core.wmem_default = 212992 net.core.wmem_max = 2">
+<meta name="twitter:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1558603861745-190dadd2-cff2-49c9-8bc3-5856fdfb2d44.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    sidebar: {"position":"left","display":"post","offset":12,"offset_float":0,"b2t":false,"scrollpercent":false},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/05/29/TCP性能和发送接收Buffer的关系/"/>
+
+
+
+
+
+  <title> | plantegg</title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  
+
+  <div class="container sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">plantegg</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <h1 class="site-subtitle" itemprop="description">java tcp mysql performance network docker Linux</h1>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/05/29/TCP性能和发送接收Buffer的关系/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline"></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-05-29T12:42:47+08:00">
+                2019-05-29
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/05/29/TCP性能和发送接收Buffer的关系/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2019/05/29/TCP性能和发送接收Buffer的关系/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+            <span class="post-meta-divider">|</span>
+            <span class="page-pv"><i class="fa fa-file-o"></i>
+            <span class="busuanzi-value" id="busuanzi_value_page_pv" ></span>次
+            </span>
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="TCP性能和发送接收Buffer的关系"><a href="#TCP性能和发送接收Buffer的关系" class="headerlink" title="TCP性能和发送接收Buffer的关系"></a>TCP性能和发送接收Buffer的关系</h1><h2 id="系统相关参数如下"><a href="#系统相关参数如下" class="headerlink" title="系统相关参数如下"></a>系统相关参数如下</h2><pre><code>$sudo sysctl -a | egrep &quot;rmem|wmem|adv_win|moderate&quot;
+net.core.rmem_default = 212992
+net.core.rmem_max = 212992
+net.core.wmem_default = 212992
+net.core.wmem_max = 212992
+net.ipv4.tcp_adv_win_scale = 1
+net.ipv4.tcp_moderate_rcvbuf = 1
+net.ipv4.tcp_rmem = 4096    87380    6291456
+net.ipv4.tcp_wmem = 4096    16384    4194304
+net.ipv4.udp_rmem_min = 4096
+net.ipv4.udp_wmem_min = 4096
+vm.lowmem_reserve_ratio = 256    256    32
+</code></pre><h2 id="wmem和发送窗口"><a href="#wmem和发送窗口" class="headerlink" title="wmem和发送窗口"></a>wmem和发送窗口</h2><blockquote>
+<p>先从一个问题看起，客户通过专线访问云上的服务，专线100M，时延20ms，一个SQL查询了22M数据，结果花了大概25秒，这太慢了，不太正常，如果通过云上client访问云上服务那么1-2秒就返回了。如果通过http或者scp传输这22M的数据大概两秒钟也传送完毕了，所以这里问题的原因基本上是我们的服务在这种网络条件下有性能问题，需要找出为什么。</p>
+</blockquote>
+<h3 id="抓包-tcpdump-wireshark"><a href="#抓包-tcpdump-wireshark" class="headerlink" title="抓包 tcpdump+wireshark"></a>抓包 tcpdump+wireshark</h3><p>这个查询结果22M的需要25秒，如下图（wireshark 时序图），横轴是时间纵轴是sequence number：</p>
+<p>​<img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1558603861745-190dadd2-cff2-49c9-8bc3-5856fdfb2d44.png" alt="Image">                             ​</p>
+<p>粗一看没啥问题，把这个图形放大看看（横轴是时间，纵轴是sequence number，一个点代表一个包）</p>
+<p>​<img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1558603861610-e9b14af0-2400-4207-8bec-dfc96430ca58.png" alt="Image">                             ​</p>
+<p>换个角度，看看窗口尺寸图形：</p>
+<p>​<img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1558603861781-2e236663-2909-44eb-84a3-82ddf5f3af9d.png" alt="Image">                             ​</p>
+<p>从bytes in flight也大致能算出来总的传输时间 16K*1000/20=800Kb/秒</p>
+<p>我们的应用会默认设置 socketSendBuffer 为16K:</p>
+<blockquote>
+<p>socket.setSendBufferSize(16*1024) //16K send buffer</p>
+</blockquote>
+<p>来看一下tcp包发送流程：</p>
+<p>​<img src="https://cdn.nlark.com/yuque/0/2019/jpeg/162611/1558603861602-0133aea1-66d2-4365-90ec-25fab36ea12e.jpeg" alt="Image">                             ​</p>
+<p>（图片<a href="https://www.atatech.org/articles/9032" target="_blank" rel="external">来自</a>）</p>
+<p>​<img src="https://cdn.nlark.com/yuque/0/2019/jpeg/162611/1558603861618-604cd640-2003-4672-84de-a7865ed7cc94.jpeg" alt="Image">                             ​</p>
+<p>如果sendbuffer不够就会卡在上图中的第一步 sk_stream_wait_memory, 通过systemtap脚本可以验证：</p>
+<p>​</p>
+<p>Plain Text</p>
+<p>1</p>
+<p>#!/usr/bin/stap</p>
+<p>2</p>
+<h1 id="Simple-probe-to-detect-when-a-process-is-waiting-for-more-socket-send"><a href="#Simple-probe-to-detect-when-a-process-is-waiting-for-more-socket-send" class="headerlink" title="Simple probe to detect when a process is waiting for more socket send"></a>Simple probe to detect when a process is waiting for more socket send</h1><p>3</p>
+<h1 id="buffer-memory-Usually-means-the-process-is-doing-writes-larger-than-the"><a href="#buffer-memory-Usually-means-the-process-is-doing-writes-larger-than-the" class="headerlink" title="buffer memory. Usually means the process is doing writes larger than the"></a>buffer memory. Usually means the process is doing writes larger than the</h1><p>4</p>
+<h1 id="socket-send-buffer-size-or-there-is-a-slow-receiver-at-the-other-side"><a href="#socket-send-buffer-size-or-there-is-a-slow-receiver-at-the-other-side" class="headerlink" title="socket send buffer size or there is a slow receiver at the other side."></a>socket send buffer size or there is a slow receiver at the other side.</h1><p>5</p>
+<h1 id="Increasing-the-socket’s-send-buffer-size-might-help-decrease-application"><a href="#Increasing-the-socket’s-send-buffer-size-might-help-decrease-application" class="headerlink" title="Increasing the socket’s send buffer size might help decrease application"></a>Increasing the socket’s send buffer size might help decrease application</h1><p>6</p>
+<h1 id="latencies-but-it-might-also-make-it-worse-so-buyer-beware"><a href="#latencies-but-it-might-also-make-it-worse-so-buyer-beware" class="headerlink" title="latencies, but it might also make it worse, so buyer beware."></a>latencies, but it might also make it worse, so buyer beware.</h1><p>7</p>
+<p>​</p>
+<p>8</p>
+<h1 id="Typical-output-timestamp-in-microseconds-procname-pid-event"><a href="#Typical-output-timestamp-in-microseconds-procname-pid-event" class="headerlink" title="Typical output: timestamp in microseconds: procname(pid) event"></a>Typical output: timestamp in microseconds: procname(pid) event</h1><p>9</p>
+<p>#</p>
+<p>10</p>
+<h1 id="1218230114875167-python-17631-blocked-on-full-send-buffer"><a href="#1218230114875167-python-17631-blocked-on-full-send-buffer" class="headerlink" title="1218230114875167: python(17631) blocked on full send buffer"></a>1218230114875167: python(17631) blocked on full send buffer</h1><p>11</p>
+<h1 id="1218230114876196-python-17631-recovered-from-full-send-buffer"><a href="#1218230114876196-python-17631-recovered-from-full-send-buffer" class="headerlink" title="1218230114876196: python(17631) recovered from full send buffer"></a>1218230114876196: python(17631) recovered from full send buffer</h1><p>12</p>
+<h1 id="1218230114876271-python-17631-blocked-on-full-send-buffer"><a href="#1218230114876271-python-17631-blocked-on-full-send-buffer" class="headerlink" title="1218230114876271: python(17631) blocked on full send buffer"></a>1218230114876271: python(17631) blocked on full send buffer</h1><p>13</p>
+<h1 id="1218230114876479-python-17631-recovered-from-full-send-buffer"><a href="#1218230114876479-python-17631-recovered-from-full-send-buffer" class="headerlink" title="1218230114876479: python(17631) recovered from full send buffer"></a>1218230114876479: python(17631) recovered from full send buffer</h1><p>14</p>
+<p>probe kernel.function(“sk_stream_wait_memory”)</p>
+<p>15</p>
+<p>{</p>
+<p>16</p>
+<pre><code>printf(&quot;%u: %s(%d) blocked on full send buffer\n&quot;,
+</code></pre><p>17</p>
+<pre><code>gettimeofday_us(), execname(), pid())
+</code></pre><p>18</p>
+<p>}</p>
+<p>19</p>
+<p>​</p>
+<p>20</p>
+<p>probe kernel.function(“sk_stream_wait_memory”).return</p>
+<p>21</p>
+<p>{</p>
+<p>22</p>
+<pre><code>printf(&quot;%u: %s(%d) recovered from full send buffer\n&quot;,
+</code></pre><p>23</p>
+<pre><code>gettimeofday_us(), execname(), pid())
+</code></pre><p>24</p>
+<p>}</p>
+<p>​</p>
+<p>如果tcp发送buffer也就是SO_SNDBUF只有16K的话，这些包很快都发出去了，但是这16K不能立即释放出来填新的内容进去，因为tcp要保证可靠，万一中间丢包了呢。只有等到这16K中的某些ack了，才会填充一些进来然后继续发出去。由于这里rt基本是20ms，也就是16K发送完毕后，等了20ms才收到一些ack，这20ms应用、内核什么都不能做，所以就是如第二个图中的大概20ms的等待平台。这块请参考<a href="https://www.atatech.org/articles/79660" target="_blank" rel="external">这篇文章</a></p>
+<p><strong>sendbuffer相当于发送仓库的大小，仓库的货物都发走后，不能立马腾出来发新的货物，而是要等对方确认收到了(ack)才能腾出来发新的货物, 仓库足够大了之后接下来的瓶颈就是高速公路了（带宽、拥塞窗口）</strong></p>
+<p>如果是UDP，就没有可靠的概念，有数据统统发出去，根本不关心对方是否收到，也就不需要ack和这个发送buffer了。</p>
+<h3 id="几个发送buffer相关的内核参数"><a href="#几个发送buffer相关的内核参数" class="headerlink" title="几个发送buffer相关的内核参数"></a>几个发送buffer相关的内核参数</h3><p>​</p>
+<p>Plain Text</p>
+<p>1</p>
+<p>vm.lowmem_reserve_ratio = 256   256     32</p>
+<p>2</p>
+<p>net.core.wmem_max = 1048576</p>
+<p>3</p>
+<p>net.core.wmem_default = 124928</p>
+<p>4</p>
+<p>net.ipv4.tcp_wmem = 4096        16384   4194304</p>
+<p>5</p>
+<p>net.ipv4.udp_wmem_min = 4096</p>
+<p>​</p>
+<p>net.ipv4.tcp_wmem 默认就是16K，而且是能够动态调整的，只不过我们代码中这块的参数是很多年前从Corba中继承过来的，一直没有修改。代码中设置了这个参数后就关闭了内核的动态调整功能，所以能看到http或者scp都很快。</p>
+<p>接收buffer是有开关可以动态控制的，发送buffer没有开关默认就是开启，关闭只能在代码层面来控制</p>
+<blockquote>
+<p>net.ipv4.tcp_moderate_rcvbuf</p>
+</blockquote>
+<h3 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h3><p>调整 socketSendBuffer 到256K，查询时间从25秒下降到了4秒多，但是比理论带宽所需要的时间略高</p>
+<p>继续查看系统 net.core.wmem_max 参数默认最大是130K，所以即使我们代码中设置256K实际使用的也是130K，调大这个系统参数后整个网络传输时间大概2秒(跟100M带宽匹配了，scp传输22M数据也要2秒），整体查询时间2.8秒。测试用的mysql client短连接，如果代码中的是长连接的话会块300-400ms（消掉了慢启动阶段），这基本上是理论上最快速度了</p>
+<p>​<img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1558603861595-39197d54-4e04-4a61-8687-f549bdaa883b.png" alt="Image">                             ​</p>
+<p>如果指定了tcp_wmem，则net.core.wmem_default被tcp_wmem的覆盖。send Buffer在tcp_wmem的最小值和最大值之间自动调节。如果调用setsockopt()设置了socket选项SO_SNDBUF，将关闭发送端缓冲的自动调节机制，tcp_wmem将被忽略，SO_SNDBUF的最大值由net.core.wmem_max限制。</p>
+<h3 id="BDP-带宽时延积"><a href="#BDP-带宽时延积" class="headerlink" title="BDP 带宽时延积"></a>BDP 带宽时延积</h3><p>这个 buffer 调到1M测试没有帮助，从理论计算BDP（带宽时延积） 0.02秒*(100MB/8)=250Kb  所以SO_SNDBUF为256Kb的时候基本能跑满带宽了，再大实际意义也不大了。</p>
+<p>因为BDP是250K，也就是拥塞窗口即将成为新的瓶颈，所以调大buffer没意义了。</p>
+<h3 id="用tc构造延时和带宽限制的模拟重现环境"><a href="#用tc构造延时和带宽限制的模拟重现环境" class="headerlink" title="用tc构造延时和带宽限制的模拟重现环境"></a>用tc构造延时和带宽限制的模拟重现环境</h3><p>​</p>
+<p>Plain Text</p>
+<p>1</p>
+<p>sudo tc qdisc del dev eth0 root netem delay 20ms</p>
+<p>2</p>
+<p>sudo tc qdisc add dev eth0 root tbf rate 500kbit latency 50ms burst 15kb</p>
+<p>​</p>
+<h3 id="这个案例关于wmem的结论"><a href="#这个案例关于wmem的结论" class="headerlink" title="这个案例关于wmem的结论"></a>这个案例关于wmem的结论</h3><p>默认情况下Linux系统会自动调整这个buffer（net.ipv4.tcp_wmem）, 也就是不推荐程序中主动去设置SO_SNDBUF，除非明确知道设置的值是最优的。</p>
+<p>平时看到的一些理论在实践中用起来比较难，最开始看到抓包结果的时候比较怀疑发送、接收窗口之类的，没有直接想到send buffer上，理论跟实践的鸿沟。</p>
+<p>接下来我们接着一看看接收buffer(rmem)和接收窗口的情况。</p>
+<h2 id="rmem和接收窗口"><a href="#rmem和接收窗口" class="headerlink" title="rmem和接收窗口"></a>rmem和接收窗口</h2><p>用这样一个案例下来验证接收窗口：有一个batch insert语句，整个一次要插入5532条记录，所有记录大小总共是376K。</p>
+<h3 id="SO-RCVBUF很小的时候并且rtt很大对性能的影响"><a href="#SO-RCVBUF很小的时候并且rtt很大对性能的影响" class="headerlink" title="SO_RCVBUF很小的时候并且rtt很大对性能的影响"></a>SO_RCVBUF很小的时候并且rtt很大对性能的影响</h3><p>如果rtt是40ms，总共需要5-6秒钟：</p>
+<p>​<img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1559025761962-cf422801-1d67-4665-a12e-8419ffb1e27a.png" alt="image.png"> “image.png”                             ​</p>
+<p>基本可以看到server一旦空出来点窗口，client马上就发送数据，由于这点窗口太小，rtt是40ms，也就是一个rtt才能传3456字节的数据，整个带宽才80-90K，完全没跑满。</p>
+<p>​<img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1559025983487-bf6bde7b-6cb1-4d18-b0a0-ea63ddf538e4.png" alt="image.png"> “image.png”                             ​</p>
+<p>比较明显间隔 40ms 一个等待台阶，台阶之间两个包大概3K数据，总的传输效率如下：</p>
+<p>​<img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1559026080137-38bd9712-eb07-4fc1-82e7-649cde233cfd.png" alt="image.png"> “image.png”                             ​</p>
+<p><strong>速度越快这个斜线应该越陡表示速度越快，从上图看整体SQL上传花了5.5秒，执行0.5秒。</strong></p>
+<p>此时对应的窗口尺寸：</p>
+<p><strong>​<img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1559027684431-4b47d1be-6bf9-4a5a-b041-bf675ff36f4a.png" alt="image.png"> “image.png”                             ​</strong></p>
+<p>窗口由最开始28K(20个1448）很快降到了不到4K的样子，然后基本游走在即将满的边缘，虽然读取慢，幸好rtt也大，导致最终也没有满。（这个是3.1的Linux，应用SO_RCVBUF设置的是8K，用一半来做接收窗口）</p>
+<h3 id="SO-RCVBUF很小的时候并且rtt很小时对性能的影响"><a href="#SO-RCVBUF很小的时候并且rtt很小时对性能的影响" class="headerlink" title="SO_RCVBUF很小的时候并且rtt很小时对性能的影响"></a>SO_RCVBUF很小的时候并且rtt很小时对性能的影响</h3><p>如果同样的语句在 rtt 是0.1ms的话</p>
+<p>​<img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1559026228698-b5749b94-6083-451a-ac1e-a95150d93b82.png" alt="image.png"> “image.png”                             ​</p>
+<p>虽然明显看到接收窗口经常跑满，但是因为rtt很小，一旦窗口空出来很快就通知到对方了，所以整个过小的接收窗口也没怎么影响到整体性能</p>
+<p>​<img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1559027225308-61d25bd1-9270-4762-b0cf-721a34d8689a.png" alt="image.png"> “image.png”                             ​</p>
+<p>如上图11.4秒整个SQL开始，到11.41秒SQL上传完毕，11.89秒执行完毕（执行花了0.5秒），上传只花了0.01秒</p>
+<p>接收窗口情况：</p>
+<p>​<img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1559027854127-2049facb-7708-49b5-a165-141549cc7e6b.png" alt="image.png"> “image.png”                             ​</p>
+<p>如图，接收窗口由最开始的28K降下来，然后一直在5880和满了之间跳动</p>
+<p>​<img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1559028098375-d1e8ab50-d3c0-47c3-8326-53afe8ba0116.png" alt="image.png"> “image.png”                             ​</p>
+<p>从这里可以得出结论，接收窗口的大小会影响性能，rtt越大影响越明显，当然这里还需要应用程序配合，如果应用程序一直不读走数据即使接收窗口再大也会堆满的。</p>
+<h3 id="SO-RCVBUF和tcp-window-full的坏case"><a href="#SO-RCVBUF和tcp-window-full的坏case" class="headerlink" title="SO_RCVBUF和tcp window full的坏case"></a>SO_RCVBUF和tcp window full的坏case</h3><p>​<img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1558922856836-92aca189-2b5c-46b9-ae06-cbb0db50baf4.png" alt="image.png"> “image.png”                             ​</p>
+<p>上图中红色平台部分，停顿了大概6秒钟没有发任何有内容的数据包，这6秒钟具体在做什么如下图所示，可以看到这个时候接收方的TCP Window Full，同时也能看到接收方的TCP Window Size是8192（8K），这肯定太小了</p>
+<p>​<img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1558923047361-de371658-b656-4566-9e20-5958919ee1fe.png" alt="image.png"> “image.png”                             ​</p>
+<p>这个状况跟前面描述的send buffer不太一样，8K是很小，但是因为rtt也很小，所以server总是能很快就ack收到了，接收窗口也一直不容易达到full状态，但是一旦接收窗口达到了full状态，居然需要惊人的6秒钟才能恢复，这等待的时间有点太长了。这里应该是应用读取数据太慢导致了耗时6秒才恢复，所以最终这个请求执行会非常非常慢（时间主要耗在了上传SQL而不是执行SQL）</p>
+<h3 id="接收窗口和SO-RCVBUF的关系"><a href="#接收窗口和SO-RCVBUF的关系" class="headerlink" title="接收窗口和SO_RCVBUF的关系"></a>接收窗口和SO_RCVBUF的关系</h3><p>初始接收窗口一般是 <strong>mss*初始cwnd（为了和慢启动逻辑兼容，不想一下子冲击到网络）</strong>，如果没有设置SO_RCVBUF，那么会根据 net.ipv4.tcp_rmem 动态变化，如果设置了SO_RCVBUF，那么接收窗口要向下面描述的值靠拢。</p>
+<p>初始cwnd可以大致通过查看到：</p>
+<pre><code>​
+ss -itmpn dst &quot;10.81.212.8&quot;
+State      Recv-Q Send-Q Local Address:Port  Peer Address:Port
+ESTAB      0      0      10.xx.xx.xxx:22     10.yy.yy.yyy:12345  users:((&quot;sshd&quot;,pid=1442,fd=3))
+         skmem:(r0,rb369280,t0,tb87040,f4096,w0,o0,bl0,d92)
+
+Here we can see this socket has Receive Buffer 369280 bytes, and Transmit Buffer 87040 bytes.
+Keep in mind the kernel will double any socket buffer allocation for overhead. 
+So a process asks for 256 KiB buffer with setsockopt(SO_RCVBUF) then it will get 512 KiB buffer
+space. This is described on man 7 tcp. 
+https://access.redhat.com/discussions/3624151
+</code></pre><p>​</p>
+<p>初始窗口计算的代码逻辑，重点在18行：</p>
+<pre><code>/* TCP initial congestion window as per rfc6928 */
+#define TCP_INIT_CWND           10
+
+
+/* 3. Try to fixup all. It is made immediately after connection enters
+ *    established state.
+ */
+void tcp_init_buffer_space(struct sock *sk)
+{
+    int tcp_app_win = sock_net(sk)-&gt;ipv4.sysctl_tcp_app_win;
+    struct tcp_sock *tp = tcp_sk(sk);
+    int maxwin;
+
+    if (!(sk-&gt;sk_userlocks &amp; SOCK_SNDBUF_LOCK))
+            tcp_sndbuf_expand(sk);
+
+            //初始最大接收窗口计算过程
+    tp-&gt;rcvq_space.space = min_t(u32, tp-&gt;rcv_wnd, TCP_INIT_CWND * tp-&gt;advmss);
+    tcp_mstamp_refresh(tp);
+    tp-&gt;rcvq_space.time = tp-&gt;tcp_mstamp;
+    tp-&gt;rcvq_space.seq = tp-&gt;copied_seq;
+
+    maxwin = tcp_full_space(sk);
+
+    if (tp-&gt;window_clamp &gt;= maxwin) {
+            tp-&gt;window_clamp = maxwin;
+
+            if (tcp_app_win &amp;&amp; maxwin &gt; 4 * tp-&gt;advmss)
+                    tp-&gt;window_clamp = max(maxwin -
+                                           (maxwin &gt;&gt; tcp_app_win),
+                                           4 * tp-&gt;advmss);
+    }
+
+    /* Force reservation of one segment. */
+    if (tcp_app_win &amp;&amp;
+        tp-&gt;window_clamp &gt; 2 * tp-&gt;advmss &amp;&amp;
+        tp-&gt;window_clamp + tp-&gt;advmss &gt; maxwin)
+            tp-&gt;window_clamp = max(2 * tp-&gt;advmss, maxwin - tp-&gt;advmss);
+
+    tp-&gt;rcv_ssthresh = min(tp-&gt;rcv_ssthresh, tp-&gt;window_clamp);
+    tp-&gt;snd_cwnd_stamp = tcp_jiffies32;
+}
+</code></pre><p>​</p>
+<p>传输过程中，最大接收窗口会动态调整，当指定了SO_RCVBUF后，实际buffer是两倍SO_RCVBUF，但是要分出一部分（2^net.ipv4.tcp_adv_win_scale)来作为乱序报文缓存。</p>
+<ol>
+<li>net.ipv4.tcp_adv_win_scale = 2  //2.6内核，3.1中这个值默认是1</li>
+</ol>
+<p>如果SO_RCVBUF是8K，总共就是16K，然后分出2^2分之一，也就是4分之一，还剩12K当做接收窗口；如果设置的32K，那么接收窗口是48K</p>
+<pre><code>static inline int tcp_win_from_space(const struct sock *sk, int space)
+{//space 传入的时候就已经是 2*SO_RCVBUF了
+        int tcp_adv_win_scale = sock_net(sk)-&gt;ipv4.sysctl_tcp_adv_win_scale;
+
+        return tcp_adv_win_scale &lt;= 0 ?
+                (space&gt;&gt;(-tcp_adv_win_scale)) :
+                space - (space&gt;&gt;tcp_adv_win_scale); //sysctl参数tcp_adv_win_scale 
+}
+</code></pre><p>​</p>
+<p>接收窗口有最大接收窗口和当前可用接收窗口。</p>
+<p>一般来说一次中断基本都会将 buffer 中的包都取走。</p>
+<p>​<img src="https://cdn.nlark.com/yuque/0/2019/gif/162611/1559030833230-72b44e6d-5c3c-413b-91ff-26074bd2bdbe.gif" alt="Image">                             ​</p>
+<p>绿线是最大接收窗口动态调整的过程，最开始是1460<em>10，握手完毕后略微调整到1472</em>10（可利用body增加了12），随着数据的传输开始跳涨</p>
+<p>​<img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1559043502992-97c4c823-8cd1-4ae7-9883-203e553604ff.png" alt="image.png"> “image.png”                             ​</p>
+<p>上图是四个batch insert语句，可以看到绿色接收窗口随着数据的传输越来越大，图中蓝色竖直部分基本表示SQL上传，两个蓝色竖直条的间隔代表这个insert在服务器上真正的执行时间。这图非常陡峭，表示上传没有任何瓶颈.</p>
+<h4 id="设置-SO-RCVBUF-后通过wireshark观察到的接收窗口基本"><a href="#设置-SO-RCVBUF-后通过wireshark观察到的接收窗口基本" class="headerlink" title="设置 SO_RCVBUF 后通过wireshark观察到的接收窗口基本"></a>设置 SO_RCVBUF 后通过wireshark观察到的接收窗口基本</h4><p>下图是设置了 SO_RCVBUF 为8192的实际情况：</p>
+<p>​<img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1559097931609-28c0fc94-09ca-4564-8f47-432f9b5e2c5b.png" alt="image.png"> “image.png”                             ​</p>
+<p>从最开始的14720，执行第一个create table语句后降到14330，到真正执行batch insert就降到了8192*1.5. 然后一直保持在这个值</p>
+<h4 id="If-you-set-a-“receive-buffer-size”-on-a-TCP-socket-what-does-it-actually-mean"><a href="#If-you-set-a-“receive-buffer-size”-on-a-TCP-socket-what-does-it-actually-mean" class="headerlink" title="If you set a “receive buffer size” on a TCP socket, what does it actually mean?"></a>If you set a “receive buffer size” on a TCP socket, what does it actually mean?</h4><p>The naive answer would go something along the lines of: the TCP receive buffer setting indicates the maximum number of bytes a read() syscall could retrieve without blocking.</p>
+<p>Note that if the buffer size is set with setsockopt(), the value returned with getsockopt() is always double the size requested to allow for overhead. This is described in man 7 socket.</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
+<li>一般来说绝对不要在程序中手工设置SO_SNDBUF和SO_RCVBUF，内核自动调整比你做的要好；</li>
+<li>SO_SNDBUF一般会比发送滑动窗口要大，因为发送出去并且ack了的才能从SO_SNDBUF中释放；</li>
+<li>TCP接收窗口跟SO_RCVBUF关系很复杂；</li>
+<li>SO_RCVBUF太小并且rtt很大的时候会严重影响性能；</li>
+<li>接收窗口比发送窗口复杂多了。</li>
+</ul>
+<p><strong>总之记住一句话：不要设置socket的**</strong>SO_SNDBUF和SO_RCVBUF**</p>
+<h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a href="https://www.atatech.org/articles/80292" target="_blank" rel="external">经典的 nagle 和 dalay ack对性能的影响 就是要你懂 TCP– 最经典的TCP性能问题</a></p>
+<p><a href="https://www.atatech.org/articles/78858" target="_blank" rel="external">关于TCP 半连接队列和全连接队列</a></p>
+<p><a href="https://www.atatech.org/articles/60633" target="_blank" rel="external">MSS和MTU导致的悲剧</a></p>
+<p><a href="https://www.atatech.org/articles/73174" target="_blank" rel="external">双11通过网络优化提升10倍性能</a></p>
+<p><a href="https://www.atatech.org/articles/79660" target="_blank" rel="external">就是要你懂TCP的握手和挥手</a></p>
+<p><a href="https://www.atatech.org/articles/13203" target="_blank" rel="external">高性能网络编程7–tcp连接的内存使用</a></p>
+<p><a href="https://blog.cloudflare.com/the-story-of-one-latency-spike/" target="_blank" rel="external">The story of one latency spike</a></p>
+<p><a href="https://access.redhat.com/discussions/782343" target="_blank" rel="external">What is rcv_space in the ‘ss –info’ output, and why it’s value is larger than net.core.rmem_max</a></p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/05/15/网络通不通是个大问题--半夜鸡叫/" rel="next" title="网络通不通是个大问题–半夜鸡叫">
+                <i class="fa fa-chevron-left"></i> 网络通不通是个大问题–半夜鸡叫
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/avatar.gif"
+               alt="weibo @plantegg" />
+          <p class="site-author-name" itemprop="name">weibo @plantegg</p>
+           
+              <p class="site-description motion-element" itemprop="description"></p>
+           
+        </div>
+        <nav class="site-state motion-element">
+
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">28</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-categories">
+              
+                <span class="site-state-item-count">10</span>
+                <span class="site-state-item-name">分类</span>
+              
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-tags">
+              
+                <span class="site-state-item-count">75</span>
+                <span class="site-state-item-name">标签</span>
+              
+            </div>
+          
+
+        </nav>
+
+        
+          <div class="feed-link motion-element">
+            <a href="/atom.xml" rel="alternate">
+              <i class="fa fa-rss"></i>
+              RSS
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#TCP性能和发送接收Buffer的关系"><span class="nav-number">1.</span> <span class="nav-text">TCP性能和发送接收Buffer的关系</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#系统相关参数如下"><span class="nav-number">1.1.</span> <span class="nav-text">系统相关参数如下</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#wmem和发送窗口"><span class="nav-number">1.2.</span> <span class="nav-text">wmem和发送窗口</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#抓包-tcpdump-wireshark"><span class="nav-number">1.2.1.</span> <span class="nav-text">抓包 tcpdump+wireshark</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Simple-probe-to-detect-when-a-process-is-waiting-for-more-socket-send"><span class="nav-number">2.</span> <span class="nav-text">Simple probe to detect when a process is waiting for more socket send</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#buffer-memory-Usually-means-the-process-is-doing-writes-larger-than-the"><span class="nav-number">3.</span> <span class="nav-text">buffer memory. Usually means the process is doing writes larger than the</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#socket-send-buffer-size-or-there-is-a-slow-receiver-at-the-other-side"><span class="nav-number">4.</span> <span class="nav-text">socket send buffer size or there is a slow receiver at the other side.</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Increasing-the-socket’s-send-buffer-size-might-help-decrease-application"><span class="nav-number">5.</span> <span class="nav-text">Increasing the socket’s send buffer size might help decrease application</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#latencies-but-it-might-also-make-it-worse-so-buyer-beware"><span class="nav-number">6.</span> <span class="nav-text">latencies, but it might also make it worse, so buyer beware.</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Typical-output-timestamp-in-microseconds-procname-pid-event"><span class="nav-number">7.</span> <span class="nav-text">Typical output: timestamp in microseconds: procname(pid) event</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#1218230114875167-python-17631-blocked-on-full-send-buffer"><span class="nav-number">8.</span> <span class="nav-text">1218230114875167: python(17631) blocked on full send buffer</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#1218230114876196-python-17631-recovered-from-full-send-buffer"><span class="nav-number">9.</span> <span class="nav-text">1218230114876196: python(17631) recovered from full send buffer</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#1218230114876271-python-17631-blocked-on-full-send-buffer"><span class="nav-number">10.</span> <span class="nav-text">1218230114876271: python(17631) blocked on full send buffer</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#1218230114876479-python-17631-recovered-from-full-send-buffer"><span class="nav-number">11.</span> <span class="nav-text">1218230114876479: python(17631) recovered from full send buffer</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#几个发送buffer相关的内核参数"><span class="nav-number">11.0.1.</span> <span class="nav-text">几个发送buffer相关的内核参数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#优化"><span class="nav-number">11.0.2.</span> <span class="nav-text">优化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#BDP-带宽时延积"><span class="nav-number">11.0.3.</span> <span class="nav-text">BDP 带宽时延积</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#用tc构造延时和带宽限制的模拟重现环境"><span class="nav-number">11.0.4.</span> <span class="nav-text">用tc构造延时和带宽限制的模拟重现环境</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#这个案例关于wmem的结论"><span class="nav-number">11.0.5.</span> <span class="nav-text">这个案例关于wmem的结论</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#rmem和接收窗口"><span class="nav-number">11.1.</span> <span class="nav-text">rmem和接收窗口</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#SO-RCVBUF很小的时候并且rtt很大对性能的影响"><span class="nav-number">11.1.1.</span> <span class="nav-text">SO_RCVBUF很小的时候并且rtt很大对性能的影响</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SO-RCVBUF很小的时候并且rtt很小时对性能的影响"><span class="nav-number">11.1.2.</span> <span class="nav-text">SO_RCVBUF很小的时候并且rtt很小时对性能的影响</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SO-RCVBUF和tcp-window-full的坏case"><span class="nav-number">11.1.3.</span> <span class="nav-text">SO_RCVBUF和tcp window full的坏case</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#接收窗口和SO-RCVBUF的关系"><span class="nav-number">11.1.4.</span> <span class="nav-text">接收窗口和SO_RCVBUF的关系</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#设置-SO-RCVBUF-后通过wireshark观察到的接收窗口基本"><span class="nav-number">11.1.4.1.</span> <span class="nav-text">设置 SO_RCVBUF 后通过wireshark观察到的接收窗口基本</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#If-you-set-a-“receive-buffer-size”-on-a-TCP-socket-what-does-it-actually-mean"><span class="nav-number">11.1.4.2.</span> <span class="nav-text">If you set a “receive buffer size” on a TCP socket, what does it actually mean?</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">11.2.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文章"><span class="nav-number">11.3.</span> <span class="nav-text">参考文章</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+
+<div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">weibo @plantegg</span>
+</div>
+
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Muse
+  </a>
+</div>
+
+<span id="busuanzi_container_site_pv">
+    本站总访问量<span id="busuanzi_value_site_pv"></span>次
+</span>
+<span id="busuanzi_container_site_uv">
+  本站访客数<span id="busuanzi_value_site_uv"></span>人次
+</span>
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+  
+    <span class="site-uv">
+      <i class="fa fa-user"></i> 访问人数
+      <span class="busuanzi-value" id="busuanzi_value_site_uv"></span>
+      人
+    </span>
+  
+
+  
+    <span class="site-pv">
+      <i class="fa fa-eye"></i>
+      <span class="busuanzi-value" id="busuanzi_value_site_pv"></span>
+      次
+    </span>
+  
+</div>
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.1"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.1"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'http://yoursite.com/2019/05/29/TCP性能和发送接收Buffer的关系/';
+          this.page.identifier = '2019/05/29/TCP性能和发送接收Buffer的关系/';
+          this.page.title = '';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
