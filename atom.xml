@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://yoursite.com/"/>
-  <updated>2019-05-29T04:41:36.000Z</updated>
+  <updated>2019-05-29T04:46:25.000Z</updated>
   <id>http://yoursite.com/</id>
   
   <author>
@@ -16,11 +16,11 @@
   <generator uri="http://hexo.io/">Hexo</generator>
   
   <entry>
-    <title></title>
-    <link href="http://yoursite.com/2019/05/29/TCP%E6%80%A7%E8%83%BD%E5%92%8C%E5%8F%91%E9%80%81%E6%8E%A5%E6%94%B6Buffer%E7%9A%84%E5%85%B3%E7%B3%BB/"/>
-    <id>http://yoursite.com/2019/05/29/TCP性能和发送接收Buffer的关系/</id>
-    <published>2019-05-29T04:42:47.149Z</published>
-    <updated>2019-05-29T04:41:36.000Z</updated>
+    <title>TCP性能和发送接收Buffer的关系</title>
+    <link href="http://yoursite.com/2019/05/28/TCP%E6%80%A7%E8%83%BD%E5%92%8C%E5%8F%91%E9%80%81%E6%8E%A5%E6%94%B6Buffer%E7%9A%84%E5%85%B3%E7%B3%BB/"/>
+    <id>http://yoursite.com/2019/05/28/TCP性能和发送接收Buffer的关系/</id>
+    <published>2019-05-28T04:30:03.000Z</published>
+    <updated>2019-05-29T04:46:25.000Z</updated>
     
     <content type="html"><![CDATA[<h1 id="TCP性能和发送接收Buffer的关系"><a href="#TCP性能和发送接收Buffer的关系" class="headerlink" title="TCP性能和发送接收Buffer的关系"></a>TCP性能和发送接收Buffer的关系</h1><h2 id="系统相关参数如下"><a href="#系统相关参数如下" class="headerlink" title="系统相关参数如下"></a>系统相关参数如下</h2><pre><code>$sudo sysctl -a | egrep &quot;rmem|wmem|adv_win|moderate&quot;
 net.core.rmem_default = 212992
@@ -263,6 +263,18 @@ void tcp_init_buffer_space(struct sock *sk)
     
     </summary>
     
+      <category term="Linux" scheme="http://yoursite.com/categories/Linux/"/>
+    
+    
+      <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
+    
+      <category term="TCP" scheme="http://yoursite.com/tags/TCP/"/>
+    
+      <category term="sendBuffer" scheme="http://yoursite.com/tags/sendBuffer/"/>
+    
+      <category term="rmem" scheme="http://yoursite.com/tags/rmem/"/>
+    
+      <category term="receiveBuffer" scheme="http://yoursite.com/tags/receiveBuffer/"/>
     
   </entry>
   
