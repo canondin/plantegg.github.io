@@ -77,7 +77,7 @@
 <link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="Linux,TCP,sendBuffer,rmem,receiveBuffer," />
+  <meta name="keywords" content="Linux,performance,TCP,sendBuffer,rmem,receiveBuffer,wmem,接收窗口,发送窗口," />
 
 
 
@@ -98,7 +98,7 @@
 
 
 <meta name="description" content="TCP性能和发送接收Buffer的关系系统相关参数如下$sudo sysctl -a | egrep &amp;quot;rmem|wmem|adv_win|moderate&amp;quot; net.core.rmem_default = 212992 net.core.rmem_max = 212992 net.core.wmem_default = 212992 net.core.wmem_max = 2">
-<meta name="keywords" content="Linux,TCP,sendBuffer,rmem,receiveBuffer">
+<meta name="keywords" content="Linux,performance,TCP,sendBuffer,rmem,receiveBuffer,wmem,接收窗口,发送窗口">
 <meta property="og:type" content="article">
 <meta property="og:title" content="TCP性能和发送接收Buffer的关系">
 <meta property="og:url" content="http://yoursite.com/2019/05/28/TCP性能和发送接收Buffer的关系/index.html">
@@ -123,7 +123,7 @@
 <meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/gif/162611/1559030833230-72b44e6d-5c3c-413b-91ff-26074bd2bdbe.gif">
 <meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1559043502992-97c4c823-8cd1-4ae7-9883-203e553604ff.png">
 <meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1559097931609-28c0fc94-09ca-4564-8f47-432f9b5e2c5b.png">
-<meta property="og:updated_time" content="2019-05-29T04:51:00.000Z">
+<meta property="og:updated_time" content="2019-05-29T05:05:20.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="TCP性能和发送接收Buffer的关系">
 <meta name="twitter:description" content="TCP性能和发送接收Buffer的关系系统相关参数如下$sudo sysctl -a | egrep &amp;quot;rmem|wmem|adv_win|moderate&amp;quot; net.core.rmem_default = 212992 net.core.rmem_max = 212992 net.core.wmem_default = 212992 net.core.wmem_max = 2">
@@ -581,14 +581,7 @@ void tcp_init_buffer_space(struct sock *sk)
 <li>接收窗口比发送窗口复杂多了。</li>
 </ul>
 <p><strong>总之记住一句话：不要设置socket的**</strong>SO_SNDBUF和SO_RCVBUF**</p>
-<h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a href="https://www.atatech.org/articles/80292" target="_blank" rel="external">经典的 nagle 和 dalay ack对性能的影响 就是要你懂 TCP– 最经典的TCP性能问题</a></p>
-<p><a href="https://www.atatech.org/articles/78858" target="_blank" rel="external">关于TCP 半连接队列和全连接队列</a></p>
-<p><a href="https://www.atatech.org/articles/60633" target="_blank" rel="external">MSS和MTU导致的悲剧</a></p>
-<p><a href="https://www.atatech.org/articles/73174" target="_blank" rel="external">双11通过网络优化提升10倍性能</a></p>
-<p><a href="https://www.atatech.org/articles/79660" target="_blank" rel="external">就是要你懂TCP的握手和挥手</a></p>
-<p><a href="https://www.atatech.org/articles/13203" target="_blank" rel="external">高性能网络编程7–tcp连接的内存使用</a></p>
-<p><a href="https://blog.cloudflare.com/the-story-of-one-latency-spike/" target="_blank" rel="external">The story of one latency spike</a></p>
-<p><a href="https://access.redhat.com/discussions/782343" target="_blank" rel="external">What is rcv_space in the ‘ss –info’ output, and why it’s value is larger than net.core.rmem_max</a></p>
+<h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a href="https://www.atatech.org/articles/80292" target="_blank" rel="external">经典的 nagle 和 dalay ack对性能的影响 就是要你懂 TCP– 最经典的TCP性能问题</a><br><a href="https://www.atatech.org/articles/78858" target="_blank" rel="external">关于TCP 半连接队列和全连接队列</a><br><a href="https://www.atatech.org/articles/60633" target="_blank" rel="external">MSS和MTU导致的悲剧</a><br><a href="https://www.atatech.org/articles/73174" target="_blank" rel="external">双11通过网络优化提升10倍性能</a><br><a href="https://www.atatech.org/articles/79660" target="_blank" rel="external">就是要你懂TCP的握手和挥手</a><br><a href="https://www.atatech.org/articles/13203" target="_blank" rel="external">高性能网络编程7–tcp连接的内存使用</a><br><a href="https://blog.cloudflare.com/the-story-of-one-latency-spike/" target="_blank" rel="external">The story of one latency spike</a><br><a href="https://access.redhat.com/discussions/782343" target="_blank" rel="external">What is rcv_space in the ‘ss –info’ output, and why it’s value is larger than net.core.rmem_max</a></p>
 
       
     </div>
@@ -620,6 +613,8 @@ void tcp_init_buffer_space(struct sock *sk)
           
             <a href="/tags/Linux/" rel="tag"># Linux</a>
           
+            <a href="/tags/performance/" rel="tag"># performance</a>
+          
             <a href="/tags/TCP/" rel="tag"># TCP</a>
           
             <a href="/tags/sendBuffer/" rel="tag"># sendBuffer</a>
@@ -627,6 +622,12 @@ void tcp_init_buffer_space(struct sock *sk)
             <a href="/tags/rmem/" rel="tag"># rmem</a>
           
             <a href="/tags/receiveBuffer/" rel="tag"># receiveBuffer</a>
+          
+            <a href="/tags/wmem/" rel="tag"># wmem</a>
+          
+            <a href="/tags/接收窗口/" rel="tag"># 接收窗口</a>
+          
+            <a href="/tags/发送窗口/" rel="tag"># 发送窗口</a>
           
         </div>
       
@@ -748,7 +749,7 @@ void tcp_init_buffer_space(struct sock *sk)
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">77</span>
+                <span class="site-state-item-count">80</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>

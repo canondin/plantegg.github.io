@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://yoursite.com/"/>
-  <updated>2019-05-29T04:51:00.000Z</updated>
+  <updated>2019-05-29T05:05:20.000Z</updated>
   <id>http://yoursite.com/</id>
   
   <author>
@@ -20,7 +20,7 @@
     <link href="http://yoursite.com/2019/05/28/TCP%E6%80%A7%E8%83%BD%E5%92%8C%E5%8F%91%E9%80%81%E6%8E%A5%E6%94%B6Buffer%E7%9A%84%E5%85%B3%E7%B3%BB/"/>
     <id>http://yoursite.com/2019/05/28/TCP性能和发送接收Buffer的关系/</id>
     <published>2019-05-28T04:30:03.000Z</published>
-    <updated>2019-05-29T04:51:00.000Z</updated>
+    <updated>2019-05-29T05:05:20.000Z</updated>
     
     <content type="html"><![CDATA[<h1 id="TCP性能和发送接收Buffer的关系"><a href="#TCP性能和发送接收Buffer的关系" class="headerlink" title="TCP性能和发送接收Buffer的关系"></a>TCP性能和发送接收Buffer的关系</h1><h2 id="系统相关参数如下"><a href="#系统相关参数如下" class="headerlink" title="系统相关参数如下"></a>系统相关参数如下</h2><pre><code>$sudo sysctl -a | egrep &quot;rmem|wmem|adv_win|moderate&quot;
 net.core.rmem_default = 212992
@@ -218,14 +218,7 @@ void tcp_init_buffer_space(struct sock *sk)
 <li>接收窗口比发送窗口复杂多了。</li>
 </ul>
 <p><strong>总之记住一句话：不要设置socket的**</strong>SO_SNDBUF和SO_RCVBUF**</p>
-<h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a href="https://www.atatech.org/articles/80292" target="_blank" rel="external">经典的 nagle 和 dalay ack对性能的影响 就是要你懂 TCP– 最经典的TCP性能问题</a></p>
-<p><a href="https://www.atatech.org/articles/78858" target="_blank" rel="external">关于TCP 半连接队列和全连接队列</a></p>
-<p><a href="https://www.atatech.org/articles/60633" target="_blank" rel="external">MSS和MTU导致的悲剧</a></p>
-<p><a href="https://www.atatech.org/articles/73174" target="_blank" rel="external">双11通过网络优化提升10倍性能</a></p>
-<p><a href="https://www.atatech.org/articles/79660" target="_blank" rel="external">就是要你懂TCP的握手和挥手</a></p>
-<p><a href="https://www.atatech.org/articles/13203" target="_blank" rel="external">高性能网络编程7–tcp连接的内存使用</a></p>
-<p><a href="https://blog.cloudflare.com/the-story-of-one-latency-spike/" target="_blank" rel="external">The story of one latency spike</a></p>
-<p><a href="https://access.redhat.com/discussions/782343" target="_blank" rel="external">What is rcv_space in the ‘ss –info’ output, and why it’s value is larger than net.core.rmem_max</a></p>
+<h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a href="https://www.atatech.org/articles/80292" target="_blank" rel="external">经典的 nagle 和 dalay ack对性能的影响 就是要你懂 TCP– 最经典的TCP性能问题</a><br><a href="https://www.atatech.org/articles/78858" target="_blank" rel="external">关于TCP 半连接队列和全连接队列</a><br><a href="https://www.atatech.org/articles/60633" target="_blank" rel="external">MSS和MTU导致的悲剧</a><br><a href="https://www.atatech.org/articles/73174" target="_blank" rel="external">双11通过网络优化提升10倍性能</a><br><a href="https://www.atatech.org/articles/79660" target="_blank" rel="external">就是要你懂TCP的握手和挥手</a><br><a href="https://www.atatech.org/articles/13203" target="_blank" rel="external">高性能网络编程7–tcp连接的内存使用</a><br><a href="https://blog.cloudflare.com/the-story-of-one-latency-spike/" target="_blank" rel="external">The story of one latency spike</a><br><a href="https://access.redhat.com/discussions/782343" target="_blank" rel="external">What is rcv_space in the ‘ss –info’ output, and why it’s value is larger than net.core.rmem_max</a></p>
 ]]></content>
     
     <summary type="html">
@@ -239,6 +232,8 @@ void tcp_init_buffer_space(struct sock *sk)
     
       <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
     
+      <category term="performance" scheme="http://yoursite.com/tags/performance/"/>
+    
       <category term="TCP" scheme="http://yoursite.com/tags/TCP/"/>
     
       <category term="sendBuffer" scheme="http://yoursite.com/tags/sendBuffer/"/>
@@ -246,6 +241,12 @@ void tcp_init_buffer_space(struct sock *sk)
       <category term="rmem" scheme="http://yoursite.com/tags/rmem/"/>
     
       <category term="receiveBuffer" scheme="http://yoursite.com/tags/receiveBuffer/"/>
+    
+      <category term="wmem" scheme="http://yoursite.com/tags/wmem/"/>
+    
+      <category term="接收窗口" scheme="http://yoursite.com/tags/%E6%8E%A5%E6%94%B6%E7%AA%97%E5%8F%A3/"/>
+    
+      <category term="发送窗口" scheme="http://yoursite.com/tags/%E5%8F%91%E9%80%81%E7%AA%97%E5%8F%A3/"/>
     
   </entry>
   
