@@ -318,7 +318,7 @@ void tcp_init_buffer_space(struct sock *sk)
     <link href="http://yoursite.com/2019/05/15/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82TCP--%E4%B8%80%E4%B8%AA%E7%BD%91%E7%BB%9C%E5%8C%85%E7%9A%84%E6%97%85%E7%A8%8B/"/>
     <id>http://yoursite.com/2019/05/15/就是要你懂TCP--一个网络包的旅程/</id>
     <published>2019-05-15T09:30:03.000Z</published>
-    <updated>2019-05-15T09:42:48.000Z</updated>
+    <updated>2019-06-04T02:07:23.000Z</updated>
     
     <content type="html"><![CDATA[<h1 id="网络通不通这是个麻烦的大问题-–-一个网络包的旅程"><a href="#网络通不通这是个麻烦的大问题-–-一个网络包的旅程" class="headerlink" title="网络通不通这是个麻烦的大问题 – 一个网络包的旅程"></a>网络通不通这是个麻烦的大问题 – 一个网络包的旅程</h1><hr>
 <h2 id="写在最前面的"><a href="#写在最前面的" class="headerlink" title="写在最前面的"></a>写在最前面的</h2><p>我相信你脑子里关于网络的概念都在下面这张图上，但是乱成一团麻，这就是因为知识没有贯通、没有实践、没有组织</p>
@@ -357,7 +357,9 @@ Destination Gateway Genmask Flags Metric RefUse Iface
 <pre><code>172.17.0.0  0.0.0.0 255.255.0.0 U 0  00 docker0
 </code></pre><p>这条路由规则，那么ping 包会从docker0这张网卡发出去。</p>
 <p>但是如果是ping 10.125.4.4 根据路由规则应该走eth0这张网卡。</p>
-<p>接下来就要判断目标IP是否在同一个子网了</p>
+<pre><code>$ip route get 11.192.101.172
+local 11.192.101.172 dev lo  src 11.192.101.172
+</code></pre><p>接下来就要判断目标IP是否在同一个子网了</p>
 <h2 id="ifconfig"><a href="#ifconfig" class="headerlink" title="ifconfig"></a>ifconfig</h2><p>首先来看看这台机器的网卡情况：</p>
 <pre><code>$ifconfig
 docker0: flags=4099&lt;UP,BROADCAST,MULTICAST&gt;  mtu 1500

@@ -933,7 +933,9 @@ Destination Gateway Genmask Flags Metric RefUse Iface
 <pre><code>172.17.0.0  0.0.0.0 255.255.0.0 U 0  00 docker0
 </code></pre><p>这条路由规则，那么ping 包会从docker0这张网卡发出去。</p>
 <p>但是如果是ping 10.125.4.4 根据路由规则应该走eth0这张网卡。</p>
-<p>接下来就要判断目标IP是否在同一个子网了</p>
+<pre><code>$ip route get 11.192.101.172
+local 11.192.101.172 dev lo  src 11.192.101.172
+</code></pre><p>接下来就要判断目标IP是否在同一个子网了</p>
 <h2 id="ifconfig"><a href="#ifconfig" class="headerlink" title="ifconfig"></a>ifconfig</h2><p>首先来看看这台机器的网卡情况：</p>
 <pre><code>$ifconfig
 docker0: flags=4099&lt;UP,BROADCAST,MULTICAST&gt;  mtu 1500
