@@ -261,179 +261,6 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/08/01/如何徒手撕Bug/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/08/01/如何徒手撕Bug/" itemprop="url">如何徒手撕Bug</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-08-01T10:30:03+08:00">
-                2017-08-01
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/performance/" itemprop="url" rel="index">
-                    <span itemprop="name">performance</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2017/08/01/如何徒手撕Bug/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2017/08/01/如何徒手撕Bug/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="如何徒手撕Bug"><a href="#如何徒手撕Bug" class="headerlink" title="如何徒手撕Bug"></a>如何徒手撕Bug</h1><p>经常碰到bug，如果有源代码，或者源代码比较简单一般通过bug现象结合读源代码，基本能比较快解决掉。但是有些时候源代码过于复杂，比如linux kernel，比如 docker，复杂的另一方面是没法比较清晰地去理清源代码的结构。</p>
-<p>所以不到万不得已不要碰积极复杂的源代码</p>
-<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>docker daemon重启，上面有几十个容器，重启后daemon基本上卡死不动了。 docker ps/exec 都没有任何响应，同时能看到很多这样的进程：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/ed7f275935b32c7fd5fef3e0caf2eb0c.png" alt="image.png"></p>
-<p>这个进程是docker daemon在启动的时候去设置每个容器的iptables，来实现dns解析。</p>
-<p>这个时候执行 sudo iptables -L 也告诉你有其他应用锁死iptables了：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/901fd2057fb3b32ff79dc5a29c9cdd67.png" alt="image.png"></p>
-<pre><code>$sudo fuser /run/xtables.lock 
-/run/xtables.lock:1203  5544 10161 14451 14482 14503 14511 14530 14576 14602 14617 14637 14659 14664 14680 14698 14706 14752 14757 14777 14807 14815 14826 14834 14858 14872 14889 14915 14972 14973 14979 14991 15006 15031 15067 15076 15104 15127 15155 15176 15178 15179 15180 16506 17656 17657 17660 21904 21910 24174 28424 29741 29839 29847 30018 32418 32424 32743 33056 33335 59949 64006
-</code></pre><p>通过上面的命令基本可以看到哪些进程在等iptables这个锁，之所以有这么多进程在等这个锁，应该是拿到锁的进程执行比较慢所以导致后面的进程拿不到锁，卡在这里</p>
-<h2 id="跟踪具体拿到锁的进程"><a href="#跟踪具体拿到锁的进程" class="headerlink" title="跟踪具体拿到锁的进程"></a>跟踪具体拿到锁的进程</h2><pre><code>$sudo lsof  /run/xtables.lock | grep 3rW
-iptables 36057 root3rW  REG   0,190 48341 /run/xtables.lock
-</code></pre><p>通过strace这个拿到锁的进程可以看到：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/27d266ab8fd492f009fb7047d9337518.png" alt="image.png"></p>
-<p>发现在这个配置容器dns的进程同时还在执行一些dns查询任务（容器发起了dns查询），但是这个时候dns还没配置好，所以这个查询会超时</p>
-<p>看看物理机上的dns服务器配置：</p>
-<pre><code>$cat /etc/resolv.conf   
-options timeout:2 attempts:2   
-nameserver 10.0.0.1  
-nameserver 10.0.0.2
-nameserver 10.0.0.3
-</code></pre><p>尝试将 timeout 改到20秒、1秒分别验证一下，发现如果timeout改到20秒strace这里也会卡20秒，如果是1秒（这个时候attempts改成1，后面两个dns去掉），那么整体没有感知到任何卡顿，就是所有iptables修改的进程都很快执行完毕了</p>
-<h2 id="strace某个等锁的进程，拿到锁后非常快"><a href="#strace某个等锁的进程，拿到锁后非常快" class="headerlink" title="strace某个等锁的进程，拿到锁后非常快"></a>strace某个等锁的进程，拿到锁后非常快</h2><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/25ab3e2385e08e8e23eeb1309d949839.png" alt="image.png"></p>
-<p>拿到锁后如果这个时候没有收到 dns 查询，那么很快iptables修改完毕，也不会导致卡住</p>
-<h2 id="我的分析"><a href="#我的分析" class="headerlink" title="我的分析"></a>我的分析</h2><p>docker启动的时候要修改每个容器的dns（iptables规则），如果这个时候又收到了dns查询，但是查询的时候dns还没配置好，所以只能等待dns默认超时，等到超时完了再往后执行修改dns动作然后释放iptables锁。这里会发生恶性循环，导致dns修改时占用iptables的时间非常长，进而看着像把物理机iptables锁死，同时docker daemon不响应任何请求。</p>
-<p>这应该是docker daemon实现上的小bug，也就是改iptables这里没加锁，如果修改dns的时候同时收到了dns查询，要是让查询等锁的话就不至于出现这种恶性循环</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>其实这个问题还是挺容易出现的，daemon重启，上面有很多容器，容器里面的任务启动的时候都要做dns解析，这个时候daemon还在修改dns，冲进来很多dns查询的话会导致修改进程变慢</p>
-<p>这也跟物理机的 /etc/resolv.conf 配置有关</p>
-<p>暂时先只留一个dns server，同时把timeout改成1秒（似乎没法改成比1秒更小），同时 attempts:1 ，也就是加快dns查询的失败，当然这会导致应用启动的时候dns解析失败，最终还是需要从docker的源代码修复这个问题。</p>
-<p>解决过程中无数次想放弃，但是反复在那里strace，正是看到了有dns和没有dns查询的两个strace才想清楚这个问题，感谢自己的坚持和很多同事的帮助，手撕的过程中必然有很多不理解的东西，需要请教同事</p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/07/31/优酷双11全链路压测中通过Perf发现的一个SpringMVC 的性能问题/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -952,7 +779,7 @@ nameserver 10.0.0.3
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/06/07/tcp-queue/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/06/07/关于TCP半连接队列和全连接队列/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="weibo @plantegg">
@@ -971,7 +798,7 @@ nameserver 10.0.0.3
         
           <h2 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2017/06/07/tcp-queue/" itemprop="url">tcp queue</a></h2>
+                <a class="post-title-link" href="/2017/06/07/关于TCP半连接队列和全连接队列/" itemprop="url">关于TCP半连接队列和全连接队列</a></h2>
         
 
         <div class="post-meta">
@@ -1024,9 +851,9 @@ nameserver 10.0.0.3
                 <span class="post-meta-item-icon">
                   <i class="fa fa-comment-o"></i>
                 </span>
-                <a href="/2017/06/07/tcp-queue/#comments" itemprop="discussionUrl">
+                <a href="/2017/06/07/关于TCP半连接队列和全连接队列/#comments" itemprop="discussionUrl">
                   <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2017/06/07/tcp-queue/" itemprop="commentCount"></span>
+                        data-disqus-identifier="2017/06/07/关于TCP半连接队列和全连接队列/" itemprop="commentCount"></span>
                 </a>
               </span>
             
@@ -1207,216 +1034,6 @@ server5
 <p><a href="http://jin-yang.github.io/blog/network-synack-queue.html#" target="_blank" rel="external">http://jin-yang.github.io/blog/network-synack-queue.html#</a></p>
 <p><a href="http://blog.chinaunix.net/uid-20662820-id-4154399.html" target="_blank" rel="external">http://blog.chinaunix.net/uid-20662820-id-4154399.html</a></p>
 <p><a href="https://www.atatech.org/articles/12919" target="_blank" rel="external">https://www.atatech.org/articles/12919</a></p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/06/02/就是要你懂TCP连接/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/06/02/就是要你懂TCP连接/" itemprop="url">tcp connection</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-06-02T17:30:03+08:00">
-                2017-06-02
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/tcp/" itemprop="url" rel="index">
-                    <span itemprop="name">tcp</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2017/06/02/就是要你懂TCP连接/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2017/06/02/就是要你懂TCP连接/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="就是要你懂-TCP"><a href="#就是要你懂-TCP" class="headerlink" title="就是要你懂 TCP"></a>就是要你懂 TCP</h1><pre><code>看过太多tcp相关文章，但是看完总是不过瘾，似懂非懂，反复考虑过后，我觉得是那些文章太过理论，看起来没有体感，所以吸收不了。
-
-希望这篇文章能做到言简意赅，帮助大家透过案例来理解原理
-</code></pre><h2 id="tcp的特点"><a href="#tcp的特点" class="headerlink" title="tcp的特点"></a>tcp的特点</h2><p>这个大家基本都能说几句，面试的时候候选人也肯定会告诉你这些：</p>
-<ul>
-<li>三次握手</li>
-<li>四次挥手</li>
-<li>可靠连接</li>
-<li>丢包重传</li>
-</ul>
-<p>但是我只希望大家记住一个核心的：<strong>tcp是可以可靠传输协议，它的所有特点都为这个可靠传输服务</strong>。</p>
-<h3 id="那么tcp是怎么样来保障可靠传输呢？"><a href="#那么tcp是怎么样来保障可靠传输呢？" class="headerlink" title="那么tcp是怎么样来保障可靠传输呢？"></a>那么tcp是怎么样来保障可靠传输呢？</h3><p>tcp在传输过程中都有一个ack，接收方通过ack告诉发送方收到那些包了。这样发送方能知道有没有丢包，进而确定重传</p>
-<h3 id="tcp建连接的三次握手"><a href="#tcp建连接的三次握手" class="headerlink" title="tcp建连接的三次握手"></a>tcp建连接的三次握手</h3><p>来看一个java代码连接数据库的三次握手过程</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/6d66dadecb72e11e3e5ab765c6c3ea2e.png" alt="image.png"></p>
-<p>三个红框表示建立连接的三次握手：</p>
-<ul>
-<li>第一步：client 发送 syn 到server 发起握手；</li>
-<li>第二步：server 收到 syn后回复syn+ack给client；</li>
-<li>第三步：client 收到syn+ack后，回复server一个ack表示收到了server的syn+ack（此时client的48287端口的连接已经是established）</li>
-</ul>
-<p>握手的核心目的是告知对方seq（绿框是client的初始seq，蓝色框是server 的初始seq），对方回复ack（收到的seq+包的大小），这样发送端就知道有没有丢包了</p>
-<p>握手的次要目的是告知和协商一些信息，图中黄框。</p>
-<ul>
-<li>MSS–最大传输包</li>
-<li>SACK_PERM–是否支持Selective ack(用户优化重传效率）</li>
-<li>WS–窗口计算指数（有点复杂的话先不用管）</li>
-</ul>
-<p><strong>这就是tcp为什么要握手建立连接，就是为了解决tcp的可靠传输</strong></p>
-<h3 id="tcp断开连接的四次挥手"><a href="#tcp断开连接的四次挥手" class="headerlink" title="tcp断开连接的四次挥手"></a>tcp断开连接的四次挥手</h3><p>再来看java连上mysql后，执行了一个SQL： select sleep(2); 然后就断开了连接</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/b6f4a952cdf8ffbb8f6e9434d1432e05.png" alt="image.png"></p>
-<p>四个红框表示断开连接的四次挥手：</p>
-<ul>
-<li>第一步： client主动发送fin包给server</li>
-<li>第二步： server回复ack（对应第一步fin包的ack）给client，表示server知道client要断开了</li>
-<li>第三步： server发送fin包给client，表示server也可以断开了</li>
-<li>第四部： client回复ack给server，表示既然双发都发送fin包表示断开，那么就真的断开吧</li>
-</ul>
-<h3 id="为什么握手三次、挥手四次"><a href="#为什么握手三次、挥手四次" class="headerlink" title="为什么握手三次、挥手四次"></a>为什么握手三次、挥手四次</h3><p>这个问题太恶心，面试官太喜欢问，其实他也许只能背诵：因为……。</p>
-<p>我也不知道怎么回答。网上都说tcp是双向的，所以断开要四次。但是我认为建连接也是双向的（双向都协调告知对方自己的seq号），为什么不需要四次握手呢，所以网上说的不一定精准。</p>
-<p>你再看三次握手的第二步发 syn+ack，如果拆分成两步先发ack再发syn完全也是可以的（效率略低），这样三次握手也变成四次握手了。</p>
-<p>看起来挥手的时候多一次，主要是收到第一个fin包后单独回复了一个ack包，如果能回复fin+ack那么四次挥手也就变成三次了。 来看一个案例：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/9db33f9304f8236b1ebcb215064bb2af.png" alt="image.png"></p>
-<p>图中第二个红框就是回复的fin+ack，这样四次挥手变成三次了（如果一个包就是一次的话）。</p>
-<p>我的理解：之所以绝大数时候我们看到的都是四次挥手，是因为收到fin后，知道对方要关闭了，然后OS通知应用层要关闭啥的，这里应用层可能需要做些准备工作，有一些延时，所以先回ack，准备好了再发fin 。 握手过程没有这个准备过程所以可以立即发送syn+ack</p>
-<h3 id="ack-seq-len"><a href="#ack-seq-len" class="headerlink" title="ack=seq+len"></a>ack=seq+len</h3><p>ack总是seq+len（包的大小），这样发送方明确知道server收到那些东西了</p>
-<p>但是特例是三次握手和四次挥手，虽然len都是0，但是syn和fin都要占用一个seq号，所以这里的ack都是seq+1</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/45c6d36ce8b17a5c0442e66fce002ab4.png" alt="image.png"></p>
-<p>看图中左边红框里的len+seq就是接收方回复的ack的数字，表示这个包接收方收到了。然后下一个包的seq就是前一个包的len+seq，依次增加，一旦中间发出去的东西没有收到ack就是丢包了，过一段时间（或者其他方式）触发重传，保障了tcp传输的可靠性。</p>
-<h3 id="三次握手中协商的其它信息"><a href="#三次握手中协商的其它信息" class="headerlink" title="三次握手中协商的其它信息"></a>三次握手中协商的其它信息</h3><p>MSS 最大一个包中能传输的信息（不含tcp、ip包头），MSS+包头就是MTU（最大传输单元），如果MTU过大可能在传输的过程中被卡住过不去造成卡死（这个大小的包一直传输不过去），跟丢包还不一样</p>
-<p>MSS的问题具体可以看我这篇文章： <a href="https://www.atatech.org/articles/60633" target="_blank" rel="external">scp某个文件的时候卡死问题的解决过程</a></p>
-<p>SACK_PERM 用于丢包的话提升重传效率，比如client一次发了1、2、3、4、5 这5个包给server，实际server收到了 1、3、4、5这四个包，中间2丢掉了。这个时候server回复ack的时候，都只能回复2，表示2前面所有的包都收到了，给我发第二个包吧，如果server 收到3、4、5还是没有收到2的话，也是回复ack 2而不是回复ack 3、4、5、6的，表示快点发2过来。</p>
-<p>但是这个时候client虽然知道2丢了，然后会重发2，但是不知道3、4、5有没有丢啊，实际3、4、5 server都收到了，如果支持sack，那么可以ack 2的时候同时告诉client 3、4、5都收到了，这样client重传的时候只重传2就可以，如果没有sack的话那么可能会重传2、3、4、5，这样效率就低了。</p>
-<p>来看一个例子：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/5322d0cf77a3a1ae6c87a972cc5843d0.png" alt="image.png"></p>
-<p>图中的红框就是SACK。</p>
-<p>知识点：ack数字表示这个数字前面的数据<strong>都</strong>收到了</p>
-<h2 id="总结下"><a href="#总结下" class="headerlink" title="总结下"></a>总结下</h2><p>tcp所有特性基本上核心都是为了<strong>可靠传输</strong>这个目标来服务的，然后有一些是出于优化性能的目的</p>
-<p>三次握手建连接的详细过程可以参考我这篇： <a href="https://www.atatech.org/articles/78858" target="_blank" rel="external">关于TCP 半连接队列和全连接队列</a></p>
-<p>后续希望再通过几个案例来深化一下上面的知识。</p>
-<hr>
-<p>说点关于学习的题外话</p>
-<h2 id="什么是工程效率，什么是知识效率"><a href="#什么是工程效率，什么是知识效率" class="headerlink" title="什么是工程效率，什么是知识效率"></a>什么是工程效率，什么是知识效率</h2><p>有些人纯看理论就能掌握好一门技能，还能举一反三，这是知识效率，这种人非常少；</p>
-<p>大多数普通人都是看点知识然后结合实践来强化理论，要经过反反复复才能比较好地掌握一个知识，这就是工程效率，讲究技巧、工具来达到目的。</p>
-<p>肯定知识效率最牛逼，但是拥有这种技能的人毕竟非常少。从小我们周边那种不怎么学的学霸型基本都是这类，这种学霸都还能触类旁通非常快的掌握一个新知识，非常气人。剩下的绝大部分只能拼时间+方法+总结等也能掌握一些知识</p>
-<p>非常遗憾我就是工程效率型，只能羡慕那些知识效率型的学霸。但是这事又不能独立看待有些人在某些方向上是工程效率型，有些方向就又是知识效率型（有一种知识效率型是你掌握的实在太多也就比较容易触类旁通了，这算灰色知识效率型）</p>
-<p>使劲挖掘自己在知识效率型方面的能力吧，即使灰色地带也行啊</p>
 
           
         
@@ -1780,6 +1397,216 @@ debug1: Executing proxy command: exec ssh -l alibaba 139.*.*.* exec /usr/bin/nc 
 
 
     
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/06/02/就是要你懂TCP--连接和握手/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/06/02/就是要你懂TCP--连接和握手/" itemprop="url">就是要你懂TCP--连接和握手</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-06-02T17:30:03+08:00">
+                2017-06-02
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/tcp/" itemprop="url" rel="index">
+                    <span itemprop="name">tcp</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2017/06/02/就是要你懂TCP--连接和握手/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2017/06/02/就是要你懂TCP--连接和握手/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="就是要你懂-TCP"><a href="#就是要你懂-TCP" class="headerlink" title="就是要你懂 TCP"></a>就是要你懂 TCP</h1><pre><code>看过太多tcp相关文章，但是看完总是不过瘾，似懂非懂，反复考虑过后，我觉得是那些文章太过理论，看起来没有体感，所以吸收不了。
+
+希望这篇文章能做到言简意赅，帮助大家透过案例来理解原理
+</code></pre><h2 id="tcp的特点"><a href="#tcp的特点" class="headerlink" title="tcp的特点"></a>tcp的特点</h2><p>这个大家基本都能说几句，面试的时候候选人也肯定会告诉你这些：</p>
+<ul>
+<li>三次握手</li>
+<li>四次挥手</li>
+<li>可靠连接</li>
+<li>丢包重传</li>
+</ul>
+<p>但是我只希望大家记住一个核心的：<strong>tcp是可以可靠传输协议，它的所有特点都为这个可靠传输服务</strong>。</p>
+<h3 id="那么tcp是怎么样来保障可靠传输呢？"><a href="#那么tcp是怎么样来保障可靠传输呢？" class="headerlink" title="那么tcp是怎么样来保障可靠传输呢？"></a>那么tcp是怎么样来保障可靠传输呢？</h3><p>tcp在传输过程中都有一个ack，接收方通过ack告诉发送方收到那些包了。这样发送方能知道有没有丢包，进而确定重传</p>
+<h3 id="tcp建连接的三次握手"><a href="#tcp建连接的三次握手" class="headerlink" title="tcp建连接的三次握手"></a>tcp建连接的三次握手</h3><p>来看一个java代码连接数据库的三次握手过程</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/6d66dadecb72e11e3e5ab765c6c3ea2e.png" alt="image.png"></p>
+<p>三个红框表示建立连接的三次握手：</p>
+<ul>
+<li>第一步：client 发送 syn 到server 发起握手；</li>
+<li>第二步：server 收到 syn后回复syn+ack给client；</li>
+<li>第三步：client 收到syn+ack后，回复server一个ack表示收到了server的syn+ack（此时client的48287端口的连接已经是established）</li>
+</ul>
+<p>握手的核心目的是告知对方seq（绿框是client的初始seq，蓝色框是server 的初始seq），对方回复ack（收到的seq+包的大小），这样发送端就知道有没有丢包了</p>
+<p>握手的次要目的是告知和协商一些信息，图中黄框。</p>
+<ul>
+<li>MSS–最大传输包</li>
+<li>SACK_PERM–是否支持Selective ack(用户优化重传效率）</li>
+<li>WS–窗口计算指数（有点复杂的话先不用管）</li>
+</ul>
+<p><strong>这就是tcp为什么要握手建立连接，就是为了解决tcp的可靠传输</strong></p>
+<h3 id="tcp断开连接的四次挥手"><a href="#tcp断开连接的四次挥手" class="headerlink" title="tcp断开连接的四次挥手"></a>tcp断开连接的四次挥手</h3><p>再来看java连上mysql后，执行了一个SQL： select sleep(2); 然后就断开了连接</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/b6f4a952cdf8ffbb8f6e9434d1432e05.png" alt="image.png"></p>
+<p>四个红框表示断开连接的四次挥手：</p>
+<ul>
+<li>第一步： client主动发送fin包给server</li>
+<li>第二步： server回复ack（对应第一步fin包的ack）给client，表示server知道client要断开了</li>
+<li>第三步： server发送fin包给client，表示server也可以断开了</li>
+<li>第四部： client回复ack给server，表示既然双发都发送fin包表示断开，那么就真的断开吧</li>
+</ul>
+<h3 id="为什么握手三次、挥手四次"><a href="#为什么握手三次、挥手四次" class="headerlink" title="为什么握手三次、挥手四次"></a>为什么握手三次、挥手四次</h3><p>这个问题太恶心，面试官太喜欢问，其实他也许只能背诵：因为……。</p>
+<p>我也不知道怎么回答。网上都说tcp是双向的，所以断开要四次。但是我认为建连接也是双向的（双向都协调告知对方自己的seq号），为什么不需要四次握手呢，所以网上说的不一定精准。</p>
+<p>你再看三次握手的第二步发 syn+ack，如果拆分成两步先发ack再发syn完全也是可以的（效率略低），这样三次握手也变成四次握手了。</p>
+<p>看起来挥手的时候多一次，主要是收到第一个fin包后单独回复了一个ack包，如果能回复fin+ack那么四次挥手也就变成三次了。 来看一个案例：</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/9db33f9304f8236b1ebcb215064bb2af.png" alt="image.png"></p>
+<p>图中第二个红框就是回复的fin+ack，这样四次挥手变成三次了（如果一个包就是一次的话）。</p>
+<p>我的理解：之所以绝大数时候我们看到的都是四次挥手，是因为收到fin后，知道对方要关闭了，然后OS通知应用层要关闭啥的，这里应用层可能需要做些准备工作，有一些延时，所以先回ack，准备好了再发fin 。 握手过程没有这个准备过程所以可以立即发送syn+ack</p>
+<h3 id="ack-seq-len"><a href="#ack-seq-len" class="headerlink" title="ack=seq+len"></a>ack=seq+len</h3><p>ack总是seq+len（包的大小），这样发送方明确知道server收到那些东西了</p>
+<p>但是特例是三次握手和四次挥手，虽然len都是0，但是syn和fin都要占用一个seq号，所以这里的ack都是seq+1</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/45c6d36ce8b17a5c0442e66fce002ab4.png" alt="image.png"></p>
+<p>看图中左边红框里的len+seq就是接收方回复的ack的数字，表示这个包接收方收到了。然后下一个包的seq就是前一个包的len+seq，依次增加，一旦中间发出去的东西没有收到ack就是丢包了，过一段时间（或者其他方式）触发重传，保障了tcp传输的可靠性。</p>
+<h3 id="三次握手中协商的其它信息"><a href="#三次握手中协商的其它信息" class="headerlink" title="三次握手中协商的其它信息"></a>三次握手中协商的其它信息</h3><p>MSS 最大一个包中能传输的信息（不含tcp、ip包头），MSS+包头就是MTU（最大传输单元），如果MTU过大可能在传输的过程中被卡住过不去造成卡死（这个大小的包一直传输不过去），跟丢包还不一样</p>
+<p>MSS的问题具体可以看我这篇文章： <a href="https://www.atatech.org/articles/60633" target="_blank" rel="external">scp某个文件的时候卡死问题的解决过程</a></p>
+<p>SACK_PERM 用于丢包的话提升重传效率，比如client一次发了1、2、3、4、5 这5个包给server，实际server收到了 1、3、4、5这四个包，中间2丢掉了。这个时候server回复ack的时候，都只能回复2，表示2前面所有的包都收到了，给我发第二个包吧，如果server 收到3、4、5还是没有收到2的话，也是回复ack 2而不是回复ack 3、4、5、6的，表示快点发2过来。</p>
+<p>但是这个时候client虽然知道2丢了，然后会重发2，但是不知道3、4、5有没有丢啊，实际3、4、5 server都收到了，如果支持sack，那么可以ack 2的时候同时告诉client 3、4、5都收到了，这样client重传的时候只重传2就可以，如果没有sack的话那么可能会重传2、3、4、5，这样效率就低了。</p>
+<p>来看一个例子：</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/5322d0cf77a3a1ae6c87a972cc5843d0.png" alt="image.png"></p>
+<p>图中的红框就是SACK。</p>
+<p>知识点：ack数字表示这个数字前面的数据<strong>都</strong>收到了</p>
+<h2 id="总结下"><a href="#总结下" class="headerlink" title="总结下"></a>总结下</h2><p>tcp所有特性基本上核心都是为了<strong>可靠传输</strong>这个目标来服务的，然后有一些是出于优化性能的目的</p>
+<p>三次握手建连接的详细过程可以参考我这篇： <a href="https://www.atatech.org/articles/78858" target="_blank" rel="external">关于TCP 半连接队列和全连接队列</a></p>
+<p>后续希望再通过几个案例来深化一下上面的知识。</p>
+<hr>
+<p>说点关于学习的题外话</p>
+<h2 id="什么是工程效率，什么是知识效率"><a href="#什么是工程效率，什么是知识效率" class="headerlink" title="什么是工程效率，什么是知识效率"></a>什么是工程效率，什么是知识效率</h2><p>有些人纯看理论就能掌握好一门技能，还能举一反三，这是知识效率，这种人非常少；</p>
+<p>大多数普通人都是看点知识然后结合实践来强化理论，要经过反反复复才能比较好地掌握一个知识，这就是工程效率，讲究技巧、工具来达到目的。</p>
+<p>肯定知识效率最牛逼，但是拥有这种技能的人毕竟非常少。从小我们周边那种不怎么学的学霸型基本都是这类，这种学霸都还能触类旁通非常快的掌握一个新知识，非常气人。剩下的绝大部分只能拼时间+方法+总结等也能掌握一些知识</p>
+<p>非常遗憾我就是工程效率型，只能羡慕那些知识效率型的学霸。但是这事又不能独立看待有些人在某些方向上是工程效率型，有些方向就又是知识效率型（有一种知识效率型是你掌握的实在太多也就比较容易触类旁通了，这算灰色知识效率型）</p>
+<p>使劲挖掘自己在知识效率型方面的能力吧，即使灰色地带也行啊</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
   </section>
 
   
@@ -1829,7 +1656,7 @@ debug1: Executing proxy command: exec ssh -l alibaba 139.*.*.* exec /usr/bin/nc 
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">28</span>
+                <span class="site-state-item-count">27</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>

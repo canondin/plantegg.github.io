@@ -98,8 +98,8 @@
 <meta name="description" content="就是要你懂 TCP看过太多tcp相关文章，但是看完总是不过瘾，似懂非懂，反复考虑过后，我觉得是那些文章太过理论，看起来没有体感，所以吸收不了。  希望这篇文章能做到言简意赅，帮助大家透过案例来理解原理 tcp的特点这个大家基本都能说几句，面试的时候候选人也肯定会告诉你这些：  三次握手 四次挥手 可靠连接 丢包重传  但是我只希望大家记住一个核心的：tcp是可以可靠传输协议，它的所有特点都为这个可">
 <meta name="keywords" content="tcp,tcp connection">
 <meta property="og:type" content="article">
-<meta property="og:title" content="tcp connection">
-<meta property="og:url" content="http://yoursite.com/2017/06/02/就是要你懂TCP连接/index.html">
+<meta property="og:title" content="就是要你懂TCP--连接和握手">
+<meta property="og:url" content="http://yoursite.com/2017/06/02/就是要你懂TCP--连接和握手/index.html">
 <meta property="og:site_name" content="plantegg">
 <meta property="og:description" content="就是要你懂 TCP看过太多tcp相关文章，但是看完总是不过瘾，似懂非懂，反复考虑过后，我觉得是那些文章太过理论，看起来没有体感，所以吸收不了。  希望这篇文章能做到言简意赅，帮助大家透过案例来理解原理 tcp的特点这个大家基本都能说几句，面试的时候候选人也肯定会告诉你这些：  三次握手 四次挥手 可靠连接 丢包重传  但是我只希望大家记住一个核心的：tcp是可以可靠传输协议，它的所有特点都为这个可">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/6d66dadecb72e11e3e5ab765c6c3ea2e.png">
@@ -107,9 +107,9 @@
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/9db33f9304f8236b1ebcb215064bb2af.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/45c6d36ce8b17a5c0442e66fce002ab4.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/5322d0cf77a3a1ae6c87a972cc5843d0.png">
-<meta property="og:updated_time" content="2017-06-07T05:11:14.000Z">
+<meta property="og:updated_time" content="2019-06-18T03:18:26.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="tcp connection">
+<meta name="twitter:title" content="就是要你懂TCP--连接和握手">
 <meta name="twitter:description" content="就是要你懂 TCP看过太多tcp相关文章，但是看完总是不过瘾，似懂非懂，反复考虑过后，我觉得是那些文章太过理论，看起来没有体感，所以吸收不了。  希望这篇文章能做到言简意赅，帮助大家透过案例来理解原理 tcp的特点这个大家基本都能说几句，面试的时候候选人也肯定会告诉你这些：  三次握手 四次挥手 可靠连接 丢包重传  但是我只希望大家记住一个核心的：tcp是可以可靠传输协议，它的所有特点都为这个可">
 <meta name="twitter:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/6d66dadecb72e11e3e5ab765c6c3ea2e.png">
 
@@ -139,13 +139,13 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/2017/06/02/就是要你懂TCP连接/"/>
+  <link rel="canonical" href="http://yoursite.com/2017/06/02/就是要你懂TCP--连接和握手/"/>
 
 
 
 
 
-  <title>tcp connection | plantegg</title>
+  <title>就是要你懂TCP--连接和握手 | plantegg</title>
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
@@ -267,7 +267,7 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/06/02/就是要你懂TCP连接/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/06/02/就是要你懂TCP--连接和握手/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="weibo @plantegg">
@@ -284,7 +284,7 @@
 
         
         
-          <h2 class="post-title" itemprop="name headline">tcp connection</h2>
+          <h2 class="post-title" itemprop="name headline">就是要你懂TCP--连接和握手</h2>
         
 
         <div class="post-meta">
@@ -337,9 +337,9 @@
                 <span class="post-meta-item-icon">
                   <i class="fa fa-comment-o"></i>
                 </span>
-                <a href="/2017/06/02/就是要你懂TCP连接/#comments" itemprop="discussionUrl">
+                <a href="/2017/06/02/就是要你懂TCP--连接和握手/#comments" itemprop="discussionUrl">
                   <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2017/06/02/就是要你懂TCP连接/" itemprop="commentCount"></span>
+                        data-disqus-identifier="2017/06/02/就是要你懂TCP--连接和握手/" itemprop="commentCount"></span>
                 </a>
               </span>
             
@@ -479,18 +479,14 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2017/06/02/wireshark-dup-ack-issue/" rel="next" title="wireshark-dup-ack-issue and keepalive">
-                <i class="fa fa-chevron-left"></i> wireshark-dup-ack-issue and keepalive
-              </a>
-            
           </div>
 
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/2017/06/07/tcp-queue/" rel="prev" title="tcp queue">
-                tcp queue <i class="fa fa-chevron-right"></i>
+              <a href="/2017/06/02/SSH花式玩法/" rel="prev" title="SSH advance features">
+                SSH advance features <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -570,7 +566,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">28</span>
+                <span class="site-state-item-count">27</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -807,9 +803,9 @@
     
       <script type="text/javascript">
         var disqus_config = function () {
-          this.page.url = 'http://yoursite.com/2017/06/02/就是要你懂TCP连接/';
-          this.page.identifier = '2017/06/02/就是要你懂TCP连接/';
-          this.page.title = 'tcp connection';
+          this.page.url = 'http://yoursite.com/2017/06/02/就是要你懂TCP--连接和握手/';
+          this.page.identifier = '2017/06/02/就是要你懂TCP--连接和握手/';
+          this.page.title = '就是要你懂TCP--连接和握手';
         };
         var d = document, s = d.createElement('script');
         s.src = 'https://.disqus.com/embed.js';

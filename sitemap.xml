@@ -2,6 +2,20 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>http://yoursite.com/2017/06/02/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82TCP--%E8%BF%9E%E6%8E%A5%E5%92%8C%E6%8F%A1%E6%89%8B/</loc>
+    
+    <lastmod>2019-06-18T03:18:26.000Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>http://yoursite.com/2017/06/07/%E5%85%B3%E4%BA%8ETCP%E5%8D%8A%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97%E5%92%8C%E5%85%A8%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/</loc>
+    
+    <lastmod>2019-06-18T03:16:22.000Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://yoursite.com/2019/05/15/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82TCP--%E4%B8%80%E4%B8%AA%E7%BD%91%E7%BB%9C%E5%8C%85%E7%9A%84%E6%97%85%E7%A8%8B/</loc>
     
     <lastmod>2019-06-04T02:07:23.000Z</lastmod>
@@ -44,7 +58,7 @@
   </url>
   
   <url>
-    <loc>http://yoursite.com/2018/06/14/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82%20TCP--%E6%9C%80%E7%BB%8F%E5%85%B8%E7%9A%84TCP%E6%80%A7%E8%83%BD%E9%97%AE%E9%A2%98/</loc>
+    <loc>http://yoursite.com/2018/06/14/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82TCP--%E6%9C%80%E7%BB%8F%E5%85%B8%E7%9A%84TCP%E6%80%A7%E8%83%BD%E9%97%AE%E9%A2%98/</loc>
     
     <lastmod>2019-01-17T09:10:39.000Z</lastmod>
     
@@ -54,13 +68,6 @@
     <loc>http://yoursite.com/2019/01/09/nslookup-OK-but-ping-fail/</loc>
     
     <lastmod>2019-01-17T09:09:41.000Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>http://yoursite.com/2018/06/14/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82TCP--%E6%9C%80%E7%BB%8F%E5%85%B8%E7%9A%84TCP%E6%80%A7%E8%83%BD%E9%97%AE%E9%A2%98/</loc>
-    
-    <lastmod>2018-06-14T11:19:00.000Z</lastmod>
     
   </url>
   
@@ -96,13 +103,6 @@
     <loc>http://yoursite.com/2018/03/24/Linux%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F/</loc>
     
     <lastmod>2018-04-19T11:30:00.000Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>http://yoursite.com/2017/06/07/tcp-queue/</loc>
-    
-    <lastmod>2018-04-09T11:20:52.000Z</lastmod>
     
   </url>
   
@@ -173,13 +173,6 @@
     <loc>http://yoursite.com/2017/06/14/high_load/</loc>
     
     <lastmod>2017-07-04T06:43:01.000Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>http://yoursite.com/2017/06/02/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82TCP%E8%BF%9E%E6%8E%A5/</loc>
-    
-    <lastmod>2017-06-07T05:11:14.000Z</lastmod>
     
   </url>
   
