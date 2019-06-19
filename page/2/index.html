@@ -1213,199 +1213,6 @@ net.ipv4.tcp_keepalive_intvl = 3
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/06/02/SSH花式玩法/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/06/02/SSH花式玩法/" itemprop="url">SSH advance features</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-06-02T17:30:03+08:00">
-                2017-06-02
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2017/06/02/SSH花式玩法/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2017/06/02/SSH花式玩法/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="SSH-你没见过的花式玩法"><a href="#SSH-你没见过的花式玩法" class="headerlink" title="SSH 你没见过的花式玩法"></a>SSH 你没见过的花式玩法</h1><blockquote>
-<p>ssh是指的openSSH 命令工具，程序员每天基本都需要敲很多次。这篇文章提供一些基本的技巧和方法来提升工作效率。比如我自己碰到莫名其妙的问题就会看 ssh debug日志 。<br>比如多机房总是要走跳板机，太麻烦了； 动态密码也很浪费时间 ……</p>
-</blockquote>
-<h3 id="公司内部跳板机每次ssh登录都需要-密码-动态码，太复杂了，怎么解？"><a href="#公司内部跳板机每次ssh登录都需要-密码-动态码，太复杂了，怎么解？" class="headerlink" title="公司内部跳板机每次ssh登录都需要 密码+动态码，太复杂了，怎么解？"></a>公司内部跳板机每次ssh登录都需要 密码+动态码，太复杂了，怎么解？</h3><pre><code>ren@ren-VirtualBox:~$ cat ~/.ssh/config 
-
-#reuse the same connection
-ControlMaster auto
-ControlPath ~/tmp/ssh_mux_%h_%p_%r
-
-#keep one connection in 72hour
-ControlPersist 72h
-</code></pre><p>在你的ssh配置文件增加上述参数，意味着72小时内登录同一台跳板机只有第一次需要输入密码，以后都是重用之前的连接，所以也就不再需要输入密码了。</p>
-<p>加了如上参数后的登录过程就有这样的东东：</p>
-<pre><code>debug1: setting up multiplex master socket
-debug3: muxserver_listen: temporary control path /home/ren/tmp/ssh_mux_10.16.*.*_22_alibaba.86g3C34vy36tvCtn
-debug2: fd 3 setting O_NONBLOCK
-debug3: fd 3 is O_NONBLOCK
-debug3: fd 3 is O_NONBLOCK
-debug1: channel 0: new [/home/ren/tmp/ssh_mux_10.16.*.*_22_alibaba]
-debug3: muxserver_listen: mux listener channel 0 fd 3
-debug1: control_persist_detach: backgrounding master process
-debug2: control_persist_detach: background process is 15154
-debug2: fd 3 setting O_NONBLOCK
-debug1: forking to background
-debug1: Entering interactive session.
-debug2: set_control_persist_exit_time: schedule exit in 259200 seconds
-debug1: multiplexing control connection
-</code></pre><p> /home/ren/tmp/ssh_mux_10.16.<em>.</em>_22_alibaba 这个就是保存好的socket，下次可以重用，免密码。 in 259200 seconds 对应 72小时</p>
-<h3 id="我有很多不同机房（或者说不同客户）的机器都需要跳板机来登录，能一次直接ssh上去吗？"><a href="#我有很多不同机房（或者说不同客户）的机器都需要跳板机来登录，能一次直接ssh上去吗？" class="headerlink" title="我有很多不同机房（或者说不同客户）的机器都需要跳板机来登录，能一次直接ssh上去吗？"></a>我有很多不同机房（或者说不同客户）的机器都需要跳板机来登录，能一次直接ssh上去吗？</h3><p>比如有一批客户机房的机器IP都是192.168.<em>.</em>, 然后需要走跳板机100.10.1.2才能访问到，那么我希望以后在笔记本上直接 ssh 192.168.1.5 就能连上</p>
-<pre><code>$ cat /etc/ssh/ssh_config
-
-Host 192.168.*.*
-ProxyCommand ssh -l ali-renxijun 100.10.1.2 exec /usr/bin/nc %h %p
-</code></pre><p>上面配置的意思是执行 ssh 192.168.1.5的时候命中规则 Host 192.168.<em>.</em> 所以执行 ProxyCommand 先连上跳板机再通过跳板机连向192.168.1.5 。这样在你的笔记本上就跟192.168.<em>.</em> 的机器仿佛在一起</p>
-<p>比如我的跳板配置：</p>
-<pre><code>#到美国的机器用美国的跳板机速度更快
-Host 10.74.*
-ProxyCommand ssh -l user us.jump exec /bin/nc %h %p 2&gt;/dev/null
-
-Host 192.168.0.*
-ProxyCommand ssh -l user 1.1.1.1 exec /usr/bin/nc %h %p
-</code></pre><p>来看一个例子 </p>
-<pre><code>ren@ren-VirtualBox:~$ ssh -l alibaba 10.16.1.* -vvv
-OpenSSH_6.7p1 Ubuntu-5ubuntu1, OpenSSL 1.0.1f 6 Jan 2014
-debug1: Reading configuration data /home/ren/.ssh/config
-debug1: Reading configuration data /etc/ssh/ssh_config
-debug1: /etc/ssh/ssh_config line 28: Applying options for *
-debug1: /etc/ssh/ssh_config line 44: Applying options for 10.16.*.*
-debug1: /etc/ssh/ssh_config line 68: Applying options for *
-debug1: auto-mux: Trying existing master
-debug1: Control socket &quot;/home/ren/tmp/ssh_mux_10.16.1.*_22_alibaba&quot; does not exist
-debug1: Executing proxy command: exec ssh -l alibaba 139.*.*.* exec /usr/bin/nc 10.16.1.* 22
-</code></pre><p>本来我的笔记本跟 10.16.1.<em> 是不通的，ssh登录过程中自动走跳板机139.</em>.<em>.</em> 就连上了</p>
-<h3 id="为什么有时候ssh-比较慢，比如总是需要30秒钟后才能正常登录"><a href="#为什么有时候ssh-比较慢，比如总是需要30秒钟后才能正常登录" class="headerlink" title="为什么有时候ssh 比较慢，比如总是需要30秒钟后才能正常登录"></a>为什么有时候ssh 比较慢，比如总是需要30秒钟后才能正常登录</h3><p>先了解如下知识点，在 ~/.ssh/config 配置文件中：</p>
-<pre><code>GSSAPIAuthentication=no
-</code></pre><p>禁掉 GSSAPI认证，GSSAPIAuthentication是个什么鬼东西请自行 Google。 这里要理解ssh登录的时候有很多种认证方式（公钥、密码等等），具体怎么调试请记住强大的命令参数 ssh -vvv 上面讲到的技巧都能通过 -vvv 看到具体过程。</p>
-<p>比如我第一次碰到ssh 比较慢总是需要30秒后才登录，不能忍受，于是登录的时候加上 -vvv明显看到控制台停在了：GSSAPIAuthentication 然后Google了一下，禁掉就好了</p>
-<h3 id="批量打通所有机器之间的ssh登录免密码"><a href="#批量打通所有机器之间的ssh登录免密码" class="headerlink" title="批量打通所有机器之间的ssh登录免密码"></a>批量打通所有机器之间的ssh登录免密码</h3><p>ssh免密码的原理是将本机的pub key复制到目标机器的 ~/.ssh/authorized_keys 里面。可以手工复制粘贴，也可以 ssh-copy-id 等</p>
-<p>如果有100台机器，互相两两打通还是比较费事（大概需要100*99次copy key）。 下面通过 expect 来解决输入密码，然后配合shell脚本来批量解决这个问题。</p>
-<p><img src="http://i.imgur.com/S9jLW7B.png" alt=""></p>
-<p>这个脚本需要四个参数：目标IP、用户名、密码、home目录，也就是ssh到一台机器的时候帮我们自动填上yes，和密码，这样就不需要人肉一个个输入了。</p>
-<p>再在外面写一个循环对每个IP执行如下操作：</p>
-<p><img src="http://i.imgur.com/4SZcnvc.png" alt=""></p>
-<p>if代码部分检查本机~/.ssh/下有没有id_rsa.pub，也就是是否以前生成过秘钥对，没生成的话就帮忙生成一次。</p>
-<p>for循环部分一次把生成的密钥对和authorized_keys复制到所有机器上，这样所有机器之间都不需要输入密码就能互相登陆了（当然本机也不需要输入密码登录所有机器）</p>
-<p>最后一行代码： </p>
-<pre><code>ssh $user@$n &quot;hostname -i&quot;
-</code></pre><p>验证一下没有输密码是否能成功ssh上去。</p>
-<p><strong>思考一下，为什么这么做就可以打通两两之间的免密码登录，这里没有把所有机器的pub key复制到其他所有机器上去啊</strong></p>
-<h4 id="留个作业：第一次ssh某台机器的时候总是出来一个警告，需要yes确认才能往下走，怎么干掉他？"><a href="#留个作业：第一次ssh某台机器的时候总是出来一个警告，需要yes确认才能往下走，怎么干掉他？" class="headerlink" title="留个作业：第一次ssh某台机器的时候总是出来一个警告，需要yes确认才能往下走，怎么干掉他？"></a>留个作业：第一次ssh某台机器的时候总是出来一个警告，需要yes确认才能往下走，怎么干掉他？</h4><hr>
-<p><strong>这里只是帮大家入门了解ssh，掌握好这些配置文件和-vvv后有好多好玩的可以去挖掘，同时也请在留言中说出你的黑技能</strong></p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/06/02/就是要你懂TCP--连接和握手/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1507,7 +1314,7 @@ debug1: Executing proxy command: exec ssh -l alibaba 139.*.*.* exec /usr/bin/nc 
       
         
           
-            <h1 id="就是要你懂-TCP"><a href="#就是要你懂-TCP" class="headerlink" title="就是要你懂 TCP"></a>就是要你懂 TCP</h1><pre><code>看过太多tcp相关文章，但是看完总是不过瘾，似懂非懂，反复考虑过后，我觉得是那些文章太过理论，看起来没有体感，所以吸收不了。
+            <h1 id="就是要你懂TCP–连接和握手"><a href="#就是要你懂TCP–连接和握手" class="headerlink" title="就是要你懂TCP–连接和握手"></a>就是要你懂TCP–连接和握手</h1><pre><code>看过太多tcp相关文章，但是看完总是不过瘾，似懂非懂，反复考虑过后，我觉得是那些文章太过理论，看起来没有体感，所以吸收不了。
 
 希望这篇文章能做到言简意赅，帮助大家透过案例来理解原理
 </code></pre><h2 id="tcp的特点"><a href="#tcp的特点" class="headerlink" title="tcp的特点"></a>tcp的特点</h2><p>这个大家基本都能说几句，面试的时候候选人也肯定会告诉你这些：</p>
@@ -1573,6 +1380,199 @@ debug1: Executing proxy command: exec ssh -l alibaba 139.*.*.* exec /usr/bin/nc 
 <p>肯定知识效率最牛逼，但是拥有这种技能的人毕竟非常少。从小我们周边那种不怎么学的学霸型基本都是这类，这种学霸都还能触类旁通非常快的掌握一个新知识，非常气人。剩下的绝大部分只能拼时间+方法+总结等也能掌握一些知识</p>
 <p>非常遗憾我就是工程效率型，只能羡慕那些知识效率型的学霸。但是这事又不能独立看待有些人在某些方向上是工程效率型，有些方向就又是知识效率型（有一种知识效率型是你掌握的实在太多也就比较容易触类旁通了，这算灰色知识效率型）</p>
 <p>使劲挖掘自己在知识效率型方面的能力吧，即使灰色地带也行啊</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/06/02/SSH花式玩法/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/06/02/SSH花式玩法/" itemprop="url">就是要你懂 SSH advance features</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-06-02T17:30:03+08:00">
+                2017-06-02
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2017/06/02/SSH花式玩法/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2017/06/02/SSH花式玩法/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="就是要你懂SSH-你没见过的花式玩法"><a href="#就是要你懂SSH-你没见过的花式玩法" class="headerlink" title="就是要你懂SSH 你没见过的花式玩法"></a>就是要你懂SSH 你没见过的花式玩法</h1><blockquote>
+<p>ssh是指的openSSH 命令工具，程序员每天基本都需要敲很多次。这篇文章提供一些基本的技巧和方法来提升工作效率。比如我自己碰到莫名其妙的问题就会看 ssh debug日志 。<br>比如多机房总是要走跳板机，太麻烦了； 动态密码也很浪费时间 ……</p>
+</blockquote>
+<h3 id="公司内部跳板机每次ssh登录都需要-密码-动态码，太复杂了，怎么解？"><a href="#公司内部跳板机每次ssh登录都需要-密码-动态码，太复杂了，怎么解？" class="headerlink" title="公司内部跳板机每次ssh登录都需要 密码+动态码，太复杂了，怎么解？"></a>公司内部跳板机每次ssh登录都需要 密码+动态码，太复杂了，怎么解？</h3><pre><code>ren@ren-VirtualBox:~$ cat ~/.ssh/config 
+
+#reuse the same connection
+ControlMaster auto
+ControlPath ~/tmp/ssh_mux_%h_%p_%r
+
+#keep one connection in 72hour
+ControlPersist 72h
+</code></pre><p>在你的ssh配置文件增加上述参数，意味着72小时内登录同一台跳板机只有第一次需要输入密码，以后都是重用之前的连接，所以也就不再需要输入密码了。</p>
+<p>加了如上参数后的登录过程就有这样的东东：</p>
+<pre><code>debug1: setting up multiplex master socket
+debug3: muxserver_listen: temporary control path /home/ren/tmp/ssh_mux_10.16.*.*_22_alibaba.86g3C34vy36tvCtn
+debug2: fd 3 setting O_NONBLOCK
+debug3: fd 3 is O_NONBLOCK
+debug3: fd 3 is O_NONBLOCK
+debug1: channel 0: new [/home/ren/tmp/ssh_mux_10.16.*.*_22_alibaba]
+debug3: muxserver_listen: mux listener channel 0 fd 3
+debug1: control_persist_detach: backgrounding master process
+debug2: control_persist_detach: background process is 15154
+debug2: fd 3 setting O_NONBLOCK
+debug1: forking to background
+debug1: Entering interactive session.
+debug2: set_control_persist_exit_time: schedule exit in 259200 seconds
+debug1: multiplexing control connection
+</code></pre><p> /home/ren/tmp/ssh_mux_10.16.<em>.</em>_22_alibaba 这个就是保存好的socket，下次可以重用，免密码。 in 259200 seconds 对应 72小时</p>
+<h3 id="我有很多不同机房（或者说不同客户）的机器都需要跳板机来登录，能一次直接ssh上去吗？"><a href="#我有很多不同机房（或者说不同客户）的机器都需要跳板机来登录，能一次直接ssh上去吗？" class="headerlink" title="我有很多不同机房（或者说不同客户）的机器都需要跳板机来登录，能一次直接ssh上去吗？"></a>我有很多不同机房（或者说不同客户）的机器都需要跳板机来登录，能一次直接ssh上去吗？</h3><p>比如有一批客户机房的机器IP都是192.168.<em>.</em>, 然后需要走跳板机100.10.1.2才能访问到，那么我希望以后在笔记本上直接 ssh 192.168.1.5 就能连上</p>
+<pre><code>$ cat /etc/ssh/ssh_config
+
+Host 192.168.*.*
+ProxyCommand ssh -l ali-renxijun 100.10.1.2 exec /usr/bin/nc %h %p
+</code></pre><p>上面配置的意思是执行 ssh 192.168.1.5的时候命中规则 Host 192.168.<em>.</em> 所以执行 ProxyCommand 先连上跳板机再通过跳板机连向192.168.1.5 。这样在你的笔记本上就跟192.168.<em>.</em> 的机器仿佛在一起</p>
+<p>比如我的跳板配置：</p>
+<pre><code>#到美国的机器用美国的跳板机速度更快
+Host 10.74.*
+ProxyCommand ssh -l user us.jump exec /bin/nc %h %p 2&gt;/dev/null
+
+Host 192.168.0.*
+ProxyCommand ssh -l user 1.1.1.1 exec /usr/bin/nc %h %p
+</code></pre><p>来看一个例子 </p>
+<pre><code>ren@ren-VirtualBox:~$ ssh -l alibaba 10.16.1.* -vvv
+OpenSSH_6.7p1 Ubuntu-5ubuntu1, OpenSSL 1.0.1f 6 Jan 2014
+debug1: Reading configuration data /home/ren/.ssh/config
+debug1: Reading configuration data /etc/ssh/ssh_config
+debug1: /etc/ssh/ssh_config line 28: Applying options for *
+debug1: /etc/ssh/ssh_config line 44: Applying options for 10.16.*.*
+debug1: /etc/ssh/ssh_config line 68: Applying options for *
+debug1: auto-mux: Trying existing master
+debug1: Control socket &quot;/home/ren/tmp/ssh_mux_10.16.1.*_22_alibaba&quot; does not exist
+debug1: Executing proxy command: exec ssh -l alibaba 139.*.*.* exec /usr/bin/nc 10.16.1.* 22
+</code></pre><p>本来我的笔记本跟 10.16.1.<em> 是不通的，ssh登录过程中自动走跳板机139.</em>.<em>.</em> 就连上了</p>
+<h3 id="为什么有时候ssh-比较慢，比如总是需要30秒钟后才能正常登录"><a href="#为什么有时候ssh-比较慢，比如总是需要30秒钟后才能正常登录" class="headerlink" title="为什么有时候ssh 比较慢，比如总是需要30秒钟后才能正常登录"></a>为什么有时候ssh 比较慢，比如总是需要30秒钟后才能正常登录</h3><p>先了解如下知识点，在 ~/.ssh/config 配置文件中：</p>
+<pre><code>GSSAPIAuthentication=no
+</code></pre><p>禁掉 GSSAPI认证，GSSAPIAuthentication是个什么鬼东西请自行 Google。 这里要理解ssh登录的时候有很多种认证方式（公钥、密码等等），具体怎么调试请记住强大的命令参数 ssh -vvv 上面讲到的技巧都能通过 -vvv 看到具体过程。</p>
+<p>比如我第一次碰到ssh 比较慢总是需要30秒后才登录，不能忍受，于是登录的时候加上 -vvv明显看到控制台停在了：GSSAPIAuthentication 然后Google了一下，禁掉就好了</p>
+<h3 id="批量打通所有机器之间的ssh登录免密码"><a href="#批量打通所有机器之间的ssh登录免密码" class="headerlink" title="批量打通所有机器之间的ssh登录免密码"></a>批量打通所有机器之间的ssh登录免密码</h3><p>ssh免密码的原理是将本机的pub key复制到目标机器的 ~/.ssh/authorized_keys 里面。可以手工复制粘贴，也可以 ssh-copy-id 等</p>
+<p>如果有100台机器，互相两两打通还是比较费事（大概需要100*99次copy key）。 下面通过 expect 来解决输入密码，然后配合shell脚本来批量解决这个问题。</p>
+<p><img src="http://i.imgur.com/S9jLW7B.png" alt=""></p>
+<p>这个脚本需要四个参数：目标IP、用户名、密码、home目录，也就是ssh到一台机器的时候帮我们自动填上yes，和密码，这样就不需要人肉一个个输入了。</p>
+<p>再在外面写一个循环对每个IP执行如下操作：</p>
+<p><img src="http://i.imgur.com/4SZcnvc.png" alt=""></p>
+<p>if代码部分检查本机~/.ssh/下有没有id_rsa.pub，也就是是否以前生成过秘钥对，没生成的话就帮忙生成一次。</p>
+<p>for循环部分一次把生成的密钥对和authorized_keys复制到所有机器上，这样所有机器之间都不需要输入密码就能互相登陆了（当然本机也不需要输入密码登录所有机器）</p>
+<p>最后一行代码： </p>
+<pre><code>ssh $user@$n &quot;hostname -i&quot;
+</code></pre><p>验证一下没有输密码是否能成功ssh上去。</p>
+<p><strong>思考一下，为什么这么做就可以打通两两之间的免密码登录，这里没有把所有机器的pub key复制到其他所有机器上去啊</strong></p>
+<h4 id="留个作业：第一次ssh某台机器的时候总是出来一个警告，需要yes确认才能往下走，怎么干掉他？"><a href="#留个作业：第一次ssh某台机器的时候总是出来一个警告，需要yes确认才能往下走，怎么干掉他？" class="headerlink" title="留个作业：第一次ssh某台机器的时候总是出来一个警告，需要yes确认才能往下走，怎么干掉他？"></a>留个作业：第一次ssh某台机器的时候总是出来一个警告，需要yes确认才能往下走，怎么干掉他？</h4><hr>
+<p><strong>这里只是帮大家入门了解ssh，掌握好这些配置文件和-vvv后有好多好玩的可以去挖掘，同时也请在留言中说出你的黑技能</strong></p>
 
           
         

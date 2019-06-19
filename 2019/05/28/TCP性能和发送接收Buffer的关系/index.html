@@ -82,8 +82,6 @@
 
 
 
-  
-
 
   <link rel="alternate" href="/atom.xml" title="plantegg" type="application/atom+xml" />
 
@@ -123,7 +121,7 @@
 <meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/gif/162611/1559030833230-72b44e6d-5c3c-413b-91ff-26074bd2bdbe.gif#align=left&display=inline&height=144&originHeight=103&originWidth=289&size=0&status=done&width=404">
 <meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1559043502992-97c4c823-8cd1-4ae7-9883-203e553604ff.png#align=left&display=inline&height=720&name=image.png&originHeight=900&originWidth=958&size=48144&status=done&width=766.4">
 <meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1559097931609-28c0fc94-09ca-4564-8f47-432f9b5e2c5b.png#align=left&display=inline&height=682&name=image.png&originHeight=853&originWidth=760&size=41904&status=done&width=608">
-<meta property="og:updated_time" content="2019-06-19T09:32:40.000Z">
+<meta property="og:updated_time" content="2019-06-19T09:36:01.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="就是要你懂TCP--性能和发送接收Buffer的关系">
 <meta name="twitter:description" content="前言本文希望解析清楚，当我们在代码中写下  socket.setSendBufferSize 和 sysctl 看到的rmem/wmem系统参数以及最终我们在TCP常常谈到的接收发送窗口的关系，以及他们怎样影响性能。 先明确一下：文章标题中所说的Buffer指的是sysctl中的 rmem或者wmem，如果是代码中指定的话对应着SO_SNDBUF或者SO_RCVBUF，从TCP的概念来看对应着发送">
@@ -387,7 +385,7 @@
       
         <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>本文希望解析清楚，当我们在代码中写下  socket.setSendBufferSize 和 sysctl 看到的rmem/wmem系统参数以及最终我们在TCP常常谈到的接收发送窗口的关系，以及他们怎样影响性能。</p>
 <p>先明确一下：<strong>文章标题中所说的Buffer指的是sysctl中的 rmem或者wmem，如果是代码中指定的话对应着SO_SNDBUF或者SO_RCVBUF，从TCP的概念来看对应着发送窗口或者接收窗口</strong></p>
-<h1 id="TCP性能和发送接收Buffer的关系-公开技术文章-·-语雀"><a href="#TCP性能和发送接收Buffer的关系-公开技术文章-·-语雀" class="headerlink" title="TCP性能和发送接收Buffer的关系 - 公开技术文章 · 语雀"></a>TCP性能和发送接收Buffer的关系 - 公开技术文章 · 语雀</h1><pre><code>$sudo sysctl -a | egrep &quot;rmem|wmem|adv_win|moderate&quot;
+<h1 id="就是要你懂TCP–性能和发送接收Buffer的关系"><a href="#就是要你懂TCP–性能和发送接收Buffer的关系" class="headerlink" title="就是要你懂TCP–性能和发送接收Buffer的关系"></a>就是要你懂TCP–性能和发送接收Buffer的关系</h1><pre><code>$sudo sysctl -a | egrep &quot;rmem|wmem|adv_win|moderate&quot;
 net.core.rmem_default = 212992
 net.core.rmem_max = 212992
 net.core.wmem_default = 212992
@@ -646,8 +644,8 @@ void tcp_init_buffer_space(struct sock *sk)
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2019/05/15/网络通不通是个大问题--半夜鸡叫/" rel="next" title="网络通不通是个大问题–半夜鸡叫">
-                <i class="fa fa-chevron-left"></i> 网络通不通是个大问题–半夜鸡叫
+              <a href="/2019/05/15/网络通不通是个大问题--半夜鸡叫/" rel="next" title="就是要你懂网络 通不通是个大问题–半夜鸡叫">
+                <i class="fa fa-chevron-left"></i> 就是要你懂网络 通不通是个大问题–半夜鸡叫
               </a>
             
           </div>
@@ -797,7 +795,7 @@ void tcp_init_buffer_space(struct sock *sk)
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#TCP性能和发送接收Buffer的关系-公开技术文章-·-语雀"><span class="nav-number">2.</span> <span class="nav-text">TCP性能和发送接收Buffer的关系 - 公开技术文章 · 语雀</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#抓包-tcpdump-wireshark"><span class="nav-number">2.1.</span> <span class="nav-text">抓包 tcpdump+wireshark</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#几个发送buffer相关的内核参数"><span class="nav-number">2.2.</span> <span class="nav-text">几个发送buffer相关的内核参数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#优化"><span class="nav-number">2.3.</span> <span class="nav-text">优化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#BDP-带宽时延积"><span class="nav-number">2.4.</span> <span class="nav-text">BDP 带宽时延积</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#用tc构造延时和带宽限制的模拟重现环境"><span class="nav-number">2.5.</span> <span class="nav-text">用tc构造延时和带宽限制的模拟重现环境</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#这个案例关于wmem的结论"><span class="nav-number">2.6.</span> <span class="nav-text">这个案例关于wmem的结论</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SO-RCVBUF很小的时候并且rtt很大对性能的影响"><span class="nav-number">2.7.</span> <span class="nav-text">SO_RCVBUF很小的时候并且rtt很大对性能的影响</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SO-RCVBUF很小的时候并且rtt很小时对性能的影响"><span class="nav-number">2.8.</span> <span class="nav-text">SO_RCVBUF很小的时候并且rtt很小时对性能的影响</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SO-RCVBUF和tcp-window-full的坏case"><span class="nav-number">2.9.</span> <span class="nav-text">SO_RCVBUF和tcp window full的坏case</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#接收窗口和SO-RCVBUF的关系"><span class="nav-number">2.10.</span> <span class="nav-text">接收窗口和SO_RCVBUF的关系</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#设置-SO-RCVBUF-后通过wireshark观察到的接收窗口基本"><span class="nav-number">2.10.1.</span> <span class="nav-text">设置 SO_RCVBUF 后通过wireshark观察到的接收窗口基本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#If-you-set-a-“receive-buffer-size”-on-a-TCP-socket-what-does-it-actually-mean"><span class="nav-number">2.10.2.</span> <span class="nav-text">If you set a “receive buffer size” on a TCP socket, what does it actually mean?</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#总结"><span class="nav-number">3.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#相关和参考文章"><span class="nav-number">4.</span> <span class="nav-text">相关和参考文章</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#就是要你懂TCP–性能和发送接收Buffer的关系"><span class="nav-number">2.</span> <span class="nav-text">就是要你懂TCP–性能和发送接收Buffer的关系</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#抓包-tcpdump-wireshark"><span class="nav-number">2.1.</span> <span class="nav-text">抓包 tcpdump+wireshark</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#几个发送buffer相关的内核参数"><span class="nav-number">2.2.</span> <span class="nav-text">几个发送buffer相关的内核参数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#优化"><span class="nav-number">2.3.</span> <span class="nav-text">优化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#BDP-带宽时延积"><span class="nav-number">2.4.</span> <span class="nav-text">BDP 带宽时延积</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#用tc构造延时和带宽限制的模拟重现环境"><span class="nav-number">2.5.</span> <span class="nav-text">用tc构造延时和带宽限制的模拟重现环境</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#这个案例关于wmem的结论"><span class="nav-number">2.6.</span> <span class="nav-text">这个案例关于wmem的结论</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SO-RCVBUF很小的时候并且rtt很大对性能的影响"><span class="nav-number">2.7.</span> <span class="nav-text">SO_RCVBUF很小的时候并且rtt很大对性能的影响</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SO-RCVBUF很小的时候并且rtt很小时对性能的影响"><span class="nav-number">2.8.</span> <span class="nav-text">SO_RCVBUF很小的时候并且rtt很小时对性能的影响</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SO-RCVBUF和tcp-window-full的坏case"><span class="nav-number">2.9.</span> <span class="nav-text">SO_RCVBUF和tcp window full的坏case</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#接收窗口和SO-RCVBUF的关系"><span class="nav-number">2.10.</span> <span class="nav-text">接收窗口和SO_RCVBUF的关系</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#设置-SO-RCVBUF-后通过wireshark观察到的接收窗口基本"><span class="nav-number">2.10.1.</span> <span class="nav-text">设置 SO_RCVBUF 后通过wireshark观察到的接收窗口基本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#If-you-set-a-“receive-buffer-size”-on-a-TCP-socket-what-does-it-actually-mean"><span class="nav-number">2.10.2.</span> <span class="nav-text">If you set a “receive buffer size” on a TCP socket, what does it actually mean?</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#总结"><span class="nav-number">3.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#相关和参考文章"><span class="nav-number">4.</span> <span class="nav-text">相关和参考文章</span></a></li></ol></div>
             
 
           </div>
