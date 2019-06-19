@@ -100,7 +100,7 @@
 <meta name="description" content="前言本文希望解析清楚，当我们在代码中写下  socket.setSendBufferSize 和 sysctl 看到的rmem/wmem系统参数以及最终我们在TCP常常谈到的接收发送窗口的关系，以及他们怎样影响性能。 先明确一下：文章标题中所说的Buffer指的是sysctl中的 rmem或者wmem，如果是代码中指定的话对应着SO_SNDBUF或者SO_RCVBUF，从TCP的概念来看对应着发送">
 <meta name="keywords" content="Linux,performance,TCP,sendBuffer,rmem,receiveBuffer,wmem,接收窗口,发送窗口">
 <meta property="og:type" content="article">
-<meta property="og:title" content="TCP性能和发送接收Buffer的关系">
+<meta property="og:title" content="就是要你懂TCP--性能和发送接收Buffer的关系">
 <meta property="og:url" content="http://yoursite.com/2019/05/28/TCP性能和发送接收Buffer的关系/index.html">
 <meta property="og:site_name" content="plantegg">
 <meta property="og:description" content="前言本文希望解析清楚，当我们在代码中写下  socket.setSendBufferSize 和 sysctl 看到的rmem/wmem系统参数以及最终我们在TCP常常谈到的接收发送窗口的关系，以及他们怎样影响性能。 先明确一下：文章标题中所说的Buffer指的是sysctl中的 rmem或者wmem，如果是代码中指定的话对应着SO_SNDBUF或者SO_RCVBUF，从TCP的概念来看对应着发送">
@@ -123,9 +123,9 @@
 <meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/gif/162611/1559030833230-72b44e6d-5c3c-413b-91ff-26074bd2bdbe.gif#align=left&display=inline&height=144&originHeight=103&originWidth=289&size=0&status=done&width=404">
 <meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1559043502992-97c4c823-8cd1-4ae7-9883-203e553604ff.png#align=left&display=inline&height=720&name=image.png&originHeight=900&originWidth=958&size=48144&status=done&width=766.4">
 <meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1559097931609-28c0fc94-09ca-4564-8f47-432f9b5e2c5b.png#align=left&display=inline&height=682&name=image.png&originHeight=853&originWidth=760&size=41904&status=done&width=608">
-<meta property="og:updated_time" content="2019-05-31T06:57:55.000Z">
+<meta property="og:updated_time" content="2019-06-19T09:32:40.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="TCP性能和发送接收Buffer的关系">
+<meta name="twitter:title" content="就是要你懂TCP--性能和发送接收Buffer的关系">
 <meta name="twitter:description" content="前言本文希望解析清楚，当我们在代码中写下  socket.setSendBufferSize 和 sysctl 看到的rmem/wmem系统参数以及最终我们在TCP常常谈到的接收发送窗口的关系，以及他们怎样影响性能。 先明确一下：文章标题中所说的Buffer指的是sysctl中的 rmem或者wmem，如果是代码中指定的话对应着SO_SNDBUF或者SO_RCVBUF，从TCP的概念来看对应着发送">
 <meta name="twitter:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1558603861745-190dadd2-cff2-49c9-8bc3-5856fdfb2d44.png#align=left&display=inline&height=627&originHeight=627&originWidth=1251&size=0&status=done&width=1251">
 
@@ -161,7 +161,7 @@
 
 
 
-  <title>TCP性能和发送接收Buffer的关系 | plantegg</title>
+  <title>就是要你懂TCP--性能和发送接收Buffer的关系 | plantegg</title>
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
@@ -300,7 +300,7 @@
 
         
         
-          <h2 class="post-title" itemprop="name headline">TCP性能和发送接收Buffer的关系</h2>
+          <h2 class="post-title" itemprop="name headline">就是要你懂TCP--性能和发送接收Buffer的关系</h2>
         
 
         <div class="post-meta">
@@ -972,7 +972,7 @@ void tcp_init_buffer_space(struct sock *sk)
         var disqus_config = function () {
           this.page.url = 'http://yoursite.com/2019/05/28/TCP性能和发送接收Buffer的关系/';
           this.page.identifier = '2019/05/28/TCP性能和发送接收Buffer的关系/';
-          this.page.title = 'TCP性能和发送接收Buffer的关系';
+          this.page.title = '就是要你懂TCP--性能和发送接收Buffer的关系';
         };
         var d = document, s = d.createElement('script');
         s.src = 'https://.disqus.com/embed.js';
