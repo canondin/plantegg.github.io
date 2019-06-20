@@ -121,7 +121,7 @@
 <meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/gif/162611/1559030833230-72b44e6d-5c3c-413b-91ff-26074bd2bdbe.gif#align=left&display=inline&height=144&originHeight=103&originWidth=289&size=0&status=done&width=404">
 <meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1559043502992-97c4c823-8cd1-4ae7-9883-203e553604ff.png#align=left&display=inline&height=720&name=image.png&originHeight=900&originWidth=958&size=48144&status=done&width=766.4">
 <meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1559097931609-28c0fc94-09ca-4564-8f47-432f9b5e2c5b.png#align=left&display=inline&height=682&name=image.png&originHeight=853&originWidth=760&size=41904&status=done&width=608">
-<meta property="og:updated_time" content="2019-06-19T09:36:01.000Z">
+<meta property="og:updated_time" content="2019-06-20T01:25:59.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="就是要你懂TCP--性能和发送接收Buffer的关系">
 <meta name="twitter:description" content="前言本文希望解析清楚，当我们在代码中写下  socket.setSendBufferSize 和 sysctl 看到的rmem/wmem系统参数以及最终我们在TCP常常谈到的接收发送窗口的关系，以及他们怎样影响性能。 先明确一下：文章标题中所说的Buffer指的是sysctl中的 rmem或者wmem，如果是代码中指定的话对应着SO_SNDBUF或者SO_RCVBUF，从TCP的概念来看对应着发送">
@@ -335,6 +335,17 @@
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
                   <a href="/categories/Linux/" itemprop="url" rel="index">
                     <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+
+                
+                
+                  ， 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/TCP/" itemprop="url" rel="index">
+                    <span itemprop="name">TCP</span>
                   </a>
                 </span>
 
@@ -735,7 +746,7 @@ void tcp_init_buffer_space(struct sock *sk)
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">28</span>
+                <span class="site-state-item-count">29</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -746,7 +757,7 @@ void tcp_init_buffer_space(struct sock *sk)
             
             <div class="site-state-item site-state-categories">
               
-                <span class="site-state-item-count">10</span>
+                <span class="site-state-item-count">11</span>
                 <span class="site-state-item-name">分类</span>
               
             </div>
@@ -757,7 +768,7 @@ void tcp_init_buffer_space(struct sock *sk)
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">82</span>
+                <span class="site-state-item-count">84</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>
