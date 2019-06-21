@@ -99,7 +99,7 @@
 <meta name="keywords" content="Linux,performance,TCP,sendBuffer,rmem,receiveBuffer,wmem,接收窗口,发送窗口">
 <meta property="og:type" content="article">
 <meta property="og:title" content="就是要你懂TCP--性能和发送接收Buffer的关系">
-<meta property="og:url" content="http://yoursite.com/2019/05/28/TCP性能和发送接收Buffer的关系/index.html">
+<meta property="og:url" content="http://yoursite.com/2019/05/28/就是要你懂TCP--性能和发送接收Buffer的关系/index.html">
 <meta property="og:site_name" content="plantegg">
 <meta property="og:description" content="前言本文希望解析清楚，当我们在代码中写下  socket.setSendBufferSize 和 sysctl 看到的rmem/wmem系统参数以及最终我们在TCP常常谈到的接收发送窗口的关系，以及他们怎样影响性能。 先明确一下：文章标题中所说的Buffer指的是sysctl中的 rmem或者wmem，如果是代码中指定的话对应着SO_SNDBUF或者SO_RCVBUF，从TCP的概念来看对应着发送">
 <meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1558603861745-190dadd2-cff2-49c9-8bc3-5856fdfb2d44.png#align=left&display=inline&height=627&originHeight=627&originWidth=1251&size=0&status=done&width=1251">
@@ -153,7 +153,7 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/2019/05/28/TCP性能和发送接收Buffer的关系/"/>
+  <link rel="canonical" href="http://yoursite.com/2019/05/28/就是要你懂TCP--性能和发送接收Buffer的关系/"/>
 
 
 
@@ -281,7 +281,7 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/05/28/TCP性能和发送接收Buffer的关系/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/05/28/就是要你懂TCP--性能和发送接收Buffer的关系/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="weibo @plantegg">
@@ -362,9 +362,9 @@
                 <span class="post-meta-item-icon">
                   <i class="fa fa-comment-o"></i>
                 </span>
-                <a href="/2019/05/28/TCP性能和发送接收Buffer的关系/#comments" itemprop="discussionUrl">
+                <a href="/2019/05/28/就是要你懂TCP--性能和发送接收Buffer的关系/#comments" itemprop="discussionUrl">
                   <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2019/05/28/TCP性能和发送接收Buffer的关系/" itemprop="commentCount"></span>
+                        data-disqus-identifier="2019/05/28/就是要你懂TCP--性能和发送接收Buffer的关系/" itemprop="commentCount"></span>
                 </a>
               </span>
             
@@ -746,7 +746,7 @@ void tcp_init_buffer_space(struct sock *sk)
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">29</span>
+                <span class="site-state-item-count">31</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -768,7 +768,7 @@ void tcp_init_buffer_space(struct sock *sk)
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">84</span>
+                <span class="site-state-item-count">91</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>
@@ -983,8 +983,8 @@ void tcp_init_buffer_space(struct sock *sk)
     
       <script type="text/javascript">
         var disqus_config = function () {
-          this.page.url = 'http://yoursite.com/2019/05/28/TCP性能和发送接收Buffer的关系/';
-          this.page.identifier = '2019/05/28/TCP性能和发送接收Buffer的关系/';
+          this.page.url = 'http://yoursite.com/2019/05/28/就是要你懂TCP--性能和发送接收Buffer的关系/';
+          this.page.identifier = '2019/05/28/就是要你懂TCP--性能和发送接收Buffer的关系/';
           this.page.title = '就是要你懂TCP--性能和发送接收Buffer的关系';
         };
         var d = document, s = d.createElement('script');
