@@ -459,7 +459,8 @@ dip： destination
 <h3 id="为什么full-NAT后RS看不见cip了"><a href="#为什么full-NAT后RS看不见cip了" class="headerlink" title="为什么full NAT后RS看不见cip了"></a>为什么full NAT后RS看不见cip了</h3><p>因为cip被修改掉了，RS只能看到LVS的vip，在阿里内部会将cip放入TCP包的Option中传递给RS，RS上一般部署自己写的toa模块来从Options中读取的cip，这样RS能看到cip了, 当然这不是一个开源的通用方案。</p>
 <h3 id="总结下full-NAT的结构"><a href="#总结下full-NAT的结构" class="headerlink" title="总结下full NAT的结构"></a>总结下full NAT的结构</h3><p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1560946394689-b9cc391d-612e-40ae-99b9-aefe55e6d090.png" alt="undefined"> </p>
 <p><strong>注意上图中绿色的进包和红色的出包他们的地址变化</strong></p>
-<p>那么到现在full NAT解决了NAT的同vlan的要求，<strong>基本上可以用于公有云了</strong>，但是还是没解决进出流量都走LVS的问题（LVS要修改进出的包）</p>
+<p>那么到现在full NAT解决了NAT的同vlan的要求，<strong>基本上可以用于公有云了</strong>，但是还是没解决进出流量都走LVS的问题（LVS要修改进出的包）。</p>
+<h3 id="比较下NAT和Full-NAT"><a href="#比较下NAT和Full-NAT" class="headerlink" title="比较下NAT和Full NAT"></a>比较下NAT和Full NAT</h3><p>两者进出都要走LVS，NAT必须要求vip是RS的网关，这个限制在公有云这种应用场景下不能忍，于是Full NAT通过修改请求包的source ip，将原来的source ip从cip改成vip，这样RS回复的时候回复包的目标IP也是vip，所以LVS和RS之间不再要求是同一vlan的关系了。当然带来了新的问题，RS看不见cip了（这个可以通过自定义的toa模块来复原）</p>
 <p>那么有没有一个方案能够像full NAT一样不限制lvs和RS之间的网络关系，同时出去的流量跟DR模式一样也不走LVS呢？</p>
 <h2 id="阿里云的ENAT模式-enhence-NAT"><a href="#阿里云的ENAT模式-enhence-NAT" class="headerlink" title="阿里云的ENAT模式(enhence NAT)"></a>阿里云的ENAT模式(enhence NAT)</h2><p>优点：</p>
 <ul>
