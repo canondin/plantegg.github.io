@@ -98,8 +98,8 @@
 <meta name="description" content="TCP性能优化大全 先从一个问题看起，客户通过专线访问云上的DRDS，专线100M，时延20ms，一个SQL查询了22M数据，结果花了大概25秒，这慢得不太正常，如果通过云上client访问云上DRDS那么1-2秒就返回了。如果通过http或者scp传输这22M的数据大概两秒钟也传送完毕了，所以这里问题的原因基本上是DRDS在这种网络条件下有性能问题，需要找出为什么。  抓包 tcpdump+wi">
 <meta name="keywords" content="Linux,TCP,sendBuffer">
 <meta property="og:type" content="article">
-<meta property="og:title" content="TCP性能优化大全">
-<meta property="og:url" content="http://yoursite.com/2019/05/07/TCP性能优化大全/index.html">
+<meta property="og:title" content="就是要你懂TCP--TCP性能优化大全">
+<meta property="og:url" content="http://yoursite.com/2019/05/07/就是要你懂TCP--TCP性能优化大全/index.html">
 <meta property="og:site_name" content="plantegg">
 <meta property="og:description" content="TCP性能优化大全 先从一个问题看起，客户通过专线访问云上的DRDS，专线100M，时延20ms，一个SQL查询了22M数据，结果花了大概25秒，这慢得不太正常，如果通过云上client访问云上DRDS那么1-2秒就返回了。如果通过http或者scp传输这22M的数据大概两秒钟也传送完毕了，所以这里问题的原因基本上是DRDS在这种网络条件下有性能问题，需要找出为什么。  抓包 tcpdump+wi">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d188530df31712e8341f5687a960743a.png">
@@ -112,9 +112,9 @@
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/e24ad7655c10a82f35879503ecabc98f.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/28532cb2bc6aa674be3d7693595f6f2b.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/68314efb651bcb3144d4243bf0c15820.png">
-<meta property="og:updated_time" content="2019-05-08T07:22:36.000Z">
+<meta property="og:updated_time" content="2019-06-25T03:22:20.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="TCP性能优化大全">
+<meta name="twitter:title" content="就是要你懂TCP--TCP性能优化大全">
 <meta name="twitter:description" content="TCP性能优化大全 先从一个问题看起，客户通过专线访问云上的DRDS，专线100M，时延20ms，一个SQL查询了22M数据，结果花了大概25秒，这慢得不太正常，如果通过云上client访问云上DRDS那么1-2秒就返回了。如果通过http或者scp传输这22M的数据大概两秒钟也传送完毕了，所以这里问题的原因基本上是DRDS在这种网络条件下有性能问题，需要找出为什么。  抓包 tcpdump+wi">
 <meta name="twitter:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d188530df31712e8341f5687a960743a.png">
 
@@ -144,13 +144,13 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/2019/05/07/TCP性能优化大全/"/>
+  <link rel="canonical" href="http://yoursite.com/2019/05/07/就是要你懂TCP--TCP性能优化大全/"/>
 
 
 
 
 
-  <title>TCP性能优化大全 | plantegg</title>
+  <title>就是要你懂TCP--TCP性能优化大全 | plantegg</title>
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
@@ -272,7 +272,7 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/05/07/TCP性能优化大全/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/05/07/就是要你懂TCP--TCP性能优化大全/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="weibo @plantegg">
@@ -289,7 +289,7 @@
 
         
         
-          <h2 class="post-title" itemprop="name headline">TCP性能优化大全</h2>
+          <h2 class="post-title" itemprop="name headline">就是要你懂TCP--TCP性能优化大全</h2>
         
 
         <div class="post-meta">
@@ -342,9 +342,9 @@
                 <span class="post-meta-item-icon">
                   <i class="fa fa-comment-o"></i>
                 </span>
-                <a href="/2019/05/07/TCP性能优化大全/#comments" itemprop="discussionUrl">
+                <a href="/2019/05/07/就是要你懂TCP--TCP性能优化大全/#comments" itemprop="discussionUrl">
                   <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2019/05/07/TCP性能优化大全/" itemprop="commentCount"></span>
+                        data-disqus-identifier="2019/05/07/就是要你懂TCP--TCP性能优化大全/" itemprop="commentCount"></span>
                 </a>
               </span>
             
@@ -572,8 +572,8 @@ sudo ip tcp_metrics delete 100.118.58.7
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/2019/05/08/网络包的流转/" rel="prev" title="Linux Network Stack">
-                Linux Network Stack <i class="fa fa-chevron-right"></i>
+              <a href="/2019/05/08/就是要你懂网络--网络包的流转/" rel="prev" title="就是要你懂网络--网络包的流转">
+                就是要你懂网络--网络包的流转 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -653,7 +653,7 @@ sudo ip tcp_metrics delete 100.118.58.7
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">31</span>
+                <span class="site-state-item-count">30</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -890,9 +890,9 @@ sudo ip tcp_metrics delete 100.118.58.7
     
       <script type="text/javascript">
         var disqus_config = function () {
-          this.page.url = 'http://yoursite.com/2019/05/07/TCP性能优化大全/';
-          this.page.identifier = '2019/05/07/TCP性能优化大全/';
-          this.page.title = 'TCP性能优化大全';
+          this.page.url = 'http://yoursite.com/2019/05/07/就是要你懂TCP--TCP性能优化大全/';
+          this.page.identifier = '2019/05/07/就是要你懂TCP--TCP性能优化大全/';
+          this.page.title = '就是要你懂TCP--TCP性能优化大全';
         };
         var d = document, s = d.createElement('script');
         s.src = 'https://.disqus.com/embed.js';

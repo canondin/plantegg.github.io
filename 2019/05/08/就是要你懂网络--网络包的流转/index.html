@@ -98,8 +98,8 @@
 <meta name="description" content="Linux Network Stack一个网络包进到网卡后续如何流转，中间有哪些关键参数，有什么工具能帮忙可以看到各个环节的一些指征，怎么调整他们 接收流程 网络包进到网卡，网卡驱动校验MAC，看是否扔掉，取决是否是混杂 promiscuous mode 网卡在启动时会申请一个接收ring buffer，其条目都会指向一个skb的内存。 DMA完成数据报文从网卡硬件到内存到拷贝 网卡发送一个中断通">
 <meta name="keywords" content="Linux,network,TCP">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Linux Network Stack">
-<meta property="og:url" content="http://yoursite.com/2019/05/08/网络包的流转/index.html">
+<meta property="og:title" content="就是要你懂网络--网络包的流转">
+<meta property="og:url" content="http://yoursite.com/2019/05/08/就是要你懂网络--网络包的流转/index.html">
 <meta property="og:site_name" content="plantegg">
 <meta property="og:description" content="Linux Network Stack一个网络包进到网卡后续如何流转，中间有哪些关键参数，有什么工具能帮忙可以看到各个环节的一些指征，怎么调整他们 接收流程 网络包进到网卡，网卡驱动校验MAC，看是否扔掉，取决是否是混杂 promiscuous mode 网卡在启动时会申请一个接收ring buffer，其条目都会指向一个skb的内存。 DMA完成数据报文从网卡硬件到内存到拷贝 网卡发送一个中断通">
 <meta property="og:image" content="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1557292725626-2e4b452b-8a9e-4d9f-91a6-64357fbd4e0e.png">
@@ -112,9 +112,9 @@
 <meta property="og:image" content="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1557291324544-ca69d448-08e4-46c4-9c49-8cf516fc3eaa.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d42ccdb0b8f6270d8b559145c0b89c86.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/a067b484c593aa3a4b6a525d1f93506e.png">
-<meta property="og:updated_time" content="2019-05-08T07:21:07.000Z">
+<meta property="og:updated_time" content="2019-06-25T03:23:20.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Linux Network Stack">
+<meta name="twitter:title" content="就是要你懂网络--网络包的流转">
 <meta name="twitter:description" content="Linux Network Stack一个网络包进到网卡后续如何流转，中间有哪些关键参数，有什么工具能帮忙可以看到各个环节的一些指征，怎么调整他们 接收流程 网络包进到网卡，网卡驱动校验MAC，看是否扔掉，取决是否是混杂 promiscuous mode 网卡在启动时会申请一个接收ring buffer，其条目都会指向一个skb的内存。 DMA完成数据报文从网卡硬件到内存到拷贝 网卡发送一个中断通">
 <meta name="twitter:image" content="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1557292725626-2e4b452b-8a9e-4d9f-91a6-64357fbd4e0e.png">
 
@@ -144,13 +144,13 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/2019/05/08/网络包的流转/"/>
+  <link rel="canonical" href="http://yoursite.com/2019/05/08/就是要你懂网络--网络包的流转/"/>
 
 
 
 
 
-  <title>Linux Network Stack | plantegg</title>
+  <title>就是要你懂网络--网络包的流转 | plantegg</title>
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
@@ -272,7 +272,7 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/05/08/网络包的流转/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/05/08/就是要你懂网络--网络包的流转/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="weibo @plantegg">
@@ -289,7 +289,7 @@
 
         
         
-          <h2 class="post-title" itemprop="name headline">Linux Network Stack</h2>
+          <h2 class="post-title" itemprop="name headline">就是要你懂网络--网络包的流转</h2>
         
 
         <div class="post-meta">
@@ -342,9 +342,9 @@
                 <span class="post-meta-item-icon">
                   <i class="fa fa-comment-o"></i>
                 </span>
-                <a href="/2019/05/08/网络包的流转/#comments" itemprop="discussionUrl">
+                <a href="/2019/05/08/就是要你懂网络--网络包的流转/#comments" itemprop="discussionUrl">
                   <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2019/05/08/网络包的流转/" itemprop="commentCount"></span>
+                        data-disqus-identifier="2019/05/08/就是要你懂网络--网络包的流转/" itemprop="commentCount"></span>
                 </a>
               </span>
             
@@ -586,8 +586,8 @@ sysctl -w net.core.netdev_max_backlog=1024 //临时性增大
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2019/05/07/TCP性能优化大全/" rel="next" title="TCP性能优化大全">
-                <i class="fa fa-chevron-left"></i> TCP性能优化大全
+              <a href="/2019/05/07/就是要你懂TCP--TCP性能优化大全/" rel="next" title="就是要你懂TCP--TCP性能优化大全">
+                <i class="fa fa-chevron-left"></i> 就是要你懂TCP--TCP性能优化大全
               </a>
             
           </div>
@@ -677,7 +677,7 @@ sysctl -w net.core.netdev_max_backlog=1024 //临时性增大
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">31</span>
+                <span class="site-state-item-count">30</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -914,9 +914,9 @@ sysctl -w net.core.netdev_max_backlog=1024 //临时性增大
     
       <script type="text/javascript">
         var disqus_config = function () {
-          this.page.url = 'http://yoursite.com/2019/05/08/网络包的流转/';
-          this.page.identifier = '2019/05/08/网络包的流转/';
-          this.page.title = 'Linux Network Stack';
+          this.page.url = 'http://yoursite.com/2019/05/08/就是要你懂网络--网络包的流转/';
+          this.page.identifier = '2019/05/08/就是要你懂网络--网络包的流转/';
+          this.page.title = '就是要你懂网络--网络包的流转';
         };
         var d = document, s = d.createElement('script');
         s.src = 'https://.disqus.com/embed.js';
