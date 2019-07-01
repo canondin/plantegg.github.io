@@ -261,6 +261,304 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2117/06/07/就是要你懂TCP--半连接队列和全连接队列/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2117/06/07/就是要你懂TCP--半连接队列和全连接队列/" itemprop="url">就是要你懂TCP--半连接队列和全连接队列</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2117-06-07T17:30:03+08:00">
+                2117-06-07
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/tcp/" itemprop="url" rel="index">
+                    <span itemprop="name">tcp</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2117/06/07/就是要你懂TCP--半连接队列和全连接队列/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2117/06/07/就是要你懂TCP--半连接队列和全连接队列/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="关于TCP-半连接队列和全连接队列"><a href="#关于TCP-半连接队列和全连接队列" class="headerlink" title="关于TCP 半连接队列和全连接队列"></a>关于TCP 半连接队列和全连接队列</h1><blockquote>
+<p>最近碰到一个client端连接异常问题，然后定位分析并查阅各种资料文章，对TCP连接队列有个深入的理解</p>
+<p>查资料过程中发现没有文章把这两个队列以及怎么观察他们的指标说清楚，希望通过这篇文章能把他们说清楚一点</p>
+</blockquote>
+<h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><pre><code>JAVA的client和server，使用socket通信。server使用NIO。
+1.间歇性的出现client向server建立连接三次握手已经完成，但server的selector没有响应到这连接。
+2.出问题的时间点，会同时有很多连接出现这个问题。
+3.selector没有销毁重建，一直用的都是一个。
+4.程序刚启动的时候必会出现一些，之后会间歇性出现。
+</code></pre><h3 id="分析问题"><a href="#分析问题" class="headerlink" title="分析问题"></a>分析问题</h3><h4 id="正常TCP建连接三次握手过程："><a href="#正常TCP建连接三次握手过程：" class="headerlink" title="正常TCP建连接三次握手过程："></a>正常TCP建连接三次握手过程：</h4><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/159a331ff8cdd4b8994dfe6a209d035f.png" alt="image.png"></p>
+<ul>
+<li>第一步：client 发送 syn 到server 发起握手；</li>
+<li>第二步：server 收到 syn后回复syn+ack给client；</li>
+<li>第三步：client 收到syn+ack后，回复server一个ack表示收到了server的syn+ack（此时client的56911端口的连接已经是established）</li>
+</ul>
+<p>从问题的描述来看，有点像TCP建连接的时候全连接队列（accept队列）满了，尤其是症状2、4. 为了证明是这个原因，马上通过 ss -s 去看队列的溢出统计数据：</p>
+<pre><code>667399 times the listen queue of a socket overflowed
+</code></pre><p>反复看了几次之后发现这个overflowed 一直在增加，那么可以明确的是server上全连接队列一定溢出了</p>
+<p>接着查看溢出后，OS怎么处理：</p>
+<pre><code># cat /proc/sys/net/ipv4/tcp_abort_on_overflow
+0
+</code></pre><p><strong>tcp_abort_on_overflow 为0表示如果三次握手第三步的时候全连接队列满了那么server扔掉client 发过来的ack（在server端认为连接还没建立起来）</strong></p>
+<p>为了证明客户端应用代码的异常跟全连接队列满有关系，我先把tcp_abort_on_overflow修改成 1，1表示第三步的时候如果全连接队列满了，server发送一个reset包给client，表示废掉这个握手过程和这个连接（本来在server端这个连接就还没建立起来）。</p>
+<p>接着测试然后在客户端异常中可以看到很多connection reset by peer的错误，到此证明客户端错误是这个原因导致的。</p>
+<p>于是开发同学翻看java 源代码发现socket 默认的backlog（这个值控制全连接队列的大小，后面再详述）是50，于是改大重新跑，经过12个小时以上的压测，这个错误一次都没出现过，同时 overflowed 也不再增加了。</p>
+<p>到此问题解决，简单来说TCP三次握手后有个accept队列，进到这个队列才能从Listen变成accept，默认backlog 值是50，很容易就满了。满了之后握手第三步的时候server就忽略了client发过来的ack包（隔一段时间server重发握手第二步的syn+ack包给client），如果这个连接一直排不上队就异常了。</p>
+<h3 id="深入理解TCP握手过程中建连接的流程和队列"><a href="#深入理解TCP握手过程中建连接的流程和队列" class="headerlink" title="深入理解TCP握手过程中建连接的流程和队列"></a>深入理解TCP握手过程中建连接的流程和队列</h3><p><img src="http://img2.cnxct.com/2015/06/tcp-sync-queue-and-accept-queue-small-1024x747.jpg" alt=""><br>（图片来源：<a href="http://www.cnxct.com/something-about-phpfpm-s-backlog/）" target="_blank" rel="external">http://www.cnxct.com/something-about-phpfpm-s-backlog/）</a></p>
+<p>如上图所示，这里有两个队列：syns queue(半连接队列）；accept queue（全连接队列）</p>
+<p>三次握手中，在第一步server收到client的syn后，把相关信息放到半连接队列中，同时回复syn+ack给client（第二步）；</p>
+<pre><code>比如syn floods 攻击就是针对半连接队列的，攻击方不停地建连接，但是建连接的时候只做第一步，第二步中攻击方收到server的syn+ack后故意扔掉什么也不做，导致server上这个队列满其它正常请求无法进来
+</code></pre><p>第三步的时候server收到client的ack，如果这时全连接队列没满，那么从半连接队列拿出相关信息放入到全连接队列中，否则按tcp_abort_on_overflow指示的执行。</p>
+<p>这时如果全连接队列满了并且tcp_abort_on_overflow是0的话，server过一段时间再次发送syn+ack给client（也就是重新走握手的第二步），如果client超时等待比较短，就很容易异常了。</p>
+<p>在我们的os中retry 第二步的默认次数是2（centos默认是5次）：</p>
+<pre><code>net.ipv4.tcp_synack_retries = 2
+</code></pre><h3 id="如果TCP连接队列溢出，有哪些指标可以看呢？"><a href="#如果TCP连接队列溢出，有哪些指标可以看呢？" class="headerlink" title="如果TCP连接队列溢出，有哪些指标可以看呢？"></a>如果TCP连接队列溢出，有哪些指标可以看呢？</h3><p>上述解决过程有点绕，那么下次再出现类似问题有什么更快更明确的手段来确认这个问题呢？</p>
+<h4 id="netstat-s"><a href="#netstat-s" class="headerlink" title="netstat -s"></a>netstat -s</h4><pre><code>[root@server ~]#  netstat -s | egrep &quot;listen|LISTEN&quot; 
+667399 times the listen queue of a socket overflowed
+667399 SYNs to LISTEN sockets ignored
+</code></pre><p>比如上面看到的 667399 times ，表示全连接队列溢出的次数，隔几秒钟执行下，如果这个数字一直在增加的话肯定全连接队列偶尔满了。</p>
+<h4 id="ss-命令"><a href="#ss-命令" class="headerlink" title="ss 命令"></a>ss 命令</h4><pre><code>[root@server ~]# ss -lnt
+Recv-Q Send-Q Local Address:Port  Peer Address:Port 
+0        50               *:3306             *:* 
+</code></pre><p><strong>上面看到的第二列Send-Q 表示第三列的listen端口上的全连接队列最大为50，第一列Recv-Q为全连接队列当前使用了多少</strong></p>
+<p><strong>全连接队列的大小取决于：min(backlog, somaxconn) . backlog是在socket创建的时候传入的，somaxconn是一个os级别的系统参数</strong></p>
+<p><strong>半连接队列的大小取决于：max(64,  /proc/sys/net/ipv4/tcp_max_syn_backlog)。 不同版本的os会有些差异</strong></p>
+<h5 id="netstat-命令"><a href="#netstat-命令" class="headerlink" title="netstat 命令"></a>netstat 命令</h5><p>netstat跟ss命令一样也能看到Send-Q、Recv-Q这些状态信息，不过如果这个连接不是<strong>Listen状态</strong>的话，Recv-Q就是指收到的数据还在缓存中，还没被进程读取，这个值就是还没被进程读取的 bytes；而 Send 则是发送队列中没有被远程主机确认的 bytes 数</p>
+<pre><code>$netstat -tn  
+Active Internet connections (w/o servers)
+Proto Recv-Q Send-Q Local Address   Foreign Address State  
+tcp0  0 100.81.180.187:8182  10.183.199.10:15260 SYN_RECV   
+tcp0  0 100.81.180.187:43511 10.137.67.18:19796  TIME_WAIT   
+tcp0  0 100.81.180.187:2376  100.81.183.84:42459 ESTABLISHED
+tcp0  0 100.81.180.187:2376  100.81.183.200:48592TIME_WAIT  
+tcp0 28 100.81.180.187:22    30.30.184.29:51708  ESTABLISHED
+tcp0  0 100.81.180.187:2376  100.81.183.86:60269 ESTABLISHED
+</code></pre><p> <strong>netstat -tn 看到的 Recv-Q 跟全连接半连接没有关系，这里特意拿出来说一下是因为容易跟 ss -lnt 的 Recv-Q 搞混淆 </strong>  </p>
+<p>我们看到的 Recv-Q、Send-Q获取源代码如下（ net/ipv4/tcp_diag.c ）：   </p>
+<pre><code>static void tcp_diag_get_info(struct sock *sk, struct inet_diag_msg *r,
+  void *_info)
+{
+    const struct tcp_sock *tp = tcp_sk(sk);
+    struct tcp_info *info = _info;
+
+    if (sk-&gt;sk_state == TCP_LISTEN) {  //LISTEN状态下的 Recv-Q、Send-Q
+        r-&gt;idiag_rqueue = sk-&gt;sk_ack_backlog;
+        r-&gt;idiag_wqueue = sk-&gt;sk_max_ack_backlog; //Send-Q 最大backlog
+    } else {                           //其它状态下的 Recv-Q、Send-Q
+        r-&gt;idiag_rqueue = max_t(int, tp-&gt;rcv_nxt - tp-&gt;copied_seq, 0);
+        r-&gt;idiag_wqueue = tp-&gt;write_seq - tp-&gt;snd_una;
+    }
+    if (info != NULL)
+        tcp_get_info(sk, info);
+}
+</code></pre><p>比如如下netstat -t 看到的Recv-Q有大量数据堆积，那么一般是CPU处理不过来导致的：</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/0c389f49ca9c7fe0fd3b3074387bab71.png" alt="image.png"></p>
+<h3 id="实践验证下上面的理解"><a href="#实践验证下上面的理解" class="headerlink" title="实践验证下上面的理解"></a>实践验证下上面的理解</h3><p>把java中backlog改成10（越小越容易溢出），继续跑压力，这个时候client又开始报异常了，然后在server上通过 ss 命令观察到：</p>
+<pre><code>Fri May  5 13:50:23 CST 2017
+Recv-Q Send-QLocal Address:Port  Peer Address:Port
+11         10         *:3306               *:*
+</code></pre><p>按照前面的理解，这个时候我们能看到3306这个端口上的服务全连接队列最大是10，但是现在有11个在队列中和等待进队列的，肯定有一个连接进不去队列要overflow掉</p>
+<h3 id="容器中的Accept队列参数"><a href="#容器中的Accept队列参数" class="headerlink" title="容器中的Accept队列参数"></a>容器中的Accept队列参数</h3><p>Tomcat默认短连接，backlog（Tomcat里面的术语是Accept count）Ali-tomcat默认是200, Apache Tomcat默认100. </p>
+<pre><code>#ss -lnt
+Recv-Q Send-Q   Local Address:Port Peer Address:Port
+0       100                 *:8080            *:*
+</code></pre><p>Nginx默认是511</p>
+<pre><code>$sudo ss -lnt
+State  Recv-Q Send-Q Local Address:PortPeer Address:Port
+LISTEN    0     511              *:8085           *:*
+LISTEN    0     511              *:8085           *:*
+</code></pre><p>因为Nginx是多进程模式，也就是多个进程都监听同一个端口以尽量避免上下文切换来提升性能   </p>
+<h3 id="进一步思考"><a href="#进一步思考" class="headerlink" title="进一步思考"></a>进一步思考</h3><p>如果client走完第三步在client看来连接已经建立好了，但是server上的对应连接实际没有准备好，这个时候如果client发数据给server，server会怎么处理呢？（有同学说会reset，还是实践看看）</p>
+<p>先来看一个例子：</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/3f5f1eeb0646a3af8afd6bbff2a9ea0b.png" alt="image.png"><br>（图片来自：<a href="http://blog.chinaunix.net/uid-20662820-id-4154399.html）" target="_blank" rel="external">http://blog.chinaunix.net/uid-20662820-id-4154399.html）</a></p>
+<p>如上图，150166号包是三次握手中的第三步client发送ack给server，然后150167号包中client发送了一个长度为816的包给server，因为在这个时候client认为连接建立成功，但是server上这个连接实际没有ready，所以server没有回复，一段时间后client认为丢包了然后重传这816个字节的包，一直到超时，client主动发fin包断开该连接。</p>
+<p>这个问题也叫client fooling，可以看这里：<a href="https://github.com/torvalds/linux/commit/5ea8ea2cb7f1d0db15762c9b0bb9e7330425a071" target="_blank" rel="external">https://github.com/torvalds/linux/commit/5ea8ea2cb7f1d0db15762c9b0bb9e7330425a071</a> （感谢 @刘欢(浅奕(16:00后答疑) 的提示) </p>
+<p><strong>从上面的实际抓包来看不是reset，而是server忽略这些包，然后client重传，一定次数后client认为异常，然后断开连接。
+</strong></p>
+<h3 id="过程中发现的一个奇怪问题"><a href="#过程中发现的一个奇怪问题" class="headerlink" title="过程中发现的一个奇怪问题"></a>过程中发现的一个奇怪问题</h3><pre><code>[root@server ~]# date; netstat -s | egrep &quot;listen|LISTEN&quot; 
+Fri May  5 15:39:58 CST 2017
+1641685 times the listen queue of a socket overflowed
+1641685 SYNs to LISTEN sockets ignored
+
+[root@server ~]# date; netstat -s | egrep &quot;listen|LISTEN&quot; 
+Fri May  5 15:39:59 CST 2017
+1641906 times the listen queue of a socket overflowed
+1641906 SYNs to LISTEN sockets ignored
+</code></pre><p>如上所示：<br>overflowed和ignored居然总是一样多，并且都是同步增加，overflowed表示全连接队列溢出次数，socket ignored表示半连接队列溢出次数，没这么巧吧。</p>
+<p>翻看内核源代码（<a href="http://elixir.free-electrons.com/linux/v3.18/source/net/ipv4/tcp_ipv4.c）：" target="_blank" rel="external">http://elixir.free-electrons.com/linux/v3.18/source/net/ipv4/tcp_ipv4.c）：</a></p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/a5616904df3a505572d99d557b534db2.png" alt="image.png"></p>
+<p>可以看到overflow的时候一定会drop++（socket ignored），也就是drop一定大于等于overflow。</p>
+<p>同时我也查看了另外几台server的这两个值来证明drop一定大于等于overflow：</p>
+<pre><code>server1
+150 SYNs to LISTEN sockets dropped
+
+server2
+193 SYNs to LISTEN sockets dropped
+
+server3
+16329 times the listen queue of a socket overflowed
+16422 SYNs to LISTEN sockets dropped
+
+server4
+20 times the listen queue of a socket overflowed
+51 SYNs to LISTEN sockets dropped
+
+server5
+984932 times the listen queue of a socket overflowed
+988003 SYNs to LISTEN sockets dropped
+</code></pre><h3 id="那么全连接队列满了会影响半连接队列吗？"><a href="#那么全连接队列满了会影响半连接队列吗？" class="headerlink" title="那么全连接队列满了会影响半连接队列吗？"></a>那么全连接队列满了会影响半连接队列吗？</h3><p>来看三次握手第一步的源代码（<a href="http://elixir.free-electrons.com/linux/v2.6.33/source/net/ipv4/tcp_ipv4.c#L1249）：" target="_blank" rel="external">http://elixir.free-electrons.com/linux/v2.6.33/source/net/ipv4/tcp_ipv4.c#L1249）：</a></p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/0c6bbb5d4a10f40c8b3c4ba6cab82292.png" alt="image.png"></p>
+<p>TCP三次握手第一步的时候如果全连接队列满了会影响第一步drop 半连接的发生。大概流程的如下：</p>
+<pre><code>tcp_v4_do_rcv-&gt;tcp_rcv_state_process-&gt;tcp_v4_conn_request
+//如果accept backlog队列已满，且未超时的request socket的数量大于1，则丢弃当前请求  
+  if(sk_acceptq_is_full(sk) &amp;&amp; inet_csk_reqsk_queue_yong(sk)&gt;1)
+      goto drop;
+</code></pre><h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>全连接队列、半连接队列溢出这种问题很容易被忽视，但是又很关键，特别是对于一些短连接应用（比如Nginx、PHP，当然他们也是支持长连接的）更容易爆发。 一旦溢出，从cpu、线程状态看起来都比较正常，但是压力上不去，在client看来rt也比较高（rt=网络+排队+真正服务时间），但是从server日志记录的真正服务时间来看rt又很短。</p>
+<p>另外就是jdk、netty等一些框架默认backlog比较小，可能有些情况下导致性能上不去，比如 @毕玄 碰到的这个 <a href="https://www.atatech.org/articles/12919" target="_blank" rel="external">《netty新建连接并发数很小的case》 </a><br>都是类似原因</p>
+<p>希望通过本文能够帮大家理解TCP连接过程中的半连接队列和全连接队列的概念、原理和作用，更关键的是有哪些指标可以明确看到这些问题。</p>
+<p>另外每个具体问题都是最好学习的机会，光看书理解肯定是不够深刻的，请珍惜每个具体问题，碰到后能够把来龙去脉弄清楚。</p>
+<p>我的其他几篇跟网络问题相关的文章，也很有趣，借着案例来理解好概念和原理，希望对大家也有点帮助</p>
+<p><a href="https://www.atatech.org/articles/60633" target="_blank" rel="external">https://www.atatech.org/articles/60633</a></p>
+<p><a href="https://www.atatech.org/articles/73174" target="_blank" rel="external">https://www.atatech.org/articles/73174</a></p>
+<p><a href="https://www.atatech.org/articles/73289" target="_blank" rel="external">https://www.atatech.org/articles/73289</a></p>
+<p><a href="https://www.atatech.org/articles/76138" target="_blank" rel="external">https://www.atatech.org/articles/76138</a></p>
+<p>最后感谢 @梦实 在这个过程中提供的帮助</p>
+<hr>
+<p>参考文章：</p>
+<p><a href="http://veithen.github.io/2014/01/01/how-tcp-backlog-works-in-linux.html" target="_blank" rel="external">http://veithen.github.io/2014/01/01/how-tcp-backlog-works-in-linux.html</a></p>
+<p><a href="http://www.cnblogs.com/zengkefu/p/5606696.html" target="_blank" rel="external">http://www.cnblogs.com/zengkefu/p/5606696.html</a></p>
+<p><a href="http://www.cnxct.com/something-about-phpfpm-s-backlog/" target="_blank" rel="external">http://www.cnxct.com/something-about-phpfpm-s-backlog/</a></p>
+<p><a href="http://jaseywang.me/2014/07/20/tcp-queue-%E7%9A%84%E4%B8%80%E4%BA%9B%E9%97%AE%E9%A2%98/" target="_blank" rel="external">http://jaseywang.me/2014/07/20/tcp-queue-%E7%9A%84%E4%B8%80%E4%BA%9B%E9%97%AE%E9%A2%98/</a></p>
+<p><a href="http://jin-yang.github.io/blog/network-synack-queue.html#" target="_blank" rel="external">http://jin-yang.github.io/blog/network-synack-queue.html#</a></p>
+<p><a href="http://blog.chinaunix.net/uid-20662820-id-4154399.html" target="_blank" rel="external">http://blog.chinaunix.net/uid-20662820-id-4154399.html</a></p>
+<p><a href="https://www.atatech.org/articles/12919" target="_blank" rel="external">https://www.atatech.org/articles/12919</a></p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/06/21/就是要你懂抓包--WireShark之命令行版tshark/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -4949,188 +5247,6 @@ ProxyCommand ssh -l root 2.2.2.2 exec /usr/bin/nc %h %p
 - 其他业务代码的优化（比如异常、agent等）         （优化后：4200-&gt;5400TPS)
 </code></pre><hr>
 <h5 id="整个过程得到了淘宝API、优酷会员、优酷Passport、网络、蚂蚁等众多同学的帮助，本来是计划去上海跟Passport的同学一起复盘然后再写这篇文章的，结果一直未能成行，请原谅我拖延到现在才把大家一起辛苦工作的结果整理出来，可能过程中的数据会有一些记忆上的小错误。"><a href="#整个过程得到了淘宝API、优酷会员、优酷Passport、网络、蚂蚁等众多同学的帮助，本来是计划去上海跟Passport的同学一起复盘然后再写这篇文章的，结果一直未能成行，请原谅我拖延到现在才把大家一起辛苦工作的结果整理出来，可能过程中的数据会有一些记忆上的小错误。" class="headerlink" title="整个过程得到了淘宝API、优酷会员、优酷Passport、网络、蚂蚁等众多同学的帮助，本来是计划去上海跟Passport的同学一起复盘然后再写这篇文章的，结果一直未能成行，请原谅我拖延到现在才把大家一起辛苦工作的结果整理出来，可能过程中的数据会有一些记忆上的小错误。"></a>整个过程得到了淘宝API、优酷会员、优酷Passport、网络、蚂蚁等众多同学的帮助，本来是计划去上海跟Passport的同学一起复盘然后再写这篇文章的，结果一直未能成行，请原谅我拖延到现在才把大家一起辛苦工作的结果整理出来，可能过程中的数据会有一些记忆上的小错误。</h5>
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/12/13/就是要你懂DNS--windows7的wifi总是报DNS域名异常无法上网/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/12/13/就是要你懂DNS--windows7的wifi总是报DNS域名异常无法上网/" itemprop="url">windows7的wifi总是报DNS域名异常无法上网</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-12-13T10:30:03+08:00">
-                2017-12-13
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/dns/" itemprop="url" rel="index">
-                    <span itemprop="name">dns</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2017/12/13/就是要你懂DNS--windows7的wifi总是报DNS域名异常无法上网/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2017/12/13/就是要你懂DNS--windows7的wifi总是报DNS域名异常无法上网/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="就是要你懂DNS–windows7的wifi总是报DNS域名异常无法上网"><a href="#就是要你懂DNS–windows7的wifi总是报DNS域名异常无法上网" class="headerlink" title="就是要你懂DNS–windows7的wifi总是报DNS域名异常无法上网"></a>就是要你懂DNS–windows7的wifi总是报DNS域名异常无法上网</h1><p>Windows7笔记本+公司wifi（dhcp）环境下，用着用着dns服务不可用（无法通过域名上网，通过IP地址可以访问），找到一个跟我一模一样的Case了：<a href="https://superuser.com/questions/629559/why-is-my-computer-suddenly-using-nbns-instead-of-dns" target="_blank" rel="external">https://superuser.com/questions/629559/why-is-my-computer-suddenly-using-nbns-instead-of-dns</a> 一样的环境，看来这个问题也不只是我一个人碰到了。</p>
-<p>其实之前一直有，一个月偶尔出来一两次，以为是其他原因就没管，这次换了新电脑还是这个毛病有点不能忍，于是决定彻底解决一下</p>
-<p>这个问题出现后，通过下面三个办法都可以让DNS恢复正常：</p>
-<ol>
-<li>重启大法，恢复正常</li>
-<li>禁用wifi驱动再启用，恢复正常</li>
-<li>不用DHCP，而是手工填入一个DNS服务器，比如114.114.114.114【公司域名就无法解析了】</li>
-</ol>
-<p>如果只是停用一下wifi再启用问题还在。</p>
-<h2 id="找IT升级了网卡驱动不管用"><a href="#找IT升级了网卡驱动不管用" class="headerlink" title="找IT升级了网卡驱动不管用"></a>找IT升级了网卡驱动不管用</h2><h2 id="重现的时候抓包看看"><a href="#重现的时候抓包看看" class="headerlink" title="重现的时候抓包看看"></a>重现的时候抓包看看</h2><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/c110f232829cbea9d5503166531d7f1d.png" alt="image.png"></p>
-<p>这肯定不对了，254上根本就没有跑DNS服务，可是当时没有检查 ipconfig，看看是否将网关IP动态配置到dns server里面去了，等下次重现后再确认吧。</p>
-<p>第二次重现后抓包，发现不一样了：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/295797df3c311d6902d68fb16f6212d8.png" alt="image.png"></p>
-<p>出来一个 NBNS 的鬼东西，赶紧查了一下，把它禁掉，如下图所示：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/9f06b680ae1f8b4cb781360f7c0ac2eb.png" alt="image.png"></p>
-<p>把NBNS服务关了就能上网了，同时也能抓到各种DNS Query包</p>
-<h2 id="事情没有这么简单"><a href="#事情没有这么简单" class="headerlink" title="事情没有这么简单"></a>事情没有这么简单</h2><p>过一段时间后还是会出现上面的症状，但是因为NBNS关闭了，所以这次 ping www.baidu.com 的时候没有任何包了，没有DNS Query包，也没有NBNS包，这下好尴尬。</p>
-<p>尝试Enable NBNS，又恢复了正常，看来开关 NBNS 仍然只是一个workaround，他不是导致问题的根因，开关一下没有真正解决问题，只是临时相当于重启了dns修复了问题而已。</p>
-<p>继续在网络不通的时候尝试直接ping dns server ip，发现一个奇怪的现象，丢包很多，丢包的时候还总是从 192.168.0.11返回来的，这就奇怪了，我的笔记本基本IP是30开头的，dns server ip也是30开头的，route 路由表也是对的，怎么就走到 192.168.0.11 上了啊（<a href="https://www.atatech.org/articles/80573" target="_blank" rel="external">参考我的另外一篇文章，网络到底通不通</a>），赶紧 ipconfig /all | grep 192 </p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/5212ee5e7496dafb122ce144293184e1.png" alt="image.png"></p>
-<p>发现这个IP是VirtualBox虚拟机在笔记本上虚拟出来的网卡IP，这下我倒是能理解为啥总是我碰到这个问题了，因为我的工作笔记本一拿到后第一件事情就是装VirtualBox 跑虚拟机。</p>
-<p>VirtualBox为啥导致了这个问题就是一个很偏的方向，我实在无能为力了，尝试找到了一个和VirtualBox的DNS相关的开关命令，只能死马当或马医了（像极了算命大师和老中医）</p>
-<pre><code>./VBoxManage.exe  modifyvm &quot;ubuntu&quot; --natdnshostresolver1 on
-</code></pre><p>执行完上面的命令观察了一个多月了，暂时没有再出现这个问题，忐忑中啊……</p>
-<h2 id="另外DHCP也许可以做一些事情"><a href="#另外DHCP也许可以做一些事情" class="headerlink" title="另外DHCP也许可以做一些事情"></a>另外DHCP也许可以做一些事情</h2><p>下面是来自微软官方的建议：</p>
-<blockquote>
-<p> One big advise – do not disable the DHCP Client service on any server, whether the machine is a DHCP client or statically configured. Somewhat of a misnomer, this service performs Dynamic DNS registration and is tied in with the client resolver service. If disabled on a DC, you’ll get a slew of errors, and no DNS queries will get resolved.</p>
-<p>No DNS Name Resolution If DHCP Client Service Is Not Running. When you try to resolve a host name using Domain Name Service (DNS), the attempt is unsuccessful. Communication by Internet Protocol (IP) address (even to …</p>
-<p><a href="http://support.microsoft.com/kb/268674" target="_blank" rel="external">http://support.microsoft.com/kb/268674</a></p>
-</blockquote>
-<p>from： <a href="https://blogs.msmvps.com/acefekay/2009/11/29/dns-wins-netbios-amp-the-client-side-resolver-browser-service-disabling-netbios-direct-hosted-smb-directsmb-if-one-dc-is-down-does-a-client-logon-to-another-dc-and-dns-forwarders-algorithm/#section4" target="_blank" rel="external">https://blogs.msmvps.com/acefekay/2009/11/29/dns-wins-netbios-amp-the-client-side-resolver-browser-service-disabling-netbios-direct-hosted-smb-directsmb-if-one-dc-is-down-does-a-client-logon-to-another-dc-and-dns-forwarders-algorithm/#section4</a></p>
-<h2 id="NBNS也许会导致nslookup-OK-but-ping-fail的问题"><a href="#NBNS也许会导致nslookup-OK-but-ping-fail的问题" class="headerlink" title="NBNS也许会导致nslookup OK but ping fail的问题"></a>NBNS也许会导致nslookup OK but ping fail的问题</h2><p><a href="https://www.experts-exchange.com/questions/28894006/NetBios-name-resolution-instead-of-DNS.html" target="_blank" rel="external">https://www.experts-exchange.com/questions/28894006/NetBios-name-resolution-instead-of-DNS.html</a></p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>碰到问题绕过去也不是长久之计，还是要从根本上了解问题的本质，这个问题在其它公司没有碰到过，我觉得跟公司的DNS、DHCP的配置也有点关系吧，但是这个我不好确认，应该还有好多用Windows本本的同学同样会碰到这个问题的，希望对你们有些帮助</p>
-<p><a href="https://support.microsoft.com/en-us/help/172218/microsoft-tcp-ip-host-name-resolution-order" target="_blank" rel="external">https://support.microsoft.com/en-us/help/172218/microsoft-tcp-ip-host-name-resolution-order</a></p>
-<p><a href="http://www.man7.org/linux/man-pages/man5/resolv.conf.5.html" target="_blank" rel="external">http://www.man7.org/linux/man-pages/man5/resolv.conf.5.html</a></p>
-<hr>
-<h2 id="本文附带鸡汤："><a href="#本文附带鸡汤：" class="headerlink" title="本文附带鸡汤："></a>本文附带鸡汤：</h2><p><strong>有些技能初学很难，大家水平都差不多，但是日积月累就会形成极强的优势，而且一旦突破某个临界点，它就会突飞猛进，这种技能叫指数型技能，是值得长期投资的，比如物理学就是一种指数型技能。</strong></p>
-<p>那么抓包算不算呢？​​</p>
-
           
         
       
