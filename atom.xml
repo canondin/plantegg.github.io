@@ -207,6 +207,56 @@ server5
   </entry>
   
   <entry>
+    <title>就是要你懂负载均衡--负载均衡调度算法和为什么不均衡</title>
+    <link href="http://yoursite.com/2019/07/19/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1--%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95%E5%92%8C%E4%B8%BA%E4%BB%80%E4%B9%88%E4%B8%8D%E5%9D%87%E8%A1%A1/"/>
+    <id>http://yoursite.com/2019/07/19/就是要你懂负载均衡--负载均衡调度算法和为什么不均衡/</id>
+    <published>2019-07-19T07:30:03.000Z</published>
+    <updated>2019-07-19T10:20:58.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="就是要你懂负载均衡–负载均衡调度算法和为什么不均衡"><a href="#就是要你懂负载均衡–负载均衡调度算法和为什么不均衡" class="headerlink" title="就是要你懂负载均衡–负载均衡调度算法和为什么不均衡"></a>就是要你懂负载均衡–负载均衡调度算法和为什么不均衡</h1><h2 id="几个术语和缩写"><a href="#几个术语和缩写" class="headerlink" title="几个术语和缩写"></a>几个术语和缩写</h2><pre><code>vip：Virtual IP，LVS实例IP
+RS: Real Server 后端真正提供服务的机器
+LB： Load Balance 负载均衡器
+LVS： Linux Virtual Server
+</code></pre><h2 id="负载均衡调度算法"><a href="#负载均衡调度算法" class="headerlink" title="负载均衡调度算法"></a>负载均衡调度算法</h2><p>LVS的负载调度算法有10中，基本常用的如下四种，这四种又可以分成两种</p>
+<h3 id="rr轮询调度（Round-Robin-Scheduling）"><a href="#rr轮询调度（Round-Robin-Scheduling）" class="headerlink" title="rr轮询调度（Round-Robin Scheduling）"></a>rr轮询调度（Round-Robin Scheduling）</h3><p>轮询调度（Round Robin Scheduling）算法就是以轮叫的方式依次将请求调度不同的服务器，即每次调度执行i = (i + 1) mod n，并选出第i台服务器。算法的优点是其简洁性，它无需记录当前所有连接的状态，不管服务器上实际的连接数和系统负载，所以它是一种无状态调度。 </p>
+<h3 id="wrr加权轮询调度（Weighted-Round-Robin-Scheduling）"><a href="#wrr加权轮询调度（Weighted-Round-Robin-Scheduling）" class="headerlink" title="wrr加权轮询调度（Weighted Round-Robin Scheduling）"></a>wrr加权轮询调度（Weighted Round-Robin Scheduling）</h3><p>加权轮询调度（Weighted Round-Robin Scheduling）算法可以解决服务器间性能不一的情况，它用相应的权值表示服务器的处理性能，服务器的缺省权值为1。假设服务器A的权值为1，B的权值为2，则表示服务器B的处理性能是A的两倍。加权轮叫调度算法是按权值的高低和轮叫方式分配请求到各服务器。权值高的服务器先收到的连接，权值高的服务器比权值低的服务器处理更多的连接，相同权值的服务器处理相同数目的连接数。 </p>
+<h3 id="lc最小连接调度（Least-Connection-Scheduling）"><a href="#lc最小连接调度（Least-Connection-Scheduling）" class="headerlink" title="lc最小连接调度（Least-Connection Scheduling）"></a>lc最小连接调度（Least-Connection Scheduling）</h3><p>最小连接调度（Least-Connection Scheduling）算法是把新的连接请求分配到当前连接数最小的服务器。最小连接调度是一种动态调度算法，它通过服务器当前所活跃的连接数来估计服务器的负载情况。调度器需要记录各个服务器已建立连接的数目，当一个请求被调度到某台服务器，其连接数加1；当连接中止或超时，其连接数减一。</p>
+<p>如果集群系统的真实服务器具有相近的系统性能，采用”最小连接”调度算法可以较好地均衡负载。 </p>
+<h3 id="wlc加权最小连接调度（Weighted-Least-Connection-Scheduling）"><a href="#wlc加权最小连接调度（Weighted-Least-Connection-Scheduling）" class="headerlink" title="wlc加权最小连接调度（Weighted Least-Connection Scheduling）"></a>wlc加权最小连接调度（Weighted Least-Connection Scheduling）</h3><p>加权最小连接调度（Weighted Least-Connection Scheduling）算法是最小连接调度的超集，各个服务器用相应的权值表示其处理性能。服务器的缺省权值为1，系统管理员可以动态地设置服务器的权值。加权最小连接调度在调度新连接时尽可能使服务器的已建立连接数和其权值成比例。</p>
+<p>调度器可以自动问询真实服务器的负载情况，并动态地调整其权值。 </p>
+<p>其中wlc和lc可以看成一种，wrr和rr可以看成另外一种。下面只重点说wrr和wlc为什么不均衡</p>
+<h2 id="为什么会不均衡"><a href="#为什么会不均衡" class="headerlink" title="为什么会不均衡"></a>为什么会不均衡</h2><h3 id="wrr算法"><a href="#wrr算法" class="headerlink" title="wrr算法"></a>wrr算法</h3><p>非常简单，来了新连接向各个RS转发就行，比如一段时间内创建100个连接，那这100个连接能基本均匀分布在后端所有RS上。</p>
+<h4 id="长连接"><a href="#长连接" class="headerlink" title="长连接"></a>长连接</h4><p>如果所有请求都是长连接，如果后端有RS重启（宕机、OOM服务不响应、日常性重启等等），那么其上面的连接一般会重建，重建的新连接会均匀分布到其它RS上，当重启的RS正常加入到LVS后，它上面的连接是最少的，即使后面大批量建新的连接，也只是新连接在这些RS上均匀分布，重新加入的RS没法感知到历史已经存在的老连接所以容易导致负载不均衡。</p>
+<p>批量重启所有RS（升级等），第一个起来的RS最容易获取到更多的连接，压力明显比其它RS要大，这肯定也不是符合预期的。</p>
+<p><strong>总之wrr/rr算法因为不考虑已存在的连接问题，在长连接的情况下对RS重启、扩容（增加新的RS）十分不容有好，容易导致长连接的不均衡。</strong></p>
+<p>当然对于短连接不存在这个问题，所以可以考虑让应用端的连接不要那么长，比如几个小时候断开重新连接一下。升级的时候等所有RS都启动好后再让LVS开始工作</p>
+<h3 id="wlc算法"><a href="#wlc算法" class="headerlink" title="wlc算法"></a>wlc算法</h3><p>针对wrr对长连接的上述不均衡，所以wlc算法考虑当前已存在的连接数，尽量把新连接发送到连接数较少的RS上，看起来比较完美地修复了wrr的上述不均衡问题。</p>
+<p>如果LVS是个集群，也就是由多个节点来分发所有连接，那么多个节点之间需要同步连接session才能知道整体连接分布，但是这个同步需要时间，所以如果突然同时创建大量连接那么就可能在多个节点之间连接数没有同步，那么创建的新连接没来得及考虑刚刚增加的新连接，就会导致连接不均衡。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>wrr/rr在长连接下比较害怕动态扩容、重启机器、升级应用等场景<br>wlc/lc在长连接下，比较害怕突然同时创建的大量连接（比如应用重启会一次性为连接池创建好很多连接），还来不及做均衡</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;就是要你懂负载均衡–负载均衡调度算法和为什么不均衡&quot;&gt;&lt;a href=&quot;#就是要你懂负载均衡–负载均衡调度算法和为什么不均衡&quot; class=&quot;headerlink&quot; title=&quot;就是要你懂负载均衡–负载均衡调度算法和为什么不均衡&quot;&gt;&lt;/a&gt;就是要你懂负载均衡–负
+    
+    </summary>
+    
+      <category term="Linux" scheme="http://yoursite.com/categories/Linux/"/>
+    
+    
+      <category term="network" scheme="http://yoursite.com/tags/network/"/>
+    
+      <category term="LVS" scheme="http://yoursite.com/tags/LVS/"/>
+    
+      <category term="LoadBalance" scheme="http://yoursite.com/tags/LoadBalance/"/>
+    
+      <category term="wrr" scheme="http://yoursite.com/tags/wrr/"/>
+    
+      <category term="wlc" scheme="http://yoursite.com/tags/wlc/"/>
+    
+  </entry>
+  
+  <entry>
     <title>就是要你懂网络监控--ss用法大全</title>
     <link href="http://yoursite.com/2019/07/12/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82%E7%BD%91%E7%BB%9C%E7%9B%91%E6%8E%A7--ss%E7%94%A8%E6%B3%95%E5%A4%A7%E5%85%A8/"/>
     <id>http://yoursite.com/2019/07/12/就是要你懂网络监控--ss用法大全/</id>
@@ -2709,62 +2759,6 @@ $./test.sh
       <category term="no-login" scheme="http://yoursite.com/tags/no-login/"/>
     
       <category term="bash posix" scheme="http://yoursite.com/tags/bash-posix/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Git HTTP Proxy and SSH Proxy</title>
-    <link href="http://yoursite.com/2018/03/14/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82git%E4%BB%A3%E7%90%86--%E5%A6%82%E4%BD%95%E8%AE%BE%E7%BD%AEgit%20Proxy/"/>
-    <id>http://yoursite.com/2018/03/14/就是要你懂git代理--如何设置git Proxy/</id>
-    <published>2018-03-14T02:30:03.000Z</published>
-    <updated>2019-06-25T03:25:21.000Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="就是要你懂git代理–如何设置git-Proxy"><a href="#就是要你懂git代理–如何设置git-Proxy" class="headerlink" title="就是要你懂git代理–如何设置git Proxy"></a>就是要你懂git代理–如何设置git Proxy</h1><h2 id="git-http-proxy"><a href="#git-http-proxy" class="headerlink" title="git http proxy"></a>git http proxy</h2><blockquote>
-<p>首先你要有一个socks5代理服务器，从 github.com 拉代码的话海外的代理速度才快，可以自己配置shadowsocks这样的代理。</p>
-<p>下面的例子假设你的socks5代理是： 127.0.0.1:13658</p>
-</blockquote>
-<h3 id="执行如下命令"><a href="#执行如下命令" class="headerlink" title="执行如下命令"></a>执行如下命令</h3><pre><code>git config --global http.proxy socks5://127.0.0.1:13658
-</code></pre><p>上面的命令实际上是修改了 .gitconfig：</p>
-<pre><code>$cat ~/.gitconfig   
-[http]
-    proxy = socks5://127.0.0.1:13658
-</code></pre><p>现在git的http代理就配置好了， git clone <a href="https://github.com/torvalds/linux.git" target="_blank" rel="external">https://github.com/torvalds/linux.git</a> 速度会快到你流泪（取决于你的代理速度），我这里是从每秒10K到了3M 。</p>
-<p>注意：</p>
-<ul>
-<li>http.proxy就可以了，不需要配置https.proxy</li>
-<li>这个http代理仅仅针对 git clone <strong>https://</strong> 的方式生效</li>
-</ul>
-<h2 id="配置git-ssh-proxy"><a href="#配置git-ssh-proxy" class="headerlink" title="配置git ssh proxy"></a>配置git ssh proxy</h2><p>如果想要 git clone <strong>git@</strong>github.com:torvalds/linux.git 也要快起来的话 需要配置 ssh proxy</p>
-<blockquote>
-<p>这里要求你有一台海外的服务器，能ssh登陆，做好免密码，假设这台服务器的IP是：2.2.2.2</p>
-</blockquote>
-<p>修改（如果没有就创建这个文件）~/.ssh/config, 内容如下：</p>
-<pre><code>$cat ~/.ssh/config 
-host github.com
-#LogLevel DEBUG3
-ProxyCommand ssh -l root 2.2.2.2 exec /usr/bin/nc %h %p
-</code></pre><p>然后 git clone git@github.com:torvalds/linux.git 也能飞起来了</p>
-<p>需要注意你的代理服务器2.2.2.2上nc有没有安装，没有的话yum装上，装上后再检查一下安装的位置，对应配置中的 /usr/bin/nc</p>
-<p>写这些主要是从Google上搜索到的一些文章，http的倒还是靠谱，但是ssh的就有点乱，还要在本地安装东西，对nc版本有要求之类的，于是就折腾了一下，上面的方式都是靠谱的。</p>
-<p>整个原理还是穿墙术。</p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;就是要你懂git代理–如何设置git-Proxy&quot;&gt;&lt;a href=&quot;#就是要你懂git代理–如何设置git-Proxy&quot; class=&quot;headerlink&quot; title=&quot;就是要你懂git代理–如何设置git Proxy&quot;&gt;&lt;/a&gt;就是要你懂git代理–如何设
-    
-    </summary>
-    
-      <category term="ssh" scheme="http://yoursite.com/categories/ssh/"/>
-    
-    
-      <category term="Proxy" scheme="http://yoursite.com/tags/Proxy/"/>
-    
-      <category term="HTTP Proxy" scheme="http://yoursite.com/tags/HTTP-Proxy/"/>
-    
-      <category term="SSH Proxy" scheme="http://yoursite.com/tags/SSH-Proxy/"/>
-    
-      <category term="Socks5" scheme="http://yoursite.com/tags/Socks5/"/>
     
   </entry>
   
