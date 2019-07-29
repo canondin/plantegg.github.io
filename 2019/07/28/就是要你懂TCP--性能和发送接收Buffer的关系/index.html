@@ -99,7 +99,7 @@
 <meta name="keywords" content="Linux,performance,TCP,sendBuffer,rmem,wmem,接收窗口,发送窗口,recvBuffer">
 <meta property="og:type" content="article">
 <meta property="og:title" content="TCP性能和发送接收窗口、Buffer的关系">
-<meta property="og:url" content="http://yoursite.com/2019/05/28/就是要你懂TCP--性能和发送接收Buffer的关系/index.html">
+<meta property="og:url" content="http://yoursite.com/2019/07/28/就是要你懂TCP--性能和发送接收Buffer的关系/index.html">
 <meta property="og:site_name" content="plantegg">
 <meta property="og:description" content="前言本文希望解析清楚，当我们在代码中写下  socket.setSendBufferSize 和 sysctl 看到的rmem/wmem系统参数以及最终我们在TCP常常谈到的接收发送窗口的关系，以及他们怎样影响性能。 先明确一下：文章标题中所说的Buffer指的是sysctl中的 rmem或者wmem，如果是代码中指定的话对应着SO_SNDBUF或者SO_RCVBUF，从TCP的概念来看对应着发送">
 <meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1558603861745-190dadd2-cff2-49c9-8bc3-5856fdfb2d44.png#align=left&display=inline&height=627&originHeight=627&originWidth=1251&size=0&status=done&width=1251">
@@ -123,7 +123,7 @@
 <meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/gif/162611/1559030833230-72b44e6d-5c3c-413b-91ff-26074bd2bdbe.gif#align=left&display=inline&height=144&originHeight=103&originWidth=289&size=0&status=done&width=404">
 <meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1559043502992-97c4c823-8cd1-4ae7-9883-203e553604ff.png#align=left&display=inline&height=720&name=image.png&originHeight=900&originWidth=958&size=48144&status=done&width=766.4">
 <meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1559097931609-28c0fc94-09ca-4564-8f47-432f9b5e2c5b.png#align=left&display=inline&height=682&name=image.png&originHeight=853&originWidth=760&size=41904&status=done&width=608">
-<meta property="og:updated_time" content="2019-07-29T02:32:49.000Z">
+<meta property="og:updated_time" content="2019-07-29T03:28:36.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="TCP性能和发送接收窗口、Buffer的关系">
 <meta name="twitter:description" content="前言本文希望解析清楚，当我们在代码中写下  socket.setSendBufferSize 和 sysctl 看到的rmem/wmem系统参数以及最终我们在TCP常常谈到的接收发送窗口的关系，以及他们怎样影响性能。 先明确一下：文章标题中所说的Buffer指的是sysctl中的 rmem或者wmem，如果是代码中指定的话对应着SO_SNDBUF或者SO_RCVBUF，从TCP的概念来看对应着发送">
@@ -155,7 +155,7 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/2019/05/28/就是要你懂TCP--性能和发送接收Buffer的关系/"/>
+  <link rel="canonical" href="http://yoursite.com/2019/07/28/就是要你懂TCP--性能和发送接收Buffer的关系/"/>
 
 
 
@@ -283,7 +283,7 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/05/28/就是要你懂TCP--性能和发送接收Buffer的关系/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/07/28/就是要你懂TCP--性能和发送接收Buffer的关系/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="weibo @plantegg">
@@ -312,8 +312,8 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-05-28T12:30:03+08:00">
-                2019-05-28
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-07-28T12:30:03+08:00">
+                2019-07-28
               </time>
             
 
@@ -353,9 +353,9 @@
                 <span class="post-meta-item-icon">
                   <i class="fa fa-comment-o"></i>
                 </span>
-                <a href="/2019/05/28/就是要你懂TCP--性能和发送接收Buffer的关系/#comments" itemprop="discussionUrl">
+                <a href="/2019/07/28/就是要你懂TCP--性能和发送接收Buffer的关系/#comments" itemprop="discussionUrl">
                   <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2019/05/28/就是要你懂TCP--性能和发送接收Buffer的关系/" itemprop="commentCount"></span>
+                        data-disqus-identifier="2019/07/28/就是要你懂TCP--性能和发送接收Buffer的关系/" itemprop="commentCount"></span>
                 </a>
               </span>
             
@@ -400,7 +400,7 @@ net.ipv4.udp_rmem_min = 4096
 net.ipv4.udp_wmem_min = 4096
 vm.lowmem_reserve_ratio = 256    256    32
 </code></pre><blockquote>
-<p>先从一个问题看起，客户通过专线访问云上的服务，专线100M，时延20ms，一个SQL查询了22M数据，结果花了大概25秒，这太慢了，不太正常，如果通过云上client访问云上服务那么1-2秒就返回了。如果通过http或者scp传输这22M的数据大概两秒钟也传送完毕了，所以这里问题的原因基本上是我们的服务在这种网络条件下有性能问题，需要找出为什么。</p>
+<p>先从一个问题看起，应用通过专线从公司访问云上的服务，专线100M，时延20ms，一个SQL查询了22M数据，结果花了大概25秒，这太慢了，不正常。如果通过云上client访问云上服务那么1-2秒就返回了（说明不跨网络服务是正常的）。如果通过http或者scp从公司向云上传输这22M的数据大概两秒钟也传送完毕了（说明网络带宽不是瓶颈），所以这里问题的原因基本上是我们的服务在这种网络条件下有性能问题，需要找出为什么。</p>
 </blockquote>
 <h2 id="抓包-tcpdump-wireshark"><a href="#抓包-tcpdump-wireshark" class="headerlink" title="抓包 tcpdump+wireshark"></a>抓包 tcpdump+wireshark</h2><p>这个查询结果22M的需要25秒，如下图（wireshark 时序图），横轴是时间纵轴是sequence number：</p>
 <p><img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1558603861745-190dadd2-cff2-49c9-8bc3-5856fdfb2d44.png#align=left&amp;display=inline&amp;height=627&amp;originHeight=627&amp;originWidth=1251&amp;size=0&amp;status=done&amp;width=1251" alt=""></p>
@@ -442,15 +442,15 @@ probe kernel.function(&quot;sk_stream_wait_memory&quot;).return
     printf(&quot;%u: %s(%d) recovered from full send buffern&quot;,
         gettimeofday_us(), execname(), pid())
 }
-</code></pre><p>如果tcp发送buffer也就是SO_SNDBUF只有16K的话，这些包很快都发出去了，但是这16K不能立即释放出来填新的内容进去，因为tcp要保证可靠，万一中间丢包了呢。只有等到这16K中的某些ack了，才会填充一些进来然后继续发出去。由于这里rt基本是20ms，也就是16K发送完毕后，等了20ms才收到一些ack，这20ms应用、内核什么都不能做，所以就是如第二个图中的大概20ms的等待平台。这块请参考<a href="https://www.atatech.org/articles/79660" target="_blank" rel="external">这篇文章</a></p>
-<p><strong>sendbuffer相当于发送仓库的大小，仓库的货物都发走后，不能立马腾出来发新的货物，而是要等对方确认收到了(ack)才能腾出来发新的货物, 仓库足够大了之后接下来的瓶颈就是高速公路了（带宽、拥塞窗口）</strong></p>
+</code></pre><p>如果tcp发送buffer也就是SO_SNDBUF只有16K的话，这些包很快都发出去了，但是这16K不能立即释放出来填新的内容进去，因为tcp要保证可靠，万一中间丢包了呢。只有等到这16K中的某些包ack了，才会填充一些新包进来然后继续发出去。由于这里rt基本是20ms，也就是16K发送完毕后，等了20ms才收到一些ack，这20ms应用、内核什么都不能做，所以就是如第二个图中的大概20ms的等待平台。这块请参考<a href="https://www.atatech.org/articles/79660" target="_blank" rel="external">这篇文章</a></p>
+<p><strong>sendbuffer相当于发送仓库的大小，仓库的货物都发走后，不能立即腾出来发新的货物，而是要等对方确认收到了(ack)才能腾出来发新的货物, 发送仓库（sendbuffer）足够大了之后接下来的瓶颈就是高速公路了（带宽、拥塞窗口）</strong></p>
 <p>如果是UDP，就没有可靠的概念，有数据统统发出去，根本不关心对方是否收到，也就不需要ack和这个发送buffer了。</p>
 <h2 id="几个发送buffer相关的内核参数"><a href="#几个发送buffer相关的内核参数" class="headerlink" title="几个发送buffer相关的内核参数"></a>几个发送buffer相关的内核参数</h2><pre><code>vm.lowmem_reserve_ratio = 256   256     32
 net.core.wmem_max = 1048576
 net.core.wmem_default = 124928
 net.ipv4.tcp_wmem = 4096        16384   4194304
 net.ipv4.udp_wmem_min = 4096
-</code></pre><p>net.ipv4.tcp_wmem 默认就是16K，而且是能够动态调整的，只不过我们代码中这块的参数是很多年前从Corba中继承过来的，一直没有修改。代码中设置了这个参数后就关闭了内核的动态调整功能，所以能看到http或者scp都很快。</p>
+</code></pre><p>net.ipv4.tcp_wmem 默认就是16K，而且是能够动态调整的，只不过我们代码中这块的参数是很多年前从Cobra中继承过来的，初始指定了sendbuffer的大小。代码中设置了这个参数后就关闭了内核的动态调整功能，但是能看到http或者scp都很快，因为他们的send buffer是动态调整的，所以很快。</p>
 <p>接收buffer是有开关可以动态控制的，发送buffer没有开关默认就是开启，关闭只能在代码层面来控制</p>
 <blockquote>
 <p>net.ipv4.tcp_moderate_rcvbuf</p>
@@ -458,14 +458,15 @@ net.ipv4.udp_wmem_min = 4096
 <h2 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h2><p>调整 socketSendBuffer 到256K，查询时间从25秒下降到了4秒多，但是比理论带宽所需要的时间略高</p>
 <p>继续查看系统 net.core.wmem_max 参数默认最大是130K，所以即使我们代码中设置256K实际使用的也是130K，调大这个系统参数后整个网络传输时间大概2秒(跟100M带宽匹配了，scp传输22M数据也要2秒），整体查询时间2.8秒。测试用的mysql client短连接，如果代码中的是长连接的话会块300-400ms（消掉了慢启动阶段），这基本上是理论上最快速度了</p>
 <p><img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1558603861595-39197d54-4e04-4a61-8687-f549bdaa883b.png#align=left&amp;display=inline&amp;height=855&amp;originHeight=855&amp;originWidth=1395&amp;size=0&amp;status=done&amp;width=1395" alt=""></p>
-<p>如果指定了tcp_wmem，则net.core.wmem_default被tcp_wmem的覆盖。send Buffer在tcp_wmem的最小值和最大值之间自动调节。如果调用setsockopt()设置了socket选项SO_SNDBUF，将关闭发送端缓冲的自动调节机制，tcp_wmem将被忽略，SO_SNDBUF的最大值由net.core.wmem_max限制。</p>
-<h2 id="BDP-带宽时延积"><a href="#BDP-带宽时延积" class="headerlink" title="BDP 带宽时延积"></a>BDP 带宽时延积</h2><p>这个 buffer 调到1M测试没有帮助，从理论计算BDP（带宽时延积） 0.02秒*(100MB/8)=250Kb  所以SO_SNDBUF为256Kb的时候基本能跑满带宽了，再大实际意义也不大了。</p>
+<p>如果指定了tcp_wmem，则net.core.wmem_default被tcp_wmem的覆盖。send Buffer在tcp_wmem的最小值和最大值之间自动调整。如果调用setsockopt()设置了socket选项SO_SNDBUF，将关闭发送端缓冲的自动调节机制，tcp_wmem将被忽略，SO_SNDBUF的最大值由net.core.wmem_max限制。</p>
+<h2 id="BDP-带宽时延积"><a href="#BDP-带宽时延积" class="headerlink" title="BDP 带宽时延积"></a>BDP 带宽时延积</h2><p>BDP=rtt*(带宽/8)</p>
+<p>这个 buffer 调到1M测试没有帮助，从理论计算BDP（带宽时延积） 0.02秒*(100MB/8)=250Kb  所以SO_SNDBUF为256Kb的时候基本能跑满带宽了，再大实际意义也不大了。也就是前面所说的仓库足够后瓶颈在带宽上了。</p>
 <p>因为BDP是250K，也就是拥塞窗口即将成为新的瓶颈，所以调大buffer没意义了。</p>
 <h2 id="用tc构造延时和带宽限制的模拟重现环境"><a href="#用tc构造延时和带宽限制的模拟重现环境" class="headerlink" title="用tc构造延时和带宽限制的模拟重现环境"></a>用tc构造延时和带宽限制的模拟重现环境</h2><pre><code>sudo tc qdisc del dev eth0 root netem delay 20ms
 sudo tc qdisc add dev eth0 root tbf rate 500kbit latency 50ms burst 15kb
 </code></pre><h2 id="这个案例关于wmem的结论"><a href="#这个案例关于wmem的结论" class="headerlink" title="这个案例关于wmem的结论"></a>这个案例关于wmem的结论</h2><p>默认情况下Linux系统会自动调整这个buffer（net.ipv4.tcp_wmem）, 也就是不推荐程序中主动去设置SO_SNDBUF，除非明确知道设置的值是最优的。</p>
-<p>平时看到的一些理论在实践中用起来比较难，最开始看到抓包结果的时候比较怀疑发送、接收窗口之类的，没有直接想到send buffer上，理论跟实践的鸿沟。</p>
-<p>接下来我们接着一看看接收buffer(rmem)和接收窗口的情况。</p>
+<p>从这里我们可以看到，有些理论知识点虽然我们知道，但是在实践中很难联系起来，也就是常说的无法学以致用，最开始看到抓包结果的时候比较怀疑发送、接收窗口之类的，没有直接想到send buffer上，理论跟实践的鸿沟。</p>
+<p>说完发送Buffer（wmem）接下来我们接着一看看接收buffer(rmem)和接收窗口的情况。</p>
 <p>用这样一个案例下来验证接收窗口：有一个batch insert语句，整个一次要插入5532条记录，所有记录大小总共是376K。</p>
 <h2 id="SO-RCVBUF很小的时候并且rtt很大对性能的影响"><a href="#SO-RCVBUF很小的时候并且rtt很大对性能的影响" class="headerlink" title="SO_RCVBUF很小的时候并且rtt很大对性能的影响"></a>SO_RCVBUF很小的时候并且rtt很大对性能的影响</h2><p>如果rtt是40ms，总共需要5-6秒钟：</p>
 <p><img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1559025761962-cf422801-1d67-4665-a12e-8419ffb1e27a.png#align=left&amp;display=inline&amp;height=447&amp;name=image.png&amp;originHeight=559&amp;originWidth=1367&amp;size=137942&amp;status=done&amp;width=1093.6" alt="image.png" title="image.png"></p>
@@ -667,8 +668,8 @@ void tcp_init_buffer_space(struct sock *sk)
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2019/05/15/网络通不通是个大问题--半夜鸡叫/" rel="next" title="就是要你懂网络 通不通是个大问题–半夜鸡叫">
-                <i class="fa fa-chevron-left"></i> 就是要你懂网络 通不通是个大问题–半夜鸡叫
+              <a href="/2019/07/19/就是要你懂负载均衡--负载均衡调度算法和为什么不均衡/" rel="next" title="就是要你懂负载均衡--负载均衡调度算法和为什么不均衡">
+                <i class="fa fa-chevron-left"></i> 就是要你懂负载均衡--负载均衡调度算法和为什么不均衡
               </a>
             
           </div>
@@ -677,8 +678,8 @@ void tcp_init_buffer_space(struct sock *sk)
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/2019/06/09/就是要你懂DNS--一文搞懂域名解析相关问题/" rel="prev" title="就是要你懂DNS--一文搞懂域名解析相关问题">
-                就是要你懂DNS--一文搞懂域名解析相关问题 <i class="fa fa-chevron-right"></i>
+              <a href="/2117/06/07/就是要你懂TCP--半连接队列和全连接队列/" rel="prev" title="就是要你懂TCP--半连接队列和全连接队列">
+                就是要你懂TCP--半连接队列和全连接队列 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -995,8 +996,8 @@ void tcp_init_buffer_space(struct sock *sk)
     
       <script type="text/javascript">
         var disqus_config = function () {
-          this.page.url = 'http://yoursite.com/2019/05/28/就是要你懂TCP--性能和发送接收Buffer的关系/';
-          this.page.identifier = '2019/05/28/就是要你懂TCP--性能和发送接收Buffer的关系/';
+          this.page.url = 'http://yoursite.com/2019/07/28/就是要你懂TCP--性能和发送接收Buffer的关系/';
+          this.page.identifier = '2019/07/28/就是要你懂TCP--性能和发送接收Buffer的关系/';
           this.page.title = 'TCP性能和发送接收窗口、Buffer的关系';
         };
         var d = document, s = d.createElement('script');
