@@ -973,15 +973,15 @@ $
   </entry>
   
   <entry>
-    <title>就是要你懂TCP--性能和发送接收Buffer的关系</title>
+    <title>TCP性能和发送接收窗口、Buffer的关系</title>
     <link href="http://yoursite.com/2019/05/28/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82TCP--%E6%80%A7%E8%83%BD%E5%92%8C%E5%8F%91%E9%80%81%E6%8E%A5%E6%94%B6Buffer%E7%9A%84%E5%85%B3%E7%B3%BB/"/>
     <id>http://yoursite.com/2019/05/28/就是要你懂TCP--性能和发送接收Buffer的关系/</id>
     <published>2019-05-28T04:30:03.000Z</published>
-    <updated>2019-06-20T01:25:59.000Z</updated>
+    <updated>2019-07-29T02:32:49.000Z</updated>
     
     <content type="html"><![CDATA[<h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>本文希望解析清楚，当我们在代码中写下  socket.setSendBufferSize 和 sysctl 看到的rmem/wmem系统参数以及最终我们在TCP常常谈到的接收发送窗口的关系，以及他们怎样影响性能。</p>
 <p>先明确一下：<strong>文章标题中所说的Buffer指的是sysctl中的 rmem或者wmem，如果是代码中指定的话对应着SO_SNDBUF或者SO_RCVBUF，从TCP的概念来看对应着发送窗口或者接收窗口</strong></p>
-<h1 id="就是要你懂TCP–性能和发送接收Buffer的关系"><a href="#就是要你懂TCP–性能和发送接收Buffer的关系" class="headerlink" title="就是要你懂TCP–性能和发送接收Buffer的关系"></a>就是要你懂TCP–性能和发送接收Buffer的关系</h1><pre><code>$sudo sysctl -a | egrep &quot;rmem|wmem|adv_win|moderate&quot;
+<h1 id="TCP性能和发送接收Buffer的关系"><a href="#TCP性能和发送接收Buffer的关系" class="headerlink" title="TCP性能和发送接收Buffer的关系"></a>TCP性能和发送接收Buffer的关系</h1><pre><code>$sudo sysctl -a | egrep &quot;rmem|wmem|adv_win|moderate&quot;
 net.core.rmem_default = 212992
 net.core.rmem_max = 212992
 net.core.wmem_default = 212992
@@ -1082,11 +1082,33 @@ sudo tc qdisc add dev eth0 root tbf rate 500kbit latency 50ms burst 15kb
 <p><img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1559028098375-d1e8ab50-d3c0-47c3-8326-53afe8ba0116.png#align=left&amp;display=inline&amp;height=681&amp;name=image.png&amp;originHeight=851&amp;originWidth=748&amp;size=42765&amp;status=done&amp;width=598.4" alt="image.png" title="image.png"></p>
 <p>从这里可以得出结论，接收窗口的大小会影响性能，rtt越大影响越明显，当然这里还需要应用程序配合，如果应用程序一直不读走数据即使接收窗口再大也会堆满的。</p>
 <h2 id="SO-RCVBUF和tcp-window-full的坏case"><a href="#SO-RCVBUF和tcp-window-full的坏case" class="headerlink" title="SO_RCVBUF和tcp window full的坏case"></a>SO_RCVBUF和tcp window full的坏case</h2><p><img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1558922856836-92aca189-2b5c-46b9-ae06-cbb0db50baf4.png#align=left&amp;display=inline&amp;height=522&amp;name=image.png&amp;originHeight=653&amp;originWidth=1007&amp;size=48934&amp;status=done&amp;width=805.6" alt="image.png" title="image.png"></p>
-<p>上图中红色平台部分，停顿了大概6秒钟没有发任何有内容的数据包，这6秒钟具体在做什么如下图所示，可以看到这个时候接收方的TCP Window Full，同时也能看到接收方的TCP Window Size是8192（8K），这肯定太小了</p>
+<p>上图中红色平台部分，停顿了大概6秒钟没有发任何有内容的数据包，这6秒钟具体在做什么如下图所示，可以看到这个时候接收方的TCP Window Full，同时也能看到接收方（3306端口）的TCP Window Size是8192（8K），发送方（27545端口）是20480.</p>
 <p><img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1558923047361-de371658-b656-4566-9e20-5958919ee1fe.png#align=left&amp;display=inline&amp;height=422&amp;name=image.png&amp;originHeight=528&amp;originWidth=982&amp;size=112809&amp;status=done&amp;width=785.6" alt="image.png" title="image.png"></p>
-<p>这个状况跟前面描述的send buffer不太一样，8K是很小，但是因为rtt也很小，所以server总是能很快就ack收到了，接收窗口也一直不容易达到full状态，但是一旦接收窗口达到了full状态，居然需要惊人的6秒钟才能恢复，这等待的时间有点太长了。这里应该是应用读取数据太慢导致了耗时6秒才恢复，所以最终这个请求执行会非常非常慢（时间主要耗在了上传SQL而不是执行SQL）</p>
-<h2 id="接收窗口和SO-RCVBUF的关系"><a href="#接收窗口和SO-RCVBUF的关系" class="headerlink" title="接收窗口和SO_RCVBUF的关系"></a>接收窗口和SO_RCVBUF的关系</h2><p>初始接收窗口一般是 <strong>mss*初始cwnd（为了和慢启动逻辑兼容，不想一下子冲击到网络）</strong>，如果没有设置SO_RCVBUF，那么会根据 net.ipv4.tcp_rmem 动态变化，如果设置了SO_RCVBUF，那么接收窗口要向下面描述的值靠拢。</p>
-<p>初始cwnd可以大致通过查看到：</p>
+<p>这个状况跟前面描述的recv buffer太小不一样，8K是很小，但是因为rtt也很小，所以server总是能很快就ack收到了，接收窗口也一直不容易达到full状态，但是一旦接收窗口达到了full状态，居然需要惊人的6秒钟才能恢复，这等待的时间有点太长了。这里应该是应用读取数据太慢导致了耗时6秒才恢复，所以最终这个请求执行会非常非常慢（时间主要耗在了上传SQL而不是执行SQL）.</p>
+<p>实际原因不知道，从读取TCP数据的逻辑来看这里没有明显的block，可能的原因：</p>
+<ul>
+<li>request的SQL太大，Server（3306端口上的服务）从TCP读取SQL需要放到一块分配好的内存，内存不够的时候需要扩容，扩容有可能触发fgc，从图形来看，第一次满就卡顿了，而且每次满都卡顿，不像是这个原因</li>
+<li>request请求一次发过来的是多个SQL，应用读取SQL后，将SQL分成多个，然后先执行第一个，第一个执行完后返回response，再读取第二个。图形中卡顿前没有response返回，所以也不是这个原因</li>
+<li>……其它未知原因</li>
+</ul>
+<h2 id="接收方不读取数据导致的接收窗口满同时有丢包发生"><a href="#接收方不读取数据导致的接收窗口满同时有丢包发生" class="headerlink" title="接收方不读取数据导致的接收窗口满同时有丢包发生"></a>接收方不读取数据导致的接收窗口满同时有丢包发生</h2><p>服务端返回数据到client端，TCP协议栈ack这些包，但是应用层没读走包，这个时候 SO_RCVBUF 堆积满，client的TCP协议栈发送 ZeroWindow 标志给服务端。也就是接收端的 buffer 堆满了（但是服务端这个时候看到的bytes in fly是0，因为都ack了），这时服务端不能继续发数据，要等 ZeroWindow 恢复。</p>
+<p>那么接收端上层应用不读走包可能的原因：</p>
+<ul>
+<li>应用代码卡顿、GC等等</li>
+<li>应用代码逻辑上在做其它事情（比如DRDS将SQL分片到多个DB上，DRDS先读取第一个分片，如果第一个分片数据很大很大，处理也慢，那么第二个分片数据都返回到了TCP buffer，也没去读取其它分片的结果集，直到第一个分片读取完毕。如果SQL带排序，那么DRDS会轮询读取多个分片，造成这种卡顿的概率小了很多）</li>
+</ul>
+<p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1564110249481-0e962233-3f39-4051-990c-846aec8e1810.png" alt="undefined"> </p>
+<p>上图这个流因为应用层不读取TCP数据，导致TCP接收Buffer满，进而接收窗口为0，server端不能再发送数据而卡住，但是ZeroWindow的探测包，client都有正常回复，所以1903秒之后接收方窗口不为0后（window update）传输恢复。</p>
+<p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1564113969867-a2d7b752-e9e1-40cf-b968-9a1da2be210c.png" alt="undefined"> </p>
+<p>这个截图和前一个类似，不同的是接收窗口为0后，server端多次探测，但是client端没有回复 ZeroWindow（也有可能是回复了，但是中间环节把ack包丢了），造成server端认为client死了、不可达之类，进而反复重传，重传超过15次之后，server端认为这个连接死了，粗暴单方面断开（没有reset和fin,因为没必要，server认为网络连通性出了问题）。</p>
+<p>网络不通，重传超过一定的时间（tcp_retries2)然后断开这个连接是正常的，这里的问题是：</p>
+<ol>
+<li>为什么这种场景下丢包了，而且是针对某个stream一直丢包</li>
+</ol>
+<p>可能是因为这种场景下触发了中间环节的流量管控，故意丢包了（比如proxy、slb、交换机都有可能做这种选择性的丢包）</p>
+<p>这里server认为连接断开，没有发reset和fin,因为没必要，server认为网络连通性出了问题。client还不知道server上这个连接清理掉了，等client回复了一个window update，server早就认为这个连接早断了，突然收到一个update，莫名其妙，只能reset</p>
+<h2 id="接收窗口和SO-RCVBUF的关系"><a href="#接收窗口和SO-RCVBUF的关系" class="headerlink" title="接收窗口和SO_RCVBUF的关系"></a>接收窗口和SO_RCVBUF的关系</h2><p>初始接收窗口一般是 <strong>mss乘以初始cwnd（为了和慢启动逻辑兼容，不想一下子冲击到网络）</strong>，如果没有设置SO_RCVBUF，那么会根据 net.ipv4.tcp_rmem 动态变化，如果设置了SO_RCVBUF，那么接收窗口要向下面描述的值靠拢。</p>
+<p><a href="https://access.redhat.com/discussions/3624151" target="_blank" rel="external">初始cwnd可以大致通过查看到</a>：</p>
 <pre><code>ss -itmpn dst &quot;10.81.212.8&quot;
 State      Recv-Q Send-Q Local Address:Port  Peer Address:Port
 ESTAB      0      0      10.xx.xx.xxx:22     10.yy.yy.yyy:12345  users:((&quot;sshd&quot;,pid=1442,fd=3))
@@ -1096,7 +1118,6 @@ Here we can see this socket has Receive Buffer 369280 bytes, and Transmit Buffer
 Keep in mind the kernel will double any socket buffer allocation for overhead. 
 So a process asks for 256 KiB buffer with setsockopt(SO_RCVBUF) then it will get 512 KiB buffer
 space. This is described on man 7 tcp. 
-https://access.redhat.com/discussions/3624151
 </code></pre><p>初始窗口计算的代码逻辑，重点在18行：</p>
 <pre><code>/* TCP initial congestion window as per rfc6928 */
 #define TCP_INIT_CWND           10
@@ -1158,7 +1179,7 @@ void tcp_init_buffer_space(struct sock *sk)
 </code></pre><p>接收窗口有最大接收窗口和当前可用接收窗口。</p>
 <p>一般来说一次中断基本都会将 buffer 中的包都取走。</p>
 <p><img src="https://cdn.nlark.com/yuque/0/2019/gif/162611/1559030833230-72b44e6d-5c3c-413b-91ff-26074bd2bdbe.gif#align=left&amp;display=inline&amp;height=144&amp;originHeight=103&amp;originWidth=289&amp;size=0&amp;status=done&amp;width=404" alt=""></p>
-<p>绿线是最大接收窗口动态调整的过程，最开始是1460<em>10，握手完毕后略微调整到1472</em>10（可利用body增加了12），随着数据的传输开始跳涨</p>
+<p>绿线是最大接收窗口动态调整的过程，最开始是1460*10，握手完毕后略微调整到1472*10（可利用body增加了12），随着数据的传输开始跳涨</p>
 <p><img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1559043502992-97c4c823-8cd1-4ae7-9883-203e553604ff.png#align=left&amp;display=inline&amp;height=720&amp;name=image.png&amp;originHeight=900&amp;originWidth=958&amp;size=48144&amp;status=done&amp;width=766.4" alt="image.png" title="image.png"></p>
 <p>上图是四个batch insert语句，可以看到绿色接收窗口随着数据的传输越来越大，图中蓝色竖直部分基本表示SQL上传，两个蓝色竖直条的间隔代表这个insert在服务器上真正的执行时间。这图非常陡峭，表示上传没有任何瓶颈.</p>
 <h3 id="设置-SO-RCVBUF-后通过wireshark观察到的接收窗口基本"><a href="#设置-SO-RCVBUF-后通过wireshark观察到的接收窗口基本" class="headerlink" title="设置 SO_RCVBUF 后通过wireshark观察到的接收窗口基本"></a>设置 SO_RCVBUF 后通过wireshark观察到的接收窗口基本</h3><p>下图是设置了 SO_RCVBUF 为8192的实际情况：</p>
@@ -1192,8 +1213,6 @@ void tcp_init_buffer_space(struct sock *sk)
     
       <category term="Linux" scheme="http://yoursite.com/categories/Linux/"/>
     
-      <category term="TCP" scheme="http://yoursite.com/categories/Linux/TCP/"/>
-    
     
       <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
     
@@ -1205,13 +1224,13 @@ void tcp_init_buffer_space(struct sock *sk)
     
       <category term="rmem" scheme="http://yoursite.com/tags/rmem/"/>
     
-      <category term="receiveBuffer" scheme="http://yoursite.com/tags/receiveBuffer/"/>
-    
       <category term="wmem" scheme="http://yoursite.com/tags/wmem/"/>
     
       <category term="接收窗口" scheme="http://yoursite.com/tags/%E6%8E%A5%E6%94%B6%E7%AA%97%E5%8F%A3/"/>
     
       <category term="发送窗口" scheme="http://yoursite.com/tags/%E5%8F%91%E9%80%81%E7%AA%97%E5%8F%A3/"/>
+    
+      <category term="recvBuffer" scheme="http://yoursite.com/tags/recvBuffer/"/>
     
   </entry>
   
