@@ -261,6 +261,306 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/03/24/就是要你懂Linux--Linux环境变量/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/03/24/就是要你懂Linux--Linux环境变量/" itemprop="url">就是要你懂Linux环境变量 问题汇总</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-03-24T17:30:03+08:00">
+                2018-03-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/03/24/就是要你懂Linux--Linux环境变量/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2018/03/24/就是要你懂Linux--Linux环境变量/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="就是要你懂Linux环境变量问题汇总"><a href="#就是要你懂Linux环境变量问题汇总" class="headerlink" title="就是要你懂Linux环境变量问题汇总"></a>就是要你懂Linux环境变量问题汇总</h1><h3 id="测试好的脚本放到-crontab-里就报错-找不到命令"><a href="#测试好的脚本放到-crontab-里就报错-找不到命令" class="headerlink" title="测试好的脚本放到 crontab 里就报错: 找不到命令"></a>测试好的脚本放到 crontab 里就报错: 找不到命令</h3><p>写好一个脚本，测试没有问题，然后放到crontab 想要定时执行，但是总是报错，去看日志的话显示某些命令找不到，这种一般都是因为PATH环境变量变了导致的</p>
+<p>自己在shell命令行下测试的时候当前环境变量就是这个用户的环境变量，可以通过命令：env 看到，脚本放到crontab 里面后一般都加了sudo 这个时候 env 变了。比如你可以在命令行下执行 env 和 sudo env 比较一下就发现他们很不一样</p>
+<p>为了解决这个问题 sudo有一个参数 -E （–preserver-env）就是为了解决这个问题的。</p>
+<p>这个时候再比较一下 </p>
+<ul>
+<li>env</li>
+<li>sudo env</li>
+<li>sudo -E env</li>
+</ul>
+<p>大概就能理解这里的区别了</p>
+<h3 id="同样一个命令ssh执行不了，-报找不到命令"><a href="#同样一个命令ssh执行不了，-报找不到命令" class="headerlink" title="同样一个命令ssh执行不了， 报找不到命令"></a>同样一个命令ssh执行不了， 报找不到命令</h3><p>比如：</p>
+<p>ssh user@ip “ ip a “  报错： bash: ip: command not found</p>
+<p>但是你要是先执行 ssh user@ip 连上服务器后，再执行 ip a 就可以，这里是同一个命令通过两种不同的方式但是环境变量也不一样了。</p>
+<p>同样想要解决这个问题的话可以先 ssh 连上服务器，再执行 which ip ; env | grep PATH  </p>
+<pre><code>$ which ip
+/usr/sbin/ip
+$ env | grep PATH
+PATH=/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
+</code></pre><p>很明显这里因为 ip在/usr/sbin下，而/usr/sbin又在PATH变量中，所以可以找到。</p>
+<p>那么接下来我们看看 </p>
+<pre><code>$ssh user@ip &quot;env | grep PATH&quot;
+PATH=/usr/local/bin:/usr/bin
+</code></pre><p>很明显这里的PATH比上面的PATH短了一截，/usr/sbin也没有在里面，所以/usr/sbin 下的ip命令自然也找不到了，这里虽然都是同一个用户，但是他们的环境变量还不一样，有点出乎我的意料之外。</p>
+<p>主要原因是我们的shell 分为login shell 和 no-login shell , 先ssh 登陆上去再执行命令就是一个login shell，Linux要为这个终端分配资源。</p>
+<p>而下面的直接在ssh 里面放执行命令实际上就不需要login，所以这是一个no-login shell.</p>
+<h4 id="login-shell-和-no-login-shell又有什么区别呢？"><a href="#login-shell-和-no-login-shell又有什么区别呢？" class="headerlink" title="login shell 和 no-login shell又有什么区别呢？"></a>login shell 和 no-login shell又有什么区别呢？</h4><ul>
+<li>login shell加载环境变量的顺序是：① /etc/profile ② ~/.bash_profile ③ ~/.bashrc ④ /etc/bashrc </li>
+<li>而non-login shell加载环境变量的顺序是： ① ~/.bashrc ② /etc/bashrc</li>
+</ul>
+<p>也就是nog-login少了前面两步，我们先看后面两步。</p>
+<p>下面是一个 .bashrc 的内容：</p>
+<pre><code>[ ~]$ cat .bashrc 
+# .bashrc
+
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+    . /etc/bashrc
+fi
+</code></pre><p>基本没有什么内容，它主要是去加载 /etc/bashrc  而他里面也没有看到sbin相关的东西</p>
+<p>那我们再看non-login少的两步： ① /etc/profile ② ~/.bash_profile </p>
+<p>cat /etc/profile :</p>
+<pre><code>if [ &quot;$EUID&quot; = &quot;0&quot; ]; then
+    pathmunge /usr/sbin
+    pathmunge /usr/local/sbin
+else
+    pathmunge /usr/local/sbin after
+    pathmunge /usr/sbin after
+fi
+</code></pre><p>这几行代码就是把 /usr/sbin 添加到 PATH 变量中，正是他们的区别决定了这里的环境变量不一样。</p>
+<p><strong>用一张图来表述他们的结构，箭头代表加载顺序，红框代表不同的shell的初始入口</strong>：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/ae3095f063dede80a8c1ee79ec25685c.png" alt="image.png"></p>
+<p>像 ansible 这种自动化工具，或者我们自己写的自动化脚本，底层通过ssh这种non-login的方式来执行的话，那么都有可能碰到这个问题，如何修复呢？</p>
+<p>在 /etc/profile.d/ 下创建一个文件：/etc/profile.d/my_bashenv.sh 内容如下：</p>
+<pre><code>$cat /etc/profile.d/my_bashenv.sh 
+
+pathmunge () {
+if ! echo $PATH | /bin/egrep -q &quot;(^|:)$1($|:)&quot; ; then
+   if [ &quot;$2&quot; = &quot;after&quot; ] ; then
+  PATH=$PATH:$1
+   else
+  PATH=$1:$PATH
+   fi
+fi
+}
+
+pathmunge /sbin
+pathmunge /usr/sbin
+pathmunge /usr/local/sbin
+pathmunge /usr/local/bin
+pathmunge /usr/X11R6/bin after
+
+unset pathmunge
+
+complete -cf sudo
+
+
+alias chgrp=&apos;chgrp --preserve-root&apos;
+alias chown=&apos;chown --preserve-root&apos;
+alias chmod=&apos;chmod --preserve-root&apos;
+alias rm=&apos;rm -i --preserve-root&apos;
+
+
+HISTTIMEFORMAT=&apos;[%F %T] &apos;
+HISTSIZE=1000
+
+export EDITOR=vim
+
+
+export PS1=&apos;\n\e[1;37m[\e[m\e[1;32m\u\e[m\e[1;33m@\e[m\e[1;35m\H\e[m \e[4m`pwd`\e[m\e[1;37m]\e[m\e[1;36m\e[m\n\$&apos;
+</code></pre><p>通过前面我们可以看到 /etc/bashrc 总是会去加载 /etc/profile.d/ 下的所有 *.sh 文件，同时我们还可以在这个文件中修改我们喜欢的 shell 配色方案和环境变量等等 </p>
+<h3 id="BASH"><a href="#BASH" class="headerlink" title="BASH"></a>BASH</h3><p>1、交互式的登录shell （bash –il xxx.sh）<br>载入的信息：<br>/etc/profile<br>~/.bash_profile（ -&gt;  ~/.bashrc  -&gt;  /etc/bashrc）<br>~/.bash_login<br>~/.profile</p>
+<p>2、非交互式的登录shell （bash –l xxx.sh）<br>载入的信息：<br>/etc/profile<br>~/.bash_profile （ -&gt;  ~/.bashrc  -&gt;  /etc/bashrc）<br>~/.bash_login<br>~/.profile<br>$BASH_ENV</p>
+<p>3、交互式的非登录shell （bash –i xxx.sh）<br>载入的信息：<br>~/.bashrc （ -&gt;  /etc/bashrc）</p>
+<p>4、非交互式的非登录shell （bash xxx.sh）<br>载入的信息：<br>$BASH_ENV</p>
+<h3 id="SH"><a href="#SH" class="headerlink" title="SH"></a>SH</h3><p>1、交互式的登录shell<br>载入的信息：<br>/etc/profile<br>~/.profile</p>
+<p>2、非交互式的登录shell<br>载入的信息：<br>/etc/profile<br>~/.profile</p>
+<p>3、交互式的非登录shell<br>载入的信息：<br>$ENV</p>
+<h4 id="练习验证一下bash、sh和login、non-login"><a href="#练习验证一下bash、sh和login、non-login" class="headerlink" title="练习验证一下bash、sh和login、non-login"></a>练习验证一下bash、sh和login、non-login</h4><ul>
+<li>sudo ll 或者 sudo cd 是不是都报找不到命令</li>
+<li>先sudo bash 然后执行 ll或者cd就可以了</li>
+<li>先sudo sh   然后执行 ll或者cd还是报找不到命令</li>
+<li>sudo env | grep PATH 然后 sudo bash 后再执行 env | grep PATH 看到的PATH环境变量不一样了</li>
+</ul>
+<p>4、非交互式的非登录shell<br>载入的信息：<br>nothing</p>
+<h3 id="export命令的作用"><a href="#export命令的作用" class="headerlink" title="export命令的作用"></a>export命令的作用</h3><p>Linux 中export是一种命令工具通过export命令把shell变量中包含的用户变量导入给子程序.<strong>默认情况下子程序仅会继承父程序的环境变量</strong>，子程序不会继承父程序的自定义变量，所以需要export让父程序中的<strong>自定义变量</strong>变成环境变量，然后子程序就能继承过来了。</p>
+<p>我们来看一个例子， 有一个变量，名字 abc 内容123 如果没有export ，那么通过bash创建一个新的shell（新shell是之前bash的子程序），在新的shell里面就没有abc这个变量， export之后在新的 shell 里面才可以看到这个变量，但是退出重新login后（产生了一个新的bash，只会加载env）abc变量都不在了</p>
+<pre><code>$echo $abc
+
+
+$abc=&quot;123&quot;
+
+
+$echo $abc
+123
+
+$bash
+
+$echo $abc
+
+
+$exit
+exit
+
+$export abc
+
+$echo $abc
+123
+
+$bash
+
+$echo $abc
+123
+</code></pre><h2 id="一些常见问题"><a href="#一些常见问题" class="headerlink" title="一些常见问题"></a>一些常见问题</h2><h3 id="执行好好地shell-脚本换台服务器就：source-not-found"><a href="#执行好好地shell-脚本换台服务器就：source-not-found" class="headerlink" title="执行好好地shell 脚本换台服务器就：source: not found"></a>执行好好地shell 脚本换台服务器就：source: not found</h3><p>source 是bash的一个内建命令（所以你找不到一个/bin/source 这样的可执行文件），也就是他是bash自带的，如果我们执行脚本是这样： sh shell.sh 而shell.sh中用到了source命令的话就会报 source: not found</p>
+<p>这是因为bash 和 sh是两个东西，sh是 POSIX shell，你可以把它看成是一个兼容某个规范的shell，而bash是 Bourne-Again shell script， bash是 POSIX shell的扩展，就是bash支持所有符合POSIX shell的规范，但是反过来就不一定了，而这里的 source 恰好就是 bash内建的，不符合 POSIX shell的规范（<strong>POSIX shell 中用 . 来代替source</strong>)</p>
+<h3 id="在centos执行好好的脚本放到Ubuntu上就不行了，报语法错误"><a href="#在centos执行好好的脚本放到Ubuntu上就不行了，报语法错误" class="headerlink" title="在centos执行好好的脚本放到Ubuntu上就不行了，报语法错误"></a>在centos执行好好的脚本放到Ubuntu上就不行了，报语法错误</h3><p>同上，如果到ubuntu上用 bash shell.sh是可以的，但是sh shell.sh就报语法错误，但是在centos上执行：sh或者bash shell.sh 都可以通过。 在centos上执行 ls -lh /usr/bin/sh 可以看到 /usr/bin/sh link到了 /usr/bin/bash 也就是sh等同于bash，所以都可以通过不足为奇。 </p>
+<p>但是在ubuntu上执行 ls -lh /usr/bin/sh 可以看到 /usr/bin/sh link到了 <strong>/usr/bin/dash</strong> ， 这就是为什么ubuntu上会报错</p>
+<h3 id="source-shell-sh-和-bash-shell-sh以及-shell-sh的区别"><a href="#source-shell-sh-和-bash-shell-sh以及-shell-sh的区别" class="headerlink" title="source shell.sh 和 bash shell.sh以及 ./shell.sh的区别"></a>source shell.sh 和 bash shell.sh以及 ./shell.sh的区别</h3><p>source shell.sh就在本shell中展开执行<br>bash shell.sh表示在本shell启动一个子程序（bash），在子程序中执行 shell.sh (shell.sh中产生的一些环境变量就没法带回父shell进程了)， 有读 shell.sh 权限就可以执行<br>./shell.sh 跟bash shell.sh类似，但是必须要求shell.sh有rx权限，然后根据shell.sh前面的 #! 后面的指示来确定用bash还是sh </p>
+<pre><code>$cat test.sh 
+echo $$
+
+$echo $$
+2299
+
+$source test.sh 
+2299
+
+$bash test.sh 
+4037
+
+$./test.sh 
+4040
+</code></pre><p>如上实例，只有source的时候进程ID和bash进程ID一样，其它方式都创建了一个新的bash进程，所以ID也变了</p>
+<h3 id="参考文章："><a href="#参考文章：" class="headerlink" title="参考文章："></a>参考文章：</h3><p><a href="https://blog.csdn.net/u010871982/article/details/78525367" target="_blank" rel="external">关于ansible远程执行的环境变量问题</a></p>
+<p><a href="http://bbs.chinaunix.net/thread-1068678-1-1.html" target="_blank" rel="external">Bash和Sh的区别</a></p>
+<p><a href="http://kodango.com/what-is-interactive-and-login-shell" target="_blank" rel="external">什么是交互式登录 Shell what-is-interactive-and-login-shell</a></p>
+<p><a href="http://kodango.com/explain-shell-default-options" target="_blank" rel="external">Shell 默认选项 himBH 的解释</a></p>
+<p><a href="http://kodango.com/useful-documents-about-shell" target="_blank" rel="external">useful-documents-about-shell</a></p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/03/14/就是要你懂git代理--如何设置git Proxy/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -653,177 +953,6 @@ ProxyCommand ssh -l root 2.2.2.2 exec /usr/bin/nc %h %p
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/12/13/就是要你懂DNS--Docker中的DNS解析过程/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/12/13/就是要你懂DNS--Docker中的DNS解析过程/" itemprop="url">Docker中的DNS解析过程</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-12-13T10:30:03+08:00">
-                2017-12-13
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/dns/" itemprop="url" rel="index">
-                    <span itemprop="name">dns</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2017/12/13/就是要你懂DNS--Docker中的DNS解析过程/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2017/12/13/就是要你懂DNS--Docker中的DNS解析过程/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="就是要你懂DNS–Docker中的DNS解析过程"><a href="#就是要你懂DNS–Docker中的DNS解析过程" class="headerlink" title="就是要你懂DNS–Docker中的DNS解析过程"></a>就是要你懂DNS–Docker中的DNS解析过程</h1><h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><blockquote>
-<p>同一个Docker集群中两个容器中通过 nslookup 同一个域名，这个域名是容器启动的时候通过net alias指定的，但是返回来的IP不一样</p>
-</blockquote>
-<p>如图所示：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/892a98b53c7f9e65da79d1d6d890c3b0.png" alt="image.png"></p>
-<p>图中上面的容器中 nslookup 返回来了两个IP，但是只有146是正确的，155是多出来，不对的。</p>
-<p>要想解决这个问题抓包就没用了，因为Docker 中的net alias 域名是 Docker Daemon自己来解析的，也就是在容器中做域名解析（nslookup、ping）的时候，Docker Daemon先看这个域名是不是net alias的，是的话返回对应的ip，如果不是（比如 www.baidu.com) ，那么Docker Daemon再把这个域名丢到宿主机上去解析，在宿主机上的解析过程就是标准的DNS，可以抓包分析。但是Docker Daemon内部的解析过程没有走DNS协议，不好分析，所以得先了解一下 Docker Daemon的域名解析原理</p>
-<p>具体参考文章： <a href="http://www.jianshu.com/p/4433f4c70cf0" target="_blank" rel="external">http://www.jianshu.com/p/4433f4c70cf0</a> <a href="http://www.bijishequ.com/detail/261401?p=70-67" target="_blank" rel="external">http://www.bijishequ.com/detail/261401?p=70-67</a></p>
-<h2 id="继续分析所有容器对这个域名的解析"><a href="#继续分析所有容器对这个域名的解析" class="headerlink" title="继续分析所有容器对这个域名的解析"></a>继续分析所有容器对这个域名的解析</h2><p>继续分析所有容器对这个域名的解析发现只有某一台宿主机上的有这个问题，而且这台宿主机上所有容器都有着问题，结合上面的文章，那么这个问题比较明朗了，这台有问题的宿主机的Docker Daemon中残留了一个net alias，你可以理解成cache中有脏数据没有清理。</p>
-<p>进而跟业务的同学们沟通，确实155这个IP的容器做过升级，改动过配置，可能升级前这个155也绑定过这个域名，但是升级后绑到146这个容器上去了，但是Docker Daemon中还残留这条记录。</p>
-<h2 id="重启Docker-Daemon后问题解决（容器不需要重启）"><a href="#重启Docker-Daemon后问题解决（容器不需要重启）" class="headerlink" title="重启Docker Daemon后问题解决（容器不需要重启）"></a>重启Docker Daemon后问题解决（容器不需要重启）</h2><p>重启Docker Daemon的时候容器还在正常运行，只是这段时间的域名解析会不正常，其它业务长连接都能正常运行，在Docker Daemon重启的时候它会去检查所有容器的endpoint、重建sandbox、清理network等等各种事情，所以就把这个脏数据修复掉了。</p>
-<p>在Docker Daemon重启过程中，会给每个容器构建DNS Resovler（setup-resolver），如果构建DNS Resovler这个过程中容器发送了大量域名查询过来同时这些域名又查询不到的话Docker Daemon在重启过程中需要等待这下查询超时，然后才能继续往下走重启流程，<a href="https://www.atatech.org/articles/87339" target="_blank" rel="external">问题严重的时候导致Docker Daemon长时间无法启动</a></p>
-<p>Docker的域名解析为什么要这么做，是因为容器中有两种域名解析需求：</p>
-<ol>
-<li>容器启动时通过 net alias 命名的域名</li>
-<li>容器中正常对外网各种域名的解析（比如 baidu.com/api.taobao.com)</li>
-</ol>
-<p>对于第一种只能由docker daemon来解析了，所以容器中碰到的任何域名解析都会丢给 docker daemon(127.0.0.11), 如果 docker daemon 发现这个域名不认识，也就是不是net alias命名的域名，那么docker就会把这个域名解析丢给宿主机配置的 nameserver 来解析【非常非常像 dns-f/vipclient 的解析原理】</p>
-<h2 id="容器中的域名解析"><a href="#容器中的域名解析" class="headerlink" title="容器中的域名解析"></a>容器中的域名解析</h2><p>容器启动的时候读取宿主机的 /etc/resolv.conf (去掉127.0.0.1/16 的nameserver）然后当成容器的 /etc/resolv.conf, 但是实际在容器中看到的 /etc/resolve.conf 中的nameserver只有一个：127.0.0.11</p>
-<p>容器 -&gt; docker daemon(127.0.0.11) -&gt; 宿主机中的/etc/resolv.conf 中的nameserver</p>
-<p>如果宿主机中的/etc/resolv.conf 中的nameserver没有，那么daemon默认会用8.8.8.8/8.8.4.4来做下一级dns server，如果在一些隔离网络中（跟外部不通），那么域名解析就会超时，因为一直无法连接到 8.8.8.8/8.8.4.4 ，进而导致故障。</p>
-<p>比如 vipserver 中需要解析 armory的域名，如果这个时候在私有云环境，宿主机又没有配置 nameserver, 那么这个域名解析会发送给 8.8.8.8/8.8.4.4 ，长时间没有响应，超时后 vipserver 会关闭自己的探活功能，从而导致 vipserver 基本不可用一样。</p>
-<p>修改 宿主机的/etc/resolv.conf后 重新启动、创建的容器才会load新的nameserver</p>
-<h2 id="如果容器中需要解析vipserver中的域名"><a href="#如果容器中需要解析vipserver中的域名" class="headerlink" title="如果容器中需要解析vipserver中的域名"></a>如果容器中需要解析vipserver中的域名</h2><ol>
-<li>容器中安装vipclient，同时容器的 /etc/resolv.conf 配置 nameserver 127.0.0.1 </li>
-<li>要保证vipclient起来之后才能启动业务</li>
-</ol>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/12/13/就是要你懂DNS--windows7的wifi总是报DNS域名异常无法上网/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -963,6 +1092,177 @@ ProxyCommand ssh -l root 2.2.2.2 exec /usr/bin/nc %h %p
 <hr>
 <h2 id="本文附带鸡汤："><a href="#本文附带鸡汤：" class="headerlink" title="本文附带鸡汤："></a>本文附带鸡汤：</h2><p><strong>有些技能初学很难，大家水平都差不多，但是日积月累就会形成极强的优势，而且一旦突破某个临界点，它就会突飞猛进，这种技能叫指数型技能，是值得长期投资的，比如物理学就是一种指数型技能。</strong></p>
 <p>那么抓包算不算呢？​​</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/12/13/就是要你懂DNS--Docker中的DNS解析过程/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/12/13/就是要你懂DNS--Docker中的DNS解析过程/" itemprop="url">Docker中的DNS解析过程</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-12-13T10:30:03+08:00">
+                2017-12-13
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/dns/" itemprop="url" rel="index">
+                    <span itemprop="name">dns</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2017/12/13/就是要你懂DNS--Docker中的DNS解析过程/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2017/12/13/就是要你懂DNS--Docker中的DNS解析过程/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="就是要你懂DNS–Docker中的DNS解析过程"><a href="#就是要你懂DNS–Docker中的DNS解析过程" class="headerlink" title="就是要你懂DNS–Docker中的DNS解析过程"></a>就是要你懂DNS–Docker中的DNS解析过程</h1><h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><blockquote>
+<p>同一个Docker集群中两个容器中通过 nslookup 同一个域名，这个域名是容器启动的时候通过net alias指定的，但是返回来的IP不一样</p>
+</blockquote>
+<p>如图所示：</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/892a98b53c7f9e65da79d1d6d890c3b0.png" alt="image.png"></p>
+<p>图中上面的容器中 nslookup 返回来了两个IP，但是只有146是正确的，155是多出来，不对的。</p>
+<p>要想解决这个问题抓包就没用了，因为Docker 中的net alias 域名是 Docker Daemon自己来解析的，也就是在容器中做域名解析（nslookup、ping）的时候，Docker Daemon先看这个域名是不是net alias的，是的话返回对应的ip，如果不是（比如 www.baidu.com) ，那么Docker Daemon再把这个域名丢到宿主机上去解析，在宿主机上的解析过程就是标准的DNS，可以抓包分析。但是Docker Daemon内部的解析过程没有走DNS协议，不好分析，所以得先了解一下 Docker Daemon的域名解析原理</p>
+<p>具体参考文章： <a href="http://www.jianshu.com/p/4433f4c70cf0" target="_blank" rel="external">http://www.jianshu.com/p/4433f4c70cf0</a> <a href="http://www.bijishequ.com/detail/261401?p=70-67" target="_blank" rel="external">http://www.bijishequ.com/detail/261401?p=70-67</a></p>
+<h2 id="继续分析所有容器对这个域名的解析"><a href="#继续分析所有容器对这个域名的解析" class="headerlink" title="继续分析所有容器对这个域名的解析"></a>继续分析所有容器对这个域名的解析</h2><p>继续分析所有容器对这个域名的解析发现只有某一台宿主机上的有这个问题，而且这台宿主机上所有容器都有着问题，结合上面的文章，那么这个问题比较明朗了，这台有问题的宿主机的Docker Daemon中残留了一个net alias，你可以理解成cache中有脏数据没有清理。</p>
+<p>进而跟业务的同学们沟通，确实155这个IP的容器做过升级，改动过配置，可能升级前这个155也绑定过这个域名，但是升级后绑到146这个容器上去了，但是Docker Daemon中还残留这条记录。</p>
+<h2 id="重启Docker-Daemon后问题解决（容器不需要重启）"><a href="#重启Docker-Daemon后问题解决（容器不需要重启）" class="headerlink" title="重启Docker Daemon后问题解决（容器不需要重启）"></a>重启Docker Daemon后问题解决（容器不需要重启）</h2><p>重启Docker Daemon的时候容器还在正常运行，只是这段时间的域名解析会不正常，其它业务长连接都能正常运行，在Docker Daemon重启的时候它会去检查所有容器的endpoint、重建sandbox、清理network等等各种事情，所以就把这个脏数据修复掉了。</p>
+<p>在Docker Daemon重启过程中，会给每个容器构建DNS Resovler（setup-resolver），如果构建DNS Resovler这个过程中容器发送了大量域名查询过来同时这些域名又查询不到的话Docker Daemon在重启过程中需要等待这下查询超时，然后才能继续往下走重启流程，<a href="https://www.atatech.org/articles/87339" target="_blank" rel="external">问题严重的时候导致Docker Daemon长时间无法启动</a></p>
+<p>Docker的域名解析为什么要这么做，是因为容器中有两种域名解析需求：</p>
+<ol>
+<li>容器启动时通过 net alias 命名的域名</li>
+<li>容器中正常对外网各种域名的解析（比如 baidu.com/api.taobao.com)</li>
+</ol>
+<p>对于第一种只能由docker daemon来解析了，所以容器中碰到的任何域名解析都会丢给 docker daemon(127.0.0.11), 如果 docker daemon 发现这个域名不认识，也就是不是net alias命名的域名，那么docker就会把这个域名解析丢给宿主机配置的 nameserver 来解析【非常非常像 dns-f/vipclient 的解析原理】</p>
+<h2 id="容器中的域名解析"><a href="#容器中的域名解析" class="headerlink" title="容器中的域名解析"></a>容器中的域名解析</h2><p>容器启动的时候读取宿主机的 /etc/resolv.conf (去掉127.0.0.1/16 的nameserver）然后当成容器的 /etc/resolv.conf, 但是实际在容器中看到的 /etc/resolve.conf 中的nameserver只有一个：127.0.0.11</p>
+<p>容器 -&gt; docker daemon(127.0.0.11) -&gt; 宿主机中的/etc/resolv.conf 中的nameserver</p>
+<p>如果宿主机中的/etc/resolv.conf 中的nameserver没有，那么daemon默认会用8.8.8.8/8.8.4.4来做下一级dns server，如果在一些隔离网络中（跟外部不通），那么域名解析就会超时，因为一直无法连接到 8.8.8.8/8.8.4.4 ，进而导致故障。</p>
+<p>比如 vipserver 中需要解析 armory的域名，如果这个时候在私有云环境，宿主机又没有配置 nameserver, 那么这个域名解析会发送给 8.8.8.8/8.8.4.4 ，长时间没有响应，超时后 vipserver 会关闭自己的探活功能，从而导致 vipserver 基本不可用一样。</p>
+<p>修改 宿主机的/etc/resolv.conf后 重新启动、创建的容器才会load新的nameserver</p>
+<h2 id="如果容器中需要解析vipserver中的域名"><a href="#如果容器中需要解析vipserver中的域名" class="headerlink" title="如果容器中需要解析vipserver中的域名"></a>如果容器中需要解析vipserver中的域名</h2><ol>
+<li>容器中安装vipclient，同时容器的 /etc/resolv.conf 配置 nameserver 127.0.0.1 </li>
+<li>要保证vipclient起来之后才能启动业务</li>
+</ol>
 
           
         
@@ -2247,142 +2547,6 @@ nameserver 10.0.0.3
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/06/02/就是要你懂TCP--wireshark-dup-ack-issue/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/06/02/就是要你懂TCP--wireshark-dup-ack-issue/" itemprop="url">wireshark-dup-ack-issue and keepalive</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-06-02T17:30:03+08:00">
-                2017-06-02
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2017/06/02/就是要你懂TCP--wireshark-dup-ack-issue/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2017/06/02/就是要你懂TCP--wireshark-dup-ack-issue/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="wireshark-dup-ack-issue-and-keepalive"><a href="#wireshark-dup-ack-issue-and-keepalive" class="headerlink" title="wireshark-dup-ack-issue and keepalive"></a>wireshark-dup-ack-issue and keepalive</h1><h2 id="问题："><a href="#问题：" class="headerlink" title="问题："></a>问题：</h2><p>在wireshark中看到一个tcp会话中的两台机器突然一直互相发dup ack包，但是没有触发重传。每次重复ack都是间隔精确的20秒</p>
-<h2 id="如下截图："><a href="#如下截图：" class="headerlink" title="如下截图："></a>如下截图：</h2><p><img src="http://i.imgur.com/bm3W68Q.png" alt=""></p>
-<p>client都一直在回复收到2号包（ack=2）了，可是server跟傻了一样居然还发seq=1的包（按理，应该发比2大的包啊）</p>
-<h2 id="系统配置："><a href="#系统配置：" class="headerlink" title="系统配置："></a>系统配置：</h2><pre><code>net.ipv4.tcp_keepalive_time = 20
-net.ipv4.tcp_keepalive_probes = 5
-net.ipv4.tcp_keepalive_intvl = 3
-</code></pre><h2 id="原因："><a href="#原因：" class="headerlink" title="原因："></a>原因：</h2><p>抓包不全的话wireshark有缺陷，把keepalive包识别成了dup ack包，看内容这种dup ack和keepalive似乎是一样的，flags都是0x010。keep alive的定义的是后退一格(seq少1）。</p>
-<p>2、4、6、8……号包，都有一个“tcp acked unseen segment”。这个一般表示它ack的这个包，没有被抓到。Wirshark如何作出此判断呢？前面一个包是seq=1, len=0，所以正常情况下是ack = seq + len = 1，然而Wireshark看到的确是ack = 2, 它只能判断有一个seq =1, len = 1的包没有抓到。<br>dup ack也是类似道理，这些包完全符合dup ack的定义，因为“ack = ” 某个数连续多次出现了。</p>
-<p>这一切都是因为keep alive的特殊性导致的。打开66号包的tcp层（见后面的截图），可以看到它的 next sequence number = 12583，表示正常情况下server发出的下一个包应该是seq = 12583。可是在下一个包，也就是68号包中，却是seq = 12582。keep alive的定义的确是这样，即后退一格。<br>Wireshark只有在抓到数据包（66号包）和keep alive包的情况下才有可能正确识别，前面的抓包中恰好在keep alive之前丢失了数据包，所以Wireshark就蒙了。</p>
-<h2 id="构造重现"><a href="#构造重现" class="headerlink" title="构造重现"></a>构造重现</h2><p>如果用“frame.number &gt;= 68” 过滤这个包，然后File–&gt;export specified packets保存成一个新文件，再打开那个新文件，就会发现Wireshark又蒙了。本来能够正常识别的keep alive包又被错看成dup ack了，所以一旦碰到这种情况不要慌要稳</p>
-<p>下面是知识点啦</p>
-<h2 id="正常的keep-alive-Case："><a href="#正常的keep-alive-Case：" class="headerlink" title="正常的keep-alive Case："></a>正常的keep-alive Case：</h2><p><img src="http://i.imgur.com/DsTWFZr.png" alt=""></p>
-<p>keep-alive 通过发一个比实际seq小1的包，比如server都已经 ack 12583了，client故意发一个seq 12582来标识这是一个keep-Alive包</p>
-<h2 id="Duplication-ack是指："><a href="#Duplication-ack是指：" class="headerlink" title="Duplication ack是指："></a>Duplication ack是指：</h2><p>server收到了3和8号包，但是没有收到中间的4/5/6/7，那么server就会ack 3，如果client还是继续发8/9号包，那么server会继续发dup ack 3#1 ; dup ack 3#2 来向客户端说明只收到了3号包，不要着急发后面的大包，把4/5/6/7给我发过来</p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/06/02/就是要你懂TCP--连接和握手/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2594,6 +2758,142 @@ net.ipv4.tcp_keepalive_intvl = 3
 
 
     
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/06/02/就是要你懂TCP--wireshark-dup-ack-issue/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/06/02/就是要你懂TCP--wireshark-dup-ack-issue/" itemprop="url">wireshark-dup-ack-issue and keepalive</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-06-02T17:30:03+08:00">
+                2017-06-02
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2017/06/02/就是要你懂TCP--wireshark-dup-ack-issue/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2017/06/02/就是要你懂TCP--wireshark-dup-ack-issue/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="wireshark-dup-ack-issue-and-keepalive"><a href="#wireshark-dup-ack-issue-and-keepalive" class="headerlink" title="wireshark-dup-ack-issue and keepalive"></a>wireshark-dup-ack-issue and keepalive</h1><h2 id="问题："><a href="#问题：" class="headerlink" title="问题："></a>问题：</h2><p>在wireshark中看到一个tcp会话中的两台机器突然一直互相发dup ack包，但是没有触发重传。每次重复ack都是间隔精确的20秒</p>
+<h2 id="如下截图："><a href="#如下截图：" class="headerlink" title="如下截图："></a>如下截图：</h2><p><img src="http://i.imgur.com/bm3W68Q.png" alt=""></p>
+<p>client都一直在回复收到2号包（ack=2）了，可是server跟傻了一样居然还发seq=1的包（按理，应该发比2大的包啊）</p>
+<h2 id="系统配置："><a href="#系统配置：" class="headerlink" title="系统配置："></a>系统配置：</h2><pre><code>net.ipv4.tcp_keepalive_time = 20
+net.ipv4.tcp_keepalive_probes = 5
+net.ipv4.tcp_keepalive_intvl = 3
+</code></pre><h2 id="原因："><a href="#原因：" class="headerlink" title="原因："></a>原因：</h2><p>抓包不全的话wireshark有缺陷，把keepalive包识别成了dup ack包，看内容这种dup ack和keepalive似乎是一样的，flags都是0x010。keep alive的定义的是后退一格(seq少1）。</p>
+<p>2、4、6、8……号包，都有一个“tcp acked unseen segment”。这个一般表示它ack的这个包，没有被抓到。Wirshark如何作出此判断呢？前面一个包是seq=1, len=0，所以正常情况下是ack = seq + len = 1，然而Wireshark看到的确是ack = 2, 它只能判断有一个seq =1, len = 1的包没有抓到。<br>dup ack也是类似道理，这些包完全符合dup ack的定义，因为“ack = ” 某个数连续多次出现了。</p>
+<p>这一切都是因为keep alive的特殊性导致的。打开66号包的tcp层（见后面的截图），可以看到它的 next sequence number = 12583，表示正常情况下server发出的下一个包应该是seq = 12583。可是在下一个包，也就是68号包中，却是seq = 12582。keep alive的定义的确是这样，即后退一格。<br>Wireshark只有在抓到数据包（66号包）和keep alive包的情况下才有可能正确识别，前面的抓包中恰好在keep alive之前丢失了数据包，所以Wireshark就蒙了。</p>
+<h2 id="构造重现"><a href="#构造重现" class="headerlink" title="构造重现"></a>构造重现</h2><p>如果用“frame.number &gt;= 68” 过滤这个包，然后File–&gt;export specified packets保存成一个新文件，再打开那个新文件，就会发现Wireshark又蒙了。本来能够正常识别的keep alive包又被错看成dup ack了，所以一旦碰到这种情况不要慌要稳</p>
+<p>下面是知识点啦</p>
+<h2 id="正常的keep-alive-Case："><a href="#正常的keep-alive-Case：" class="headerlink" title="正常的keep-alive Case："></a>正常的keep-alive Case：</h2><p><img src="http://i.imgur.com/DsTWFZr.png" alt=""></p>
+<p>keep-alive 通过发一个比实际seq小1的包，比如server都已经 ack 12583了，client故意发一个seq 12582来标识这是一个keep-Alive包</p>
+<h2 id="Duplication-ack是指："><a href="#Duplication-ack是指：" class="headerlink" title="Duplication ack是指："></a>Duplication ack是指：</h2><p>server收到了3和8号包，但是没有收到中间的4/5/6/7，那么server就会ack 3，如果client还是继续发8/9号包，那么server会继续发dup ack 3#1 ; dup ack 3#2 来向客户端说明只收到了3号包，不要着急发后面的大包，把4/5/6/7给我发过来</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
   </section>
 
   
@@ -2643,7 +2943,7 @@ net.ipv4.tcp_keepalive_intvl = 3
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">32</span>
+                <span class="site-state-item-count">33</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -2665,7 +2965,7 @@ net.ipv4.tcp_keepalive_intvl = 3
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">95</span>
+                <span class="site-state-item-count">99</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>
