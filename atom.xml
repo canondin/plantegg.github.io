@@ -207,6 +207,74 @@ server5
   </entry>
   
   <entry>
+    <title>就是要你懂TCP队列--通过实战案例来展示问题</title>
+    <link href="http://yoursite.com/2019/08/31/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82TCP%E9%98%9F%E5%88%97--%E9%80%9A%E8%BF%87%E5%AE%9E%E6%88%98%E6%A1%88%E4%BE%8B%E6%9D%A5%E5%B1%95%E7%A4%BA%E9%97%AE%E9%A2%98/"/>
+    <id>http://yoursite.com/2019/08/31/就是要你懂TCP队列--通过实战案例来展示问题/</id>
+    <published>2019-08-31T09:30:03.000Z</published>
+    <updated>2019-09-01T02:47:35.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="就是要你懂TCP队列–通过实战案例来展示问题"><a href="#就是要你懂TCP队列–通过实战案例来展示问题" class="headerlink" title="就是要你懂TCP队列–通过实战案例来展示问题"></a>就是要你懂TCP队列–通过实战案例来展示问题</h1><p>理论部分可以看<a href="https://plantegg.github.io/2117/06/07/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82TCP--%E5%8D%8A%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97%E5%92%8C%E5%85%A8%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/" target="_blank" rel="external">这篇</a></p>
+<p>再写这篇原因是，即使我在上篇文章里将这个问题阐述的相当清晰，但是当我再次碰到这个问题居然还是费了一些周折，所以想再次总结下。</p>
+<h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><blockquote>
+<p>使用其他团队的WEBShell 调试问题的时候非常卡，最开始怀疑是定时任务导致压力大，然后重启Server端的Tomcat就恢复了，当时该应用的开发同学看到机器磁盘、cpu、内存、gc等都正常，实在不知道为什么会这么卡</p>
+</blockquote>
+<h3 id="分析问题"><a href="#分析问题" class="headerlink" title="分析问题"></a>分析问题</h3><p>因为每天都是上午出现问题，拿到权限后，也跟着先检查一遍定时任务，没发现什么异常。</p>
+<p>既往在客户端表现出来卡顿，那么tsar先看看网络吧，果然大致是卡顿的时候网络重传率有点高，不过整个问题不是一直出现，只是间歇性的。</p>
+<p>抓包、netstat -s 看重传、reset等都还好、ss -lnt 看也没有溢出，我看了很多次当前队列都是0</p>
+<h3 id="重启Tomcat"><a href="#重启Tomcat" class="headerlink" title="重启Tomcat"></a>重启Tomcat</h3><p>问题恢复，所以基本觉得问题还是跟Tomcat非常相关，抓包看到的重传率非常低（不到0.01%—被这里坑了一下），因为中间链路还有nginx等，一度怀疑是不是抓包没抓到本地回环网卡导致的，要不tsar看到的重传率高，而tcpdump抓下来的非常低。</p>
+<p>重启后 jstack 看看tomcat状态，同时跟正常的server对比了一下，发现明显有一个线程不太对，一直在增加</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/c6a60ee1c4e93e2d4912b7c5ef26a95e.png" alt="image.png"></p>
+<p>所以到这里大概知道问题的原因了，只是还不能完全确认。</p>
+<p>应该是Tomcat里面的线程越来越多导致Tomcat越来越慢，这个慢不是表现在gc、cpu等上，所以开发同学发现卡顿上去也没看出端倪来。</p>
+<p>那么对于网络很熟悉的同学，上去看到网络重传很高也没找到原因有点不太应该，主要是问题出现的时候间歇性非常低，通过ss -lnt去看溢出队列和netstat -s |grep -i listen 的时候基本都没什么问题，就忽视了，再说在tcpdump抓包只看到很少的几个重传，反倒是几百个reset包干扰了问题（几百个reset肯定不对，但是没有影响我所说的应用）。</p>
+<h3 id="调整参数，加速问题重现"><a href="#调整参数，加速问题重现" class="headerlink" title="调整参数，加速问题重现"></a>调整参数，加速问题重现</h3><p>因为总是每天上午一卡顿、有人抱怨、然后重启恢复，第二天仍是这个循环，也就是问题轻微出现后就通过重启解决了</p>
+<p>故意将全连接队列从当前的128改成16，重启后运行正常，实际并发不是很高的时候16也够了，改成16是为了让问题出现的时候如果是全连接队列不够导致的，那么会影响更明显一些，经过一天的运行后，可以清晰地观察到：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/91a12c64e360ffd5a7ab7231da6d8430.png" alt="image.png"></p>
+<p>tsar的重传率稳定的很高，ss -lnt也能明显地看到全连接队列完全满了，这个满不是因为压力大了，压力一直还是差不多的，所以只能理解是Tomcat处理非常慢了，同时netstat -s 看到 overflowed也稳定增加</p>
+<p>这个时候客户端不只是卡顿了，是完全连不上。</p>
+<p>Tomcat jstack也能看到这几个线程创建了2万多个：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/adca65f70c19929d78f63d8e5f70ed5a.png" alt="image.png"></p>
+<p>抓包看到 Tomcat的8080端口上基本是这样的：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d12cd194822280906353d9961897ad19.png" alt="image.png"></p>
+<p>而看所有网卡的所有重传的话，这次终于可以看到重传率和tsar看到的一致，同时也清晰的看到主要127.0.0.1的本地流量，也就是Nginx过来的，而之前的抓包只抓了eth0，只能零星看到几个eth0上的重传包，跟tsar对不上，也导致问题跑偏了（重点去关注reset了）</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/1e7a22621908e7b6f790ebcb6970ae39.png" alt="image.png"></p>
+<h3 id="为什么之前抓包看不到这些重传"><a href="#为什么之前抓包看不到这些重传" class="headerlink" title="为什么之前抓包看不到这些重传"></a>为什么之前抓包看不到这些重传</h3><p>因为对业务部署的不了解只抓了eth0, 导致没抓到真正跟客户端表现出来的卡顿相关的重传。比如这是只抓eth0上的包，看到的重传：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ffb525eb443e0656712f6d8c6357adc2.png" alt="image.png"></p>
+<p>可以看到明显非常少，这完全不是问题。</p>
+<h3 id="为什么-ss-lnt-netstat-s-都没发现问题"><a href="#为什么-ss-lnt-netstat-s-都没发现问题" class="headerlink" title="为什么 ss -lnt / netstat -s 都没发现问题"></a>为什么 ss -lnt / netstat -s 都没发现问题</h3><p>当时抱怨的时候都是间歇性的，所以 ss -lnt看了10多次都是当前连接0， netstat -s 倒是比较疏忽没仔细比较</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>问题的根本原因不是因为TCP连接队列不够，而是 Tomcat中线程泄露，导致Tomcat反应越来越慢，进而导致TCP连接队列溢出，然后网络重传率升高，最终导致了client端操作卡顿。</p>
+<p>这种问题最快的是 jstack 发现，但是因为这只是一个后台Manager，所以基本没有监控，当时也漏看了jstack，所以导致问题定位花的时间长一些。当然通过tcpdump(漏抓了 lo 网卡，主要重传都是本地nginx和本地tomcat的，所以没有发现问题），通过 ss -lnt 和 netstat -s 本来也应该可以发现的，但是因为干扰因素太多而导致也没有发现。</p>
+<p>当然从发现连接队列不够到Tomcat处理太慢这个是紧密联系的，一般应用重启的时候也会短暂连接队列不够，那是因为重启的时候Tomcat前累积了太多连接，这个时候Tomcat重启中，需要热身，本身处理也慢，所以短暂会出现连接队列不够，等Tomcat启动几分钟后就正常了。</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;就是要你懂TCP队列–通过实战案例来展示问题&quot;&gt;&lt;a href=&quot;#就是要你懂TCP队列–通过实战案例来展示问题&quot; class=&quot;headerlink&quot; title=&quot;就是要你懂TCP队列–通过实战案例来展示问题&quot;&gt;&lt;/a&gt;就是要你懂TCP队列–通过实战案例来展示
+    
+    </summary>
+    
+      <category term="tcp" scheme="http://yoursite.com/categories/tcp/"/>
+    
+    
+      <category term="tcp queue" scheme="http://yoursite.com/tags/tcp-queue/"/>
+    
+      <category term="accept queue" scheme="http://yoursite.com/tags/accept-queue/"/>
+    
+      <category term="syn queue" scheme="http://yoursite.com/tags/syn-queue/"/>
+    
+      <category term="syn flood" scheme="http://yoursite.com/tags/syn-flood/"/>
+    
+      <category term="netstat" scheme="http://yoursite.com/tags/netstat/"/>
+    
+      <category term="ss" scheme="http://yoursite.com/tags/ss/"/>
+    
+      <category term="overflows" scheme="http://yoursite.com/tags/overflows/"/>
+    
+      <category term="dropped" scheme="http://yoursite.com/tags/dropped/"/>
+    
+  </entry>
+  
+  <entry>
     <title>NIO和epoll</title>
     <link href="http://yoursite.com/2019/07/31/NIO%E5%92%8Cepoll/"/>
     <id>http://yoursite.com/2019/07/31/NIO和epoll/</id>
@@ -2773,67 +2841,6 @@ debug1: Executing proxy command: exec ssh -l alibaba 139.*.*.* exec /usr/bin/nc 
       <category term="MSS" scheme="http://yoursite.com/tags/MSS/"/>
     
       <category term="IP" scheme="http://yoursite.com/tags/IP/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>如何定位上亿次调用才出现一次的Bug</title>
-    <link href="http://yoursite.com/2018/04/26/%E5%A6%82%E4%BD%95%E5%AE%9A%E4%BD%8D%E4%B8%8A%E4%BA%BF%E6%AC%A1%E8%B0%83%E7%94%A8%E6%89%8D%E5%87%BA%E7%8E%B0%E4%B8%80%E6%AC%A1%E7%9A%84Bug/"/>
-    <id>http://yoursite.com/2018/04/26/如何定位上亿次调用才出现一次的Bug/</id>
-    <published>2018-04-26T08:30:03.000Z</published>
-    <updated>2018-04-26T07:43:31.000Z</updated>
-    
-    <content type="html"><![CDATA[<h2 id="引文"><a href="#引文" class="headerlink" title="引文"></a>引文</h2><p>对于那种出现概率非常低，很难重现的bug有时候总是感觉有力使不上，比如<a href="https://zhuanlan.zhihu.com/p/21348220?f3fb8ead20=e041f967b1b416071a11f7702126d7a0&amp;from=singlemessage&amp;isappinstalled=0" target="_blank" rel="external">这个问题</a></p>
-<p>正好最近也碰到一个极低概率下的异常，颇费周折，所以把过程罗列出来。</p>
-<h2 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h2><p>客户会调用我们的一个服务，正常都是client request -&gt; server response 如此反复直到完成，然后断开tcp连接。但是就是在这个过程中，有极低的概率client 端抛出连接非正常断开的异常，由于这个业务比较特殊，客户无法接受这种异常，所以要求一定要解决这个问题</p>
-<h3 id="tcp-抓包和定位问题的根源"><a href="#tcp-抓包和定位问题的根源" class="headerlink" title="tcp 抓包和定位问题的根源"></a>tcp 抓包和定位问题的根源</h3><p>在client 和 server上一直进行tcpdump 抓包，然后压力测试不停地跑，一旦client抛了连接异常，根据时间点、端口信息在两边的抓包中分析当时的tcp会话</p>
-<p>比如，通过tcpdump分析到的会话是这样的：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/ed9b5b2d81bdc58b9cf41217763939e5.png" alt="screenshot.png"></p>
-<p>如上图所示，正常都是client发送request，server返回response，但是出问题的时候（截图红框）server收到了client的request，也回复了ack给client说收到请求了，但是很快server又回复了一个fin包（server主动发起四次挥手断开连接），这是不正常的。</p>
-<p>到这里可以有一个明确的结论：<strong>出问题都是因为server主动发起连接断开的fin包，即使刚收到client的request请求还没有返回response</strong></p>
-<h3 id="开发增加debug日志"><a href="#开发增加debug日志" class="headerlink" title="开发增加debug日志"></a>开发增加debug日志</h3><p>在server端的应用中可能会调用 socket.close 的地方都增加了日志，但是实际发生异常的时候没有任何日志输出，所以到此开发认为应用代码没有问题（毕竟没有证据）</p>
-<h3 id="怀疑ECS网络抖动（是个好背锅侠，什么锅都可以背）"><a href="#怀疑ECS网络抖动（是个好背锅侠，什么锅都可以背）" class="headerlink" title="怀疑ECS网络抖动（是个好背锅侠，什么锅都可以背）"></a>怀疑ECS网络抖动（是个好背锅侠，什么锅都可以背）</h3><p>申请单独的物理机资源给客户，保证没有其它应用来争抢网络和其它资源，前三天一次异常也没有发生（在ECS上一天发生1-2次），非常高兴以为找到问题了。结果第四天异常再次出现</p>
-<h3 id="去底层挖掘tcp协议，到底什么条件下会出现主动断开连接"><a href="#去底层挖掘tcp协议，到底什么条件下会出现主动断开连接" class="headerlink" title="去底层挖掘tcp协议，到底什么条件下会出现主动断开连接"></a>去底层挖掘tcp协议，到底什么条件下会出现主动断开连接</h3><p>实际也没有什么进展</p>
-<h3 id="用strace、pstack去监控-socket-close-这个事件"><a href="#用strace、pstack去监控-socket-close-这个事件" class="headerlink" title="用strace、pstack去监控 socket.close 这个事件"></a>用strace、pstack去监控 socket.close 这个事件</h3><p>但实际可能在上亿次正常的 socket.close (查询全部结束，client主动请求断开连接）才会出现一次不正常的 socket.close .量太大，还没发在这么多事件中区分那个是不正常的close</p>
-<h3 id="应用被-OOM-kill"><a href="#应用被-OOM-kill" class="headerlink" title="应用被 OOM kill"></a>应用被 OOM kill</h3><p>调查过程中为了更快地重现异常，将客户端连接都改成长连接，这样应用不再去调 socket.close ，除非超时、异常之类的，这样一旦出现不正常的 socket.close 就更容易定位了。</p>
-<p>实际跑了一段时间后，发现确实 tcpdump 能抓到很多 server在接收到request还没有返回response的时候主动发送 fin包来断开连接的情况，跟前面的症状是一模一样的。但是最终发现这个时候应用被杀掉了，只是说明应用被杀的情况下 server会主动去掉 socket.close关闭连接，但这只是充分条件，而不是必要条件。实际生产线上也没有被 OOM kill过。</p>
-<h3 id="给力的开发同学"><a href="#给力的开发同学" class="headerlink" title="给力的开发同学"></a>给力的开发同学</h3><p>分析了这个异常后，开发简化了整个测试，实现一行代码反复调用就能够让这个bug触发，这一下把整个测试重现bug的过程简化了，让问题的定位效率快了一个数量级。</p>
-<p>为了快速地定位到异常的具体连接，实现脚本来自动分析tcpdump结果找到异常close的连接</p>
-<p>这一系列的工具作用下，稳定跑上一天，异常能发生3、4次，产生的日志和网络包有几百G</p>
-<h3 id="上Btrace-监听所有-socket-close-事件"><a href="#上Btrace-监听所有-socket-close-事件" class="headerlink" title="上Btrace 监听所有 socket.close 事件"></a>上Btrace 监听所有 socket.close 事件</h3><pre><code>@OnMethod(clazz=&quot;+java.net.Socket&quot;, method=&quot;close&quot;
-</code></pre><p>终于在出现异常的时候btrace抓到了异常的堆栈，在之前代码review看来不可能的逻辑里server主动关闭了连接</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/02bcccd66af82c929c4eee8c88875733.png" alt="screenshot.png"></p>
-<p>图左是应用代码，图右是关闭连接的堆栈，有了这个堆栈就可以去修复问题了</p>
-<p>实际上这里可能有几个问题：</p>
-<ol>
-<li>buffer.position 是不可能为0的；</li>
-<li>即使buffer.position 等于0 也不应该直接 socket.close, 可能发送error信息给客户端更好；</li>
-</ol>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
-<li>最终原因是因为NIO过程中buffer有极低的概率被两个socket重用，宠而导致出现正在使用的buffer被另外一个socket拿过去并且设置了buffer.position为0，进而导致前一个socket认为数据异常赶紧close了。</li>
-<li>开发简化问题的重现步骤非常关键，同时对异常进行分类分析，加快了定位效率</li>
-<li>能够通过tcpdump去抓包定位到具体问题大概所在点这是比较关键的一步，同时通过btrace再去监控出问题的调用堆栈从而找到具体代码行。</li>
-<li>过程看似简单，实际牵扯了一大波工程师进来，经过几个月才最终定位到出问题的代码行，确实不容易</li>
-</ul>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h2 id=&quot;引文&quot;&gt;&lt;a href=&quot;#引文&quot; class=&quot;headerlink&quot; title=&quot;引文&quot;&gt;&lt;/a&gt;引文&lt;/h2&gt;&lt;p&gt;对于那种出现概率非常低，很难重现的bug有时候总是感觉有力使不上，比如&lt;a href=&quot;https://zhuanlan.zhihu.com
-    
-    </summary>
-    
-      <category term="performance" scheme="http://yoursite.com/categories/performance/"/>
-    
-    
-      <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
-    
-      <category term="bug" scheme="http://yoursite.com/tags/bug/"/>
-    
-      <category term="tcpdump" scheme="http://yoursite.com/tags/tcpdump/"/>
-    
-      <category term="NIO" scheme="http://yoursite.com/tags/NIO/"/>
-    
-      <category term="btrace" scheme="http://yoursite.com/tags/btrace/"/>
     
   </entry>
   
