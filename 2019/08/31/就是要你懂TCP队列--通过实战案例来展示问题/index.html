@@ -95,23 +95,24 @@
 
 
 
-<meta name="description" content="就是要你懂TCP队列–通过实战案例来展示问题理论部分可以看这篇 再写这篇原因是，即使我在上篇文章里将这个问题阐述的相当清晰，但是当我再次碰到这个问题居然还是费了一些周折，所以想再次总结下。 问题描述 使用其他团队的WEBShell 调试问题的时候非常卡，最开始怀疑是定时任务导致压力大，然后重启Server端的Tomcat就恢复了，当时该应用的开发同学看到机器磁盘、cpu、内存、gc等都正常，实在不">
+<meta name="description" content="就是要你懂TCP队列–通过实战案例来展示问题详细理论和实践部分可以看这篇 再写这篇原因是，即使我在上篇文章里将这个问题阐述的相当清晰，但是当我再次碰到这个问题居然还是费了一些周折，所以想再次总结下。 问题描述 使用其他团队的WEBShell 调试问题的时候非常卡，最开始怀疑是定时任务导致压力大，然后重启Server端的Tomcat就恢复了，当时该应用的开发同学看到机器磁盘、cpu、内存、gc等都正">
 <meta name="keywords" content="tcp queue,accept queue,syn queue,syn flood,netstat,ss,overflows,dropped">
 <meta property="og:type" content="article">
 <meta property="og:title" content="就是要你懂TCP队列--通过实战案例来展示问题">
 <meta property="og:url" content="http://yoursite.com/2019/08/31/就是要你懂TCP队列--通过实战案例来展示问题/index.html">
 <meta property="og:site_name" content="plantegg">
-<meta property="og:description" content="就是要你懂TCP队列–通过实战案例来展示问题理论部分可以看这篇 再写这篇原因是，即使我在上篇文章里将这个问题阐述的相当清晰，但是当我再次碰到这个问题居然还是费了一些周折，所以想再次总结下。 问题描述 使用其他团队的WEBShell 调试问题的时候非常卡，最开始怀疑是定时任务导致压力大，然后重启Server端的Tomcat就恢复了，当时该应用的开发同学看到机器磁盘、cpu、内存、gc等都正常，实在不">
+<meta property="og:description" content="就是要你懂TCP队列–通过实战案例来展示问题详细理论和实践部分可以看这篇 再写这篇原因是，即使我在上篇文章里将这个问题阐述的相当清晰，但是当我再次碰到这个问题居然还是费了一些周折，所以想再次总结下。 问题描述 使用其他团队的WEBShell 调试问题的时候非常卡，最开始怀疑是定时任务导致压力大，然后重启Server端的Tomcat就恢复了，当时该应用的开发同学看到机器磁盘、cpu、内存、gc等都正">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/c6a60ee1c4e93e2d4912b7c5ef26a95e.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/91a12c64e360ffd5a7ab7231da6d8430.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/adca65f70c19929d78f63d8e5f70ed5a.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d12cd194822280906353d9961897ad19.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/1e7a22621908e7b6f790ebcb6970ae39.png">
+<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e3870d58dd88ccd7b2977748dffe5496.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ffb525eb443e0656712f6d8c6357adc2.png">
-<meta property="og:updated_time" content="2019-09-01T02:47:35.000Z">
+<meta property="og:updated_time" content="2019-09-19T09:21:30.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="就是要你懂TCP队列--通过实战案例来展示问题">
-<meta name="twitter:description" content="就是要你懂TCP队列–通过实战案例来展示问题理论部分可以看这篇 再写这篇原因是，即使我在上篇文章里将这个问题阐述的相当清晰，但是当我再次碰到这个问题居然还是费了一些周折，所以想再次总结下。 问题描述 使用其他团队的WEBShell 调试问题的时候非常卡，最开始怀疑是定时任务导致压力大，然后重启Server端的Tomcat就恢复了，当时该应用的开发同学看到机器磁盘、cpu、内存、gc等都正常，实在不">
+<meta name="twitter:description" content="就是要你懂TCP队列–通过实战案例来展示问题详细理论和实践部分可以看这篇 再写这篇原因是，即使我在上篇文章里将这个问题阐述的相当清晰，但是当我再次碰到这个问题居然还是费了一些周折，所以想再次总结下。 问题描述 使用其他团队的WEBShell 调试问题的时候非常卡，最开始怀疑是定时任务导致压力大，然后重启Server端的Tomcat就恢复了，当时该应用的开发同学看到机器磁盘、cpu、内存、gc等都正">
 <meta name="twitter:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/c6a60ee1c4e93e2d4912b7c5ef26a95e.png">
 
 
@@ -370,15 +371,15 @@
       
 
       
-        <h1 id="就是要你懂TCP队列–通过实战案例来展示问题"><a href="#就是要你懂TCP队列–通过实战案例来展示问题" class="headerlink" title="就是要你懂TCP队列–通过实战案例来展示问题"></a>就是要你懂TCP队列–通过实战案例来展示问题</h1><p>理论部分可以看<a href="https://plantegg.github.io/2117/06/07/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82TCP--%E5%8D%8A%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97%E5%92%8C%E5%85%A8%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/" target="_blank" rel="external">这篇</a></p>
+        <h1 id="就是要你懂TCP队列–通过实战案例来展示问题"><a href="#就是要你懂TCP队列–通过实战案例来展示问题" class="headerlink" title="就是要你懂TCP队列–通过实战案例来展示问题"></a>就是要你懂TCP队列–通过实战案例来展示问题</h1><p>详细理论和实践部分可以看<a href="https://plantegg.github.io/2117/06/07/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82TCP--%E5%8D%8A%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97%E5%92%8C%E5%85%A8%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/" target="_blank" rel="external">这篇</a></p>
 <p>再写这篇原因是，即使我在上篇文章里将这个问题阐述的相当清晰，但是当我再次碰到这个问题居然还是费了一些周折，所以想再次总结下。</p>
 <h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><blockquote>
 <p>使用其他团队的WEBShell 调试问题的时候非常卡，最开始怀疑是定时任务导致压力大，然后重启Server端的Tomcat就恢复了，当时该应用的开发同学看到机器磁盘、cpu、内存、gc等都正常，实在不知道为什么会这么卡</p>
 </blockquote>
 <h3 id="分析问题"><a href="#分析问题" class="headerlink" title="分析问题"></a>分析问题</h3><p>因为每天都是上午出现问题，拿到权限后，也跟着先检查一遍定时任务，没发现什么异常。</p>
-<p>既往在客户端表现出来卡顿，那么tsar先看看网络吧，果然大致是卡顿的时候网络重传率有点高，不过整个问题不是一直出现，只是间歇性的。</p>
+<p>既然在客户端表现出来卡顿，那么tsar先看看网络吧，果然大致是卡顿的时候网络重传率有点高，不过整个问题不是一直出现，只是间歇性的。</p>
 <p>抓包、netstat -s 看重传、reset等都还好、ss -lnt 看也没有溢出，我看了很多次当前队列都是0</p>
-<h3 id="重启Tomcat"><a href="#重启Tomcat" class="headerlink" title="重启Tomcat"></a>重启Tomcat</h3><p>问题恢复，所以基本觉得问题还是跟Tomcat非常相关，抓包看到的重传率非常低（不到0.01%—被这里坑了一下），因为中间链路还有nginx等，一度怀疑是不是抓包没抓到本地回环网卡导致的，要不tsar看到的重传率高，而tcpdump抓下来的非常低。</p>
+<h3 id="重启Tomcat"><a href="#重启Tomcat" class="headerlink" title="重启Tomcat"></a>重启Tomcat</h3><p>问题恢复，所以基本觉得问题还是跟Tomcat非常相关，抓包看到的重传率非常低（不到0.01%—被这里坑了一下），因为中间链路还有nginx等，一度怀疑是不是抓包没抓到本地回环网卡导致的，要不不会tsar看到的重传率高，而tcpdump抓下来的非常低。</p>
 <p>重启后 jstack 看看tomcat状态，同时跟正常的server对比了一下，发现明显有一个线程不太对，一直在增加</p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/c6a60ee1c4e93e2d4912b7c5ef26a95e.png" alt="image.png"></p>
 <p>所以到这里大概知道问题的原因了，只是还不能完全确认。</p>
@@ -395,6 +396,7 @@
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d12cd194822280906353d9961897ad19.png" alt="image.png"></p>
 <p>而看所有网卡的所有重传的话，这次终于可以看到重传率和tsar看到的一致，同时也清晰的看到主要127.0.0.1的本地流量，也就是Nginx过来的，而之前的抓包只抓了eth0，只能零星看到几个eth0上的重传包，跟tsar对不上，也导致问题跑偏了（重点去关注reset了）</p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/1e7a22621908e7b6f790ebcb6970ae39.png" alt="image.png"></p>
+<h3 id="或者这个异常状态的截图"><a href="#或者这个异常状态的截图" class="headerlink" title="或者这个异常状态的截图"></a>或者这个异常状态的截图</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e3870d58dd88ccd7b2977748dffe5496.png" alt="image.png"></p>
 <h3 id="为什么之前抓包看不到这些重传"><a href="#为什么之前抓包看不到这些重传" class="headerlink" title="为什么之前抓包看不到这些重传"></a>为什么之前抓包看不到这些重传</h3><p>因为对业务部署的不了解只抓了eth0, 导致没抓到真正跟客户端表现出来的卡顿相关的重传。比如这是只抓eth0上的包，看到的重传：</p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ffb525eb443e0656712f6d8c6357adc2.png" alt="image.png"></p>
 <p>可以看到明显非常少，这完全不是问题。</p>
@@ -613,7 +615,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#就是要你懂TCP队列–通过实战案例来展示问题"><span class="nav-number">1.</span> <span class="nav-text">就是要你懂TCP队列–通过实战案例来展示问题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#问题描述"><span class="nav-number">1.0.1.</span> <span class="nav-text">问题描述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#分析问题"><span class="nav-number">1.0.2.</span> <span class="nav-text">分析问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#重启Tomcat"><span class="nav-number">1.0.3.</span> <span class="nav-text">重启Tomcat</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#调整参数，加速问题重现"><span class="nav-number">1.0.4.</span> <span class="nav-text">调整参数，加速问题重现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么之前抓包看不到这些重传"><span class="nav-number">1.0.5.</span> <span class="nav-text">为什么之前抓包看不到这些重传</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么-ss-lnt-netstat-s-都没发现问题"><span class="nav-number">1.0.6.</span> <span class="nav-text">为什么 ss -lnt / netstat -s 都没发现问题</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">1.1.</span> <span class="nav-text">总结</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#就是要你懂TCP队列–通过实战案例来展示问题"><span class="nav-number">1.</span> <span class="nav-text">就是要你懂TCP队列–通过实战案例来展示问题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#问题描述"><span class="nav-number">1.0.1.</span> <span class="nav-text">问题描述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#分析问题"><span class="nav-number">1.0.2.</span> <span class="nav-text">分析问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#重启Tomcat"><span class="nav-number">1.0.3.</span> <span class="nav-text">重启Tomcat</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#调整参数，加速问题重现"><span class="nav-number">1.0.4.</span> <span class="nav-text">调整参数，加速问题重现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#或者这个异常状态的截图"><span class="nav-number">1.0.5.</span> <span class="nav-text">或者这个异常状态的截图</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么之前抓包看不到这些重传"><span class="nav-number">1.0.6.</span> <span class="nav-text">为什么之前抓包看不到这些重传</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么-ss-lnt-netstat-s-都没发现问题"><span class="nav-number">1.0.7.</span> <span class="nav-text">为什么 ss -lnt / netstat -s 都没发现问题</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">1.1.</span> <span class="nav-text">总结</span></a></li></ol></li></ol></div>
             
 
           </div>

@@ -103,10 +103,11 @@
 <meta property="og:site_name" content="plantegg">
 <meta property="og:description" content="SystemStap、BCC、bpftrace安装sudo stap-prep //安装好systemtap所有依赖的（debugfs等等） 执行安装内核debug等等需要的一些包，然后才能运行systemtap # 简单的脚本，打印4s内所有进程打开了哪些文件 #!/usr/bin/stap probe begin {     log(&amp;quot;begin to probe&amp;quot;) }">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/be6ac944fb72b089dc0357298a47dc37.png">
+<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e9efaffe357a2d1ac72806ce36066532.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/9340023fac65d9c1d0aeda8e73557792.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/297eb625b1e157d85a29754108871c08.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/74b0a393a6334421957a032f1f141a9c.png">
-<meta property="og:updated_time" content="2019-09-16T00:56:12.000Z">
+<meta property="og:updated_time" content="2019-09-19T09:21:12.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="SystemStap、BCC、bpftrace">
 <meta name="twitter:description" content="SystemStap、BCC、bpftrace安装sudo stap-prep //安装好systemtap所有依赖的（debugfs等等） 执行安装内核debug等等需要的一些包，然后才能运行systemtap # 简单的脚本，打印4s内所有进程打开了哪些文件 #!/usr/bin/stap probe begin {     log(&amp;quot;begin to probe&amp;quot;) }">
@@ -510,6 +511,7 @@ function mdelay(ms:long) %{
 %}
 </code></pre><p><a href="http://blog.csdn.net/justlinux2010/article/details/11171291" target="_blank" rel="external">使用Systemtap生成Flame Graph(火焰图) </a></p>
 <h2 id="网络重传"><a href="#网络重传" class="headerlink" title="网络重传"></a>网络重传</h2><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/be6ac944fb72b089dc0357298a47dc37.png" alt="image.png"></p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e9efaffe357a2d1ac72806ce36066532.png" alt="image.png"></p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/9340023fac65d9c1d0aeda8e73557792.png" alt="image.png"></p>
 <h2 id="网络包大小分布"><a href="#网络包大小分布" class="headerlink" title="网络包大小分布"></a>网络包大小分布</h2><pre><code>bpftrace -e &apos;tracepoint:net:net_dev_queue{
 @txsize=hist(args-&gt;len);
@@ -629,6 +631,29 @@ TIME      PID    COMM                  LATms HOST
 15:40:13  10580  ping                   0.98 abck.akksda
 15:40:18  1823   java                   0.12 iZbp143cmod4v59cgon4zwZ
 </code></pre><p>可以明显抓到ping但是nslookup抓不到（因为nslookup 不调用 getaddrinfo/gethostbyname)</p>
+<h2 id="统计线程执行时间排名"><a href="#统计线程执行时间排名" class="headerlink" title="统计线程执行时间排名"></a>统计线程执行时间排名</h2><pre><code>$sudo stap thread-times.stp -T 5
+        comm   tid   %user %kernel (of 19997 ticks)
+        java 30474  20.06%   0.75%
+   swapper/0     0   0.00%   2.55%
+   swapper/2     0   0.00%   2.00%
+   swapper/3     0   0.00%   1.49%
+        java 19500   0.38%   0.72%
+        java 19501   0.35%   0.64%
+        java 19503   0.34%   0.65%
+        java 19496   0.28%   0.69%
+        java 19497   0.28%   0.67%
+        java 19502   0.31%   0.61%
+        java 19498   0.30%   0.58%
+        java 19499   0.26%   0.52%
+   swapper/1     0   0.00%   0.75%
+        java 20004   0.45%   0.18%
+        java 19995   0.40%   0.19%
+        java 20061   0.43%   0.16%
+        java 20066   0.41%   0.17%
+        java 20083   0.44%   0.13%
+        java 20027   0.41%   0.16%
+        java 20195   0.43%   0.13%
+</code></pre><p>如上java线程执行消耗在用户态和内核态的CPU占比，根据tid可以到jstack中对应，相当于是将top命令中的线程消耗CPU做了累积，分清了用户态和内核态</p>
 <h2 id="内核函数执行时间"><a href="#内核函数执行时间" class="headerlink" title="内核函数执行时间"></a>内核函数执行时间</h2><pre><code>$sudo ./funclatency &apos;c:connect&apos;
 Tracing 1 functions for &quot;c:connect&quot;... Hit Ctrl-C to end.
 ^C
@@ -688,6 +713,86 @@ tmpfs           779M     0  779M   0% /run/user/1000
 
 [admin@iZbp143cmod4v59cgon4zwZ 15:49 /home/admin/tools/bcc]
 $sudo ./biotop 5 1
+</code></pre><p> 或者</p>
+<pre><code>$sudo stap iostats.stp -T 5
+starting probe
+
+                                       read     read             write    write
+            name     open     read   KB tot    B avg    write   KB tot    B avg
+            java        8   125797     5406       44   251673    44337      180
+              ps      754      784      319      417        6       29     5105
+            grep       39       27       73     2781        9       42     4891
+              wc       10        6       17     2979        1        0        2
+       AliYunDun       43       53        9      175        0        0        0
+              sh        8        4        3      880        0        0        0
+             fio       20       20        2      136        5        0       81
+            sshd        0        6        0       70        6        0      121
+ AliYunDunUpdate        2        4        0       75        0        0        0
+   systemd-udevd        1        4        0       65        0        0        0
+    DragoonAgent        0        0        0        0        1        0      100
+          stapio        0       27        0        1        1        0       15
+  aliyun-service        0       25        0        0        0        0        0
+</code></pre><h2 id="fs-latency"><a href="#fs-latency" class="headerlink" title="fs latency"></a>fs latency</h2><pre><code>[root@iZbp1d1tuijx3yqz46meimZ lwtools]# stap fslatency-nd.stp 1 1
+Tracing FS sync reads and writes... Output every 1 secs.
+
+Thu Sep 19 07:48:54 2019 FS latency (ns):
+
+FS call: __vfs_read()
+ value |-------------------------------------------------- count
+   128 |                                                       0
+   256 |                                                       0
+   512 |                                                       2
+  1024 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  12423
+  2048 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@          10330
+  4096 |@@                                                   514
+  8192 |@@@@@@                                              1624
+ 16384 |@                                                    273
+ 32768 |                                                      48
+ 65536 |                                                       1
+131072 |                                                       0
+262144 |                                                       0
+
+FS call: __vfs_write()
+ value |-------------------------------------------------- count
+    64 |                                                       0
+   128 |                                                       0
+   256 |                                                     169
+   512 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  32549
+  1024 |@@@@@@@@@@@@@@@@@@@@@@@@@                          16276
+  2048 |                                                     469
+  4096 |                                                     385
+  8192 |                                                     439
+ 16384 |                                                     100
+ 32768 |                                                       5
+ 65536 |                                                       1
+131072 |                                                       0
+262144 |                                                       0
+</code></pre><p>读写时间分布：<br>    [root@iZbp1d1tuijx3yqz46meimZ lwtools]# ./rwtime-nd.stp java<br>    Tracing read/write syscalls for processes named “java”… Hit Ctrl-C to end.<br>    ^C<br>    syscall read latency (ns):<br>     value |————————————————– count<br>       128 |                                                       0<br>       256 |                                                       0<br>       512 |@                                                   3129<br>      1024 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  85897<br>      2048 |@@@@@@@@@@@@@@@                                    26032<br>      4096 |                                                     386<br>      8192 |                                                    1142<br>     16384 |                                                      63<br>     32768 |                                                       3<br>     65536 |                                                       1<br>    131072 |                                                       1<br>    262144 |                                                       0<br>    524288 |                                                       0</p>
+<pre><code>syscall write latency (ns):
+  value |-------------------------------------------------- count
+    256 |                                                        0
+    512 |                                                        0
+   1024 |                                                     1720
+   2048 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  104247
+   4096 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  105507
+   8192 |@@@@@@@@                                            17768
+  16384 |@                                                    3715
+  32768 |                                                      353
+  65536 |                                                       44
+ 131072 |                                                        0
+ 262144 |                                                        3
+ 524288 |                                                        0
+1048576 |                                                        0
+</code></pre><p>SLOW FS READ AND WRITE</p>
+<pre><code>[root@iZbp1d1tuijx3yqz46meimZ lwtools]# ./fsslower-nd.stp 5
+Tracing FS sync reads and writes slower than 5 ms... Hit Ctrl-C to end.
+TIME     PID    COMM             FUNC           SIZE     LAT(ms)
+07:55:13 30941  grep             __vfs_read     32768         18
+07:55:13 30942  grep             __vfs_read     32768          5
+07:55:13 30943  grep             __vfs_read     32768         23
+07:55:13 30944  wc               __vfs_read     16384         24
+07:55:13 1102   java             __vfs_read     8192          39
+07:55:13 1102   java             __vfs_read     8192          40
 </code></pre><h2 id="cache"><a href="#cache" class="headerlink" title="cache"></a>cache</h2><pre><code>$sudo ./cachestat -T 5 1
 TIME         HITS   MISSES  DIRTIES HITRATIO   BUFFERS_MB  CACHED_MB
 16:01:10     6297        0       52  100.00%           31        652
@@ -925,7 +1030,7 @@ java[4457] lock 0x7f5d533a0d54 contended 1 times, 2202 avg us
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#SystemStap、BCC、bpftrace"><span class="nav-number">1.</span> <span class="nav-text">SystemStap、BCC、bpftrace</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#安装"><span class="nav-number">1.1.</span> <span class="nav-text">安装</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#案例"><span class="nav-number">1.2.</span> <span class="nav-text">案例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#案例2-需要模拟磁盘hang导致的io延迟，可以用systemtab来搞"><span class="nav-number">1.3.</span> <span class="nav-text">案例2:需要模拟磁盘hang导致的io延迟，可以用systemtab来搞</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#网络重传"><span class="nav-number">1.4.</span> <span class="nav-text">网络重传</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#网络包大小分布"><span class="nav-number">1.5.</span> <span class="nav-text">网络包大小分布</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#产看网络流量由哪个进程发出，或者说哪个进程在发包"><span class="nav-number">1.6.</span> <span class="nav-text">产看网络流量由哪个进程发出，或者说哪个进程在发包</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#网络连接创建rt？"><span class="nav-number">1.7.</span> <span class="nav-text">网络连接创建rt？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TCP队列实时查看"><span class="nav-number">1.8.</span> <span class="nav-text">TCP队列实时查看</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DNS-域名解析时间"><span class="nav-number">1.9.</span> <span class="nav-text">DNS 域名解析时间</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#内核函数执行时间"><span class="nav-number">1.10.</span> <span class="nav-text">内核函数执行时间</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#磁盘"><span class="nav-number">1.11.</span> <span class="nav-text">磁盘</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cache"><span class="nav-number">1.12.</span> <span class="nav-text">cache</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#中断发生，主要是网卡"><span class="nav-number">1.13.</span> <span class="nav-text">中断发生，主要是网卡</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#futex"><span class="nav-number">1.14.</span> <span class="nav-text">futex</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#SystemStap、BCC、bpftrace"><span class="nav-number">1.</span> <span class="nav-text">SystemStap、BCC、bpftrace</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#安装"><span class="nav-number">1.1.</span> <span class="nav-text">安装</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#案例"><span class="nav-number">1.2.</span> <span class="nav-text">案例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#案例2-需要模拟磁盘hang导致的io延迟，可以用systemtab来搞"><span class="nav-number">1.3.</span> <span class="nav-text">案例2:需要模拟磁盘hang导致的io延迟，可以用systemtab来搞</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#网络重传"><span class="nav-number">1.4.</span> <span class="nav-text">网络重传</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#网络包大小分布"><span class="nav-number">1.5.</span> <span class="nav-text">网络包大小分布</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#产看网络流量由哪个进程发出，或者说哪个进程在发包"><span class="nav-number">1.6.</span> <span class="nav-text">产看网络流量由哪个进程发出，或者说哪个进程在发包</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#网络连接创建rt？"><span class="nav-number">1.7.</span> <span class="nav-text">网络连接创建rt？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TCP队列实时查看"><span class="nav-number">1.8.</span> <span class="nav-text">TCP队列实时查看</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DNS-域名解析时间"><span class="nav-number">1.9.</span> <span class="nav-text">DNS 域名解析时间</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#统计线程执行时间排名"><span class="nav-number">1.10.</span> <span class="nav-text">统计线程执行时间排名</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#内核函数执行时间"><span class="nav-number">1.11.</span> <span class="nav-text">内核函数执行时间</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#磁盘"><span class="nav-number">1.12.</span> <span class="nav-text">磁盘</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#fs-latency"><span class="nav-number">1.13.</span> <span class="nav-text">fs latency</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cache"><span class="nav-number">1.14.</span> <span class="nav-text">cache</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#中断发生，主要是网卡"><span class="nav-number">1.15.</span> <span class="nav-text">中断发生，主要是网卡</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#futex"><span class="nav-number">1.16.</span> <span class="nav-text">futex</span></a></li></ol></li></ol></div>
             
 
           </div>

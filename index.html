@@ -802,6 +802,7 @@ function mdelay(ms:long) %{
 %}
 </code></pre><p><a href="http://blog.csdn.net/justlinux2010/article/details/11171291" target="_blank" rel="external">使用Systemtap生成Flame Graph(火焰图) </a></p>
 <h2 id="网络重传"><a href="#网络重传" class="headerlink" title="网络重传"></a>网络重传</h2><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/be6ac944fb72b089dc0357298a47dc37.png" alt="image.png"></p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e9efaffe357a2d1ac72806ce36066532.png" alt="image.png"></p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/9340023fac65d9c1d0aeda8e73557792.png" alt="image.png"></p>
 <h2 id="网络包大小分布"><a href="#网络包大小分布" class="headerlink" title="网络包大小分布"></a>网络包大小分布</h2><pre><code>bpftrace -e &apos;tracepoint:net:net_dev_queue{
 @txsize=hist(args-&gt;len);
@@ -921,6 +922,29 @@ TIME      PID    COMM                  LATms HOST
 15:40:13  10580  ping                   0.98 abck.akksda
 15:40:18  1823   java                   0.12 iZbp143cmod4v59cgon4zwZ
 </code></pre><p>可以明显抓到ping但是nslookup抓不到（因为nslookup 不调用 getaddrinfo/gethostbyname)</p>
+<h2 id="统计线程执行时间排名"><a href="#统计线程执行时间排名" class="headerlink" title="统计线程执行时间排名"></a>统计线程执行时间排名</h2><pre><code>$sudo stap thread-times.stp -T 5
+        comm   tid   %user %kernel (of 19997 ticks)
+        java 30474  20.06%   0.75%
+   swapper/0     0   0.00%   2.55%
+   swapper/2     0   0.00%   2.00%
+   swapper/3     0   0.00%   1.49%
+        java 19500   0.38%   0.72%
+        java 19501   0.35%   0.64%
+        java 19503   0.34%   0.65%
+        java 19496   0.28%   0.69%
+        java 19497   0.28%   0.67%
+        java 19502   0.31%   0.61%
+        java 19498   0.30%   0.58%
+        java 19499   0.26%   0.52%
+   swapper/1     0   0.00%   0.75%
+        java 20004   0.45%   0.18%
+        java 19995   0.40%   0.19%
+        java 20061   0.43%   0.16%
+        java 20066   0.41%   0.17%
+        java 20083   0.44%   0.13%
+        java 20027   0.41%   0.16%
+        java 20195   0.43%   0.13%
+</code></pre><p>如上java线程执行消耗在用户态和内核态的CPU占比，根据tid可以到jstack中对应，相当于是将top命令中的线程消耗CPU做了累积，分清了用户态和内核态</p>
 <h2 id="内核函数执行时间"><a href="#内核函数执行时间" class="headerlink" title="内核函数执行时间"></a>内核函数执行时间</h2><pre><code>$sudo ./funclatency &apos;c:connect&apos;
 Tracing 1 functions for &quot;c:connect&quot;... Hit Ctrl-C to end.
 ^C
@@ -980,6 +1004,86 @@ tmpfs           779M     0  779M   0% /run/user/1000
 
 [admin@iZbp143cmod4v59cgon4zwZ 15:49 /home/admin/tools/bcc]
 $sudo ./biotop 5 1
+</code></pre><p> 或者</p>
+<pre><code>$sudo stap iostats.stp -T 5
+starting probe
+
+                                       read     read             write    write
+            name     open     read   KB tot    B avg    write   KB tot    B avg
+            java        8   125797     5406       44   251673    44337      180
+              ps      754      784      319      417        6       29     5105
+            grep       39       27       73     2781        9       42     4891
+              wc       10        6       17     2979        1        0        2
+       AliYunDun       43       53        9      175        0        0        0
+              sh        8        4        3      880        0        0        0
+             fio       20       20        2      136        5        0       81
+            sshd        0        6        0       70        6        0      121
+ AliYunDunUpdate        2        4        0       75        0        0        0
+   systemd-udevd        1        4        0       65        0        0        0
+    DragoonAgent        0        0        0        0        1        0      100
+          stapio        0       27        0        1        1        0       15
+  aliyun-service        0       25        0        0        0        0        0
+</code></pre><h2 id="fs-latency"><a href="#fs-latency" class="headerlink" title="fs latency"></a>fs latency</h2><pre><code>[root@iZbp1d1tuijx3yqz46meimZ lwtools]# stap fslatency-nd.stp 1 1
+Tracing FS sync reads and writes... Output every 1 secs.
+
+Thu Sep 19 07:48:54 2019 FS latency (ns):
+
+FS call: __vfs_read()
+ value |-------------------------------------------------- count
+   128 |                                                       0
+   256 |                                                       0
+   512 |                                                       2
+  1024 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  12423
+  2048 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@          10330
+  4096 |@@                                                   514
+  8192 |@@@@@@                                              1624
+ 16384 |@                                                    273
+ 32768 |                                                      48
+ 65536 |                                                       1
+131072 |                                                       0
+262144 |                                                       0
+
+FS call: __vfs_write()
+ value |-------------------------------------------------- count
+    64 |                                                       0
+   128 |                                                       0
+   256 |                                                     169
+   512 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  32549
+  1024 |@@@@@@@@@@@@@@@@@@@@@@@@@                          16276
+  2048 |                                                     469
+  4096 |                                                     385
+  8192 |                                                     439
+ 16384 |                                                     100
+ 32768 |                                                       5
+ 65536 |                                                       1
+131072 |                                                       0
+262144 |                                                       0
+</code></pre><p>读写时间分布：<br>    [root@iZbp1d1tuijx3yqz46meimZ lwtools]# ./rwtime-nd.stp java<br>    Tracing read/write syscalls for processes named “java”… Hit Ctrl-C to end.<br>    ^C<br>    syscall read latency (ns):<br>     value |————————————————– count<br>       128 |                                                       0<br>       256 |                                                       0<br>       512 |@                                                   3129<br>      1024 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  85897<br>      2048 |@@@@@@@@@@@@@@@                                    26032<br>      4096 |                                                     386<br>      8192 |                                                    1142<br>     16384 |                                                      63<br>     32768 |                                                       3<br>     65536 |                                                       1<br>    131072 |                                                       1<br>    262144 |                                                       0<br>    524288 |                                                       0</p>
+<pre><code>syscall write latency (ns):
+  value |-------------------------------------------------- count
+    256 |                                                        0
+    512 |                                                        0
+   1024 |                                                     1720
+   2048 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  104247
+   4096 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  105507
+   8192 |@@@@@@@@                                            17768
+  16384 |@                                                    3715
+  32768 |                                                      353
+  65536 |                                                       44
+ 131072 |                                                        0
+ 262144 |                                                        3
+ 524288 |                                                        0
+1048576 |                                                        0
+</code></pre><p>SLOW FS READ AND WRITE</p>
+<pre><code>[root@iZbp1d1tuijx3yqz46meimZ lwtools]# ./fsslower-nd.stp 5
+Tracing FS sync reads and writes slower than 5 ms... Hit Ctrl-C to end.
+TIME     PID    COMM             FUNC           SIZE     LAT(ms)
+07:55:13 30941  grep             __vfs_read     32768         18
+07:55:13 30942  grep             __vfs_read     32768          5
+07:55:13 30943  grep             __vfs_read     32768         23
+07:55:13 30944  wc               __vfs_read     16384         24
+07:55:13 1102   java             __vfs_read     8192          39
+07:55:13 1102   java             __vfs_read     8192          40
 </code></pre><h2 id="cache"><a href="#cache" class="headerlink" title="cache"></a>cache</h2><pre><code>$sudo ./cachestat -T 5 1
 TIME         HITS   MISSES  DIRTIES HITRATIO   BUFFERS_MB  CACHED_MB
 16:01:10     6297        0       52  100.00%           31        652
@@ -1185,8 +1289,62 @@ java[4457] lock 0x7f5d533a0d54 contended 1 times, 2202 avg us
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/f0e39a66b63fe00877b6663f8857a739.png" alt="image.png"></p>
 <p>结论：同步输出的情况下immediateFlush 为false性能有一倍的提升（但是异常退出的情况下有丢日志风险）<br>异步输出是同步的4倍（这个差异依赖于cpu核数、业务逻辑的特点等），在异步的情况下immediateFlush无所谓，所以王者还是异步输出，同时异步输出对rt 95%线下降非常明显</p>
 <h3 id="一个业务逻辑稍微慢点的场景"><a href="#一个业务逻辑稍微慢点的场景" class="headerlink" title="一个业务逻辑稍微慢点的场景"></a>一个业务逻辑稍微慢点的场景</h3><p>异步输出日志点查场景tps11万+，同步输出日志后点查tps4万+，同时jstack堆栈也能看到333个BLOCKED堆栈：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div></pre></td><td class="code"><pre><div class="line"></div><div class="line">#[ 210s] threads: 400, tps: 0.00, reads/s: 115845.43, writes/s: 0.00, response time: 7.57ms (95%)</div><div class="line">#[ 220s] threads: 400, tps: 0.00, reads/s: 116453.12, writes/s: 0.00, response time: 7.28ms (95%)</div><div class="line">#[ 230s] threads: 400, tps: 0.00, reads/s: 116400.31, writes/s: 0.00, response time: 7.33ms (95%)</div><div class="line">#[ 240s] threads: 400, tps: 0.00, reads/s: 116025.35, writes/s: 0.00, response time: 7.48ms (95%)</div><div class="line">#[ 250s] threads: 400, tps: 0.00, reads/s: 45260.97, writes/s: 0.00, response time: 29.57ms (95%)</div><div class="line">#[ 260s] threads: 400, tps: 0.00, reads/s: 41598.41, writes/s: 0.00, response time: 29.07ms (95%)</div><div class="line">#[ 270s] threads: 400, tps: 0.00, reads/s: 41939.98, writes/s: 0.00, response time: 28.96ms (95%)</div><div class="line">#[ 280s] threads: 400, tps: 0.00, reads/s: 40875.48, writes/s: 0.00, response time: 29.16ms (95%)</div><div class="line">#[ 290s] threads: 400, tps: 0.00, reads/s: 41053.73, writes/s: 0.00, response time: 29.07ms (95%)</div><div class="line"></div><div class="line">--- 1687260767618 ns (100.00%), 91083 samples</div><div class="line"> [ 0] ch.qos.logback.classic.sift.SiftingAppender</div><div class="line"> [ 1] ch.qos.logback.core.AppenderBase.doAppend</div><div class="line"> [ 2] ch.qos.logback.core.spi.AppenderAttachableImpl.appendLoopOnAppenders</div><div class="line"> [ 3] ch.qos.logback.classic.Logger.appendLoopOnAppenders</div><div class="line"> [ 4] ch.qos.logback.classic.Logger.callAppenders</div><div class="line"> [ 5] ch.qos.logback.classic.Logger.buildLoggingEventAndAppend</div><div class="line"> [ 6] ch.qos.logback.classic.Logger.filterAndLog_0_Or3Plus</div><div class="line"> [ 7] ch.qos.logback.classic.Logger.info</div><div class="line"> [ 8] com.*****.logger.slf4j.Slf4jLogger.info</div><div class="line"> [ 9] com.*****.utils.logger.support.FailsafeLogger.info</div><div class="line"> [10] com.*****.util.LogUtils.recordSql</div><div class="line"> </div><div class="line"> </div><div class="line">&quot;ServerExecutor-3-thread-480&quot; #753 daemon prio=5 os_prio=0 tid=0x00007f8265842000 nid=0x26f1 waiting for monitor entry [0x00007f82270bf000]</div><div class="line">  java.lang.Thread.State: BLOCKED (on object monitor)</div><div class="line">	at ch.qos.logback.core.AppenderBase.doAppend(AppenderBase.java:64)</div><div class="line">	- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	at ch.qos.logback.core.spi.AppenderAttachableImpl.appendLoopOnAppenders(AppenderAttachableImpl.java:48)</div><div class="line">	at ch.qos.logback.classic.Logger.appendLoopOnAppenders(Logger.java:282)</div><div class="line">	at ch.qos.logback.classic.Logger.callAppenders(Logger.java:269)</div><div class="line">	at ch.qos.logback.classic.Logger.buildLoggingEventAndAppend(Logger.java:470)</div><div class="line">	at ch.qos.logback.classic.Logger.filterAndLog_0_Or3Plus(Logger.java:424)</div><div class="line">	at ch.qos.logback.classic.Logger.info(Logger.java:628)</div><div class="line">	at com.****.utils.logger.slf4j.Slf4jLogger.info(Slf4jLogger.java:42)</div><div class="line">	at com.****.utils.logger.support.FailsafeLogger.info(FailsafeLogger.java:102)</div><div class="line">	at com.****.util.LogUtils.recordSql(LogUtils.java:115)</div><div class="line"></div><div class="line"></div><div class="line">  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	- locked &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div></pre></td></tr></table></figure>
-<h3 id="4核的机器下性能提升没这么明显，因为锁争抢没这么激烈"><a href="#4核的机器下性能提升没这么明显，因为锁争抢没这么激烈" class="headerlink" title="4核的机器下性能提升没这么明显，因为锁争抢没这么激烈"></a>4核的机器下性能提升没这么明显，因为锁争抢没这么激烈</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d38fecd4932266209c6a1ca0265f98aa.png" alt="image.png"></p>
+<pre><code>#[ 210s] threads: 400, tps: 0.00, reads/s: 115845.43, writes/s: 0.00, response time: 7.57ms (95%)
+#[ 220s] threads: 400, tps: 0.00, reads/s: 116453.12, writes/s: 0.00, response time: 7.28ms (95%)
+#[ 230s] threads: 400, tps: 0.00, reads/s: 116400.31, writes/s: 0.00, response time: 7.33ms (95%)
+#[ 240s] threads: 400, tps: 0.00, reads/s: 116025.35, writes/s: 0.00, response time: 7.48ms (95%)
+#[ 250s] threads: 400, tps: 0.00, reads/s: 45260.97, writes/s: 0.00, response time: 29.57ms (95%)
+#[ 260s] threads: 400, tps: 0.00, reads/s: 41598.41, writes/s: 0.00, response time: 29.07ms (95%)
+#[ 270s] threads: 400, tps: 0.00, reads/s: 41939.98, writes/s: 0.00, response time: 28.96ms (95%)
+#[ 280s] threads: 400, tps: 0.00, reads/s: 40875.48, writes/s: 0.00, response time: 29.16ms (95%)
+#[ 290s] threads: 400, tps: 0.00, reads/s: 41053.73, writes/s: 0.00, response time: 29.07ms (95%)
+
+--- 1687260767618 ns (100.00%), 91083 samples
+ [ 0] ch.qos.logback.classic.sift.SiftingAppender
+ [ 1] ch.qos.logback.core.AppenderBase.doAppend
+ [ 2] ch.qos.logback.core.spi.AppenderAttachableImpl.appendLoopOnAppenders
+ [ 3] ch.qos.logback.classic.Logger.appendLoopOnAppenders
+ [ 4] ch.qos.logback.classic.Logger.callAppenders
+ [ 5] ch.qos.logback.classic.Logger.buildLoggingEventAndAppend
+ [ 6] ch.qos.logback.classic.Logger.filterAndLog_0_Or3Plus
+ [ 7] ch.qos.logback.classic.Logger.info
+ [ 8] com.*****.logger.slf4j.Slf4jLogger.info
+ [ 9] com.*****.utils.logger.support.FailsafeLogger.info
+ [10] com.*****.util.LogUtils.recordSql
+
+
+&quot;ServerExecutor-3-thread-480&quot; #753 daemon prio=5 os_prio=0 tid=0x00007f8265842000 nid=0x26f1 waiting for monitor entry [0x00007f82270bf000]
+  java.lang.Thread.State: BLOCKED (on object monitor)
+    at ch.qos.logback.core.AppenderBase.doAppend(AppenderBase.java:64)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    at ch.qos.logback.core.spi.AppenderAttachableImpl.appendLoopOnAppenders(AppenderAttachableImpl.java:48)
+    at ch.qos.logback.classic.Logger.appendLoopOnAppenders(Logger.java:282)
+    at ch.qos.logback.classic.Logger.callAppenders(Logger.java:269)
+    at ch.qos.logback.classic.Logger.buildLoggingEventAndAppend(Logger.java:470)
+    at ch.qos.logback.classic.Logger.filterAndLog_0_Or3Plus(Logger.java:424)
+    at ch.qos.logback.classic.Logger.info(Logger.java:628)
+    at com.****.utils.logger.slf4j.Slf4jLogger.info(Slf4jLogger.java:42)
+    at com.****.utils.logger.support.FailsafeLogger.info(FailsafeLogger.java:102)
+    at com.****.util.LogUtils.recordSql(LogUtils.java:115)
+
+
+  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - locked &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+</code></pre><h3 id="4核的机器下性能提升没这么明显，因为锁争抢没这么激烈"><a href="#4核的机器下性能提升没这么明显，因为锁争抢没这么激烈" class="headerlink" title="4核的机器下性能提升没这么明显，因为锁争抢没这么激烈"></a>4核的机器下性能提升没这么明显，因为锁争抢没这么激烈</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d38fecd4932266209c6a1ca0265f98aa.png" alt="image.png"></p>
 <h3 id="同步情况下的profiler"><a href="#同步情况下的profiler" class="headerlink" title="同步情况下的profiler"></a>同步情况下的profiler</h3><p>recordSQL: 12.9%<br>logback.doAppend: 10%</p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/4e0595c173522e37edf87b568eab6e7f.png" alt="image.png"></p>
 <h3 id="异步情况下的profiler"><a href="#异步情况下的profiler" class="headerlink" title="异步情况下的profiler:"></a>异步情况下的profiler:</h3><p>recordSQL:  3.7%<br><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/a88a3595d386be2ffeb0652ba2fdeea1.png" alt="image.png"></p>
@@ -1356,15 +1514,15 @@ public BufferedOutputStream(OutputStream out) {
       
         
           
-            <h1 id="就是要你懂TCP队列–通过实战案例来展示问题"><a href="#就是要你懂TCP队列–通过实战案例来展示问题" class="headerlink" title="就是要你懂TCP队列–通过实战案例来展示问题"></a>就是要你懂TCP队列–通过实战案例来展示问题</h1><p>理论部分可以看<a href="https://plantegg.github.io/2117/06/07/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82TCP--%E5%8D%8A%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97%E5%92%8C%E5%85%A8%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/" target="_blank" rel="external">这篇</a></p>
+            <h1 id="就是要你懂TCP队列–通过实战案例来展示问题"><a href="#就是要你懂TCP队列–通过实战案例来展示问题" class="headerlink" title="就是要你懂TCP队列–通过实战案例来展示问题"></a>就是要你懂TCP队列–通过实战案例来展示问题</h1><p>详细理论和实践部分可以看<a href="https://plantegg.github.io/2117/06/07/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82TCP--%E5%8D%8A%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97%E5%92%8C%E5%85%A8%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/" target="_blank" rel="external">这篇</a></p>
 <p>再写这篇原因是，即使我在上篇文章里将这个问题阐述的相当清晰，但是当我再次碰到这个问题居然还是费了一些周折，所以想再次总结下。</p>
 <h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><blockquote>
 <p>使用其他团队的WEBShell 调试问题的时候非常卡，最开始怀疑是定时任务导致压力大，然后重启Server端的Tomcat就恢复了，当时该应用的开发同学看到机器磁盘、cpu、内存、gc等都正常，实在不知道为什么会这么卡</p>
 </blockquote>
 <h3 id="分析问题"><a href="#分析问题" class="headerlink" title="分析问题"></a>分析问题</h3><p>因为每天都是上午出现问题，拿到权限后，也跟着先检查一遍定时任务，没发现什么异常。</p>
-<p>既往在客户端表现出来卡顿，那么tsar先看看网络吧，果然大致是卡顿的时候网络重传率有点高，不过整个问题不是一直出现，只是间歇性的。</p>
+<p>既然在客户端表现出来卡顿，那么tsar先看看网络吧，果然大致是卡顿的时候网络重传率有点高，不过整个问题不是一直出现，只是间歇性的。</p>
 <p>抓包、netstat -s 看重传、reset等都还好、ss -lnt 看也没有溢出，我看了很多次当前队列都是0</p>
-<h3 id="重启Tomcat"><a href="#重启Tomcat" class="headerlink" title="重启Tomcat"></a>重启Tomcat</h3><p>问题恢复，所以基本觉得问题还是跟Tomcat非常相关，抓包看到的重传率非常低（不到0.01%—被这里坑了一下），因为中间链路还有nginx等，一度怀疑是不是抓包没抓到本地回环网卡导致的，要不tsar看到的重传率高，而tcpdump抓下来的非常低。</p>
+<h3 id="重启Tomcat"><a href="#重启Tomcat" class="headerlink" title="重启Tomcat"></a>重启Tomcat</h3><p>问题恢复，所以基本觉得问题还是跟Tomcat非常相关，抓包看到的重传率非常低（不到0.01%—被这里坑了一下），因为中间链路还有nginx等，一度怀疑是不是抓包没抓到本地回环网卡导致的，要不不会tsar看到的重传率高，而tcpdump抓下来的非常低。</p>
 <p>重启后 jstack 看看tomcat状态，同时跟正常的server对比了一下，发现明显有一个线程不太对，一直在增加</p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/c6a60ee1c4e93e2d4912b7c5ef26a95e.png" alt="image.png"></p>
 <p>所以到这里大概知道问题的原因了，只是还不能完全确认。</p>
@@ -1381,6 +1539,7 @@ public BufferedOutputStream(OutputStream out) {
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d12cd194822280906353d9961897ad19.png" alt="image.png"></p>
 <p>而看所有网卡的所有重传的话，这次终于可以看到重传率和tsar看到的一致，同时也清晰的看到主要127.0.0.1的本地流量，也就是Nginx过来的，而之前的抓包只抓了eth0，只能零星看到几个eth0上的重传包，跟tsar对不上，也导致问题跑偏了（重点去关注reset了）</p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/1e7a22621908e7b6f790ebcb6970ae39.png" alt="image.png"></p>
+<h3 id="或者这个异常状态的截图"><a href="#或者这个异常状态的截图" class="headerlink" title="或者这个异常状态的截图"></a>或者这个异常状态的截图</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e3870d58dd88ccd7b2977748dffe5496.png" alt="image.png"></p>
 <h3 id="为什么之前抓包看不到这些重传"><a href="#为什么之前抓包看不到这些重传" class="headerlink" title="为什么之前抓包看不到这些重传"></a>为什么之前抓包看不到这些重传</h3><p>因为对业务部署的不了解只抓了eth0, 导致没抓到真正跟客户端表现出来的卡顿相关的重传。比如这是只抓eth0上的包，看到的重传：</p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ffb525eb443e0656712f6d8c6357adc2.png" alt="image.png"></p>
 <p>可以看到明显非常少，这完全不是问题。</p>
@@ -1890,9 +2049,10 @@ serverSock.configureBlocking(true);
       
         
           
-            <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>本文希望解析清楚，当我们在代码中写下  socket.setSendBufferSize 和 sysctl 看到的rmem/wmem系统参数以及最终我们在TCP常常谈到的接收发送窗口的关系，以及他们怎样影响性能。</p>
+            <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>本文希望解析清楚，当我们在代码中写下  socket.setSendBufferSize 和 sysctl 看到的rmem/wmem系统参数以及最终我们在TCP常常谈到的接收发送窗口的关系，以及他们怎样影响TCP传输的性能。</p>
 <p>先明确一下：<strong>文章标题中所说的Buffer指的是sysctl中的 rmem或者wmem，如果是代码中指定的话对应着SO_SNDBUF或者SO_RCVBUF，从TCP的概念来看对应着发送窗口或者接收窗口</strong></p>
-<h1 id="TCP性能和发送接收Buffer的关系"><a href="#TCP性能和发送接收Buffer的关系" class="headerlink" title="TCP性能和发送接收Buffer的关系"></a>TCP性能和发送接收Buffer的关系</h1><pre><code>$sudo sysctl -a | egrep &quot;rmem|wmem|adv_win|moderate&quot;
+<h1 id="TCP性能和发送接收Buffer的关系"><a href="#TCP性能和发送接收Buffer的关系" class="headerlink" title="TCP性能和发送接收Buffer的关系"></a>TCP性能和发送接收Buffer的关系</h1><p>相关参数：</p>
+<pre><code>$sudo sysctl -a | egrep &quot;rmem|wmem|adv_win|moderate&quot;
 net.core.rmem_default = 212992
 net.core.rmem_max = 212992
 net.core.wmem_default = 212992
@@ -1904,12 +2064,13 @@ net.ipv4.tcp_wmem = 4096    16384    4194304
 net.ipv4.udp_rmem_min = 4096
 net.ipv4.udp_wmem_min = 4096
 vm.lowmem_reserve_ratio = 256    256    32
-</code></pre><blockquote>
-<p>先从一个问题看起，应用通过专线从公司访问云上的服务，专线100M，时延20ms，一个SQL查询了22M数据，结果花了大概25秒，这太慢了，不正常。如果通过云上client访问云上服务那么1-2秒就返回了（说明不跨网络服务是正常的）。如果通过http或者scp从公司向云上传输这22M的数据大概两秒钟也传送完毕了（说明网络带宽不是瓶颈），所以这里问题的原因基本上是我们的服务在这种网络条件下有性能问题，需要找出为什么。</p>
+</code></pre><p>先从碰到的一个问题看起：</p>
+<blockquote>
+<p>应用通过专线从公司访问阿里云上的服务，专线100M，时延20ms，一个SQL查询了22M数据，结果花了大概25秒，这太慢了，不正常。如果通过云上client访问云上服务那么1-2秒就返回了（说明不跨网络服务是正常的）。如果通过http或者scp从公司向云上传输这22M的数据大概两秒钟也传送完毕了（说明网络带宽不是瓶颈），所以这里问题的原因基本上是我们的服务在这种网络条件下有性能问题，需要找出为什么。</p>
 </blockquote>
-<h2 id="抓包-tcpdump-wireshark"><a href="#抓包-tcpdump-wireshark" class="headerlink" title="抓包 tcpdump+wireshark"></a>抓包 tcpdump+wireshark</h2><p>这个查询结果22M的需要25秒，如下图（wireshark 时序图），横轴是时间纵轴是sequence number：</p>
+<h2 id="抓包-tcpdump-wireshark"><a href="#抓包-tcpdump-wireshark" class="headerlink" title="抓包 tcpdump+wireshark"></a>抓包 tcpdump+wireshark</h2><p>这个查询结果22M的需要25秒，如下图（wireshark 时序图），横轴是时间，纵轴是sequence number：</p>
 <p><img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1558603861745-190dadd2-cff2-49c9-8bc3-5856fdfb2d44.png#align=left&amp;display=inline&amp;height=627&amp;originHeight=627&amp;originWidth=1251&amp;size=0&amp;status=done&amp;width=1251" alt=""></p>
-<p>粗一看没啥问题，把这个图形放大看看（横轴是时间，纵轴是sequence number，一个点代表一个包）</p>
+<p>粗一看没啥问题，因为时间太长掩盖了问题。把这个图形放大，就看中间50ms内的传输情况（横轴是时间，纵轴是sequence number，一个点代表一个包）</p>
 <p><img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1558603861610-e9b14af0-2400-4207-8bec-dfc96430ca58.png#align=left&amp;display=inline&amp;height=591&amp;originHeight=591&amp;originWidth=508&amp;size=0&amp;status=done&amp;width=508" alt=""></p>
 <p>换个角度，看看窗口尺寸图形：</p>
 <p><img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1558603861781-2e236663-2909-44eb-84a3-82ddf5f3af9d.png#align=left&amp;display=inline&amp;height=755&amp;originHeight=755&amp;originWidth=1285&amp;size=0&amp;status=done&amp;width=1285" alt=""></p>
@@ -1947,8 +2108,8 @@ probe kernel.function(&quot;sk_stream_wait_memory&quot;).return
     printf(&quot;%u: %s(%d) recovered from full send buffern&quot;,
         gettimeofday_us(), execname(), pid())
 }
-</code></pre><p>如果tcp发送buffer也就是SO_SNDBUF只有16K的话，这些包很快都发出去了，但是这16K不能立即释放出来填新的内容进去，因为tcp要保证可靠，万一中间丢包了呢。只有等到这16K中的某些包ack了，才会填充一些新包进来然后继续发出去。由于这里rt基本是20ms，也就是16K发送完毕后，等了20ms才收到一些ack，这20ms应用、内核什么都不能做，所以就是如第二个图中的大概20ms的等待平台。这块请参考<a href="https://www.atatech.org/articles/79660" target="_blank" rel="external">这篇文章</a></p>
-<p><strong>sendbuffer相当于发送仓库的大小，仓库的货物都发走后，不能立即腾出来发新的货物，而是要等对方确认收到了(ack)才能腾出来发新的货物, 发送仓库（sendbuffer）足够大了之后接下来的瓶颈就是高速公路了（带宽、拥塞窗口）</strong></p>
+</code></pre><h2 id="原理解析"><a href="#原理解析" class="headerlink" title="原理解析"></a>原理解析</h2><p>如果tcp发送buffer也就是SO_SNDBUF只有16K的话，这些包很快都发出去了，但是这16K不能立即释放出来填新的内容进去，因为tcp要保证可靠，万一中间丢包了呢。只有等到这16K中的某些包ack了，才会填充一些新包进来然后继续发出去。由于这里rt基本是20ms，也就是16K发送完毕后，等了20ms才收到一些ack，这20ms应用、内核什么都不能做，所以就是如第二个图中的大概20ms的等待平台。这块请参考<a href="https://www.atatech.org/articles/79660" target="_blank" rel="external">这篇文章</a></p>
+<p><strong>sendbuffer相当于发送仓库的大小，仓库的货物都发走后，不能立即腾出来发新的货物，而是要等对方确认收到了(ack)才能腾出来发新的货物。 传输速度取决于发送仓库（sendbuffer）、接收仓库（recvbuffer）、路宽（带宽）的大小，如果发送仓库（sendbuffer）足够大了之后接下来的瓶颈就是高速公路了（带宽、拥塞窗口）</strong></p>
 <p>如果是UDP，就没有可靠的概念，有数据统统发出去，根本不关心对方是否收到，也就不需要ack和这个发送buffer了。</p>
 <h2 id="几个发送buffer相关的内核参数"><a href="#几个发送buffer相关的内核参数" class="headerlink" title="几个发送buffer相关的内核参数"></a>几个发送buffer相关的内核参数</h2><pre><code>vm.lowmem_reserve_ratio = 256   256     32
 net.core.wmem_max = 1048576
@@ -1966,13 +2127,15 @@ net.ipv4.udp_wmem_min = 4096
 <p>如果指定了tcp_wmem，则net.core.wmem_default被tcp_wmem的覆盖。send Buffer在tcp_wmem的最小值和最大值之间自动调整。如果调用setsockopt()设置了socket选项SO_SNDBUF，将关闭发送端缓冲的自动调节机制，tcp_wmem将被忽略，SO_SNDBUF的最大值由net.core.wmem_max限制。</p>
 <h2 id="BDP-带宽时延积"><a href="#BDP-带宽时延积" class="headerlink" title="BDP 带宽时延积"></a>BDP 带宽时延积</h2><p>BDP=rtt*(带宽/8)</p>
 <p>这个 buffer 调到1M测试没有帮助，从理论计算BDP（带宽时延积） 0.02秒*(100MB/8)=250Kb  所以SO_SNDBUF为256Kb的时候基本能跑满带宽了，再大实际意义也不大了。也就是前面所说的仓库足够后瓶颈在带宽上了。</p>
-<p>因为BDP是250K，也就是拥塞窗口即将成为新的瓶颈，所以调大buffer没意义了。</p>
+<p>因为BDP是250K，也就是拥塞窗口（带宽、接收窗口和rt决定的）即将成为新的瓶颈，所以调大buffer没意义了。</p>
 <h2 id="用tc构造延时和带宽限制的模拟重现环境"><a href="#用tc构造延时和带宽限制的模拟重现环境" class="headerlink" title="用tc构造延时和带宽限制的模拟重现环境"></a>用tc构造延时和带宽限制的模拟重现环境</h2><pre><code>sudo tc qdisc del dev eth0 root netem delay 20ms
 sudo tc qdisc add dev eth0 root tbf rate 500kbit latency 50ms burst 15kb
 </code></pre><h2 id="这个案例关于wmem的结论"><a href="#这个案例关于wmem的结论" class="headerlink" title="这个案例关于wmem的结论"></a>这个案例关于wmem的结论</h2><p>默认情况下Linux系统会自动调整这个buffer（net.ipv4.tcp_wmem）, 也就是不推荐程序中主动去设置SO_SNDBUF，除非明确知道设置的值是最优的。</p>
 <p>从这里我们可以看到，有些理论知识点虽然我们知道，但是在实践中很难联系起来，也就是常说的无法学以致用，最开始看到抓包结果的时候比较怀疑发送、接收窗口之类的，没有直接想到send buffer上，理论跟实践的鸿沟。</p>
-<p>说完发送Buffer（wmem）接下来我们接着一看看接收buffer(rmem)和接收窗口的情况。</p>
-<p>用这样一个案例下来验证接收窗口：有一个batch insert语句，整个一次要插入5532条记录，所有记录大小总共是376K。</p>
+<h2 id="说完发送Buffer-wmem-接下来我们接着一看看接收buffer-rmem-和接收窗口的情况"><a href="#说完发送Buffer-wmem-接下来我们接着一看看接收buffer-rmem-和接收窗口的情况" class="headerlink" title="说完发送Buffer(wmem)接下来我们接着一看看接收buffer(rmem)和接收窗口的情况"></a>说完发送Buffer(wmem)接下来我们接着一看看接收buffer(rmem)和接收窗口的情况</h2><p>用这样一个案例下来验证接收窗口的作用：</p>
+<blockquote>
+<p>有一个batch insert语句，整个一次要插入5532条记录，所有记录大小总共是376K。</p>
+</blockquote>
 <h2 id="SO-RCVBUF很小的时候并且rtt很大对性能的影响"><a href="#SO-RCVBUF很小的时候并且rtt很大对性能的影响" class="headerlink" title="SO_RCVBUF很小的时候并且rtt很大对性能的影响"></a>SO_RCVBUF很小的时候并且rtt很大对性能的影响</h2><p>如果rtt是40ms，总共需要5-6秒钟：</p>
 <p><img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1559025761962-cf422801-1d67-4665-a12e-8419ffb1e27a.png#align=left&amp;display=inline&amp;height=447&amp;name=image.png&amp;originHeight=559&amp;originWidth=1367&amp;size=137942&amp;status=done&amp;width=1093.6" alt="image.png" title="image.png"></p>
 <p>基本可以看到server一旦空出来点窗口，client马上就发送数据，由于这点窗口太小，rtt是40ms，也就是一个rtt才能传3456字节的数据，整个带宽才80-90K，完全没跑满。</p>
@@ -1992,7 +2155,7 @@ sudo tc qdisc add dev eth0 root tbf rate 500kbit latency 50ms burst 15kb
 <p><img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1559027854127-2049facb-7708-49b5-a165-141549cc7e6b.png#align=left&amp;display=inline&amp;height=636&amp;name=image.png&amp;originHeight=795&amp;originWidth=474&amp;size=20034&amp;status=done&amp;width=379.2" alt="image.png" title="image.png"></p>
 <p>如图，接收窗口由最开始的28K降下来，然后一直在5880和满了之间跳动</p>
 <p><img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1559028098375-d1e8ab50-d3c0-47c3-8326-53afe8ba0116.png#align=left&amp;display=inline&amp;height=681&amp;name=image.png&amp;originHeight=851&amp;originWidth=748&amp;size=42765&amp;status=done&amp;width=598.4" alt="image.png" title="image.png"></p>
-<p>从这里可以得出结论，接收窗口的大小会影响性能，rtt越大影响越明显，当然这里还需要应用程序配合，如果应用程序一直不读走数据即使接收窗口再大也会堆满的。</p>
+<p>从这里可以得出结论，接收窗口的大小对性能的影响，rtt越大影响越明显，当然这里还需要应用程序配合，如果应用程序一直不读走数据即使接收窗口再大也会堆满的。</p>
 <h2 id="SO-RCVBUF和tcp-window-full的坏case"><a href="#SO-RCVBUF和tcp-window-full的坏case" class="headerlink" title="SO_RCVBUF和tcp window full的坏case"></a>SO_RCVBUF和tcp window full的坏case</h2><p><img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1558922856836-92aca189-2b5c-46b9-ae06-cbb0db50baf4.png#align=left&amp;display=inline&amp;height=522&amp;name=image.png&amp;originHeight=653&amp;originWidth=1007&amp;size=48934&amp;status=done&amp;width=805.6" alt="image.png" title="image.png"></p>
 <p>上图中红色平台部分，停顿了大概6秒钟没有发任何有内容的数据包，这6秒钟具体在做什么如下图所示，可以看到这个时候接收方的TCP Window Full，同时也能看到接收方（3306端口）的TCP Window Size是8192（8K），发送方（27545端口）是20480.</p>
 <p><img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1558923047361-de371658-b656-4566-9e20-5958919ee1fe.png#align=left&amp;display=inline&amp;height=422&amp;name=image.png&amp;originHeight=528&amp;originWidth=982&amp;size=112809&amp;status=done&amp;width=785.6" alt="image.png" title="image.png"></p>
@@ -2012,7 +2175,8 @@ sudo tc qdisc add dev eth0 root tbf rate 500kbit latency 50ms burst 15kb
 <p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1564110249481-0e962233-3f39-4051-990c-846aec8e1810.png" alt="undefined"> </p>
 <p>上图这个流因为应用层不读取TCP数据，导致TCP接收Buffer满，进而接收窗口为0，server端不能再发送数据而卡住，但是ZeroWindow的探测包，client都有正常回复，所以1903秒之后接收方窗口不为0后（window update）传输恢复。</p>
 <p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1564113969867-a2d7b752-e9e1-40cf-b968-9a1da2be210c.png" alt="undefined"> </p>
-<p>这个截图和前一个类似，不同的是接收窗口为0后，server端多次探测，但是client端没有回复 ZeroWindow（也有可能是回复了，但是中间环节把ack包丢了），造成server端认为client死了、不可达之类，进而反复重传，重传超过15次之后，server端认为这个连接死了，粗暴单方面断开（没有reset和fin,因为没必要，server认为网络连通性出了问题）。</p>
+<p>这个截图和前一个类似，是在Server上(3003端口)抓到的包，不同的是接收窗口为0后，server端多次探测（Server上抓包能看到），但是client端没有回复 ZeroWindow（也有可能是回复了，但是中间环节把ack包丢了,或者这个探测包client没收到），造成server端认为client死了、不可达之类，进而反复重传，重传超过15次之后，server端认为这个连接死了，粗暴单方面断开（没有reset和fin,因为没必要，server认为网络连通性出了问题）。</p>
+<p>等到1800秒后，client的接收窗口恢复了，发个window update给server，这个时候server认为这个连接已经断开了，只能回复reset</p>
 <p>网络不通，重传超过一定的时间（tcp_retries2)然后断开这个连接是正常的，这里的问题是：</p>
 <ol>
 <li>为什么这种场景下丢包了，而且是针对某个stream一直丢包</li>
@@ -2047,7 +2211,7 @@ void tcp_init_buffer_space(struct sock *sk)
         if (!(sk-&gt;sk_userlocks &amp; SOCK_SNDBUF_LOCK))
                 tcp_sndbuf_expand(sk);
 
-                //初始最大接收窗口计算过程
+        //初始最大接收窗口计算过程
         tp-&gt;rcvq_space.space = min_t(u32, tp-&gt;rcv_wnd, TCP_INIT_CWND * tp-&gt;advmss);
         tcp_mstamp_refresh(tp);
         tp-&gt;rcvq_space.time = tp-&gt;tcp_mstamp;

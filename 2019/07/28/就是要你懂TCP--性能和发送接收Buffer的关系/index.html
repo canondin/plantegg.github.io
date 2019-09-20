@@ -95,13 +95,13 @@
 
 
 
-<meta name="description" content="前言本文希望解析清楚，当我们在代码中写下  socket.setSendBufferSize 和 sysctl 看到的rmem/wmem系统参数以及最终我们在TCP常常谈到的接收发送窗口的关系，以及他们怎样影响性能。 先明确一下：文章标题中所说的Buffer指的是sysctl中的 rmem或者wmem，如果是代码中指定的话对应着SO_SNDBUF或者SO_RCVBUF，从TCP的概念来看对应着发送">
+<meta name="description" content="前言本文希望解析清楚，当我们在代码中写下  socket.setSendBufferSize 和 sysctl 看到的rmem/wmem系统参数以及最终我们在TCP常常谈到的接收发送窗口的关系，以及他们怎样影响TCP传输的性能。 先明确一下：文章标题中所说的Buffer指的是sysctl中的 rmem或者wmem，如果是代码中指定的话对应着SO_SNDBUF或者SO_RCVBUF，从TCP的概念来">
 <meta name="keywords" content="Linux,performance,TCP,sendBuffer,rmem,wmem,接收窗口,发送窗口,recvBuffer">
 <meta property="og:type" content="article">
 <meta property="og:title" content="TCP性能和发送接收窗口、Buffer的关系">
 <meta property="og:url" content="http://yoursite.com/2019/07/28/就是要你懂TCP--性能和发送接收Buffer的关系/index.html">
 <meta property="og:site_name" content="plantegg">
-<meta property="og:description" content="前言本文希望解析清楚，当我们在代码中写下  socket.setSendBufferSize 和 sysctl 看到的rmem/wmem系统参数以及最终我们在TCP常常谈到的接收发送窗口的关系，以及他们怎样影响性能。 先明确一下：文章标题中所说的Buffer指的是sysctl中的 rmem或者wmem，如果是代码中指定的话对应着SO_SNDBUF或者SO_RCVBUF，从TCP的概念来看对应着发送">
+<meta property="og:description" content="前言本文希望解析清楚，当我们在代码中写下  socket.setSendBufferSize 和 sysctl 看到的rmem/wmem系统参数以及最终我们在TCP常常谈到的接收发送窗口的关系，以及他们怎样影响TCP传输的性能。 先明确一下：文章标题中所说的Buffer指的是sysctl中的 rmem或者wmem，如果是代码中指定的话对应着SO_SNDBUF或者SO_RCVBUF，从TCP的概念来">
 <meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1558603861745-190dadd2-cff2-49c9-8bc3-5856fdfb2d44.png#align=left&display=inline&height=627&originHeight=627&originWidth=1251&size=0&status=done&width=1251">
 <meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1558603861610-e9b14af0-2400-4207-8bec-dfc96430ca58.png#align=left&display=inline&height=591&originHeight=591&originWidth=508&size=0&status=done&width=508">
 <meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1558603861781-2e236663-2909-44eb-84a3-82ddf5f3af9d.png#align=left&display=inline&height=755&originHeight=755&originWidth=1285&size=0&status=done&width=1285">
@@ -123,10 +123,10 @@
 <meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/gif/162611/1559030833230-72b44e6d-5c3c-413b-91ff-26074bd2bdbe.gif#align=left&display=inline&height=144&originHeight=103&originWidth=289&size=0&status=done&width=404">
 <meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1559043502992-97c4c823-8cd1-4ae7-9883-203e553604ff.png#align=left&display=inline&height=720&name=image.png&originHeight=900&originWidth=958&size=48144&status=done&width=766.4">
 <meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1559097931609-28c0fc94-09ca-4564-8f47-432f9b5e2c5b.png#align=left&display=inline&height=682&name=image.png&originHeight=853&originWidth=760&size=41904&status=done&width=608">
-<meta property="og:updated_time" content="2019-07-29T03:28:36.000Z">
+<meta property="og:updated_time" content="2019-09-20T03:00:40.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="TCP性能和发送接收窗口、Buffer的关系">
-<meta name="twitter:description" content="前言本文希望解析清楚，当我们在代码中写下  socket.setSendBufferSize 和 sysctl 看到的rmem/wmem系统参数以及最终我们在TCP常常谈到的接收发送窗口的关系，以及他们怎样影响性能。 先明确一下：文章标题中所说的Buffer指的是sysctl中的 rmem或者wmem，如果是代码中指定的话对应着SO_SNDBUF或者SO_RCVBUF，从TCP的概念来看对应着发送">
+<meta name="twitter:description" content="前言本文希望解析清楚，当我们在代码中写下  socket.setSendBufferSize 和 sysctl 看到的rmem/wmem系统参数以及最终我们在TCP常常谈到的接收发送窗口的关系，以及他们怎样影响TCP传输的性能。 先明确一下：文章标题中所说的Buffer指的是sysctl中的 rmem或者wmem，如果是代码中指定的话对应着SO_SNDBUF或者SO_RCVBUF，从TCP的概念来">
 <meta name="twitter:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1558603861745-190dadd2-cff2-49c9-8bc3-5856fdfb2d44.png#align=left&display=inline&height=627&originHeight=627&originWidth=1251&size=0&status=done&width=1251">
 
 
@@ -385,9 +385,10 @@
       
 
       
-        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>本文希望解析清楚，当我们在代码中写下  socket.setSendBufferSize 和 sysctl 看到的rmem/wmem系统参数以及最终我们在TCP常常谈到的接收发送窗口的关系，以及他们怎样影响性能。</p>
+        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>本文希望解析清楚，当我们在代码中写下  socket.setSendBufferSize 和 sysctl 看到的rmem/wmem系统参数以及最终我们在TCP常常谈到的接收发送窗口的关系，以及他们怎样影响TCP传输的性能。</p>
 <p>先明确一下：<strong>文章标题中所说的Buffer指的是sysctl中的 rmem或者wmem，如果是代码中指定的话对应着SO_SNDBUF或者SO_RCVBUF，从TCP的概念来看对应着发送窗口或者接收窗口</strong></p>
-<h1 id="TCP性能和发送接收Buffer的关系"><a href="#TCP性能和发送接收Buffer的关系" class="headerlink" title="TCP性能和发送接收Buffer的关系"></a>TCP性能和发送接收Buffer的关系</h1><pre><code>$sudo sysctl -a | egrep &quot;rmem|wmem|adv_win|moderate&quot;
+<h1 id="TCP性能和发送接收Buffer的关系"><a href="#TCP性能和发送接收Buffer的关系" class="headerlink" title="TCP性能和发送接收Buffer的关系"></a>TCP性能和发送接收Buffer的关系</h1><p>相关参数：</p>
+<pre><code>$sudo sysctl -a | egrep &quot;rmem|wmem|adv_win|moderate&quot;
 net.core.rmem_default = 212992
 net.core.rmem_max = 212992
 net.core.wmem_default = 212992
@@ -399,12 +400,13 @@ net.ipv4.tcp_wmem = 4096    16384    4194304
 net.ipv4.udp_rmem_min = 4096
 net.ipv4.udp_wmem_min = 4096
 vm.lowmem_reserve_ratio = 256    256    32
-</code></pre><blockquote>
-<p>先从一个问题看起，应用通过专线从公司访问云上的服务，专线100M，时延20ms，一个SQL查询了22M数据，结果花了大概25秒，这太慢了，不正常。如果通过云上client访问云上服务那么1-2秒就返回了（说明不跨网络服务是正常的）。如果通过http或者scp从公司向云上传输这22M的数据大概两秒钟也传送完毕了（说明网络带宽不是瓶颈），所以这里问题的原因基本上是我们的服务在这种网络条件下有性能问题，需要找出为什么。</p>
+</code></pre><p>先从碰到的一个问题看起：</p>
+<blockquote>
+<p>应用通过专线从公司访问阿里云上的服务，专线100M，时延20ms，一个SQL查询了22M数据，结果花了大概25秒，这太慢了，不正常。如果通过云上client访问云上服务那么1-2秒就返回了（说明不跨网络服务是正常的）。如果通过http或者scp从公司向云上传输这22M的数据大概两秒钟也传送完毕了（说明网络带宽不是瓶颈），所以这里问题的原因基本上是我们的服务在这种网络条件下有性能问题，需要找出为什么。</p>
 </blockquote>
-<h2 id="抓包-tcpdump-wireshark"><a href="#抓包-tcpdump-wireshark" class="headerlink" title="抓包 tcpdump+wireshark"></a>抓包 tcpdump+wireshark</h2><p>这个查询结果22M的需要25秒，如下图（wireshark 时序图），横轴是时间纵轴是sequence number：</p>
+<h2 id="抓包-tcpdump-wireshark"><a href="#抓包-tcpdump-wireshark" class="headerlink" title="抓包 tcpdump+wireshark"></a>抓包 tcpdump+wireshark</h2><p>这个查询结果22M的需要25秒，如下图（wireshark 时序图），横轴是时间，纵轴是sequence number：</p>
 <p><img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1558603861745-190dadd2-cff2-49c9-8bc3-5856fdfb2d44.png#align=left&amp;display=inline&amp;height=627&amp;originHeight=627&amp;originWidth=1251&amp;size=0&amp;status=done&amp;width=1251" alt=""></p>
-<p>粗一看没啥问题，把这个图形放大看看（横轴是时间，纵轴是sequence number，一个点代表一个包）</p>
+<p>粗一看没啥问题，因为时间太长掩盖了问题。把这个图形放大，就看中间50ms内的传输情况（横轴是时间，纵轴是sequence number，一个点代表一个包）</p>
 <p><img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1558603861610-e9b14af0-2400-4207-8bec-dfc96430ca58.png#align=left&amp;display=inline&amp;height=591&amp;originHeight=591&amp;originWidth=508&amp;size=0&amp;status=done&amp;width=508" alt=""></p>
 <p>换个角度，看看窗口尺寸图形：</p>
 <p><img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1558603861781-2e236663-2909-44eb-84a3-82ddf5f3af9d.png#align=left&amp;display=inline&amp;height=755&amp;originHeight=755&amp;originWidth=1285&amp;size=0&amp;status=done&amp;width=1285" alt=""></p>
@@ -442,8 +444,8 @@ probe kernel.function(&quot;sk_stream_wait_memory&quot;).return
     printf(&quot;%u: %s(%d) recovered from full send buffern&quot;,
         gettimeofday_us(), execname(), pid())
 }
-</code></pre><p>如果tcp发送buffer也就是SO_SNDBUF只有16K的话，这些包很快都发出去了，但是这16K不能立即释放出来填新的内容进去，因为tcp要保证可靠，万一中间丢包了呢。只有等到这16K中的某些包ack了，才会填充一些新包进来然后继续发出去。由于这里rt基本是20ms，也就是16K发送完毕后，等了20ms才收到一些ack，这20ms应用、内核什么都不能做，所以就是如第二个图中的大概20ms的等待平台。这块请参考<a href="https://www.atatech.org/articles/79660" target="_blank" rel="external">这篇文章</a></p>
-<p><strong>sendbuffer相当于发送仓库的大小，仓库的货物都发走后，不能立即腾出来发新的货物，而是要等对方确认收到了(ack)才能腾出来发新的货物, 发送仓库（sendbuffer）足够大了之后接下来的瓶颈就是高速公路了（带宽、拥塞窗口）</strong></p>
+</code></pre><h2 id="原理解析"><a href="#原理解析" class="headerlink" title="原理解析"></a>原理解析</h2><p>如果tcp发送buffer也就是SO_SNDBUF只有16K的话，这些包很快都发出去了，但是这16K不能立即释放出来填新的内容进去，因为tcp要保证可靠，万一中间丢包了呢。只有等到这16K中的某些包ack了，才会填充一些新包进来然后继续发出去。由于这里rt基本是20ms，也就是16K发送完毕后，等了20ms才收到一些ack，这20ms应用、内核什么都不能做，所以就是如第二个图中的大概20ms的等待平台。这块请参考<a href="https://www.atatech.org/articles/79660" target="_blank" rel="external">这篇文章</a></p>
+<p><strong>sendbuffer相当于发送仓库的大小，仓库的货物都发走后，不能立即腾出来发新的货物，而是要等对方确认收到了(ack)才能腾出来发新的货物。 传输速度取决于发送仓库（sendbuffer）、接收仓库（recvbuffer）、路宽（带宽）的大小，如果发送仓库（sendbuffer）足够大了之后接下来的瓶颈就是高速公路了（带宽、拥塞窗口）</strong></p>
 <p>如果是UDP，就没有可靠的概念，有数据统统发出去，根本不关心对方是否收到，也就不需要ack和这个发送buffer了。</p>
 <h2 id="几个发送buffer相关的内核参数"><a href="#几个发送buffer相关的内核参数" class="headerlink" title="几个发送buffer相关的内核参数"></a>几个发送buffer相关的内核参数</h2><pre><code>vm.lowmem_reserve_ratio = 256   256     32
 net.core.wmem_max = 1048576
@@ -461,13 +463,15 @@ net.ipv4.udp_wmem_min = 4096
 <p>如果指定了tcp_wmem，则net.core.wmem_default被tcp_wmem的覆盖。send Buffer在tcp_wmem的最小值和最大值之间自动调整。如果调用setsockopt()设置了socket选项SO_SNDBUF，将关闭发送端缓冲的自动调节机制，tcp_wmem将被忽略，SO_SNDBUF的最大值由net.core.wmem_max限制。</p>
 <h2 id="BDP-带宽时延积"><a href="#BDP-带宽时延积" class="headerlink" title="BDP 带宽时延积"></a>BDP 带宽时延积</h2><p>BDP=rtt*(带宽/8)</p>
 <p>这个 buffer 调到1M测试没有帮助，从理论计算BDP（带宽时延积） 0.02秒*(100MB/8)=250Kb  所以SO_SNDBUF为256Kb的时候基本能跑满带宽了，再大实际意义也不大了。也就是前面所说的仓库足够后瓶颈在带宽上了。</p>
-<p>因为BDP是250K，也就是拥塞窗口即将成为新的瓶颈，所以调大buffer没意义了。</p>
+<p>因为BDP是250K，也就是拥塞窗口（带宽、接收窗口和rt决定的）即将成为新的瓶颈，所以调大buffer没意义了。</p>
 <h2 id="用tc构造延时和带宽限制的模拟重现环境"><a href="#用tc构造延时和带宽限制的模拟重现环境" class="headerlink" title="用tc构造延时和带宽限制的模拟重现环境"></a>用tc构造延时和带宽限制的模拟重现环境</h2><pre><code>sudo tc qdisc del dev eth0 root netem delay 20ms
 sudo tc qdisc add dev eth0 root tbf rate 500kbit latency 50ms burst 15kb
 </code></pre><h2 id="这个案例关于wmem的结论"><a href="#这个案例关于wmem的结论" class="headerlink" title="这个案例关于wmem的结论"></a>这个案例关于wmem的结论</h2><p>默认情况下Linux系统会自动调整这个buffer（net.ipv4.tcp_wmem）, 也就是不推荐程序中主动去设置SO_SNDBUF，除非明确知道设置的值是最优的。</p>
 <p>从这里我们可以看到，有些理论知识点虽然我们知道，但是在实践中很难联系起来，也就是常说的无法学以致用，最开始看到抓包结果的时候比较怀疑发送、接收窗口之类的，没有直接想到send buffer上，理论跟实践的鸿沟。</p>
-<p>说完发送Buffer（wmem）接下来我们接着一看看接收buffer(rmem)和接收窗口的情况。</p>
-<p>用这样一个案例下来验证接收窗口：有一个batch insert语句，整个一次要插入5532条记录，所有记录大小总共是376K。</p>
+<h2 id="说完发送Buffer-wmem-接下来我们接着一看看接收buffer-rmem-和接收窗口的情况"><a href="#说完发送Buffer-wmem-接下来我们接着一看看接收buffer-rmem-和接收窗口的情况" class="headerlink" title="说完发送Buffer(wmem)接下来我们接着一看看接收buffer(rmem)和接收窗口的情况"></a>说完发送Buffer(wmem)接下来我们接着一看看接收buffer(rmem)和接收窗口的情况</h2><p>用这样一个案例下来验证接收窗口的作用：</p>
+<blockquote>
+<p>有一个batch insert语句，整个一次要插入5532条记录，所有记录大小总共是376K。</p>
+</blockquote>
 <h2 id="SO-RCVBUF很小的时候并且rtt很大对性能的影响"><a href="#SO-RCVBUF很小的时候并且rtt很大对性能的影响" class="headerlink" title="SO_RCVBUF很小的时候并且rtt很大对性能的影响"></a>SO_RCVBUF很小的时候并且rtt很大对性能的影响</h2><p>如果rtt是40ms，总共需要5-6秒钟：</p>
 <p><img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1559025761962-cf422801-1d67-4665-a12e-8419ffb1e27a.png#align=left&amp;display=inline&amp;height=447&amp;name=image.png&amp;originHeight=559&amp;originWidth=1367&amp;size=137942&amp;status=done&amp;width=1093.6" alt="image.png" title="image.png"></p>
 <p>基本可以看到server一旦空出来点窗口，client马上就发送数据，由于这点窗口太小，rtt是40ms，也就是一个rtt才能传3456字节的数据，整个带宽才80-90K，完全没跑满。</p>
@@ -487,7 +491,7 @@ sudo tc qdisc add dev eth0 root tbf rate 500kbit latency 50ms burst 15kb
 <p><img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1559027854127-2049facb-7708-49b5-a165-141549cc7e6b.png#align=left&amp;display=inline&amp;height=636&amp;name=image.png&amp;originHeight=795&amp;originWidth=474&amp;size=20034&amp;status=done&amp;width=379.2" alt="image.png" title="image.png"></p>
 <p>如图，接收窗口由最开始的28K降下来，然后一直在5880和满了之间跳动</p>
 <p><img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1559028098375-d1e8ab50-d3c0-47c3-8326-53afe8ba0116.png#align=left&amp;display=inline&amp;height=681&amp;name=image.png&amp;originHeight=851&amp;originWidth=748&amp;size=42765&amp;status=done&amp;width=598.4" alt="image.png" title="image.png"></p>
-<p>从这里可以得出结论，接收窗口的大小会影响性能，rtt越大影响越明显，当然这里还需要应用程序配合，如果应用程序一直不读走数据即使接收窗口再大也会堆满的。</p>
+<p>从这里可以得出结论，接收窗口的大小对性能的影响，rtt越大影响越明显，当然这里还需要应用程序配合，如果应用程序一直不读走数据即使接收窗口再大也会堆满的。</p>
 <h2 id="SO-RCVBUF和tcp-window-full的坏case"><a href="#SO-RCVBUF和tcp-window-full的坏case" class="headerlink" title="SO_RCVBUF和tcp window full的坏case"></a>SO_RCVBUF和tcp window full的坏case</h2><p><img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1558922856836-92aca189-2b5c-46b9-ae06-cbb0db50baf4.png#align=left&amp;display=inline&amp;height=522&amp;name=image.png&amp;originHeight=653&amp;originWidth=1007&amp;size=48934&amp;status=done&amp;width=805.6" alt="image.png" title="image.png"></p>
 <p>上图中红色平台部分，停顿了大概6秒钟没有发任何有内容的数据包，这6秒钟具体在做什么如下图所示，可以看到这个时候接收方的TCP Window Full，同时也能看到接收方（3306端口）的TCP Window Size是8192（8K），发送方（27545端口）是20480.</p>
 <p><img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1558923047361-de371658-b656-4566-9e20-5958919ee1fe.png#align=left&amp;display=inline&amp;height=422&amp;name=image.png&amp;originHeight=528&amp;originWidth=982&amp;size=112809&amp;status=done&amp;width=785.6" alt="image.png" title="image.png"></p>
@@ -507,7 +511,8 @@ sudo tc qdisc add dev eth0 root tbf rate 500kbit latency 50ms burst 15kb
 <p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1564110249481-0e962233-3f39-4051-990c-846aec8e1810.png" alt="undefined"> </p>
 <p>上图这个流因为应用层不读取TCP数据，导致TCP接收Buffer满，进而接收窗口为0，server端不能再发送数据而卡住，但是ZeroWindow的探测包，client都有正常回复，所以1903秒之后接收方窗口不为0后（window update）传输恢复。</p>
 <p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1564113969867-a2d7b752-e9e1-40cf-b968-9a1da2be210c.png" alt="undefined"> </p>
-<p>这个截图和前一个类似，不同的是接收窗口为0后，server端多次探测，但是client端没有回复 ZeroWindow（也有可能是回复了，但是中间环节把ack包丢了），造成server端认为client死了、不可达之类，进而反复重传，重传超过15次之后，server端认为这个连接死了，粗暴单方面断开（没有reset和fin,因为没必要，server认为网络连通性出了问题）。</p>
+<p>这个截图和前一个类似，是在Server上(3003端口)抓到的包，不同的是接收窗口为0后，server端多次探测（Server上抓包能看到），但是client端没有回复 ZeroWindow（也有可能是回复了，但是中间环节把ack包丢了,或者这个探测包client没收到），造成server端认为client死了、不可达之类，进而反复重传，重传超过15次之后，server端认为这个连接死了，粗暴单方面断开（没有reset和fin,因为没必要，server认为网络连通性出了问题）。</p>
+<p>等到1800秒后，client的接收窗口恢复了，发个window update给server，这个时候server认为这个连接已经断开了，只能回复reset</p>
 <p>网络不通，重传超过一定的时间（tcp_retries2)然后断开这个连接是正常的，这里的问题是：</p>
 <ol>
 <li>为什么这种场景下丢包了，而且是针对某个stream一直丢包</li>
@@ -542,7 +547,7 @@ void tcp_init_buffer_space(struct sock *sk)
         if (!(sk-&gt;sk_userlocks &amp; SOCK_SNDBUF_LOCK))
                 tcp_sndbuf_expand(sk);
 
-                //初始最大接收窗口计算过程
+        //初始最大接收窗口计算过程
         tp-&gt;rcvq_space.space = min_t(u32, tp-&gt;rcv_wnd, TCP_INIT_CWND * tp-&gt;advmss);
         tcp_mstamp_refresh(tp);
         tp-&gt;rcvq_space.time = tp-&gt;tcp_mstamp;
@@ -823,7 +828,7 @@ void tcp_init_buffer_space(struct sock *sk)
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#TCP性能和发送接收Buffer的关系"><span class="nav-number">2.</span> <span class="nav-text">TCP性能和发送接收Buffer的关系</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#抓包-tcpdump-wireshark"><span class="nav-number">2.1.</span> <span class="nav-text">抓包 tcpdump+wireshark</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#几个发送buffer相关的内核参数"><span class="nav-number">2.2.</span> <span class="nav-text">几个发送buffer相关的内核参数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#优化"><span class="nav-number">2.3.</span> <span class="nav-text">优化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#BDP-带宽时延积"><span class="nav-number">2.4.</span> <span class="nav-text">BDP 带宽时延积</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#用tc构造延时和带宽限制的模拟重现环境"><span class="nav-number">2.5.</span> <span class="nav-text">用tc构造延时和带宽限制的模拟重现环境</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#这个案例关于wmem的结论"><span class="nav-number">2.6.</span> <span class="nav-text">这个案例关于wmem的结论</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SO-RCVBUF很小的时候并且rtt很大对性能的影响"><span class="nav-number">2.7.</span> <span class="nav-text">SO_RCVBUF很小的时候并且rtt很大对性能的影响</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SO-RCVBUF很小的时候并且rtt很小时对性能的影响"><span class="nav-number">2.8.</span> <span class="nav-text">SO_RCVBUF很小的时候并且rtt很小时对性能的影响</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SO-RCVBUF和tcp-window-full的坏case"><span class="nav-number">2.9.</span> <span class="nav-text">SO_RCVBUF和tcp window full的坏case</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#接收方不读取数据导致的接收窗口满同时有丢包发生"><span class="nav-number">2.10.</span> <span class="nav-text">接收方不读取数据导致的接收窗口满同时有丢包发生</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#接收窗口和SO-RCVBUF的关系"><span class="nav-number">2.11.</span> <span class="nav-text">接收窗口和SO_RCVBUF的关系</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#设置-SO-RCVBUF-后通过wireshark观察到的接收窗口基本"><span class="nav-number">2.11.1.</span> <span class="nav-text">设置 SO_RCVBUF 后通过wireshark观察到的接收窗口基本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#If-you-set-a-“receive-buffer-size”-on-a-TCP-socket-what-does-it-actually-mean"><span class="nav-number">2.11.2.</span> <span class="nav-text">If you set a “receive buffer size” on a TCP socket, what does it actually mean?</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#总结"><span class="nav-number">3.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#相关和参考文章"><span class="nav-number">4.</span> <span class="nav-text">相关和参考文章</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#TCP性能和发送接收Buffer的关系"><span class="nav-number">2.</span> <span class="nav-text">TCP性能和发送接收Buffer的关系</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#抓包-tcpdump-wireshark"><span class="nav-number">2.1.</span> <span class="nav-text">抓包 tcpdump+wireshark</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#原理解析"><span class="nav-number">2.2.</span> <span class="nav-text">原理解析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#几个发送buffer相关的内核参数"><span class="nav-number">2.3.</span> <span class="nav-text">几个发送buffer相关的内核参数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#优化"><span class="nav-number">2.4.</span> <span class="nav-text">优化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#BDP-带宽时延积"><span class="nav-number">2.5.</span> <span class="nav-text">BDP 带宽时延积</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#用tc构造延时和带宽限制的模拟重现环境"><span class="nav-number">2.6.</span> <span class="nav-text">用tc构造延时和带宽限制的模拟重现环境</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#这个案例关于wmem的结论"><span class="nav-number">2.7.</span> <span class="nav-text">这个案例关于wmem的结论</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#说完发送Buffer-wmem-接下来我们接着一看看接收buffer-rmem-和接收窗口的情况"><span class="nav-number">2.8.</span> <span class="nav-text">说完发送Buffer(wmem)接下来我们接着一看看接收buffer(rmem)和接收窗口的情况</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SO-RCVBUF很小的时候并且rtt很大对性能的影响"><span class="nav-number">2.9.</span> <span class="nav-text">SO_RCVBUF很小的时候并且rtt很大对性能的影响</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SO-RCVBUF很小的时候并且rtt很小时对性能的影响"><span class="nav-number">2.10.</span> <span class="nav-text">SO_RCVBUF很小的时候并且rtt很小时对性能的影响</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SO-RCVBUF和tcp-window-full的坏case"><span class="nav-number">2.11.</span> <span class="nav-text">SO_RCVBUF和tcp window full的坏case</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#接收方不读取数据导致的接收窗口满同时有丢包发生"><span class="nav-number">2.12.</span> <span class="nav-text">接收方不读取数据导致的接收窗口满同时有丢包发生</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#接收窗口和SO-RCVBUF的关系"><span class="nav-number">2.13.</span> <span class="nav-text">接收窗口和SO_RCVBUF的关系</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#设置-SO-RCVBUF-后通过wireshark观察到的接收窗口基本"><span class="nav-number">2.13.1.</span> <span class="nav-text">设置 SO_RCVBUF 后通过wireshark观察到的接收窗口基本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#If-you-set-a-“receive-buffer-size”-on-a-TCP-socket-what-does-it-actually-mean"><span class="nav-number">2.13.2.</span> <span class="nav-text">If you set a “receive buffer size” on a TCP socket, what does it actually mean?</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#总结"><span class="nav-number">3.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#相关和参考文章"><span class="nav-number">4.</span> <span class="nav-text">相关和参考文章</span></a></li></ol></div>
             
 
           </div>

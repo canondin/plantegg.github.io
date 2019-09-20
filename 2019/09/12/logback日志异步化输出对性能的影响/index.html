@@ -82,8 +82,6 @@
 
 
 
-  
-
 
   <link rel="alternate" href="/atom.xml" title="plantegg" type="application/atom+xml" />
 
@@ -110,7 +108,7 @@
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/a88a3595d386be2ffeb0652ba2fdeea1.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e3d0200c0edf97540d422252fb23a4c2.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/15879d15dbe876b5ee3bed02dfa18894.png">
-<meta property="og:updated_time" content="2019-09-16T00:51:24.000Z">
+<meta property="og:updated_time" content="2019-09-19T09:21:21.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="logback 日志异步化输出对性能的影响">
 <meta name="twitter:description" content="logback 日志异步化输出对性能的影响异步化基本百利而无一害，特定的场景、机器下可以数倍提升效率 结论 异步化对性能的影响取决于日志的多少和机器CPU的核数 如果一秒钟日志输出达到6M（主要取决于条数），那么异步化能提升一倍的性能（日志太多的时候同步下CPU跑不满） 异步输出条件下，日志多少对性能的影响有，但是不明显（15%以内） immediateFlush 对同步影响比较明显（一倍），主要">
@@ -401,8 +399,62 @@
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/f0e39a66b63fe00877b6663f8857a739.png" alt="image.png"></p>
 <p>结论：同步输出的情况下immediateFlush 为false性能有一倍的提升（但是异常退出的情况下有丢日志风险）<br>异步输出是同步的4倍（这个差异依赖于cpu核数、业务逻辑的特点等），在异步的情况下immediateFlush无所谓，所以王者还是异步输出，同时异步输出对rt 95%线下降非常明显</p>
 <h3 id="一个业务逻辑稍微慢点的场景"><a href="#一个业务逻辑稍微慢点的场景" class="headerlink" title="一个业务逻辑稍微慢点的场景"></a>一个业务逻辑稍微慢点的场景</h3><p>异步输出日志点查场景tps11万+，同步输出日志后点查tps4万+，同时jstack堆栈也能看到333个BLOCKED堆栈：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div></pre></td><td class="code"><pre><div class="line"></div><div class="line">#[ 210s] threads: 400, tps: 0.00, reads/s: 115845.43, writes/s: 0.00, response time: 7.57ms (95%)</div><div class="line">#[ 220s] threads: 400, tps: 0.00, reads/s: 116453.12, writes/s: 0.00, response time: 7.28ms (95%)</div><div class="line">#[ 230s] threads: 400, tps: 0.00, reads/s: 116400.31, writes/s: 0.00, response time: 7.33ms (95%)</div><div class="line">#[ 240s] threads: 400, tps: 0.00, reads/s: 116025.35, writes/s: 0.00, response time: 7.48ms (95%)</div><div class="line">#[ 250s] threads: 400, tps: 0.00, reads/s: 45260.97, writes/s: 0.00, response time: 29.57ms (95%)</div><div class="line">#[ 260s] threads: 400, tps: 0.00, reads/s: 41598.41, writes/s: 0.00, response time: 29.07ms (95%)</div><div class="line">#[ 270s] threads: 400, tps: 0.00, reads/s: 41939.98, writes/s: 0.00, response time: 28.96ms (95%)</div><div class="line">#[ 280s] threads: 400, tps: 0.00, reads/s: 40875.48, writes/s: 0.00, response time: 29.16ms (95%)</div><div class="line">#[ 290s] threads: 400, tps: 0.00, reads/s: 41053.73, writes/s: 0.00, response time: 29.07ms (95%)</div><div class="line"></div><div class="line">--- 1687260767618 ns (100.00%), 91083 samples</div><div class="line"> [ 0] ch.qos.logback.classic.sift.SiftingAppender</div><div class="line"> [ 1] ch.qos.logback.core.AppenderBase.doAppend</div><div class="line"> [ 2] ch.qos.logback.core.spi.AppenderAttachableImpl.appendLoopOnAppenders</div><div class="line"> [ 3] ch.qos.logback.classic.Logger.appendLoopOnAppenders</div><div class="line"> [ 4] ch.qos.logback.classic.Logger.callAppenders</div><div class="line"> [ 5] ch.qos.logback.classic.Logger.buildLoggingEventAndAppend</div><div class="line"> [ 6] ch.qos.logback.classic.Logger.filterAndLog_0_Or3Plus</div><div class="line"> [ 7] ch.qos.logback.classic.Logger.info</div><div class="line"> [ 8] com.*****.logger.slf4j.Slf4jLogger.info</div><div class="line"> [ 9] com.*****.utils.logger.support.FailsafeLogger.info</div><div class="line"> [10] com.*****.util.LogUtils.recordSql</div><div class="line"> </div><div class="line"> </div><div class="line">&quot;ServerExecutor-3-thread-480&quot; #753 daemon prio=5 os_prio=0 tid=0x00007f8265842000 nid=0x26f1 waiting for monitor entry [0x00007f82270bf000]</div><div class="line">  java.lang.Thread.State: BLOCKED (on object monitor)</div><div class="line">	at ch.qos.logback.core.AppenderBase.doAppend(AppenderBase.java:64)</div><div class="line">	- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	at ch.qos.logback.core.spi.AppenderAttachableImpl.appendLoopOnAppenders(AppenderAttachableImpl.java:48)</div><div class="line">	at ch.qos.logback.classic.Logger.appendLoopOnAppenders(Logger.java:282)</div><div class="line">	at ch.qos.logback.classic.Logger.callAppenders(Logger.java:269)</div><div class="line">	at ch.qos.logback.classic.Logger.buildLoggingEventAndAppend(Logger.java:470)</div><div class="line">	at ch.qos.logback.classic.Logger.filterAndLog_0_Or3Plus(Logger.java:424)</div><div class="line">	at ch.qos.logback.classic.Logger.info(Logger.java:628)</div><div class="line">	at com.****.utils.logger.slf4j.Slf4jLogger.info(Slf4jLogger.java:42)</div><div class="line">	at com.****.utils.logger.support.FailsafeLogger.info(FailsafeLogger.java:102)</div><div class="line">	at com.****.util.LogUtils.recordSql(LogUtils.java:115)</div><div class="line"></div><div class="line"></div><div class="line">  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	- locked &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div><div class="line">	- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)</div></pre></td></tr></table></figure>
-<h3 id="4核的机器下性能提升没这么明显，因为锁争抢没这么激烈"><a href="#4核的机器下性能提升没这么明显，因为锁争抢没这么激烈" class="headerlink" title="4核的机器下性能提升没这么明显，因为锁争抢没这么激烈"></a>4核的机器下性能提升没这么明显，因为锁争抢没这么激烈</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d38fecd4932266209c6a1ca0265f98aa.png" alt="image.png"></p>
+<pre><code>#[ 210s] threads: 400, tps: 0.00, reads/s: 115845.43, writes/s: 0.00, response time: 7.57ms (95%)
+#[ 220s] threads: 400, tps: 0.00, reads/s: 116453.12, writes/s: 0.00, response time: 7.28ms (95%)
+#[ 230s] threads: 400, tps: 0.00, reads/s: 116400.31, writes/s: 0.00, response time: 7.33ms (95%)
+#[ 240s] threads: 400, tps: 0.00, reads/s: 116025.35, writes/s: 0.00, response time: 7.48ms (95%)
+#[ 250s] threads: 400, tps: 0.00, reads/s: 45260.97, writes/s: 0.00, response time: 29.57ms (95%)
+#[ 260s] threads: 400, tps: 0.00, reads/s: 41598.41, writes/s: 0.00, response time: 29.07ms (95%)
+#[ 270s] threads: 400, tps: 0.00, reads/s: 41939.98, writes/s: 0.00, response time: 28.96ms (95%)
+#[ 280s] threads: 400, tps: 0.00, reads/s: 40875.48, writes/s: 0.00, response time: 29.16ms (95%)
+#[ 290s] threads: 400, tps: 0.00, reads/s: 41053.73, writes/s: 0.00, response time: 29.07ms (95%)
+
+--- 1687260767618 ns (100.00%), 91083 samples
+ [ 0] ch.qos.logback.classic.sift.SiftingAppender
+ [ 1] ch.qos.logback.core.AppenderBase.doAppend
+ [ 2] ch.qos.logback.core.spi.AppenderAttachableImpl.appendLoopOnAppenders
+ [ 3] ch.qos.logback.classic.Logger.appendLoopOnAppenders
+ [ 4] ch.qos.logback.classic.Logger.callAppenders
+ [ 5] ch.qos.logback.classic.Logger.buildLoggingEventAndAppend
+ [ 6] ch.qos.logback.classic.Logger.filterAndLog_0_Or3Plus
+ [ 7] ch.qos.logback.classic.Logger.info
+ [ 8] com.*****.logger.slf4j.Slf4jLogger.info
+ [ 9] com.*****.utils.logger.support.FailsafeLogger.info
+ [10] com.*****.util.LogUtils.recordSql
+
+
+&quot;ServerExecutor-3-thread-480&quot; #753 daemon prio=5 os_prio=0 tid=0x00007f8265842000 nid=0x26f1 waiting for monitor entry [0x00007f82270bf000]
+  java.lang.Thread.State: BLOCKED (on object monitor)
+    at ch.qos.logback.core.AppenderBase.doAppend(AppenderBase.java:64)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    at ch.qos.logback.core.spi.AppenderAttachableImpl.appendLoopOnAppenders(AppenderAttachableImpl.java:48)
+    at ch.qos.logback.classic.Logger.appendLoopOnAppenders(Logger.java:282)
+    at ch.qos.logback.classic.Logger.callAppenders(Logger.java:269)
+    at ch.qos.logback.classic.Logger.buildLoggingEventAndAppend(Logger.java:470)
+    at ch.qos.logback.classic.Logger.filterAndLog_0_Or3Plus(Logger.java:424)
+    at ch.qos.logback.classic.Logger.info(Logger.java:628)
+    at com.****.utils.logger.slf4j.Slf4jLogger.info(Slf4jLogger.java:42)
+    at com.****.utils.logger.support.FailsafeLogger.info(FailsafeLogger.java:102)
+    at com.****.util.LogUtils.recordSql(LogUtils.java:115)
+
+
+  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - locked &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+</code></pre><h3 id="4核的机器下性能提升没这么明显，因为锁争抢没这么激烈"><a href="#4核的机器下性能提升没这么明显，因为锁争抢没这么激烈" class="headerlink" title="4核的机器下性能提升没这么明显，因为锁争抢没这么激烈"></a>4核的机器下性能提升没这么明显，因为锁争抢没这么激烈</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d38fecd4932266209c6a1ca0265f98aa.png" alt="image.png"></p>
 <h3 id="同步情况下的profiler"><a href="#同步情况下的profiler" class="headerlink" title="同步情况下的profiler"></a>同步情况下的profiler</h3><p>recordSQL: 12.9%<br>logback.doAppend: 10%</p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/4e0595c173522e37edf87b568eab6e7f.png" alt="image.png"></p>
 <h3 id="异步情况下的profiler"><a href="#异步情况下的profiler" class="headerlink" title="异步情况下的profiler:"></a>异步情况下的profiler:</h3><p>recordSQL:  3.7%<br><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/a88a3595d386be2ffeb0652ba2fdeea1.png" alt="image.png"></p>
