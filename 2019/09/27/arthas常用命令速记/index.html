@@ -104,7 +104,7 @@
 <meta property="og:url" content="http://yoursite.com/2019/09/27/arthas常用命令速记/index.html">
 <meta property="og:site_name" content="plantegg">
 <meta property="og:description" content="arthas常用命令速记https://github.com/alibaba/arthas threadthread -n 3thread 16 jad 反编译jad org.slf4j.Logger jad org.slf4j.Logger -c 61bbe9ba  jad com.taobao.tddl.common.IdGenerator jad --source-only com.taob">
-<meta property="og:updated_time" content="2019-09-27T05:41:59.000Z">
+<meta property="og:updated_time" content="2019-09-27T05:48:06.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="arthas常用命令速记">
 <meta name="twitter:description" content="arthas常用命令速记https://github.com/alibaba/arthas threadthread -n 3thread 16 jad 反编译jad org.slf4j.Logger jad org.slf4j.Logger -c 61bbe9ba  jad com.taobao.tddl.common.IdGenerator jad --source-only com.taob">
@@ -383,8 +383,6 @@ redefine -c 1e80bfe8 /tmp/com/alibaba/middleware/drds/worker/task/RegisterTask.c
 <pre><code>jad --source-only com.alibaba.cobar.server.ServerConnection &gt; /tmp/SC.java
 </code></pre><h2 id="classload"><a href="#classload" class="headerlink" title="classload"></a>classload</h2><pre><code>classloader -l
 classloader -c 1e80bfe8 -r com/alibaba/middleware/drds/worker/task/RegisterTask.class
-
-
 classload -t
 classload -c 6e0be858
 classloader ch.qos.logback.core.AppenderBase
@@ -395,20 +393,19 @@ sc -df ch.qos.logback.core.AppenderBase
 logger -c 27bc2616
 ognl -c 6e0be858 &apos;@com.alibaba.cobar.server.ServerConnection@logger&apos;
 ognl -c 6e0be858 &apos;@org.slf4j.LoggerFactory@getLogger(&quot;root&quot;).setLevel(@ch.qos.logback.classic.Level@DEBUG)&apos;
-</code></pre><h2 id="trace"><a href="#trace" class="headerlink" title="trace"></a>trace</h2><p>查看调用耗时超过 10ms的函数堆栈</p>
+</code></pre><h2 id="trace-耗时超过10ms的方法堆栈"><a href="#trace-耗时超过10ms的方法堆栈" class="headerlink" title="trace 耗时超过10ms的方法堆栈"></a>trace 耗时超过10ms的方法堆栈</h2><p>查看调用耗时超过 10ms的函数堆栈</p>
 <pre><code>stack ch.qos.logback.core.AppenderBase doAppend
 trace -j ch.qos.logback.core.AppenderBase doAppend &apos;#cost &gt; 10&apos;
 </code></pre><h2 id="sm"><a href="#sm" class="headerlink" title="sm"></a>sm</h2><p>列出class的方法</p>
 <pre><code>sm ch.qos.logback.core.AppenderBase -d
-</code></pre><h2 id="ongl"><a href="#ongl" class="headerlink" title="ongl"></a>ongl</h2><p>调用static函数并查看返回值</p>
-<pre><code>ognl &apos;#value1=@com.alibaba.middleware.drds.manager.common.utils.AddressUtil@getHostIp(), {#value1}&apos;
+</code></pre><h2 id="ongl-调用static函数并查看返回值"><a href="#ongl-调用static函数并查看返回值" class="headerlink" title="ongl 调用static函数并查看返回值"></a>ongl 调用static函数并查看返回值</h2><pre><code>ognl &apos;#value1=@com.alibaba.middleware.drds.manager.common.utils.AddressUtil@getHostIp(), {#value1}&apos;
 
 
  ognl &apos;#value1=@com.alibaba.middleware.drds.worker.Config@getInstance(), {#value1}&apos;
     @ArrayList[
 @Config[Config(receivedManagerInfo=true, registeredToManager=true, workerRpcPort=8188, managerIp=10.0.171.193, managerPort=8080, drdsServerPort=3306, drdsManagerPort=3406, host=10.0.118.18, vpcId=vpc-bp1tsocjn451k7ur52vwl, urlToGetVpcId=http://100.100.100.200/latest/meta-data/vpc-id, heartBeatIntervalSeconds=180, registerInveralSeconds=2, manageDrdsIntervalSeconds=60, miniVersion=1, version=0.0.0.41, registerUrl=http://hostPlaceHolder:portPlaceHolder/v1/worker/register, heartBeatUrl=http://hostPlaceHolder:portPlaceHolder/v1/worker/heartBeat, manageDrdsServerUrl=http://hostPlaceHolder:portPlaceHolder/v1/worker/manageDrdsServer, gotVpcId=true, nodeType=drds-server, watcher=null, scheduledThreadPoolExecutor=java.util.concurrent.ScheduledThreadPoolExecutor@3aa3f85f[Running, pool size = 1, active threads = 1, queued tasks = 0, completed tasks = 0])],
 ]
-</code></pre><h2 id="tt"><a href="#tt" class="headerlink" title="tt"></a>tt</h2><p>先通过tt观察某个函数的调用，然后再用 tt -i 回放这个调用并查看返回值等</p>
+</code></pre><h2 id="tt-观察函数调用和回放"><a href="#tt-观察函数调用和回放" class="headerlink" title="tt 观察函数调用和回放"></a>tt 观察函数调用和回放</h2><p>先通过tt观察某个函数的调用，然后再用 tt -i 回放这个调用并查看返回值等</p>
 <pre><code>tt -t com.alibaba.middleware.drds.manager.common.utils.AddressUtil getHostIp
 tt -t com.alibaba.middleware.drds.worker.task.RegisterTask getHostInfoIfNeeded
 tt -i 1000
@@ -426,8 +423,7 @@ tt -n 3 -t com.alibaba.middleware.drds.manager.common.utils.AddressUtil getHostI
      IS-EXCEPTION  false
      COST(ms)      0.577817
      RETURN-OBJ    @String[10.0.118.18]
-</code></pre><h2 id="watch"><a href="#watch" class="headerlink" title="watch"></a>watch</h2><p>查看函数调用的参数内容和返回值</p>
-<pre><code>watch  com.alibaba.middleware.drds.manager.common.utils.AddressUtil getHostIp &quot;{params,returnObj}&quot; -x 2
+</code></pre><h2 id="watch-查看函数调用的参数内容和返回值"><a href="#watch-查看函数调用的参数内容和返回值" class="headerlink" title="watch 查看函数调用的参数内容和返回值"></a>watch 查看函数调用的参数内容和返回值</h2><pre><code>watch  com.alibaba.middleware.drds.manager.common.utils.AddressUtil getHostIp &quot;{params,returnObj}&quot; -x 2
 
 watch com.alibaba.middleware.drds.worker.task.RegisterTask getHostInfoIfNeeded &quot;{params,returnObj}&quot; -x 2
     Press Q or Ctrl+C to abort.
@@ -494,10 +490,6 @@ watch com.alibaba.middleware.drds.worker.task.RegisterTask getHostInfoIfNeeded &
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2117/06/07/就是要你懂TCP--半连接队列和全连接队列/" rel="prev" title="就是要你懂TCP--半连接队列和全连接队列">
-                就是要你懂TCP--半连接队列和全连接队列 <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -640,7 +632,7 @@ watch com.alibaba.middleware.drds.worker.task.RegisterTask getHostInfoIfNeeded &
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#arthas常用命令速记"><span class="nav-number">1.</span> <span class="nav-text">arthas常用命令速记</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#thread"><span class="nav-number">1.1.</span> <span class="nav-text">thread</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#jad-反编译"><span class="nav-number">1.2.</span> <span class="nav-text">jad 反编译</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mc-编译生成新的class"><span class="nav-number">1.3.</span> <span class="nav-text">mc 编译生成新的class</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#redefine-加载新的class"><span class="nav-number">1.4.</span> <span class="nav-text">redefine 加载新的class</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#classload"><span class="nav-number">1.5.</span> <span class="nav-text">classload</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sc"><span class="nav-number">1.6.</span> <span class="nav-text">sc</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#logger-查看logger配置"><span class="nav-number">1.7.</span> <span class="nav-text">logger 查看logger配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#trace"><span class="nav-number">1.8.</span> <span class="nav-text">trace</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sm"><span class="nav-number">1.9.</span> <span class="nav-text">sm</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ongl"><span class="nav-number">1.10.</span> <span class="nav-text">ongl</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#tt"><span class="nav-number">1.11.</span> <span class="nav-text">tt</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#watch"><span class="nav-number">1.12.</span> <span class="nav-text">watch</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">1.13.</span> <span class="nav-text">参考资料</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#arthas常用命令速记"><span class="nav-number">1.</span> <span class="nav-text">arthas常用命令速记</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#thread"><span class="nav-number">1.1.</span> <span class="nav-text">thread</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#jad-反编译"><span class="nav-number">1.2.</span> <span class="nav-text">jad 反编译</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mc-编译生成新的class"><span class="nav-number">1.3.</span> <span class="nav-text">mc 编译生成新的class</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#redefine-加载新的class"><span class="nav-number">1.4.</span> <span class="nav-text">redefine 加载新的class</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#classload"><span class="nav-number">1.5.</span> <span class="nav-text">classload</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sc"><span class="nav-number">1.6.</span> <span class="nav-text">sc</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#logger-查看logger配置"><span class="nav-number">1.7.</span> <span class="nav-text">logger 查看logger配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#trace-耗时超过10ms的方法堆栈"><span class="nav-number">1.8.</span> <span class="nav-text">trace 耗时超过10ms的方法堆栈</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sm"><span class="nav-number">1.9.</span> <span class="nav-text">sm</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ongl-调用static函数并查看返回值"><span class="nav-number">1.10.</span> <span class="nav-text">ongl 调用static函数并查看返回值</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#tt-观察函数调用和回放"><span class="nav-number">1.11.</span> <span class="nav-text">tt 观察函数调用和回放</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#watch-查看函数调用的参数内容和返回值"><span class="nav-number">1.12.</span> <span class="nav-text">watch 查看函数调用的参数内容和返回值</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">1.13.</span> <span class="nav-text">参考资料</span></a></li></ol></li></ol></div>
             
 
           </div>
