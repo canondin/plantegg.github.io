@@ -371,14 +371,15 @@ jad com.taobao.tddl.common.IdGenerator
 jad --source-only com.taobao.tddl.common.IdGenerator
 jad --source-only com.taobao.tddl.common.IdGenerator &gt; /tmp/IdGenerator.java
 </code></pre><p>反编译生成java代码</p>
-<h2 id="mc-编译生成新的class"><a href="#mc-编译生成新的class" class="headerlink" title="mc 编译生成新的class"></a>mc 编译生成新的class</h2><p>将修改后的java代码编译成class（因为以来的关系可能失败）</p>
+<h2 id="mc-编译生成新的class"><a href="#mc-编译生成新的class" class="headerlink" title="mc 编译生成新的class"></a>mc 编译生成新的class</h2><p>将修改后的java代码编译成class（因为依赖的关系可能失败）</p>
 <pre><code>mc /tmp/IdGenerator.java -d /tmp
 </code></pre><h2 id="redefine-加载新的class"><a href="#redefine-加载新的class" class="headerlink" title="redefine 加载新的class"></a>redefine 加载新的class</h2><p>将修改后的class代码热加载</p>
 <pre><code>redefine /tmp/IdGenerator.class
 redefine -c 1e80bfe8 /tmp/com/alibaba/middleware/drds/worker/task/RegisterTask.class
 </code></pre><p>可以再次jad 反编译确认class中是修改后的代码：</p>
 <pre><code>jad --source-only com.alibaba.cobar.server.ServerConnection &gt; /tmp/SC.java
-</code></pre><h2 id="classload"><a href="#classload" class="headerlink" title="classload"></a>classload</h2><pre><code>classloader -l
+</code></pre><p>有时候 redefine 看到成功，可是实际并不一定，最好再次 jad 确认一下</p>
+<h2 id="classload"><a href="#classload" class="headerlink" title="classload"></a>classload</h2><pre><code>classloader -l
 classloader -c 1e80bfe8 -r com/alibaba/middleware/drds/worker/task/RegisterTask.class
 classload -t
 classload -c 6e0be858
