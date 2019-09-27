@@ -1,0 +1,891 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="java,arthas," />
+
+
+
+
+  
+
+
+  <link rel="alternate" href="/atom.xml" title="plantegg" type="application/atom+xml" />
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.1" />
+
+
+
+
+
+
+<meta name="description" content="arthas常用命令速记https://github.com/alibaba/arthas threadthread -n 3thread 16 jad 反编译jad org.slf4j.Logger jad org.slf4j.Logger -c 61bbe9ba  jad com.taobao.tddl.common.IdGenerator jad --source-only com.taob">
+<meta name="keywords" content="java,arthas">
+<meta property="og:type" content="article">
+<meta property="og:title" content="arthas常用命令速记">
+<meta property="og:url" content="http://yoursite.com/2019/09/27/arthas常用命令速记/index.html">
+<meta property="og:site_name" content="plantegg">
+<meta property="og:description" content="arthas常用命令速记https://github.com/alibaba/arthas threadthread -n 3thread 16 jad 反编译jad org.slf4j.Logger jad org.slf4j.Logger -c 61bbe9ba  jad com.taobao.tddl.common.IdGenerator jad --source-only com.taob">
+<meta property="og:updated_time" content="2019-09-27T05:41:59.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="arthas常用命令速记">
+<meta name="twitter:description" content="arthas常用命令速记https://github.com/alibaba/arthas threadthread -n 3thread 16 jad 反编译jad org.slf4j.Logger jad org.slf4j.Logger -c 61bbe9ba  jad com.taobao.tddl.common.IdGenerator jad --source-only com.taob">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    sidebar: {"position":"left","display":"post","offset":12,"offset_float":0,"b2t":false,"scrollpercent":false},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/09/27/arthas常用命令速记/"/>
+
+
+
+
+
+  <title>arthas常用命令速记 | plantegg</title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  
+
+  <div class="container sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">plantegg</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <h1 class="site-subtitle" itemprop="description">java tcp mysql performance network docker Linux</h1>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/09/27/arthas常用命令速记/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">arthas常用命令速记</h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-09-27T13:30:03+08:00">
+                2019-09-27
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index">
+                    <span itemprop="name">Java</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/09/27/arthas常用命令速记/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2019/09/27/arthas常用命令速记/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+            <span class="post-meta-divider">|</span>
+            <span class="page-pv"><i class="fa fa-file-o"></i>
+            <span class="busuanzi-value" id="busuanzi_value_page_pv" ></span>次
+            </span>
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="arthas常用命令速记"><a href="#arthas常用命令速记" class="headerlink" title="arthas常用命令速记"></a>arthas常用命令速记</h1><p><a href="https://github.com/alibaba/arthas" target="_blank" rel="external">https://github.com/alibaba/arthas</a></p>
+<h2 id="thread"><a href="#thread" class="headerlink" title="thread"></a>thread</h2><p>thread -n 3<br>thread 16</p>
+<h2 id="jad-反编译"><a href="#jad-反编译" class="headerlink" title="jad 反编译"></a>jad 反编译</h2><pre><code>jad org.slf4j.Logger
+jad org.slf4j.Logger -c 61bbe9ba
+
+jad com.taobao.tddl.common.IdGenerator
+jad --source-only com.taobao.tddl.common.IdGenerator
+jad --source-only com.taobao.tddl.common.IdGenerator &gt; /tmp/IdGenerator.java
+</code></pre><p>反编译生成java代码</p>
+<h2 id="mc-编译生成新的class"><a href="#mc-编译生成新的class" class="headerlink" title="mc 编译生成新的class"></a>mc 编译生成新的class</h2><p>将修改后的java代码编译成class（因为以来的关系可能失败）</p>
+<pre><code>mc /tmp/IdGenerator.java -d /tmp
+</code></pre><h2 id="redefine-加载新的class"><a href="#redefine-加载新的class" class="headerlink" title="redefine 加载新的class"></a>redefine 加载新的class</h2><p>将修改后的class代码热加载</p>
+<pre><code>redefine /tmp/IdGenerator.class
+redefine -c 1e80bfe8 /tmp/com/alibaba/middleware/drds/worker/task/RegisterTask.class
+</code></pre><p>可以再次jad 反编译确认class中是修改后的代码：</p>
+<pre><code>jad --source-only com.alibaba.cobar.server.ServerConnection &gt; /tmp/SC.java
+</code></pre><h2 id="classload"><a href="#classload" class="headerlink" title="classload"></a>classload</h2><pre><code>classloader -l
+classloader -c 1e80bfe8 -r com/alibaba/middleware/drds/worker/task/RegisterTask.class
+
+
+classload -t
+classload -c 6e0be858
+classloader ch.qos.logback.core.AppenderBase
+</code></pre><h2 id="sc"><a href="#sc" class="headerlink" title="sc"></a>sc</h2><pre><code>sc -d com.taobao.tddl.common.IdGenerator
+sc -df ch.qos.logback.core.AppenderBase
+</code></pre><h2 id="logger-查看logger配置"><a href="#logger-查看logger配置" class="headerlink" title="logger 查看logger配置"></a>logger 查看logger配置</h2><p>列出所有logger，然后修改logger的level</p>
+<pre><code>classloader -l
+logger -c 27bc2616
+ognl -c 6e0be858 &apos;@com.alibaba.cobar.server.ServerConnection@logger&apos;
+ognl -c 6e0be858 &apos;@org.slf4j.LoggerFactory@getLogger(&quot;root&quot;).setLevel(@ch.qos.logback.classic.Level@DEBUG)&apos;
+</code></pre><h2 id="trace"><a href="#trace" class="headerlink" title="trace"></a>trace</h2><p>查看调用耗时超过 10ms的函数堆栈</p>
+<pre><code>stack ch.qos.logback.core.AppenderBase doAppend
+trace -j ch.qos.logback.core.AppenderBase doAppend &apos;#cost &gt; 10&apos;
+</code></pre><h2 id="sm"><a href="#sm" class="headerlink" title="sm"></a>sm</h2><p>列出class的方法</p>
+<pre><code>sm ch.qos.logback.core.AppenderBase -d
+</code></pre><h2 id="ongl"><a href="#ongl" class="headerlink" title="ongl"></a>ongl</h2><p>调用static函数并查看返回值</p>
+<pre><code>ognl &apos;#value1=@com.alibaba.middleware.drds.manager.common.utils.AddressUtil@getHostIp(), {#value1}&apos;
+
+
+ ognl &apos;#value1=@com.alibaba.middleware.drds.worker.Config@getInstance(), {#value1}&apos;
+    @ArrayList[
+@Config[Config(receivedManagerInfo=true, registeredToManager=true, workerRpcPort=8188, managerIp=10.0.171.193, managerPort=8080, drdsServerPort=3306, drdsManagerPort=3406, host=10.0.118.18, vpcId=vpc-bp1tsocjn451k7ur52vwl, urlToGetVpcId=http://100.100.100.200/latest/meta-data/vpc-id, heartBeatIntervalSeconds=180, registerInveralSeconds=2, manageDrdsIntervalSeconds=60, miniVersion=1, version=0.0.0.41, registerUrl=http://hostPlaceHolder:portPlaceHolder/v1/worker/register, heartBeatUrl=http://hostPlaceHolder:portPlaceHolder/v1/worker/heartBeat, manageDrdsServerUrl=http://hostPlaceHolder:portPlaceHolder/v1/worker/manageDrdsServer, gotVpcId=true, nodeType=drds-server, watcher=null, scheduledThreadPoolExecutor=java.util.concurrent.ScheduledThreadPoolExecutor@3aa3f85f[Running, pool size = 1, active threads = 1, queued tasks = 0, completed tasks = 0])],
+]
+</code></pre><h2 id="tt"><a href="#tt" class="headerlink" title="tt"></a>tt</h2><p>先通过tt观察某个函数的调用，然后再用 tt -i 回放这个调用并查看返回值等</p>
+<pre><code>tt -t com.alibaba.middleware.drds.manager.common.utils.AddressUtil getHostIp
+tt -t com.alibaba.middleware.drds.worker.task.RegisterTask getHostInfoIfNeeded
+tt -i 1000
+tt -i 1000 -p
+tt -n 3 -t com.alibaba.middleware.drds.worker.task.RegisterTask getHostInfoIfNeeded
+tt -n 3 -t com.alibaba.middleware.drds.manager.common.utils.AddressUtil getHostIp
+
+ tt -i 1010 -p
+     RE-INDEX      1010
+     GMT-REPLAY    2019-09-27 12:59:05
+     OBJECT        NULL
+     CLASS         com.alibaba.middleware.drds.manager.common.utils.AddressUtil
+     METHOD        getHostIp
+     IS-RETURN     true
+     IS-EXCEPTION  false
+     COST(ms)      0.577817
+     RETURN-OBJ    @String[10.0.118.18]
+</code></pre><h2 id="watch"><a href="#watch" class="headerlink" title="watch"></a>watch</h2><p>查看函数调用的参数内容和返回值</p>
+<pre><code>watch  com.alibaba.middleware.drds.manager.common.utils.AddressUtil getHostIp &quot;{params,returnObj}&quot; -x 2
+
+watch com.alibaba.middleware.drds.worker.task.RegisterTask getHostInfoIfNeeded &quot;{params,returnObj}&quot; -x 2
+    Press Q or Ctrl+C to abort.
+    Affect(class-cnt:1 , method-cnt:1) cost in 56 ms.
+    ts=2019-09-27 13:24:00; [cost=0.2698ms] result=@ArrayList[
+        @Object[][isEmpty=true;size=0],
+        @Boolean[true],
+    ]
+    ts=2019-09-27 13:24:02; [cost=0.030039ms] result=@ArrayList[
+        @Object[][isEmpty=true;size=0],
+        @Boolean[true],
+    ]
+</code></pre><h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://alibaba.github.io/arthas/commands.html" target="_blank" rel="external">官方文档</a></p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/java/" rel="tag"># java</a>
+          
+            <a href="/tags/arthas/" rel="tag"># arthas</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/09/16/SystemStap/" rel="next" title="SystemStap、BCC、bpftrace">
+                <i class="fa fa-chevron-left"></i> SystemStap、BCC、bpftrace
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2117/06/07/就是要你懂TCP--半连接队列和全连接队列/" rel="prev" title="就是要你懂TCP--半连接队列和全连接队列">
+                就是要你懂TCP--半连接队列和全连接队列 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/avatar.gif"
+               alt="weibo @plantegg" />
+          <p class="site-author-name" itemprop="name">weibo @plantegg</p>
+           
+              <p class="site-description motion-element" itemprop="description"></p>
+           
+        </div>
+        <nav class="site-state motion-element">
+
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">38</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-categories">
+              
+                <span class="site-state-item-count">15</span>
+                <span class="site-state-item-name">分类</span>
+              
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-tags">
+              
+                <span class="site-state-item-count">112</span>
+                <span class="site-state-item-name">标签</span>
+              
+            </div>
+          
+
+        </nav>
+
+        
+          <div class="feed-link motion-element">
+            <a href="/atom.xml" rel="alternate">
+              <i class="fa fa-rss"></i>
+              RSS
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#arthas常用命令速记"><span class="nav-number">1.</span> <span class="nav-text">arthas常用命令速记</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#thread"><span class="nav-number">1.1.</span> <span class="nav-text">thread</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#jad-反编译"><span class="nav-number">1.2.</span> <span class="nav-text">jad 反编译</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mc-编译生成新的class"><span class="nav-number">1.3.</span> <span class="nav-text">mc 编译生成新的class</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#redefine-加载新的class"><span class="nav-number">1.4.</span> <span class="nav-text">redefine 加载新的class</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#classload"><span class="nav-number">1.5.</span> <span class="nav-text">classload</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sc"><span class="nav-number">1.6.</span> <span class="nav-text">sc</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#logger-查看logger配置"><span class="nav-number">1.7.</span> <span class="nav-text">logger 查看logger配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#trace"><span class="nav-number">1.8.</span> <span class="nav-text">trace</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sm"><span class="nav-number">1.9.</span> <span class="nav-text">sm</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ongl"><span class="nav-number">1.10.</span> <span class="nav-text">ongl</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#tt"><span class="nav-number">1.11.</span> <span class="nav-text">tt</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#watch"><span class="nav-number">1.12.</span> <span class="nav-text">watch</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">1.13.</span> <span class="nav-text">参考资料</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+
+<div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">weibo @plantegg</span>
+</div>
+
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Muse
+  </a>
+</div>
+
+<span id="busuanzi_container_site_pv">
+    本站总访问量<span id="busuanzi_value_site_pv"></span>次
+</span>
+<span id="busuanzi_container_site_uv">
+  本站访客数<span id="busuanzi_value_site_uv"></span>人次
+</span>
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+  
+    <span class="site-uv">
+      <i class="fa fa-user"></i> 访问人数
+      <span class="busuanzi-value" id="busuanzi_value_site_uv"></span>
+      人
+    </span>
+  
+
+  
+    <span class="site-pv">
+      <i class="fa fa-eye"></i>
+      <span class="busuanzi-value" id="busuanzi_value_site_pv"></span>
+      次
+    </span>
+  
+</div>
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.1"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.1"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'http://yoursite.com/2019/09/27/arthas常用命令速记/';
+          this.page.identifier = '2019/09/27/arthas常用命令速记/';
+          this.page.title = 'arthas常用命令速记';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
