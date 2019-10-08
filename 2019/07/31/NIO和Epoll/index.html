@@ -110,7 +110,7 @@
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/0c09f7457cd7914fc26573d9a4625de4.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/80c19a50442290e7f79e97d94a585cc3.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/7ece6c553c78927c7886f70c09d7e15b.png">
-<meta property="og:updated_time" content="2019-09-27T01:54:06.000Z">
+<meta property="og:updated_time" content="2019-10-08T07:47:40.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="NIO和epoll">
 <meta name="twitter:description" content="NIO和epoll从IO说起用户线程发起IO操作后（比如读），网络数据读取过程分两步：  用户线程等待内核将数据从网卡拷贝到内核空间 内核将数据从内核空间拷贝到用户空间  零拷贝零拷贝可以做到用户空间和内核空间共用同一块内存（Java中的DirectBuffer），这样少做一次拷贝。普通Buffer是在JVM堆上分配的内存，而DirectBuffer是堆外分配的（内核和JVM可以同时读写），这样不">
@@ -597,7 +597,7 @@ serverSock.configureBlocking(true);
 <h2 id="多线程下的真正开销代价"><a href="#多线程下的真正开销代价" class="headerlink" title="多线程下的真正开销代价"></a>多线程下的真正开销代价</h2><p>系统调用开销其实不大，上下文切换同样也是<a href="https://github.com/torvalds/linux/blob/v5.2/arch/x86/entry/entry_64.S?spm=ata.13261165.0.0.675273b65vwzFO#L282" target="_blank" rel="external">数十条cpu指令可以完成</a></p>
 <p>多线程调度下的热点火焰图：</p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/7ece6c553c78927c7886f70c09d7e15b.png" alt="image.png"></p>
-<p>多线程下真正的开销来源于线程阻塞唤醒调度，系统调用和上下文切换伴随着多线程，所以导致大家一致认为系统调用和上下文切换过多导致了多线程慢。</p>
+<p><strong>多线程下真正的开销来源于线程阻塞唤醒调度</strong>，系统调用和上下文切换伴随着多线程，所以导致大家一直认为系统调用和上下文切换过多导致了多线程慢。</p>
 <h3 id="以ajdk的Wisp2协程为例"><a href="#以ajdk的Wisp2协程为例" class="headerlink" title="以ajdk的Wisp2协程为例"></a>以ajdk的Wisp2协程为例</h3><p>对于很快的锁，Wisp2可以很好地解决，因为任务切换不频繁，最多也就CPU核数量的任务在切换，拿到锁的协程会很快执行完然后释放锁，所以其他协程再执行的时候容易拿到锁。</p>
 <p>但是对于像logback日志同步输出doAppend()的锁（比较慢，并发度高）Wisp2就基本无能为力了。</p>
 <p>Wisp2的主线程跟CPU数量一致，Wisp1的时候碰到CPU执行很长的任务就容易卡主，Wisp2解决了这个问题，超过一定时间会让出这个协程。如果主线程比较闲的时候会尝试从其它主线程 steal 协程（任务）过来， steal的时候需要加锁（自旋锁）来尝试steal成功。如果碰到其他主线程也在steal就可能会失败，steal尝试几次加锁不成功（A线程尝试steal B线程的协程-任务，会尝试锁住A和B，但是比如C线程也在偷的话可能会导致A偷取失败）就是放弃。</p>
