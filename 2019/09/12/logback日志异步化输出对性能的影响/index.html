@@ -82,8 +82,6 @@
 
 
 
-  
-
 
   <link rel="alternate" href="/atom.xml" title="plantegg" type="application/atom+xml" />
 
@@ -110,7 +108,7 @@
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/a88a3595d386be2ffeb0652ba2fdeea1.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e3d0200c0edf97540d422252fb23a4c2.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/15879d15dbe876b5ee3bed02dfa18894.png">
-<meta property="og:updated_time" content="2019-09-19T09:21:21.000Z">
+<meta property="og:updated_time" content="2019-10-10T09:26:24.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="logback 日志异步化输出对性能的影响">
 <meta name="twitter:description" content="logback 日志异步化输出对性能的影响异步化基本百利而无一害，特定的场景、机器下可以数倍提升效率 结论 异步化对性能的影响取决于日志的多少和机器CPU的核数 如果一秒钟日志输出达到6M（主要取决于条数），那么异步化能提升一倍的性能（日志太多的时候同步下CPU跑不满） 异步输出条件下，日志多少对性能的影响有，但是不明显（15%以内） immediateFlush 对同步影响比较明显（一倍），主要">
@@ -467,6 +465,7 @@
 <h2 id="异步配置"><a href="#异步配置" class="headerlink" title="异步配置"></a>异步配置</h2><pre><code>&lt;appender name=&quot;asyncROOT&quot; class=&quot;ch.qos.logback.classic.AsyncAppender&quot;&gt;
     &lt;queueSize&gt;1000&lt;/queueSize&gt;
     &lt;maxFlushTime&gt;3000&lt;/maxFlushTime&gt;
+    &lt;discardingThreshold&gt;0&lt;/discardingThreshold&gt;
     &lt;neverBlock&gt;true&lt;/neverBlock&gt;
     &lt;appender-ref ref=&quot;ROOT&quot;/&gt;
 &lt;/appender&gt;
@@ -625,7 +624,7 @@ public BufferedOutputStream(OutputStream out) {
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">38</span>
+                <span class="site-state-item-count">37</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
