@@ -104,13 +104,15 @@
 <meta property="og:description" content="NIO和epoll从IO说起用户线程发起IO操作后（比如读），网络数据读取过程分两步：  用户线程等待内核将数据从网卡拷贝到内核空间 内核将数据从内核空间拷贝到用户空间  零拷贝零拷贝可以做到用户空间和内核空间共用同一块内存（Java中的DirectBuffer），这样少做一次拷贝。普通Buffer是在JVM堆上分配的内存，而DirectBuffer是堆外分配的（内核和JVM可以同时读写），这样不">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/83e2dfbd25d703c58877b2faf71c4944.jpg">
 <meta property="og:image" content="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1562207744743-e86e37bb-c8e4-40aa-b581-ac862011221a.png">
+<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/45b484a77965974c20faa9d034b734f4.png">
+<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/5c03818e5fab6431a709753130be5897.png">
 <meta property="og:image" content="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1562207798044-84e66820-3cbf-4353-9b5b-1dd1124631df.png">
 <meta property="og:image" content="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1562210988218-8e4dfbae-8947-4bc6-93c7-8e0157637d6c.png">
 <meta property="og:image" content="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1562208003461-4226b646-8ad8-4d86-abac-d6e6601ece88.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/0c09f7457cd7914fc26573d9a4625de4.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/80c19a50442290e7f79e97d94a585cc3.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/7ece6c553c78927c7886f70c09d7e15b.png">
-<meta property="og:updated_time" content="2019-10-08T07:47:40.000Z">
+<meta property="og:updated_time" content="2019-10-18T06:44:19.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="NIO和epoll">
 <meta name="twitter:description" content="NIO和epoll从IO说起用户线程发起IO操作后（比如读），网络数据读取过程分两步：  用户线程等待内核将数据从网卡拷贝到内核空间 内核将数据从内核空间拷贝到用户空间  零拷贝零拷贝可以做到用户空间和内核空间共用同一块内存（Java中的DirectBuffer），这样少做一次拷贝。普通Buffer是在JVM堆上分配的内存，而DirectBuffer是堆外分配的（内核和JVM可以同时读写），这样不">
@@ -383,7 +385,10 @@
 <h3 id="同步非阻塞IO"><a href="#同步非阻塞IO" class="headerlink" title="同步非阻塞IO"></a>同步非阻塞IO</h3><p>用户线程发起read后，不阻塞，反复尝试读取，直到内核把网卡数据读到内核空间，用户线程继续read，这时进入阻塞直到数据拷贝到用户空间</p>
 <p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1562207744743-e86e37bb-c8e4-40aa-b581-ac862011221a.png" alt="undefined"> </p>
 <p><strong>阻塞和非阻塞指的是发起IO操作后是等待还是返回，同步和异步指的是应用程序与内核通信时数据从内核空间拷贝到用户空间的操作是内核主动触发（异步）还是应用程序触发（同步）</strong></p>
-<h3 id="IO多路复用、Epoll"><a href="#IO多路复用、Epoll" class="headerlink" title="IO多路复用、Epoll"></a>IO多路复用、Epoll</h3><p>用户线程读取分成两步，用户线程先发起select调用（确认内核是否准备好数据），准备好后才调用read，将数据从内核空间读取到用户空间（read这里还是阻塞）。主要是一个select线程可以向内核查多个数据通道的状态</p>
+<h3 id="IO多路复用、Epoll"><a href="#IO多路复用、Epoll" class="headerlink" title="IO多路复用、Epoll"></a>IO多路复用、Epoll</h3><p>epoll作用：进程内同时刻找到缓冲区或者连接状态变化的所有TCP连接，主要是基于同一时刻活跃连接只在总连接中占一小部分</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/45b484a77965974c20faa9d034b734f4.png" alt="image.png"></p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/5c03818e5fab6431a709753130be5897.png" alt="image.png"></p>
+<p>用户线程读取分成两步，用户线程先发起select调用（确认内核是否准备好数据），准备好后才调用read，将数据从内核空间读取到用户空间（read这里还是阻塞）。主要是一个select线程可以向内核查多个数据通道的状态</p>
 <p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1562207798044-84e66820-3cbf-4353-9b5b-1dd1124631df.png" alt="undefined"> </p>
 <p><strong>IO多路复用和同步阻塞、非阻塞的区别主要是用户线程发起read的时机不一样，IO多路复用是等数据在内核空间准备好了再通过同步read去读取；而阻塞和非阻塞因为没法预先知道数据是否在内核空间准备好，所以早早触发了read然后等待，只是阻塞会一直等，而非阻塞是指触发read后不用等，反复read直到read到数据。</strong></p>
 <p>Tomcat中的NIO指的是同步非阻塞，但是触发时机又是通过Java中的Selector，可以理解成通过Selector跳过了前面的阻塞和非阻塞，实际用户线程在数据Ready前没有触发read操作，数据到了才出发read操作。</p>
@@ -588,7 +593,9 @@ serverSock.configureBlocking(true);
 <p>MySQL Thread Pool之所有分成多个小的Thread Group Pool而不是一个大的Pool，是为了分解锁（每个group中都有队列，队列需要加锁。类似ConcurrentHashMap提高并发的原理），提高并发效率。</p>
 <p>group中的队列是用来区分优先级的，事务中的语句会放到高优先队列（非事务语句和autocommit 都会在低优先队列）；等待太久的SQL也会挪到高优先队列，防止饿死。</p>
 <p>比如启用Thread Pool后，如果出现多个慢查询，容易导致拨测类请求超时，进而出现Server异常的判断（类似Nginx 边缘触发问题）；或者某个group满后导致慢查询和拨测失败之类的问题</p>
-<h2 id="协程"><a href="#协程" class="headerlink" title="协程"></a>协程</h2><p>协程在实现上都是试图用一组少量的线程来实现多个任务，一旦某个任务阻塞，则可能用同一线程继续运行其他任务，避免大量上下文的切换。每个协程所独占的系统资源往往只有栈部分。而且，各个协程之间的切换，往往是用户通过代码来显式指定的（跟各种 callback 类似），不需要内核参与，可以很方便的实现异步。</p>
+<h2 id="协程"><a href="#协程" class="headerlink" title="协程"></a>协程</h2><p>非阻塞+epoll+同步编程 = 协程</p>
+<p>协程主要是将IO Wait等场景自动识别然后以非常小的代价切换到其它任务处理，一旦Wait完毕再切换回来。</p>
+<p>协程在实现上都是试图用一组少量的线程来实现多个任务，一旦某个任务阻塞，则可能用同一线程继续运行其他任务，避免大量上下文的切换。每个协程所独占的系统资源往往只有栈部分。而且，各个协程之间的切换，往往是用户通过代码来显式指定的（跟各种 callback 类似），不需要内核参与，可以很方便的实现异步。</p>
 <p>这个技术本质上也是异步非阻塞技术，它是将事件回调进行了包装，让程序员看不到里面的事件循环。程序员就像写阻塞代码一样简单。比如调用 client-&gt;recv() 等待接收数据时，就像阻塞代码一样写。实际上是底层库在执行recv时悄悄保存了一个状态，比如代码行数，局部变量的值。然后就跳回到EventLoop中了。什么时候真的数据到来时，它再把刚才保存的代码行数，局部变量值取出来，又开始继续执行。</p>
 <p>协程是异步非阻塞的另外一种展现形式。Golang，Erlang，Lua协程都是这个模型。</p>
 <p><strong>协程的优点是它比系统线程开销小，缺点是如果其中一个协程中有密集计算，其他的协程就不运行了</strong>。操作系统进程、线程切换的缺点是开销大，优点是无论代码怎么写，所有进程都可以并发运行。<br>协程也叫做用户态进程/用户态线程。区别就在于进程/线程是操作系统充当了EventLoop调度，而协程是自己用Epoll进行调度。</p>
@@ -655,8 +662,8 @@ serverSock.configureBlocking(true);
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2019/07/28/就是要你懂TCP--性能和发送接收Buffer的关系/" rel="next" title="TCP性能和发送接收窗口、Buffer的关系">
-                <i class="fa fa-chevron-left"></i> TCP性能和发送接收窗口、Buffer的关系
+              <a href="/2019/07/19/就是要你懂负载均衡--负载均衡调度算法和为什么不均衡/" rel="next" title="就是要你懂负载均衡--负载均衡调度算法和为什么不均衡">
+                <i class="fa fa-chevron-left"></i> 就是要你懂负载均衡--负载均衡调度算法和为什么不均衡
               </a>
             
           </div>

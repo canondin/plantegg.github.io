@@ -261,6 +261,696 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/12/就是要你懂网络监控--ss用法大全/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/10/12/就是要你懂网络监控--ss用法大全/" itemprop="url">就是要你懂网络监控--ss用法大全</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-10-12T15:30:03+08:00">
+                2019-10-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Network/" itemprop="url" rel="index">
+                    <span itemprop="name">Network</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/10/12/就是要你懂网络监控--ss用法大全/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2019/10/12/就是要你懂网络监控--ss用法大全/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="就是要你懂网络监控–ss用法大全"><a href="#就是要你懂网络监控–ss用法大全" class="headerlink" title="就是要你懂网络监控–ss用法大全"></a>就是要你懂网络监控–ss用法大全</h1><p>netstat命令大家肯定已经很熟悉了，但是在2001年的时候netstat 1.42版本之后就没更新了，之后取代的工具是ss命令，是iproute2 package的一员。</p>
+<pre><code># rpm -ql iproute | grep ss
+/usr/sbin/ss
+</code></pre><p>netstat的替代工具是nstat，当然netstat的大部分功能ss也可以替代</p>
+<p>ss可以显示跟netstat类似的信息，但是速度却比netstat快很多，netstat是基于/proc/net/netstat目录下查询相关信息输出的，用strace跟踪一下netstat查询tcp的连接，会看到他open的是/proc/net/tcp的信息。ss快的秘密就在于它利用的是TCP协议的tcp_diag模块，而且是从内核直接读取信息。</p>
+<p>/proc/net/snmp 存放的是系统启动以来的累加值，netstat -s 读取它<br>/proc/net/tcp  是存放目前活跃的tcp连接的统计值，连接断开统计值清空， ss -it 读取它</p>
+<h2 id="Buffer窗口"><a href="#Buffer窗口" class="headerlink" title="Buffer窗口"></a><a href="https://access.redhat.com/discussions/3624151" target="_blank" rel="external">Buffer窗口</a></h2><p>–memory/-m ： 展示buffer窗口的大小</p>
+<pre><code>ss -itmpn dst &quot;10.81.212.8&quot;
+State      Recv-Q Send-Q Local Address:Port  Peer Address:Port
+ESTAB      0      0      10.xx.xx.xxx:22     10.yy.yy.yyy:12345  users:((&quot;sshd&quot;,pid=1442,fd=3))
+         skmem:(r0,rb369280,t0,tb87040,f4096,w0,o0,bl0,d92)
+
+Here we can see this socket has Receive Buffer 369280 bytes, and Transmit Buffer 87040 bytes.Keep in mind the kernel will double any socket buffer allocation for overhead. 
+So a process asks for 256 KiB buffer with setsockopt(SO_RCVBUF) then it will get 512 KiB buffer space. This is described on man 7 tcp. 
+</code></pre><p>最后给出的一个工具，knetstat（需要单独安装），也可以查看tcp的状态下的各种参数</p>
+<h2 id="ss-过滤地址和端口号，有点类似于tcpdump的用法"><a href="#ss-过滤地址和端口号，有点类似于tcpdump的用法" class="headerlink" title="ss 过滤地址和端口号，有点类似于tcpdump的用法"></a>ss 过滤地址和端口号，有点类似于tcpdump的用法</h2><p>过滤目标端口是80的或者源端口是1723的连接，dst后面要跟空格然后加“：”：</p>
+<pre><code># ss -ant dst :80 or src :1723 
+State      Recv-Q Send-Q                                               Local Address:Port                                                 Peer Address:Port 
+LISTEN     0      3                                                                *:1723                                                            *:*     
+TIME-WAIT  0      0                                                     172.31.23.95:37269                                              111.161.68.235:80    
+TIME-WAIT  0      0                                                     172.31.23.95:37263                                              111.161.68.235:80    
+TIME-WAIT  0      0                                                     172.31.23.95:37267 
+</code></pre><p>or：</p>
+<pre><code>ss -ant dport = :80 or sport = :1723
+</code></pre><p>地址筛选，目标地址是111.161.68.235的连接</p>
+<pre><code>ss -ant dst 111.161.68.235
+</code></pre><p>端口大小筛选，源端口大于1024的端口：</p>
+<pre><code>ss sport gt 1024
+</code></pre><p>How Do I Compare Local and/or Remote Port To A Number?<br>Use the following syntax:</p>
+<pre><code>## Compares remote port to a number ##
+ss dport OP PORT
+
+## Compares local port to a number ##
+sport OP PORT
+</code></pre><p>Where OP can be one of the following:</p>
+<pre><code>&lt;= or le : Less than or equal to port
+&gt;= or ge : Greater than or equal to port
+== or eq : Equal to port
+!= or ne : Not equal to port
+&lt; or gt : Less than to port
+&gt; or lt : Greater than to port
+Note: le, gt, eq, ne etc. are use in unix shell and are accepted as well.
+
+###################################################################################
+### Do not forget to escape special characters when typing them in command line ###
+###################################################################################
+
+ss  sport = :http
+ss  dport = :http
+ss  dport \&gt; :1024
+ss  sport \&gt; :1024
+ss sport \&lt; :32000
+ss  sport eq :22
+ss  dport != :22
+ss  state connected sport = :http
+ss \( sport = :http or sport = :https \)
+ss -o state fin-wait-1 \( sport = :http or sport = :https \) dst 192.168.1/24
+</code></pre><h2 id="按连接状态过滤"><a href="#按连接状态过滤" class="headerlink" title="按连接状态过滤"></a>按连接状态过滤</h2><p>Display All Established HTTP Connections</p>
+<pre><code>ss -o state established &apos;( dport = :http or sport = :http )&apos;
+</code></pre><p>List all the TCP sockets in state -FIN-WAIT-1 for our httpd to network 202.54.1/24 and look at their timers:</p>
+<pre><code>ss -o state fin-wait-1 &apos;( sport = :http or sport = :https )&apos; dst 202.54.1/24
+</code></pre><p>Filter Sockets Using TCP States</p>
+<pre><code>ss -4 state FILTER-NAME-HERE
+</code></pre><p>Where FILTER-NAME-HERE can be any one of the following,</p>
+<pre><code>established
+syn-sent
+syn-recv
+fin-wait-1
+fin-wait-2
+time-wait
+closed
+close-wait
+last-ack
+listen
+closing
+all : All of the above states
+connected : All the states except for listen and closed
+synchronized : All the connected states except for syn-sent
+bucket : Show states, which are maintained as minisockets, i.e. time-wait and syn-recv.
+big : Opposite to bucket state.
+</code></pre><h2 id="通过抓取ss命令，可以分析出来重传的包数量，然后将重传的流的数量和重传的包的数量按照对端IP-port的维度分段聚合，参考命令："><a href="#通过抓取ss命令，可以分析出来重传的包数量，然后将重传的流的数量和重传的包的数量按照对端IP-port的维度分段聚合，参考命令：" class="headerlink" title="通过抓取ss命令，可以分析出来重传的包数量，然后将重传的流的数量和重传的包的数量按照对端IP:port的维度分段聚合，参考命令："></a>通过抓取ss命令，可以分析出来重传的包数量，然后将重传的流的数量和重传的包的数量按照对端IP:port的维度分段聚合，参考命令：</h2><pre><code>ss -itn |grep -v &quot;Address:Port&quot; | xargs -L 1  | grep retrans | awk &apos;{gsub(&quot;retrans:.*/&quot;, &quot;&quot;,$21); print $5, $21}&apos; | awk &apos;{arr[$1]+=$2} END {for (i in arr) {print i,arr[i]}}&apos; | sort -rnk 2 
+</code></pre><p>高版本Linux内核的话，可以用systemtap或者bcc来获取每个连接的重传包以及发生重传的阶段</p>
+<h2 id="当前和最大全连接队列确认"><a href="#当前和最大全连接队列确认" class="headerlink" title="当前和最大全连接队列确认"></a>当前和最大全连接队列确认</h2><pre><code>$ss -lt
+State      Recv-Q Send-Q Local Address:Port                 Peer Address:Port                
+LISTEN     0      128    127.0.0.1:10248                       *:*                    
+LISTEN     0      128           *:2376                        *:*                    
+LISTEN     0      128    127.0.0.1:10249                       *:*                    
+LISTEN     0      128           *:7337                        *:*                    
+LISTEN     0      128           *:10250                       *:*                    
+LISTEN     0      128    11.163.187.44:7946                        *:*                    
+LISTEN     0      128    127.0.0.1:55631                       *:*                    
+LISTEN     0      128           *:10256                       *:*                    
+LISTEN     0      10            *:6640                        *:*                    
+LISTEN     0      128    127.0.0.1:vmware-fdm                  *:*                    
+LISTEN     0      128    11.163.187.44:vmware-fdm                  *:*                    
+LISTEN     0      128           *:ssh                         *:*                    
+LISTEN     0      10     127.0.0.1:15772                       *:*                    
+LISTEN     0      10     127.0.0.1:15776                       *:*                    
+LISTEN     0      10     127.0.0.1:19777                       *:*                    
+LISTEN     0      10     11.163.187.44:15778                       *:*                    
+LISTEN     0      128           *:tr-rsrb-p2                  *:*
+</code></pre><h2 id="ss-s"><a href="#ss-s" class="headerlink" title="ss -s"></a>ss -s</h2><p>统计所有连接的状态</p>
+<h2 id="nstat"><a href="#nstat" class="headerlink" title="nstat"></a>nstat</h2><p>nstat -z -t 1 类似 netstat -s  (ss –info 展示rto、拥塞算法等更详细信息； netstat -ant -o 展示keepalive是否)</p>
+<p>netstat<a href="http://perthcharles.github.io/2015/11/10/wiki-netstat-proc/" target="_blank" rel="external">参考</a></p>
+<h2 id="knetstat"><a href="#knetstat" class="headerlink" title="knetstat"></a>knetstat</h2><p>需要单独安装</p>
+<p>example(3306是本地server，4192是后端MySQL）：</p>
+<pre><code>Recv-Q Send-Q Local Address           Foreign Address         Stat Diag Options
+ 0      0 0.0.0.0:3306            0.0.0.0:*               LSTN      SO_REUSEADDR=1,SO_REUSEPORT=0,SO_KEEPALIVE=0,TCP_NODELAY=0,TCP_FASTOPEN=0,TCP_DEFER_ACCEPT=0
+ 0      0 0.0.0.0:3406            0.0.0.0:*               LSTN      SO_REUSEADDR=1,SO_REUSEPORT=0,SO_KEEPALIVE=0,TCP_NODELAY=0,TCP_FASTOPEN=0,TCP_DEFER_ACCEPT=0
+ 0      0 127.0.0.1:8182          0.0.0.0:*               LSTN      SO_REUSEADDR=1,SO_REUSEPORT=0,SO_KEEPALIVE=0,TCP_NODELAY=0,TCP_FASTOPEN=0,TCP_DEFER_ACCEPT=0
+ 0      0 10.0.186.73:8182        0.0.0.0:*               LSTN      SO_REUSEADDR=1,SO_REUSEPORT=0,SO_KEEPALIVE=0,TCP_NODELAY=0,TCP_FASTOPEN=0,TCP_DEFER_ACCEPT=0
+ 0      0 0.0.0.0:22              0.0.0.0:*               LSTN      SO_REUSEADDR=1,SO_REUSEPORT=0,SO_KEEPALIVE=0,TCP_NODELAY=0,TCP_FASTOPEN=0,TCP_DEFER_ACCEPT=0
+ 0      0 0.0.0.0:8188            0.0.0.0:*               LSTN      SO_REUSEADDR=1,SO_REUSEPORT=0,SO_KEEPALIVE=0,TCP_NODELAY=0,TCP_FASTOPEN=0,TCP_DEFER_ACCEPT=0
+ 0      0 127.0.0.1:15778         0.0.0.0:*               LSTN      SO_REUSEADDR=1,SO_REUSEPORT=0,SO_KEEPALIVE=0,TCP_NODELAY=0,TCP_FASTOPEN=0,TCP_DEFER_ACCEPT=0 
+ 0    138 10.0.186.73:51756       10.0.160.1:4192         ESTB &gt;#   SO_REUSEADDR=0,SO_REUSEPORT=0,SO_KEEPALIVE=1,TCP_NODELAY=1,TCP_DEFER_ACCEPT=0
+ 0      0 10.0.186.73:3306        10.0.186.70:37428       ESTB      SO_REUSEADDR=1,SO_REUSEPORT=0,SO_KEEPALIVE=1,SO_RCVBUF=32768,SO_SNDBUF=65536,TCP_NODELAY=1,TCP_DEFER_ACCEPT=0
+ 0    138 10.0.186.73:51476       10.0.160.1:4192         ESTB &gt;#   SO_REUSEADDR=0,SO_REUSEPORT=0,SO_KEEPALIVE=1,TCP_NODELAY=1,TCP_DEFER_ACCEPT=0
+ 0      0 10.0.186.73:3306        10.0.186.70:37304       ESTB      SO_REUSEADDR=1,SO_REUSEPORT=0,SO_KEEPALIVE=1,SO_RCVBUF=32768,SO_SNDBUF=65536,TCP_NODELAY=1,TCP_DEFER_ACCEPT=0
+ 0      0 10.0.186.73:51842       10.0.160.1:4192         ESTB      SO_REUSEADDR=0,SO_REUSEPORT=0,SO_KEEPALIVE=1,TCP_NODELAY=1,TCP_DEFER_ACCEPT=0
+ 0      0 10.0.186.73:3306        10.0.186.70:37488       ESTB      SO_REUSEADDR=1,SO_REUSEPORT=0,SO_KEEPALIVE=1,SO_RCVBUF=32768,SO_SNDBUF=65536,TCP_NODELAY=1,TCP_DEFER_ACCEPT=0
+ 0      0 10.0.186.73:3306        10.0.186.70:36212       ESTB      SO_REUSEADDR=1,SO_REUSEPORT=0,SO_KEEPALIVE=1,SO_RCVBUF=32768,SO_SNDBUF=65536,TCP_NODELAY=1,TCP_DEFER_ACCEPT=0
+ 0      0 10.0.186.73:3306        10.0.186.70:36322       ESTB      SO_REUSEADDR=1,SO_REUSEPORT=0,SO_KEEPALIVE=1,SO_RCVBUF=32768,SO_SNDBUF=65536,TCP_NODELAY=1,TCP_DEFER_ACCEPT=0
+44      0 10.0.186.73:3306        10.0.186.70:36238       ESTB      SO_REUSEADDR=1,SO_REUSEPORT=0,SO_KEEPALIVE=1,SO_RCVBUF=32768,SO_SNDBUF=65536,TCP_NODELAY=1,TCP_DEFER_ACCEPT=0
+44      0 10.0.186.73:3306        10.0.186.70:36160       ESTB      SO_REUSEADDR=1,SO_REUSEPORT=0,SO_KEEPALIVE=1,SO_RCVBUF=32768,SO_SNDBUF=65536,TCP_NODELAY=1,TCP_DEFER_ACCEPT=0
+0      0 10.0.186.73:19030       10.0.171.188:8000       TIMW
+</code></pre><p>3306对应的client上：</p>
+<pre><code>Recv-Q Send-Q Local Address           Foreign Address         Stat Diag Options
+  0     44 10.0.186.70:42428       10.0.186.73:3306        ESTB &gt;#   SO_REUSEADDR=0,SO_REUSEPORT=0,SO_KEEPALIVE=1,SO_RCVTIMEO=31536000000ms,SO_SNDTIMEO=31536000000ms,TCP_NODELAY=1,TCP_DEFER_ACCEPT=0
+ 0     44 10.0.186.70:42298       10.0.186.73:3306        ESTB &gt;#   SO_REUSEADDR=0,SO_REUSEPORT=0,SO_KEEPALIVE=1,SO_RCVTIMEO=31536000000ms,SO_SNDTIMEO=31536000000ms,TCP_NODELAY=1,TCP_DEFER_ACCEPT=0
+ 0     44 10.0.186.70:42296       10.0.186.73:3306        ESTB &gt;#   SO_REUSEADDR=0,SO_REUSEPORT=0,SO_KEEPALIVE=1,SO_RCVTIMEO=31536000000ms,SO_SNDTIMEO=31536000000ms,TCP_NODELAY=1,TCP_DEFER_ACCEPT=0
+ 0     44 10.0.186.70:42322       10.0.186.73:3306        ESTB &gt;#   SO_REUSEADDR=0,SO_REUSEPORT=0,SO_KEEPALIVE=1,SO_RCVTIMEO=31536000000ms,SO_SNDTIMEO=31536000000ms,TCP_NODELAY=1,TCP_DEFER_ACCEPT=0
+</code></pre><p>Diag列的说明</p>
+<pre><code>Indicator        Meaning
+  &gt;|             The sender window (i.e. the window advertised by the remote endpoint) is 0. No data can be sent to the peer.
+  |&lt;             The receiver window (i.e. the window advertised by the local endpoint) is 0. No data can be received from the peer.
+  &gt;#             There are unacknowledged packets and the last ACK was received more than one second ago. This may be an indication that there are network problems or that the peer crashed.
+</code></pre><h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a href="https://www.cyberciti.biz/tips/linux-investigate-sockets-network-connections.html" target="_blank" rel="external">https://www.cyberciti.biz/tips/linux-investigate-sockets-network-connections.html</a></p>
+<p><a href="http://perthcharles.github.io/2015/11/10/wiki-netstat-proc/" target="_blank" rel="external">http://perthcharles.github.io/2015/11/10/wiki-netstat-proc/</a></p>
+<p>源代码：<a href="https://github.com/sivasankariit/iproute2/blob/master/misc/ss.c" target="_blank" rel="external">https://github.com/sivasankariit/iproute2/blob/master/misc/ss.c</a></p>
+<p><a href="https://github.com/veithen/knetstat/tree/master" target="_blank" rel="external">https://github.com/veithen/knetstat/tree/master</a></p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/09/28/就是要你懂TCP--性能和发送接收Buffer的关系/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/09/28/就是要你懂TCP--性能和发送接收Buffer的关系/" itemprop="url">TCP性能和发送接收窗口、Buffer的关系</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-09-28T12:30:03+08:00">
+                2019-09-28
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/09/28/就是要你懂TCP--性能和发送接收Buffer的关系/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2019/09/28/就是要你懂TCP--性能和发送接收Buffer的关系/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>本文希望解析清楚，当我们在代码中写下 socket.setSendBufferSize 和 sysctl 看到的rmem/wmem系统参数以及最终我们在TCP常常谈到的接收发送窗口的关系，以及他们怎样影响TCP传输的性能，同时如何通过图形来展示哪里是传输瓶颈。</p>
+<p>拥塞窗口相关文章比较多，他们跟带宽紧密相关，所以大家比较好判断，反而是接收、发送窗口一旦出现瓶颈，就没这么好判断了。</p>
+<p>先明确一下：<strong>文章标题中所说的Buffer指的是sysctl中的 rmem或者wmem，如果是代码中指定的话对应着SO_SNDBUF或者SO_RCVBUF，从TCP的概念来看对应着发送窗口或者接收窗口</strong></p>
+<h1 id="TCP性能和发送接收Buffer的关系"><a href="#TCP性能和发送接收Buffer的关系" class="headerlink" title="TCP性能和发送接收Buffer的关系"></a>TCP性能和发送接收Buffer的关系</h1><p>相关参数：</p>
+<pre><code>$sudo sysctl -a | egrep &quot;rmem|wmem|adv_win|moderate&quot;
+net.core.rmem_default = 212992
+net.core.rmem_max = 212992
+net.core.wmem_default = 212992
+net.core.wmem_max = 212992
+net.ipv4.tcp_adv_win_scale = 1
+net.ipv4.tcp_moderate_rcvbuf = 1
+net.ipv4.tcp_rmem = 4096    87380    6291456
+net.ipv4.tcp_wmem = 4096    16384    4194304
+net.ipv4.udp_rmem_min = 4096
+net.ipv4.udp_wmem_min = 4096
+vm.lowmem_reserve_ratio = 256    256    32
+</code></pre><p>先从碰到的一个实际问题看起：</p>
+<blockquote>
+<p>应用通过专线跨网络访问云上的服务，专线100M，时延20ms，一个SQL查询了22M数据，结果花了大概25秒，这太慢了，不正常。如果通过云上client访问云上服务那么1-2秒就返回了（说明不跨网络服务是正常的）。如果通过http或者scp从公司向云上传输这22M的数据大概两秒钟也传送完毕了（说明网络带宽不是瓶颈），所以这里问题的原因基本上是我们的服务在这种网络条件下有性能问题，需要找出为什么。</p>
+</blockquote>
+<h2 id="抓包分析-tcpdump-wireshark"><a href="#抓包分析-tcpdump-wireshark" class="headerlink" title="抓包分析 tcpdump+wireshark"></a>抓包分析 tcpdump+wireshark</h2><p>抓包分析这22M的数据传输，如下图（wireshark 时序图），横轴是时间，纵轴是sequence number：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d188530df31712e8341f5687a960743a.png" alt="image.png"></p>
+<p>粗一看没啥问题，因为时间太长掩盖了问题。把这个图形放大，就看中间50ms内的传输情况（横轴是时间，纵轴是sequence number，一个点代表一个包）</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e177d59ecb886daef5905ed80a84dfd2.png" alt="image.png"></p>
+<p>换个角度，看看窗口尺寸图形：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/7ae26e844629258de173a05d5ad595f9.png" alt="image.png"></p>
+<p>从bytes in flight也大致能算出来总的传输时间 16K*1000/20=800Kb/秒</p>
+<p>我们的应用会默认设置 socketSendBuffer 为16K:</p>
+<blockquote>
+<p>socket.setSendBufferSize(16*1024) //16K send buffer</p>
+</blockquote>
+<p>来看一下tcp包发送流程：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d385a7dad76ec4031dfb6c096bca434b.png" alt="image.png"></p>
+<p>（图片<a href="https://www.atatech.org/articles/9032" target="_blank" rel="external">来自</a>）</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ff025f076a4a2bc2b1b13d11f32a97d3.png" alt="image.png"></p>
+<p>如果sendbuffer不够就会卡在上图中的第一步 sk_stream_wait_memory, 通过systemtap脚本可以验证：</p>
+<pre><code>#!/usr/bin/stap
+# Simple probe to detect when a process is waiting for more socket send
+# buffer memory. Usually means the process is doing writes larger than the
+# socket send buffer size or there is a slow receiver at the other side.
+# Increasing the socket&apos;s send buffer size might help decrease application
+# latencies, but it might also make it worse, so buyer beware.
+
+# Typical output: timestamp in microseconds: procname(pid) event
+#
+# 1218230114875167: python(17631) blocked on full send buffer
+# 1218230114876196: python(17631) recovered from full send buffer
+# 1218230114876271: python(17631) blocked on full send buffer
+# 1218230114876479: python(17631) recovered from full send buffer
+probe kernel.function(&quot;sk_stream_wait_memory&quot;)
+{
+    printf(&quot;%u: %s(%d) blocked on full send buffern&quot;,
+        gettimeofday_us(), execname(), pid())
+}
+
+probe kernel.function(&quot;sk_stream_wait_memory&quot;).return
+{
+    printf(&quot;%u: %s(%d) recovered from full send buffern&quot;,
+        gettimeofday_us(), execname(), pid())
+}
+</code></pre><h2 id="原理解析"><a href="#原理解析" class="headerlink" title="原理解析"></a>原理解析</h2><p>如果tcp发送buffer也就是SO_SNDBUF只有16K的话，这些包很快都发出去了，但是这16K的buffer不能立即释放出来填新的内容进去，因为tcp要保证可靠，万一中间丢包了呢。只有等到这16K中的某些包ack了，才会填充一些新包进来然后继续发出去。由于这里rt基本是20ms，也就是16K发送完毕后，等了20ms才收到一些ack，这20ms应用、内核什么都不能做，所以就是如第二个图中的大概20ms的等待平台。这块请参考<a href="https://www.atatech.org/articles/79660" target="_blank" rel="external">这篇文章</a></p>
+<p><strong>sendbuffer相当于发送仓库的大小，仓库的货物都发走后，不能立即腾出来发新的货物，而是要等对方确认收到了(ack)才能腾出来发新的货物。 传输速度取决于发送仓库（sendbuffer）、接收仓库（recvbuffer）、路宽（带宽）的大小，如果发送仓库（sendbuffer）足够大了之后接下来的瓶颈就会是高速公路了（带宽、拥塞窗口）。而实际上这个案例中带宽够、接收仓库也够，但是发送仓库太小了，但是发送过程断断续续，所以非常慢。</strong></p>
+<p>如果是UDP，就没有可靠的概念，有数据统统发出去，根本不关心对方是否收到，也就不需要ack和这个发送buffer了。</p>
+<h2 id="几个发送buffer相关的内核参数"><a href="#几个发送buffer相关的内核参数" class="headerlink" title="几个发送buffer相关的内核参数"></a>几个发送buffer相关的内核参数</h2><pre><code>vm.lowmem_reserve_ratio = 256   256     32
+net.core.wmem_max = 1048576
+net.core.wmem_default = 124928
+net.ipv4.tcp_wmem = 4096        16384   4194304
+net.ipv4.udp_wmem_min = 4096
+</code></pre><p>net.ipv4.tcp_wmem 默认就是16K，而且内核是能够动态调整的，只不过我们代码中这块的参数是很多年前从Cobra中继承过来的，初始指定了sendbuffer的大小。代码中设置了这个参数后就关闭了内核的动态调整功能，这就是为什么http或者scp都很快，因为他们的send buffer是动态调整的。</p>
+<p>接收buffer是有开关可以动态控制的，发送buffer没有开关默认就是开启，关闭只能在代码层面来控制</p>
+<blockquote>
+<p>net.ipv4.tcp_moderate_rcvbuf</p>
+</blockquote>
+<h2 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h2><p>调整 socketSendBuffer 到256K，查询时间从25秒下降到了4秒多，但是比理论带宽所需要的时间略高</p>
+<p>继续查看系统 net.core.wmem_max 参数默认最大是130K，所以即使我们代码中设置256K实际使用的也是130K，继续调大这个系统参数后整个网络传输时间大概2秒(跟100M带宽匹配了，scp传输22M数据也要2秒），整体查询时间2.8秒。测试用的mysql client短连接，如果代码中的是长连接的话会块300-400ms（消掉了握手和慢启动阶段），这基本上是理论上最快速度了</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/3dcfd469fe1e2f7e1d938a5289b83826.png" alt="image.png"></p>
+<p>如果指定了tcp_wmem，则net.core.wmem_default被tcp_wmem的覆盖。send Buffer在tcp_wmem的最小值和最大值之间自动调整。如果调用setsockopt()设置了socket选项SO_SNDBUF，将关闭发送端缓冲的自动调节机制，tcp_wmem将被忽略，SO_SNDBUF的最大值由net.core.wmem_max限制。</p>
+<h2 id="BDP-带宽时延积"><a href="#BDP-带宽时延积" class="headerlink" title="BDP 带宽时延积"></a>BDP 带宽时延积</h2><p>BDP=rtt*(带宽/8)</p>
+<p>这个 buffer 调到1M测试没有帮助，从理论计算BDP（带宽时延积） 0.02秒<em>(100MB/8)=250Kb  所以 **</em>SO_SNDBUF为256Kb的时候基本能跑满带宽了，再大也没有什么实际意义了** 。也就是前面所说的仓库足够后瓶颈在带宽上了。</p>
+<p>因为这里根据带宽、rtt计算得到的BDP是250K，BDP跑满后拥塞窗口（带宽、接收窗口和rt决定的）即将成为新的瓶颈，所以调大buffer没意义了。</p>
+<h2 id="用tc构造延时和带宽限制的模拟重现环境"><a href="#用tc构造延时和带宽限制的模拟重现环境" class="headerlink" title="用tc构造延时和带宽限制的模拟重现环境"></a>用tc构造延时和带宽限制的模拟重现环境</h2><pre><code>sudo tc qdisc del dev eth0 root netem delay 20ms
+sudo tc qdisc add dev eth0 root tbf rate 500kbit latency 50ms burst 15kb
+</code></pre><h2 id="这个案例关于wmem的结论"><a href="#这个案例关于wmem的结论" class="headerlink" title="这个案例关于wmem的结论"></a>这个案例关于wmem的结论</h2><p>默认情况下Linux系统会自动调整这个buffer（net.ipv4.tcp_wmem）, 也就是不推荐程序中主动去设置SO_SNDBUF，除非明确知道设置的值是最优的。</p>
+<p>从这里我们可以看到，有些理论知识点虽然我们知道，但是在实践中很难联系起来，也就是常说的无法学以致用，最开始看到抓包结果的时候比较怀疑发送、接收窗口之类的，没有直接想到send buffer上，理论跟实践没联系上。</p>
+<h2 id="说完发送Buffer-wmem-接下来我们接着一看看接收buffer-rmem-和接收窗口的情况"><a href="#说完发送Buffer-wmem-接下来我们接着一看看接收buffer-rmem-和接收窗口的情况" class="headerlink" title="说完发送Buffer(wmem)接下来我们接着一看看接收buffer(rmem)和接收窗口的情况"></a>说完发送Buffer(wmem)接下来我们接着一看看接收buffer(rmem)和接收窗口的情况</h2><p>用这样一个案例下来验证接收窗口的作用：</p>
+<blockquote>
+<p>有一个batch insert语句，整个一次要插入5532条记录，所有记录大小总共是376K，也就是这个sql语句本身是376K。</p>
+</blockquote>
+<h2 id="SO-RCVBUF很小的时候并且rtt很大对性能的影响"><a href="#SO-RCVBUF很小的时候并且rtt很大对性能的影响" class="headerlink" title="SO_RCVBUF很小的时候并且rtt很大对性能的影响"></a>SO_RCVBUF很小的时候并且rtt很大对性能的影响</h2><p>如果rtt是40ms，总共需要5-6秒钟：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/4af4765c045e9eed2e36d9760d4a2aba.png" alt="image.png"></p>
+<p>基本可以看到server一旦空出来点窗口，client马上就发送数据，由于这点窗口太小，rtt是40ms，也就是一个rtt才能传3456字节的数据，整个带宽才用到80-90K，完全没跑满。</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/1984258c0300921799476777f5f0a38a.png" alt="image.png"></p>
+<p>比较明显间隔 40ms 一个等待台阶，台阶之间两个包大概3K数据，总的传输效率如下：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/5ec50ecf25444e96d81fab975b5a79e6.png" alt="image.png"></p>
+<p><strong>斜线越陡表示速度越快，从上图看整体SQL上传花了5.5秒，执行0.5秒。</strong></p>
+<p>此时对应的窗口尺寸：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/05d6357ed53c1c16f0dd0454251916ef.png" alt="image.png"></p>
+<p>窗口由最开始28K(20个1448）很快降到了不到4K的样子，然后基本游走在即将满的边缘，虽然读取慢，幸好rtt也大，导致最终也没有满。（这个是3.1的Linux，应用SO_RCVBUF设置的是8K，用一半来做接收窗口）</p>
+<h2 id="SO-RCVBUF很小的时候并且rtt很小时对性能的影响"><a href="#SO-RCVBUF很小的时候并且rtt很小时对性能的影响" class="headerlink" title="SO_RCVBUF很小的时候并且rtt很小时对性能的影响"></a>SO_RCVBUF很小的时候并且rtt很小时对性能的影响</h2><p>如果同样的语句在 rtt 是0.1ms的话</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/67f280a1cf499ae388fc44d6418869a7.png" alt="image.png"></p>
+<p>虽然明显看到接收窗口经常跑满，但是因为rtt很小，一旦窗口空出来很快就通知到对方了，所以整个过小的接收窗口也没怎么影响到整体性能</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/15b7d6852e44fc179d60d76f322695c7.png" alt="image.png"></p>
+<p>如上图11.4秒整个SQL开始，到11.41秒SQL上传完毕，11.89秒执行完毕（执行花了0.5秒），上传只花了0.01秒</p>
+<p>接收窗口情况：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/0f3050cd98db40a352410a11a521e8b2.png" alt="image.png"></p>
+<p>如图，接收窗口由最开始的28K降下来，然后一直在5880和满了之间跳动</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/0db5c3684a9314907f9158ac15b6ac71.png" alt="image.png"></p>
+<p>从这里可以得出结论，接收窗口的大小对性能的影响，rtt越大影响越明显，当然这里还需要应用程序配合，如果应用程序一直不读走数据即使接收窗口再大也会堆满的。</p>
+<h2 id="SO-RCVBUF和tcp-window-full的坏case"><a href="#SO-RCVBUF和tcp-window-full的坏case" class="headerlink" title="SO_RCVBUF和tcp window full的坏case"></a>SO_RCVBUF和tcp window full的坏case</h2><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/55cf9875d24d76a077c442327d54fa34.png" alt="image.png"></p>
+<p>上图中红色平台部分，停顿了大概6秒钟没有发任何有内容的数据包，这6秒钟具体在做什么如下图所示，可以看到这个时候接收方的TCP Window Full，同时也能看到接收方（3306端口）的TCP Window Size是8192（8K），发送方（27545端口）是20480.</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/da48878ce0c01bcdedb1e6d6a6cc6d1c.png" alt="image.png"></p>
+<p>这个状况跟前面描述的recv buffer太小不一样，8K是很小，但是因为rtt也很小，所以server总是能很快就ack收到了，接收窗口也一直不容易达到full状态，但是一旦接收窗口达到了full状态，居然需要惊人的6秒钟才能恢复，这等待的时间有点太长了。这里应该是应用读取数据太慢导致了耗时6秒才恢复，所以最终这个请求执行会非常非常慢（时间主要耗在了上传SQL而不是执行SQL）.</p>
+<p>实际原因不知道，从读取TCP数据的逻辑来看这里没有明显的block，可能的原因：</p>
+<ul>
+<li>request的SQL太大，Server（3306端口上的服务）从TCP读取SQL需要放到一块分配好的内存，内存不够的时候需要扩容，扩容有可能触发fgc，从图形来看，第一次满就卡顿了，而且每次满都卡顿，不像是这个原因</li>
+<li>request请求一次发过来的是多个SQL，应用读取SQL后，将SQL分成多个，然后先执行第一个，第一个执行完后返回response，再读取第二个。图形中卡顿前没有response返回，所以也不是这个原因</li>
+<li>……其它未知原因</li>
+</ul>
+<h2 id="接收方不读取数据导致的接收窗口满同时有丢包发生"><a href="#接收方不读取数据导致的接收窗口满同时有丢包发生" class="headerlink" title="接收方不读取数据导致的接收窗口满同时有丢包发生"></a>接收方不读取数据导致的接收窗口满同时有丢包发生</h2><p>服务端返回数据到client端，TCP协议栈ack这些包，但是应用层没读走包，这个时候 SO_RCVBUF 堆积满，client的TCP协议栈发送 ZeroWindow 标志给服务端。也就是接收端的 buffer 堆满了（但是服务端这个时候看到的bytes in fly是0，因为都ack了），这时服务端不能继续发数据，要等 ZeroWindow 恢复。</p>
+<p>那么接收端上层应用不读走包可能的原因：</p>
+<ul>
+<li>应用代码卡顿、GC等等</li>
+<li>应用代码逻辑上在做其它事情（比如Server将SQL分片到多个DB上，Server先读取第一个分片，如果第一个分片数据很大很大，处理也慢，那么即使第二个分片数据都返回到了TCP 的recv buffer，应用也没去读取其它分片的结果集，直到第一个分片读取完毕。如果SQL带排序，那么Server会轮询读取多个分片，造成这种卡顿的概率小了很多）</li>
+</ul>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/49e2635a7c4025d44b915a1f17dd272a.png" alt="image.png"></p>
+<p>上图这个流因为应用层不读取TCP数据，导致TCP接收Buffer满，进而接收窗口为0，server端不能再发送数据而卡住，但是ZeroWindow的探测包，client都有正常回复，所以1903秒之后接收方窗口不为0后（window update）传输恢复。</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/2e493d8dc32bb63f2126375de6675351.png" alt="image.png"></p>
+<p>这个截图和前一个类似，是在Server上(3003端口)抓到的包，不同的是接收窗口为0后，server端多次探测（Server上抓包能看到），但是client端没有回复 ZeroWindow（也有可能是回复了，但是中间环节把ack包丢了,或者这个探测包client没收到），造成server端认为client死了、不可达之类，进而反复重传，重传超过15次之后，server端认为这个连接死了，粗暴单方面断开（没有reset和fin,因为没必要，server认为网络连通性出了问题）。</p>
+<p>等到1800秒后，client的接收窗口恢复了，发个window update给server，这个时候server认为这个连接已经断开了，只能回复reset</p>
+<p>网络不通，重传超过一定的时间（tcp_retries2)然后断开这个连接是正常的，这里的问题是：</p>
+<ol>
+<li>为什么这种场景下丢包了，而且是针对某个stream一直丢包</li>
+</ol>
+<p>可能是因为这种场景下触发了中间环节的流量管控，故意丢包了（比如proxy、slb、交换机都有可能做这种选择性的丢包）</p>
+<p>这里server认为连接断开，没有发reset和fin,因为没必要，server认为网络连通性出了问题。client还不知道server上这个连接清理掉了，等client回复了一个window update，server早就认为这个连接早断了，突然收到一个update，莫名其妙，只能reset</p>
+<h2 id="接收窗口和SO-RCVBUF的关系"><a href="#接收窗口和SO-RCVBUF的关系" class="headerlink" title="接收窗口和SO_RCVBUF的关系"></a>接收窗口和SO_RCVBUF的关系</h2><p>初始接收窗口一般是 <strong>mss乘以初始cwnd（为了和慢启动逻辑兼容，不想一下子冲击到网络）</strong>，如果没有设置SO_RCVBUF，那么会根据 net.ipv4.tcp_rmem 动态变化，如果设置了SO_RCVBUF，那么接收窗口要向下面描述的值靠拢。</p>
+<p><a href="https://access.redhat.com/discussions/3624151" target="_blank" rel="external">初始cwnd可以大致通过查看到</a>：</p>
+<pre><code>ss -itmpn dst &quot;10.81.212.8&quot;
+State      Recv-Q Send-Q Local Address:Port  Peer Address:Port
+ESTAB      0      0      10.xx.xx.xxx:22     10.yy.yy.yyy:12345  users:((&quot;sshd&quot;,pid=1442,fd=3))
+         skmem:(r0,rb369280,t0,tb87040,f4096,w0,o0,bl0,d92)
+
+Here we can see this socket has Receive Buffer 369280 bytes, and Transmit Buffer 87040 bytes.
+Keep in mind the kernel will double any socket buffer allocation for overhead. 
+So a process asks for 256 KiB buffer with setsockopt(SO_RCVBUF) then it will get 512 KiB buffer
+space. This is described on man 7 tcp. 
+</code></pre><p>初始窗口计算的代码逻辑，重点在18行：</p>
+<pre><code>/* TCP initial congestion window as per rfc6928 */
+#define TCP_INIT_CWND           10
+
+
+/* 3. Try to fixup all. It is made immediately after connection enters
+ *    established state.
+ */
+void tcp_init_buffer_space(struct sock *sk)
+{
+        int tcp_app_win = sock_net(sk)-&gt;ipv4.sysctl_tcp_app_win;
+        struct tcp_sock *tp = tcp_sk(sk);
+        int maxwin;
+
+        if (!(sk-&gt;sk_userlocks &amp; SOCK_SNDBUF_LOCK))
+                tcp_sndbuf_expand(sk);
+
+        //初始最大接收窗口计算过程
+        tp-&gt;rcvq_space.space = min_t(u32, tp-&gt;rcv_wnd, TCP_INIT_CWND * tp-&gt;advmss);
+        tcp_mstamp_refresh(tp);
+        tp-&gt;rcvq_space.time = tp-&gt;tcp_mstamp;
+        tp-&gt;rcvq_space.seq = tp-&gt;copied_seq;
+
+        maxwin = tcp_full_space(sk);
+
+        if (tp-&gt;window_clamp &gt;= maxwin) {
+                tp-&gt;window_clamp = maxwin;
+
+                if (tcp_app_win &amp;&amp; maxwin &gt; 4 * tp-&gt;advmss)
+                        tp-&gt;window_clamp = max(maxwin -
+                                               (maxwin &gt;&gt; tcp_app_win),
+                                               4 * tp-&gt;advmss);
+        }
+
+        /* Force reservation of one segment. */
+        if (tcp_app_win &amp;&amp;
+            tp-&gt;window_clamp &gt; 2 * tp-&gt;advmss &amp;&amp;
+            tp-&gt;window_clamp + tp-&gt;advmss &gt; maxwin)
+                tp-&gt;window_clamp = max(2 * tp-&gt;advmss, maxwin - tp-&gt;advmss);
+
+        tp-&gt;rcv_ssthresh = min(tp-&gt;rcv_ssthresh, tp-&gt;window_clamp);
+        tp-&gt;snd_cwnd_stamp = tcp_jiffies32;
+}
+</code></pre><p>传输过程中，最大接收窗口会动态调整，当指定了SO_RCVBUF后，实际buffer是两倍SO_RCVBUF，但是要分出一部分（2^net.ipv4.tcp_adv_win_scale)来作为乱序报文缓存。</p>
+<blockquote>
+<ol>
+<li>net.ipv4.tcp_adv_win_scale = 2  //2.6内核，3.1中这个值默认是1</li>
+</ol>
+</blockquote>
+<p>如果SO_RCVBUF是8K，总共就是16K，然后分出2^2分之一，也就是4分之一，还剩12K当做接收窗口；如果设置的32K，那么接收窗口是48K</p>
+<pre><code>static inline int tcp_win_from_space(const struct sock *sk, int space)
+{//space 传入的时候就已经是 2*SO_RCVBUF了
+        int tcp_adv_win_scale = sock_net(sk)-&gt;ipv4.sysctl_tcp_adv_win_scale;
+
+        return tcp_adv_win_scale &lt;= 0 ?
+                (space&gt;&gt;(-tcp_adv_win_scale)) :
+                space - (space&gt;&gt;tcp_adv_win_scale); //sysctl参数tcp_adv_win_scale 
+}
+</code></pre><p>接收窗口有最大接收窗口和当前可用接收窗口。</p>
+<p>一般来说一次中断基本都会将 buffer 中的包都取走。</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d7d3af2c03653e6cf8ae2befa0022832.png" alt="image.png"></p>
+<p>绿线是最大接收窗口动态调整的过程，最开始是1460*10，握手完毕后略微调整到1472*10（可利用body增加了12），随着数据的传输开始跳涨</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d0e12e8bad8764385549f9b391c62ab0.png" alt="image.png"></p>
+<p>上图是四个batch insert语句，可以看到绿色接收窗口随着数据的传输越来越大，图中蓝色竖直部分基本表示SQL上传，两个蓝色竖直条的间隔代表这个insert在服务器上真正的执行时间。这图非常陡峭，表示上传没有任何瓶颈.</p>
+<h3 id="设置-SO-RCVBUF-后通过wireshark观察到的接收窗口基本"><a href="#设置-SO-RCVBUF-后通过wireshark观察到的接收窗口基本" class="headerlink" title="设置 SO_RCVBUF 后通过wireshark观察到的接收窗口基本"></a>设置 SO_RCVBUF 后通过wireshark观察到的接收窗口基本</h3><p>下图是设置了 SO_RCVBUF 为8192的实际情况：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d0e12e8bad8764385549f9b391c62ab0.png" alt="image.png"></p>
+<p>从最开始的14720，执行第一个create table语句后降到14330，到真正执行batch insert就降到了8192*1.5. 然后一直保持在这个值</p>
+<h3 id="If-you-set-a-“receive-buffer-size”-on-a-TCP-socket-what-does-it-actually-mean"><a href="#If-you-set-a-“receive-buffer-size”-on-a-TCP-socket-what-does-it-actually-mean" class="headerlink" title="If you set a “receive buffer size” on a TCP socket, what does it actually mean?"></a>If you set a “receive buffer size” on a TCP socket, what does it actually mean?</h3><p><a href="https://blog.cloudflare.com/the-story-of-one-latency-spike/" target="_blank" rel="external">The naive answer would go something along the lines of: the TCP receive buffer setting indicates the maximum number of bytes a </a><a href="https://blog.cloudflare.com/the-story-of-one-latency-spike/" target="_blank" rel="external"><code>read()</code></a><a href="https://blog.cloudflare.com/the-story-of-one-latency-spike/" target="_blank" rel="external"> syscall could retrieve without blocking.</a></p>
+<p>Note that if the buffer size is set with <code>setsockopt()</code>, the value returned with <code>getsockopt()</code> is always <em>double</em> the size requested to allow for overhead. This is described in <code>man 7 socket</code>.</p>
+<h1 id="长肥网络（rt很高、带宽也高）下接收窗口对传输性能的影响"><a href="#长肥网络（rt很高、带宽也高）下接收窗口对传输性能的影响" class="headerlink" title="长肥网络（rt很高、带宽也高）下接收窗口对传输性能的影响"></a>长肥网络（rt很高、带宽也高）下接收窗口对传输性能的影响</h1><p>最后通过一个实际碰到的案例，涉及到了接收窗口、发送Buffer以及高延时情况下的性能问题</p>
+<p>案例描述：从中国访问美国的服务器下载图片，只能跑到220K，远远没有达到带宽能力，其中中美之间的网络延时时150ms，这个150ms已经不能再优化了。业务结构是：</p>
+<p>client ——150ms—–&gt;&gt;&gt;LVS—1ms–&gt;&gt;&gt;美国的统一接入server—–1ms—–&gt;&gt;&gt;nginx</p>
+<p>通过下载一个4M的文件大概需要20秒，分别在client和nginx上抓包来分析这个问题（统一接入server没权限上去）</p>
+<h2 id="Nginx上抓包"><a href="#Nginx上抓包" class="headerlink" title="Nginx上抓包"></a>Nginx上抓包</h2><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/259767fb17f7dbffe7f77ab059c47dbd.png" alt="image.png"></p>
+<p>从这里可以看到Nginx大概在60ms内就将4M的数据都发完了</p>
+<h2 id="client上抓包"><a href="#client上抓包" class="headerlink" title="client上抓包"></a>client上抓包</h2><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/466fba92829f6a922ccd2d57a7e3fdac.png" alt="image.png"></p>
+<p>从这个图上可以清楚看到大概每传输大概30K数据就有一个150ms的等待平台，这个150ms基本是client到美国的rt。</p>
+<p>从我们前面的阐述可以清楚了解到因为rt比较高，统一接入server每发送30K数据后要等150ms才能收到client的ack，然后继续发送，猜是因为上面设置的发送buffer大概是30K。</p>
+<p>检查统一接入server的配置，可以看到接入server的配置里面果然有个32K buffer设置</p>
+<h2 id="将buffer改大"><a href="#将buffer改大" class="headerlink" title="将buffer改大"></a>将buffer改大</h2><p>速度可以到420K，但是还没有跑满带宽：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/93e254c5154ce2e065bec9fb34f3db2b.png" alt="image.png"></p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/0a8c68a58da6f169573b57cde0ffba93.png" alt="image.png"></p>
+<p>接着看一下client上的抓包</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/822737a4ed6ffe6b920d4b225a1be5bf.png" alt="image.png"></p>
+<p>可以清楚看到 client的接收窗口是64K， 64K*1000/150=426K 这个64K很明显是16位的最大值，应该是TCP握手有一方不支持window scaling factor</p>
+<p>那么继续分析一下握手包，syn：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/004886698ddbaa1cbc8342a9cd667c76.png" alt="image.png"></p>
+<p>说明client是支持的，再看 syn+ack：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/70155e021390cb1ee07091c306c375f4.png" alt="image.png"></p>
+<p>可以看到服务端不支持，那就最大只能用到64K。需要修改服务端代理程序，这主要是LVS或者代理的锅。</p>
+<p>如果内网之间rt很小这个锅不会爆发，一旦网络慢一点就把问题恶化了</p>
+<p>比如这是这个应用的开发人员的反馈：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/a08a204ec7ad4bba7867dacea1668322.png" alt="image.png"></p>
+<p>长肥网络就像是很长很宽的高速公路，上面可以同时跑很多车，而如果发车能力不够，就容易跑不满高速公路。<br>在rt很短的时候可以理解为高速公路很短，所以即使发车慢也还好，因为车很快就到了，到了后就又能发新车了。rt很长的话就要求更大的仓库了。</p>
+<p>整个这个问题，我最初拿到的问题描述结构是这样的：</p>
+<p>client ——150ms—–&gt;&gt;&gt;nginx</p>
+<p>实际开发人员也不能完全描述清楚结构，从抓包中慢慢分析反推他们的结构，到最后问题的解决。</p>
+<p>这个案例综合了发送窗口（32K）、接收窗口（64K，因为握手LVS不支持window scale）、rt很大将问题暴露出来（跨国网络，rt没法优化）。</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><ul>
+<li>一般来说绝对不要在程序中手工设置SO_SNDBUF和SO_RCVBUF，内核自动调整比你做的要好；</li>
+<li>SO_SNDBUF一般会比发送滑动窗口要大，因为发送出去并且ack了的才能从SO_SNDBUF中释放；</li>
+<li>TCP接收窗口跟SO_RCVBUF关系很复杂；</li>
+<li>SO_RCVBUF太小并且rtt很大的时候会严重影响性能；</li>
+<li>接收窗口比发送窗口复杂多了；</li>
+<li>发送窗口/SO_SNDBUF–发送仓库，带宽/拥塞窗口–马路通畅程度，接收窗口/SO_RCVBUF–接收仓库；</li>
+<li>发送仓库、马路宽度、长度（rt）、接收仓库一起决定了传输速度–类比一下快递过程。</li>
+</ul>
+<p><strong>总之记住一句话：不要设置socket的SO_SNDBUF和SO_RCVBUF</strong></p>
+<h1 id="相关和参考文章"><a href="#相关和参考文章" class="headerlink" title="相关和参考文章"></a>相关和参考文章</h1><p><a href="https://www.atatech.org/articles/80292" target="_blank" rel="external">经典的 nagle 和 dalay ack对性能的影响 就是要你懂 TCP– 最经典的TCP性能问题</a></p>
+<p><a href="https://www.atatech.org/articles/78858" target="_blank" rel="external">关于TCP 半连接队列和全连接队列</a></p>
+<p><a href="https://www.atatech.org/articles/60633" target="_blank" rel="external">MSS和MTU导致的悲剧</a></p>
+<p><a href="https://www.atatech.org/articles/73174" target="_blank" rel="external">双11通过网络优化提升10倍性能</a></p>
+<p><a href="https://www.atatech.org/articles/79660" target="_blank" rel="external">就是要你懂TCP的握手和挥手</a></p>
+<p><a href="https://www.atatech.org/articles/13203" target="_blank" rel="external">高性能网络编程7–tcp连接的内存使用</a></p>
+<p><a href="https://blog.cloudflare.com/the-story-of-one-latency-spike/" target="_blank" rel="external">The story of one latency spike</a></p>
+<p><a href="https://access.redhat.com/discussions/782343" target="_blank" rel="external">What is rcv_space in the ‘ss –info’ output, and why it’s value is larger than net.core.rmem_max</a></p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/09/27/arthas常用命令速记/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -378,7 +1068,8 @@ jad --source-only com.taobao.tddl.common.IdGenerator &gt; /tmp/IdGenerator.java
 redefine -c 1e80bfe8 /tmp/com/alibaba/middleware/drds/worker/task/RegisterTask.class
 </code></pre><p>可以再次jad 反编译确认class中是修改后的代码：</p>
 <pre><code>jad --source-only com.alibaba.cobar.server.ServerConnection &gt; /tmp/SC.java
-</code></pre><p>有时候 redefine 看到成功，可是实际并不一定，最好再次 jad 确认一下</p>
+</code></pre><p>有时候 redefine 看到成功，可是实际并不一定，最好再次 jad 确认一下。</p>
+<p>线上环境快速修改代码验证三部曲：jad反编译得到源代码、修改后mc编译成class、redefine替换新的class。</p>
 <h2 id="classload"><a href="#classload" class="headerlink" title="classload"></a>classload</h2><pre><code>classloader -l
 classloader -c 1e80bfe8 -r com/alibaba/middleware/drds/worker/task/RegisterTask.class
 classload -t
@@ -386,6 +1077,8 @@ classload -c 6e0be858
 classloader ch.qos.logback.core.AppenderBase
 </code></pre><h2 id="sc"><a href="#sc" class="headerlink" title="sc"></a>sc</h2><pre><code>sc -d com.taobao.tddl.common.IdGenerator
 sc -df ch.qos.logback.core.AppenderBase
+</code></pre><h2 id="sm"><a href="#sm" class="headerlink" title="sm"></a>sm</h2><p>列出class的方法</p>
+<pre><code>sm ch.qos.logback.core.AppenderBase -d
 </code></pre><h2 id="getstatic-查看静态成员"><a href="#getstatic-查看静态成员" class="headerlink" title="getstatic 查看静态成员"></a>getstatic 查看静态成员</h2><p>通过getstatic查看静态成员，来追踪一个logger没有设置level的话他的输出级别到底是什么？</p>
 <p>先 sc 获取classloader的hash</p>
 <pre><code>sc -df io.netty.channel.nio.NioEventLoop
@@ -461,9 +1154,7 @@ ognl -c 6e0be858 &apos;@org.slf4j.LoggerFactory@getLogger(&quot;root&quot;).setL
 trace -j ch.qos.logback.core.AppenderBase doAppend &apos;#cost &gt; 10&apos;
 </code></pre><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/a62e3703ec9f3fef024fef4ff39441c7.png" alt="image.png"></p>
 <p>截图中红框的数字表示代码行号</p>
-<h2 id="sm"><a href="#sm" class="headerlink" title="sm"></a>sm</h2><p>列出class的方法</p>
-<pre><code>sm ch.qos.logback.core.AppenderBase -d
-</code></pre><h2 id="ongl-调用static函数并查看返回值"><a href="#ongl-调用static函数并查看返回值" class="headerlink" title="ongl 调用static函数并查看返回值"></a>ongl 调用static函数并查看返回值</h2><pre><code>ognl &apos;#value1=@com.alibaba.middleware.drds.manager.common.utils.AddressUtil@getHostIp(), {#value1}&apos;
+<h2 id="ongl-调用static函数并查看返回值"><a href="#ongl-调用static函数并查看返回值" class="headerlink" title="ongl 调用static函数并查看返回值"></a>ongl 调用static函数并查看返回值</h2><pre><code>ognl &apos;#value1=@com.alibaba.middleware.drds.manager.common.utils.AddressUtil@getHostIp(), {#value1}&apos;
 @ArrayList[
     @String[10.0.174.135],
 ]
@@ -472,6 +1163,20 @@ trace -j ch.qos.logback.core.AppenderBase doAppend &apos;#cost &gt; 10&apos;
  ognl &apos;#value1=@com.alibaba.middleware.drds.worker.Config@getInstance(), {#value1}&apos;
     @ArrayList[
 @Config[Config(receivedManagerInfo=true, registeredToManager=true, workerRpcPort=8188, managerIp=10.0.171.193, managerPort=8080, drdsServerPort=3306, drdsManagerPort=3406, host=10.0.118.18, vpcId=vpc-bp1tsocjn451k7ur52vwl, urlToGetVpcId=http://100.100.100.200/latest/meta-data/vpc-id, heartBeatIntervalSeconds=180, registerInveralSeconds=2, manageDrdsIntervalSeconds=60, miniVersion=1, version=0.0.0.41, registerUrl=http://hostPlaceHolder:portPlaceHolder/v1/worker/register, heartBeatUrl=http://hostPlaceHolder:portPlaceHolder/v1/worker/heartBeat, manageDrdsServerUrl=http://hostPlaceHolder:portPlaceHolder/v1/worker/manageDrdsServer, gotVpcId=true, nodeType=drds-server, watcher=null, scheduledThreadPoolExecutor=java.util.concurrent.ScheduledThreadPoolExecutor@3aa3f85f[Running, pool size = 1, active threads = 1, queued tasks = 0, completed tasks = 0])],
+]
+
+#Netty的SelectorProvider.provider()创建Selector驱动的时候通过JDK create到的Selector驱动
+#如果是windows平台：WindowsSelectorProvider(); macos
+#下面是Linux平台的默认Selector驱动：
+$ options unsafe true
+$ ognl  &apos;#value1=@sun.nio.ch.DefaultSelectorProvider@create(), {#value1}&apos;
+@ArrayList[
+    @EPollSelectorProvider[sun.nio.ch.EPollSelectorProvider@5bf6cb51],
+]
+#或者
+$  ognl  &apos;#value1=@java.nio.channels.spi.SelectorProvider@provider(), {#value1}&apos;
+@ArrayList[
+    @EPollSelectorProvider[sun.nio.ch.EPollSelectorProvider@74c4ede7],
 ]
 </code></pre><h2 id="tt-观察函数调用和回放"><a href="#tt-观察函数调用和回放" class="headerlink" title="tt 观察函数调用和回放"></a>tt 观察函数调用和回放</h2><p>先通过tt观察某个函数的调用，然后再用 tt -i 回放这个调用并查看返回值等</p>
 <pre><code>tt -t com.alibaba.middleware.drds.manager.common.utils.AddressUtil getHostIp
@@ -491,7 +1196,8 @@ tt -n 3 -t com.alibaba.middleware.drds.manager.common.utils.AddressUtil getHostI
      IS-EXCEPTION  false
      COST(ms)      0.577817
      RETURN-OBJ    @String[10.0.118.18]
-</code></pre><h2 id="watch-查看函数调用的参数内容和返回值"><a href="#watch-查看函数调用的参数内容和返回值" class="headerlink" title="watch 查看函数调用的参数内容和返回值"></a>watch 查看函数调用的参数内容和返回值</h2><pre><code>watch  com.alibaba.middleware.drds.manager.common.utils.AddressUtil getHostIp &quot;{params,returnObj}&quot; -x 2
+</code></pre><h2 id="watch-查看函数调用的参数内容和返回值"><a href="#watch-查看函数调用的参数内容和返回值" class="headerlink" title="watch 查看函数调用的参数内容和返回值"></a>watch 查看函数调用的参数内容和返回值</h2><p>指定输出结果的属性遍历深度，默认为 1：</p>
+<pre><code>watch  com.alibaba.middleware.drds.manager.common.utils.AddressUtil getHostIp &quot;{params,returnObj}&quot; -x 2
 
 watch com.alibaba.middleware.drds.worker.task.RegisterTask getHostInfoIfNeeded &quot;{params,returnObj}&quot; -x 2
     Press Q or Ctrl+C to abort.
@@ -515,7 +1221,13 @@ ts=2019-06-04 11:38:06; [cost=2.75218ms] result=@HandlerExecutionChain[
     interceptorList=@ArrayList[isEmpty=false;size=2],
     interceptorIndex=@Integer[-1],
 ]
-</code></pre><h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://alibaba.github.io/arthas/commands.html" target="_blank" rel="external">官方文档</a></p>
+</code></pre><ul>
+<li>watch 命令定义了4个观察事件点，即 -b 方法调用前，-e 方法异常后，-s 方法返回后，-f 方法结束后</li>
+<li>4个观察事件点 -b、-e、-s 默认关闭，-f 默认打开，当指定观察点被打开后，在相应事件点会对观察表达式进行求值并输出</li>
+<li>这里要注意方法入参和方法出参的区别，有可能在中间被修改导致前后不一致，除了 -b 事件点 params 代表方法入参外，其余事件都代表方法出参</li>
+<li>当使用 -b 时，由于观察事件点是在方法调用前，此时返回值或异常均不存在</li>
+</ul>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://alibaba.github.io/arthas/commands.html" target="_blank" rel="external">官方文档</a></p>
 
           
         
@@ -1709,7 +2421,10 @@ public BufferedOutputStream(OutputStream out) {
 <h3 id="同步非阻塞IO"><a href="#同步非阻塞IO" class="headerlink" title="同步非阻塞IO"></a>同步非阻塞IO</h3><p>用户线程发起read后，不阻塞，反复尝试读取，直到内核把网卡数据读到内核空间，用户线程继续read，这时进入阻塞直到数据拷贝到用户空间</p>
 <p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1562207744743-e86e37bb-c8e4-40aa-b581-ac862011221a.png" alt="undefined"> </p>
 <p><strong>阻塞和非阻塞指的是发起IO操作后是等待还是返回，同步和异步指的是应用程序与内核通信时数据从内核空间拷贝到用户空间的操作是内核主动触发（异步）还是应用程序触发（同步）</strong></p>
-<h3 id="IO多路复用、Epoll"><a href="#IO多路复用、Epoll" class="headerlink" title="IO多路复用、Epoll"></a>IO多路复用、Epoll</h3><p>用户线程读取分成两步，用户线程先发起select调用（确认内核是否准备好数据），准备好后才调用read，将数据从内核空间读取到用户空间（read这里还是阻塞）。主要是一个select线程可以向内核查多个数据通道的状态</p>
+<h3 id="IO多路复用、Epoll"><a href="#IO多路复用、Epoll" class="headerlink" title="IO多路复用、Epoll"></a>IO多路复用、Epoll</h3><p>epoll作用：进程内同时刻找到缓冲区或者连接状态变化的所有TCP连接，主要是基于同一时刻活跃连接只在总连接中占一小部分</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/45b484a77965974c20faa9d034b734f4.png" alt="image.png"></p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/5c03818e5fab6431a709753130be5897.png" alt="image.png"></p>
+<p>用户线程读取分成两步，用户线程先发起select调用（确认内核是否准备好数据），准备好后才调用read，将数据从内核空间读取到用户空间（read这里还是阻塞）。主要是一个select线程可以向内核查多个数据通道的状态</p>
 <p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1562207798044-84e66820-3cbf-4353-9b5b-1dd1124631df.png" alt="undefined"> </p>
 <p><strong>IO多路复用和同步阻塞、非阻塞的区别主要是用户线程发起read的时机不一样，IO多路复用是等数据在内核空间准备好了再通过同步read去读取；而阻塞和非阻塞因为没法预先知道数据是否在内核空间准备好，所以早早触发了read然后等待，只是阻塞会一直等，而非阻塞是指触发read后不用等，反复read直到read到数据。</strong></p>
 <p>Tomcat中的NIO指的是同步非阻塞，但是触发时机又是通过Java中的Selector，可以理解成通过Selector跳过了前面的阻塞和非阻塞，实际用户线程在数据Ready前没有触发read操作，数据到了才出发read操作。</p>
@@ -1914,7 +2629,9 @@ serverSock.configureBlocking(true);
 <p>MySQL Thread Pool之所有分成多个小的Thread Group Pool而不是一个大的Pool，是为了分解锁（每个group中都有队列，队列需要加锁。类似ConcurrentHashMap提高并发的原理），提高并发效率。</p>
 <p>group中的队列是用来区分优先级的，事务中的语句会放到高优先队列（非事务语句和autocommit 都会在低优先队列）；等待太久的SQL也会挪到高优先队列，防止饿死。</p>
 <p>比如启用Thread Pool后，如果出现多个慢查询，容易导致拨测类请求超时，进而出现Server异常的判断（类似Nginx 边缘触发问题）；或者某个group满后导致慢查询和拨测失败之类的问题</p>
-<h2 id="协程"><a href="#协程" class="headerlink" title="协程"></a>协程</h2><p>协程在实现上都是试图用一组少量的线程来实现多个任务，一旦某个任务阻塞，则可能用同一线程继续运行其他任务，避免大量上下文的切换。每个协程所独占的系统资源往往只有栈部分。而且，各个协程之间的切换，往往是用户通过代码来显式指定的（跟各种 callback 类似），不需要内核参与，可以很方便的实现异步。</p>
+<h2 id="协程"><a href="#协程" class="headerlink" title="协程"></a>协程</h2><p>非阻塞+epoll+同步编程 = 协程</p>
+<p>协程主要是将IO Wait等场景自动识别然后以非常小的代价切换到其它任务处理，一旦Wait完毕再切换回来。</p>
+<p>协程在实现上都是试图用一组少量的线程来实现多个任务，一旦某个任务阻塞，则可能用同一线程继续运行其他任务，避免大量上下文的切换。每个协程所独占的系统资源往往只有栈部分。而且，各个协程之间的切换，往往是用户通过代码来显式指定的（跟各种 callback 类似），不需要内核参与，可以很方便的实现异步。</p>
 <p>这个技术本质上也是异步非阻塞技术，它是将事件回调进行了包装，让程序员看不到里面的事件循环。程序员就像写阻塞代码一样简单。比如调用 client-&gt;recv() 等待接收数据时，就像阻塞代码一样写。实际上是底层库在执行recv时悄悄保存了一个状态，比如代码行数，局部变量的值。然后就跳回到EventLoop中了。什么时候真的数据到来时，它再把刚才保存的代码行数，局部变量值取出来，又开始继续执行。</p>
 <p>协程是异步非阻塞的另外一种展现形式。Golang，Erlang，Lua协程都是这个模型。</p>
 <p><strong>协程的优点是它比系统线程开销小，缺点是如果其中一个协程中有密集计算，其他的协程就不运行了</strong>。操作系统进程、线程切换的缺点是开销大，优点是无论代码怎么写，所有进程都可以并发运行。<br>协程也叫做用户态进程/用户态线程。区别就在于进程/线程是操作系统充当了EventLoop调度，而协程是自己用Epoll进行调度。</p>
@@ -1931,407 +2648,6 @@ serverSock.configureBlocking(true);
 <h2 id="Node-js"><a href="#Node-js" class="headerlink" title="Node.js"></a>Node.js</h2><p>Node.js：基于事件的异步非阻塞框架，基于V8，上层跑JavaScript应用。默认只有一个eventLoop导致也只能用一个核。</p>
 <p>Node.js 只有一个 EventLoop，也就是只占用一个 CPU 内核，当 Node.js 被CPU 密集型任务占用，导致其他任务被阻塞时，却还有 CPU 内核处于闲置状态，造成资源浪费。</p>
 <h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a href="https://www.atatech.org/articles/147345" target="_blank" rel="external">https://www.atatech.org/articles/147345</a></p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/07/28/就是要你懂TCP--性能和发送接收Buffer的关系/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/07/28/就是要你懂TCP--性能和发送接收Buffer的关系/" itemprop="url">TCP性能和发送接收窗口、Buffer的关系</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-07-28T12:30:03+08:00">
-                2019-07-28
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/07/28/就是要你懂TCP--性能和发送接收Buffer的关系/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2019/07/28/就是要你懂TCP--性能和发送接收Buffer的关系/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>本文希望解析清楚，当我们在代码中写下 socket.setSendBufferSize 和 sysctl 看到的rmem/wmem系统参数以及最终我们在TCP常常谈到的接收发送窗口的关系，以及他们怎样影响TCP传输的性能，同时如何通过图形来展示哪里是传输瓶颈。</p>
-<p>拥塞窗口相关文章比较多，他们跟带宽紧密相关，所以大家比较好判断，反而是接收、发送窗口一旦出现瓶颈，就没这么好判断了。</p>
-<p>先明确一下：<strong>文章标题中所说的Buffer指的是sysctl中的 rmem或者wmem，如果是代码中指定的话对应着SO_SNDBUF或者SO_RCVBUF，从TCP的概念来看对应着发送窗口或者接收窗口</strong></p>
-<h1 id="TCP性能和发送接收Buffer的关系"><a href="#TCP性能和发送接收Buffer的关系" class="headerlink" title="TCP性能和发送接收Buffer的关系"></a>TCP性能和发送接收Buffer的关系</h1><p>相关参数：</p>
-<pre><code>$sudo sysctl -a | egrep &quot;rmem|wmem|adv_win|moderate&quot;
-net.core.rmem_default = 212992
-net.core.rmem_max = 212992
-net.core.wmem_default = 212992
-net.core.wmem_max = 212992
-net.ipv4.tcp_adv_win_scale = 1
-net.ipv4.tcp_moderate_rcvbuf = 1
-net.ipv4.tcp_rmem = 4096    87380    6291456
-net.ipv4.tcp_wmem = 4096    16384    4194304
-net.ipv4.udp_rmem_min = 4096
-net.ipv4.udp_wmem_min = 4096
-vm.lowmem_reserve_ratio = 256    256    32
-</code></pre><p>先从碰到的一个实际问题看起：</p>
-<blockquote>
-<p>应用通过专线跨网络访问云上的服务，专线100M，时延20ms，一个SQL查询了22M数据，结果花了大概25秒，这太慢了，不正常。如果通过云上client访问云上服务那么1-2秒就返回了（说明不跨网络服务是正常的）。如果通过http或者scp从公司向云上传输这22M的数据大概两秒钟也传送完毕了（说明网络带宽不是瓶颈），所以这里问题的原因基本上是我们的服务在这种网络条件下有性能问题，需要找出为什么。</p>
-</blockquote>
-<h2 id="抓包分析-tcpdump-wireshark"><a href="#抓包分析-tcpdump-wireshark" class="headerlink" title="抓包分析 tcpdump+wireshark"></a>抓包分析 tcpdump+wireshark</h2><p>抓包分析这22M的数据传输，如下图（wireshark 时序图），横轴是时间，纵轴是sequence number：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d188530df31712e8341f5687a960743a.png" alt="image.png"></p>
-<p>粗一看没啥问题，因为时间太长掩盖了问题。把这个图形放大，就看中间50ms内的传输情况（横轴是时间，纵轴是sequence number，一个点代表一个包）</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e177d59ecb886daef5905ed80a84dfd2.png" alt="image.png"></p>
-<p>换个角度，看看窗口尺寸图形：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/7ae26e844629258de173a05d5ad595f9.png" alt="image.png"></p>
-<p>从bytes in flight也大致能算出来总的传输时间 16K*1000/20=800Kb/秒</p>
-<p>我们的应用会默认设置 socketSendBuffer 为16K:</p>
-<blockquote>
-<p>socket.setSendBufferSize(16*1024) //16K send buffer</p>
-</blockquote>
-<p>来看一下tcp包发送流程：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d385a7dad76ec4031dfb6c096bca434b.png" alt="image.png"></p>
-<p>（图片<a href="https://www.atatech.org/articles/9032" target="_blank" rel="external">来自</a>）</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ff025f076a4a2bc2b1b13d11f32a97d3.png" alt="image.png"></p>
-<p>如果sendbuffer不够就会卡在上图中的第一步 sk_stream_wait_memory, 通过systemtap脚本可以验证：</p>
-<pre><code>#!/usr/bin/stap
-# Simple probe to detect when a process is waiting for more socket send
-# buffer memory. Usually means the process is doing writes larger than the
-# socket send buffer size or there is a slow receiver at the other side.
-# Increasing the socket&apos;s send buffer size might help decrease application
-# latencies, but it might also make it worse, so buyer beware.
-
-# Typical output: timestamp in microseconds: procname(pid) event
-#
-# 1218230114875167: python(17631) blocked on full send buffer
-# 1218230114876196: python(17631) recovered from full send buffer
-# 1218230114876271: python(17631) blocked on full send buffer
-# 1218230114876479: python(17631) recovered from full send buffer
-probe kernel.function(&quot;sk_stream_wait_memory&quot;)
-{
-    printf(&quot;%u: %s(%d) blocked on full send buffern&quot;,
-        gettimeofday_us(), execname(), pid())
-}
-
-probe kernel.function(&quot;sk_stream_wait_memory&quot;).return
-{
-    printf(&quot;%u: %s(%d) recovered from full send buffern&quot;,
-        gettimeofday_us(), execname(), pid())
-}
-</code></pre><h2 id="原理解析"><a href="#原理解析" class="headerlink" title="原理解析"></a>原理解析</h2><p>如果tcp发送buffer也就是SO_SNDBUF只有16K的话，这些包很快都发出去了，但是这16K的buffer不能立即释放出来填新的内容进去，因为tcp要保证可靠，万一中间丢包了呢。只有等到这16K中的某些包ack了，才会填充一些新包进来然后继续发出去。由于这里rt基本是20ms，也就是16K发送完毕后，等了20ms才收到一些ack，这20ms应用、内核什么都不能做，所以就是如第二个图中的大概20ms的等待平台。这块请参考<a href="https://www.atatech.org/articles/79660" target="_blank" rel="external">这篇文章</a></p>
-<p><strong>sendbuffer相当于发送仓库的大小，仓库的货物都发走后，不能立即腾出来发新的货物，而是要等对方确认收到了(ack)才能腾出来发新的货物。 传输速度取决于发送仓库（sendbuffer）、接收仓库（recvbuffer）、路宽（带宽）的大小，如果发送仓库（sendbuffer）足够大了之后接下来的瓶颈就会是高速公路了（带宽、拥塞窗口）。而实际上这个案例中带宽够、接收仓库也够，但是发送仓库太小了，但是发送过程断断续续，所以非常慢。</strong></p>
-<p>如果是UDP，就没有可靠的概念，有数据统统发出去，根本不关心对方是否收到，也就不需要ack和这个发送buffer了。</p>
-<h2 id="几个发送buffer相关的内核参数"><a href="#几个发送buffer相关的内核参数" class="headerlink" title="几个发送buffer相关的内核参数"></a>几个发送buffer相关的内核参数</h2><pre><code>vm.lowmem_reserve_ratio = 256   256     32
-net.core.wmem_max = 1048576
-net.core.wmem_default = 124928
-net.ipv4.tcp_wmem = 4096        16384   4194304
-net.ipv4.udp_wmem_min = 4096
-</code></pre><p>net.ipv4.tcp_wmem 默认就是16K，而且内核是能够动态调整的，只不过我们代码中这块的参数是很多年前从Cobra中继承过来的，初始指定了sendbuffer的大小。代码中设置了这个参数后就关闭了内核的动态调整功能，这就是为什么http或者scp都很快，因为他们的send buffer是动态调整的。</p>
-<p>接收buffer是有开关可以动态控制的，发送buffer没有开关默认就是开启，关闭只能在代码层面来控制</p>
-<blockquote>
-<p>net.ipv4.tcp_moderate_rcvbuf</p>
-</blockquote>
-<h2 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h2><p>调整 socketSendBuffer 到256K，查询时间从25秒下降到了4秒多，但是比理论带宽所需要的时间略高</p>
-<p>继续查看系统 net.core.wmem_max 参数默认最大是130K，所以即使我们代码中设置256K实际使用的也是130K，继续调大这个系统参数后整个网络传输时间大概2秒(跟100M带宽匹配了，scp传输22M数据也要2秒），整体查询时间2.8秒。测试用的mysql client短连接，如果代码中的是长连接的话会块300-400ms（消掉了握手和慢启动阶段），这基本上是理论上最快速度了</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/3dcfd469fe1e2f7e1d938a5289b83826.png" alt="image.png"></p>
-<p>如果指定了tcp_wmem，则net.core.wmem_default被tcp_wmem的覆盖。send Buffer在tcp_wmem的最小值和最大值之间自动调整。如果调用setsockopt()设置了socket选项SO_SNDBUF，将关闭发送端缓冲的自动调节机制，tcp_wmem将被忽略，SO_SNDBUF的最大值由net.core.wmem_max限制。</p>
-<h2 id="BDP-带宽时延积"><a href="#BDP-带宽时延积" class="headerlink" title="BDP 带宽时延积"></a>BDP 带宽时延积</h2><p>BDP=rtt*(带宽/8)</p>
-<p>这个 buffer 调到1M测试没有帮助，从理论计算BDP（带宽时延积） 0.02秒<em>(100MB/8)=250Kb  所以 **</em>SO_SNDBUF为256Kb的时候基本能跑满带宽了，再大也没有什么实际意义了** 。也就是前面所说的仓库足够后瓶颈在带宽上了。</p>
-<p>因为这里根据带宽、rtt计算得到的BDP是250K，BDP跑满后拥塞窗口（带宽、接收窗口和rt决定的）即将成为新的瓶颈，所以调大buffer没意义了。</p>
-<h2 id="用tc构造延时和带宽限制的模拟重现环境"><a href="#用tc构造延时和带宽限制的模拟重现环境" class="headerlink" title="用tc构造延时和带宽限制的模拟重现环境"></a>用tc构造延时和带宽限制的模拟重现环境</h2><pre><code>sudo tc qdisc del dev eth0 root netem delay 20ms
-sudo tc qdisc add dev eth0 root tbf rate 500kbit latency 50ms burst 15kb
-</code></pre><h2 id="这个案例关于wmem的结论"><a href="#这个案例关于wmem的结论" class="headerlink" title="这个案例关于wmem的结论"></a>这个案例关于wmem的结论</h2><p>默认情况下Linux系统会自动调整这个buffer（net.ipv4.tcp_wmem）, 也就是不推荐程序中主动去设置SO_SNDBUF，除非明确知道设置的值是最优的。</p>
-<p>从这里我们可以看到，有些理论知识点虽然我们知道，但是在实践中很难联系起来，也就是常说的无法学以致用，最开始看到抓包结果的时候比较怀疑发送、接收窗口之类的，没有直接想到send buffer上，理论跟实践没联系上。</p>
-<h2 id="说完发送Buffer-wmem-接下来我们接着一看看接收buffer-rmem-和接收窗口的情况"><a href="#说完发送Buffer-wmem-接下来我们接着一看看接收buffer-rmem-和接收窗口的情况" class="headerlink" title="说完发送Buffer(wmem)接下来我们接着一看看接收buffer(rmem)和接收窗口的情况"></a>说完发送Buffer(wmem)接下来我们接着一看看接收buffer(rmem)和接收窗口的情况</h2><p>用这样一个案例下来验证接收窗口的作用：</p>
-<blockquote>
-<p>有一个batch insert语句，整个一次要插入5532条记录，所有记录大小总共是376K，也就是这个sql语句本身是376K。</p>
-</blockquote>
-<h2 id="SO-RCVBUF很小的时候并且rtt很大对性能的影响"><a href="#SO-RCVBUF很小的时候并且rtt很大对性能的影响" class="headerlink" title="SO_RCVBUF很小的时候并且rtt很大对性能的影响"></a>SO_RCVBUF很小的时候并且rtt很大对性能的影响</h2><p>如果rtt是40ms，总共需要5-6秒钟：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/4af4765c045e9eed2e36d9760d4a2aba.png" alt="image.png"></p>
-<p>基本可以看到server一旦空出来点窗口，client马上就发送数据，由于这点窗口太小，rtt是40ms，也就是一个rtt才能传3456字节的数据，整个带宽才用到80-90K，完全没跑满。</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/1984258c0300921799476777f5f0a38a.png" alt="image.png"></p>
-<p>比较明显间隔 40ms 一个等待台阶，台阶之间两个包大概3K数据，总的传输效率如下：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/5ec50ecf25444e96d81fab975b5a79e6.png" alt="image.png"></p>
-<p><strong>斜线越陡表示速度越快，从上图看整体SQL上传花了5.5秒，执行0.5秒。</strong></p>
-<p>此时对应的窗口尺寸：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/05d6357ed53c1c16f0dd0454251916ef.png" alt="image.png"></p>
-<p>窗口由最开始28K(20个1448）很快降到了不到4K的样子，然后基本游走在即将满的边缘，虽然读取慢，幸好rtt也大，导致最终也没有满。（这个是3.1的Linux，应用SO_RCVBUF设置的是8K，用一半来做接收窗口）</p>
-<h2 id="SO-RCVBUF很小的时候并且rtt很小时对性能的影响"><a href="#SO-RCVBUF很小的时候并且rtt很小时对性能的影响" class="headerlink" title="SO_RCVBUF很小的时候并且rtt很小时对性能的影响"></a>SO_RCVBUF很小的时候并且rtt很小时对性能的影响</h2><p>如果同样的语句在 rtt 是0.1ms的话</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/67f280a1cf499ae388fc44d6418869a7.png" alt="image.png"></p>
-<p>虽然明显看到接收窗口经常跑满，但是因为rtt很小，一旦窗口空出来很快就通知到对方了，所以整个过小的接收窗口也没怎么影响到整体性能</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/15b7d6852e44fc179d60d76f322695c7.png" alt="image.png"></p>
-<p>如上图11.4秒整个SQL开始，到11.41秒SQL上传完毕，11.89秒执行完毕（执行花了0.5秒），上传只花了0.01秒</p>
-<p>接收窗口情况：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/0f3050cd98db40a352410a11a521e8b2.png" alt="image.png"></p>
-<p>如图，接收窗口由最开始的28K降下来，然后一直在5880和满了之间跳动</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/0db5c3684a9314907f9158ac15b6ac71.png" alt="image.png"></p>
-<p>从这里可以得出结论，接收窗口的大小对性能的影响，rtt越大影响越明显，当然这里还需要应用程序配合，如果应用程序一直不读走数据即使接收窗口再大也会堆满的。</p>
-<h2 id="SO-RCVBUF和tcp-window-full的坏case"><a href="#SO-RCVBUF和tcp-window-full的坏case" class="headerlink" title="SO_RCVBUF和tcp window full的坏case"></a>SO_RCVBUF和tcp window full的坏case</h2><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/55cf9875d24d76a077c442327d54fa34.png" alt="image.png"></p>
-<p>上图中红色平台部分，停顿了大概6秒钟没有发任何有内容的数据包，这6秒钟具体在做什么如下图所示，可以看到这个时候接收方的TCP Window Full，同时也能看到接收方（3306端口）的TCP Window Size是8192（8K），发送方（27545端口）是20480.</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/da48878ce0c01bcdedb1e6d6a6cc6d1c.png" alt="image.png"></p>
-<p>这个状况跟前面描述的recv buffer太小不一样，8K是很小，但是因为rtt也很小，所以server总是能很快就ack收到了，接收窗口也一直不容易达到full状态，但是一旦接收窗口达到了full状态，居然需要惊人的6秒钟才能恢复，这等待的时间有点太长了。这里应该是应用读取数据太慢导致了耗时6秒才恢复，所以最终这个请求执行会非常非常慢（时间主要耗在了上传SQL而不是执行SQL）.</p>
-<p>实际原因不知道，从读取TCP数据的逻辑来看这里没有明显的block，可能的原因：</p>
-<ul>
-<li>request的SQL太大，Server（3306端口上的服务）从TCP读取SQL需要放到一块分配好的内存，内存不够的时候需要扩容，扩容有可能触发fgc，从图形来看，第一次满就卡顿了，而且每次满都卡顿，不像是这个原因</li>
-<li>request请求一次发过来的是多个SQL，应用读取SQL后，将SQL分成多个，然后先执行第一个，第一个执行完后返回response，再读取第二个。图形中卡顿前没有response返回，所以也不是这个原因</li>
-<li>……其它未知原因</li>
-</ul>
-<h2 id="接收方不读取数据导致的接收窗口满同时有丢包发生"><a href="#接收方不读取数据导致的接收窗口满同时有丢包发生" class="headerlink" title="接收方不读取数据导致的接收窗口满同时有丢包发生"></a>接收方不读取数据导致的接收窗口满同时有丢包发生</h2><p>服务端返回数据到client端，TCP协议栈ack这些包，但是应用层没读走包，这个时候 SO_RCVBUF 堆积满，client的TCP协议栈发送 ZeroWindow 标志给服务端。也就是接收端的 buffer 堆满了（但是服务端这个时候看到的bytes in fly是0，因为都ack了），这时服务端不能继续发数据，要等 ZeroWindow 恢复。</p>
-<p>那么接收端上层应用不读走包可能的原因：</p>
-<ul>
-<li>应用代码卡顿、GC等等</li>
-<li>应用代码逻辑上在做其它事情（比如Server将SQL分片到多个DB上，Server先读取第一个分片，如果第一个分片数据很大很大，处理也慢，那么即使第二个分片数据都返回到了TCP 的recv buffer，应用也没去读取其它分片的结果集，直到第一个分片读取完毕。如果SQL带排序，那么Server会轮询读取多个分片，造成这种卡顿的概率小了很多）</li>
-</ul>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/49e2635a7c4025d44b915a1f17dd272a.png" alt="image.png"></p>
-<p>上图这个流因为应用层不读取TCP数据，导致TCP接收Buffer满，进而接收窗口为0，server端不能再发送数据而卡住，但是ZeroWindow的探测包，client都有正常回复，所以1903秒之后接收方窗口不为0后（window update）传输恢复。</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/2e493d8dc32bb63f2126375de6675351.png" alt="image.png"></p>
-<p>这个截图和前一个类似，是在Server上(3003端口)抓到的包，不同的是接收窗口为0后，server端多次探测（Server上抓包能看到），但是client端没有回复 ZeroWindow（也有可能是回复了，但是中间环节把ack包丢了,或者这个探测包client没收到），造成server端认为client死了、不可达之类，进而反复重传，重传超过15次之后，server端认为这个连接死了，粗暴单方面断开（没有reset和fin,因为没必要，server认为网络连通性出了问题）。</p>
-<p>等到1800秒后，client的接收窗口恢复了，发个window update给server，这个时候server认为这个连接已经断开了，只能回复reset</p>
-<p>网络不通，重传超过一定的时间（tcp_retries2)然后断开这个连接是正常的，这里的问题是：</p>
-<ol>
-<li>为什么这种场景下丢包了，而且是针对某个stream一直丢包</li>
-</ol>
-<p>可能是因为这种场景下触发了中间环节的流量管控，故意丢包了（比如proxy、slb、交换机都有可能做这种选择性的丢包）</p>
-<p>这里server认为连接断开，没有发reset和fin,因为没必要，server认为网络连通性出了问题。client还不知道server上这个连接清理掉了，等client回复了一个window update，server早就认为这个连接早断了，突然收到一个update，莫名其妙，只能reset</p>
-<h2 id="接收窗口和SO-RCVBUF的关系"><a href="#接收窗口和SO-RCVBUF的关系" class="headerlink" title="接收窗口和SO_RCVBUF的关系"></a>接收窗口和SO_RCVBUF的关系</h2><p>初始接收窗口一般是 <strong>mss乘以初始cwnd（为了和慢启动逻辑兼容，不想一下子冲击到网络）</strong>，如果没有设置SO_RCVBUF，那么会根据 net.ipv4.tcp_rmem 动态变化，如果设置了SO_RCVBUF，那么接收窗口要向下面描述的值靠拢。</p>
-<p><a href="https://access.redhat.com/discussions/3624151" target="_blank" rel="external">初始cwnd可以大致通过查看到</a>：</p>
-<pre><code>ss -itmpn dst &quot;10.81.212.8&quot;
-State      Recv-Q Send-Q Local Address:Port  Peer Address:Port
-ESTAB      0      0      10.xx.xx.xxx:22     10.yy.yy.yyy:12345  users:((&quot;sshd&quot;,pid=1442,fd=3))
-         skmem:(r0,rb369280,t0,tb87040,f4096,w0,o0,bl0,d92)
-
-Here we can see this socket has Receive Buffer 369280 bytes, and Transmit Buffer 87040 bytes.
-Keep in mind the kernel will double any socket buffer allocation for overhead. 
-So a process asks for 256 KiB buffer with setsockopt(SO_RCVBUF) then it will get 512 KiB buffer
-space. This is described on man 7 tcp. 
-</code></pre><p>初始窗口计算的代码逻辑，重点在18行：</p>
-<pre><code>/* TCP initial congestion window as per rfc6928 */
-#define TCP_INIT_CWND           10
-
-
-/* 3. Try to fixup all. It is made immediately after connection enters
- *    established state.
- */
-void tcp_init_buffer_space(struct sock *sk)
-{
-        int tcp_app_win = sock_net(sk)-&gt;ipv4.sysctl_tcp_app_win;
-        struct tcp_sock *tp = tcp_sk(sk);
-        int maxwin;
-
-        if (!(sk-&gt;sk_userlocks &amp; SOCK_SNDBUF_LOCK))
-                tcp_sndbuf_expand(sk);
-
-        //初始最大接收窗口计算过程
-        tp-&gt;rcvq_space.space = min_t(u32, tp-&gt;rcv_wnd, TCP_INIT_CWND * tp-&gt;advmss);
-        tcp_mstamp_refresh(tp);
-        tp-&gt;rcvq_space.time = tp-&gt;tcp_mstamp;
-        tp-&gt;rcvq_space.seq = tp-&gt;copied_seq;
-
-        maxwin = tcp_full_space(sk);
-
-        if (tp-&gt;window_clamp &gt;= maxwin) {
-                tp-&gt;window_clamp = maxwin;
-
-                if (tcp_app_win &amp;&amp; maxwin &gt; 4 * tp-&gt;advmss)
-                        tp-&gt;window_clamp = max(maxwin -
-                                               (maxwin &gt;&gt; tcp_app_win),
-                                               4 * tp-&gt;advmss);
-        }
-
-        /* Force reservation of one segment. */
-        if (tcp_app_win &amp;&amp;
-            tp-&gt;window_clamp &gt; 2 * tp-&gt;advmss &amp;&amp;
-            tp-&gt;window_clamp + tp-&gt;advmss &gt; maxwin)
-                tp-&gt;window_clamp = max(2 * tp-&gt;advmss, maxwin - tp-&gt;advmss);
-
-        tp-&gt;rcv_ssthresh = min(tp-&gt;rcv_ssthresh, tp-&gt;window_clamp);
-        tp-&gt;snd_cwnd_stamp = tcp_jiffies32;
-}
-</code></pre><p>传输过程中，最大接收窗口会动态调整，当指定了SO_RCVBUF后，实际buffer是两倍SO_RCVBUF，但是要分出一部分（2^net.ipv4.tcp_adv_win_scale)来作为乱序报文缓存。</p>
-<blockquote>
-<ol>
-<li>net.ipv4.tcp_adv_win_scale = 2  //2.6内核，3.1中这个值默认是1</li>
-</ol>
-</blockquote>
-<p>如果SO_RCVBUF是8K，总共就是16K，然后分出2^2分之一，也就是4分之一，还剩12K当做接收窗口；如果设置的32K，那么接收窗口是48K</p>
-<pre><code>static inline int tcp_win_from_space(const struct sock *sk, int space)
-{//space 传入的时候就已经是 2*SO_RCVBUF了
-        int tcp_adv_win_scale = sock_net(sk)-&gt;ipv4.sysctl_tcp_adv_win_scale;
-
-        return tcp_adv_win_scale &lt;= 0 ?
-                (space&gt;&gt;(-tcp_adv_win_scale)) :
-                space - (space&gt;&gt;tcp_adv_win_scale); //sysctl参数tcp_adv_win_scale 
-}
-</code></pre><p>接收窗口有最大接收窗口和当前可用接收窗口。</p>
-<p>一般来说一次中断基本都会将 buffer 中的包都取走。</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d7d3af2c03653e6cf8ae2befa0022832.png" alt="image.png"></p>
-<p>绿线是最大接收窗口动态调整的过程，最开始是1460*10，握手完毕后略微调整到1472*10（可利用body增加了12），随着数据的传输开始跳涨</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d0e12e8bad8764385549f9b391c62ab0.png" alt="image.png"></p>
-<p>上图是四个batch insert语句，可以看到绿色接收窗口随着数据的传输越来越大，图中蓝色竖直部分基本表示SQL上传，两个蓝色竖直条的间隔代表这个insert在服务器上真正的执行时间。这图非常陡峭，表示上传没有任何瓶颈.</p>
-<h3 id="设置-SO-RCVBUF-后通过wireshark观察到的接收窗口基本"><a href="#设置-SO-RCVBUF-后通过wireshark观察到的接收窗口基本" class="headerlink" title="设置 SO_RCVBUF 后通过wireshark观察到的接收窗口基本"></a>设置 SO_RCVBUF 后通过wireshark观察到的接收窗口基本</h3><p>下图是设置了 SO_RCVBUF 为8192的实际情况：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d0e12e8bad8764385549f9b391c62ab0.png" alt="image.png"></p>
-<p>从最开始的14720，执行第一个create table语句后降到14330，到真正执行batch insert就降到了8192*1.5. 然后一直保持在这个值</p>
-<h3 id="If-you-set-a-“receive-buffer-size”-on-a-TCP-socket-what-does-it-actually-mean"><a href="#If-you-set-a-“receive-buffer-size”-on-a-TCP-socket-what-does-it-actually-mean" class="headerlink" title="If you set a “receive buffer size” on a TCP socket, what does it actually mean?"></a>If you set a “receive buffer size” on a TCP socket, what does it actually mean?</h3><p><a href="https://blog.cloudflare.com/the-story-of-one-latency-spike/" target="_blank" rel="external">The naive answer would go something along the lines of: the TCP receive buffer setting indicates the maximum number of bytes a </a><a href="https://blog.cloudflare.com/the-story-of-one-latency-spike/" target="_blank" rel="external"><code>read()</code></a><a href="https://blog.cloudflare.com/the-story-of-one-latency-spike/" target="_blank" rel="external"> syscall could retrieve without blocking.</a></p>
-<p>Note that if the buffer size is set with <code>setsockopt()</code>, the value returned with <code>getsockopt()</code> is always <em>double</em> the size requested to allow for overhead. This is described in <code>man 7 socket</code>.</p>
-<h1 id="长肥网络（rt很高、带宽也高）下接收窗口对传输性能的影响"><a href="#长肥网络（rt很高、带宽也高）下接收窗口对传输性能的影响" class="headerlink" title="长肥网络（rt很高、带宽也高）下接收窗口对传输性能的影响"></a>长肥网络（rt很高、带宽也高）下接收窗口对传输性能的影响</h1><p>来看一个案例，从美国的服务器上下载文件很慢，只能跑到220K，远远没有达到带宽能力。业务结构是：</p>
-<p>client ——150ms——&gt;&gt;&gt;美国的统一接入server—–1ms—–&gt;&gt;&gt;nginx</p>
-<p>通过下载一个4M的文件大概需要20秒，分别在client和nginx上抓包来分析这个问题（统一接入server没权限上去）</p>
-<h2 id="Nginx上抓包"><a href="#Nginx上抓包" class="headerlink" title="Nginx上抓包"></a>Nginx上抓包</h2><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/259767fb17f7dbffe7f77ab059c47dbd.png" alt="image.png"></p>
-<p>从这里可以看到Nginx大概在60ms内就将4M的数据都发完了</p>
-<h2 id="client上抓包"><a href="#client上抓包" class="headerlink" title="client上抓包"></a>client上抓包</h2><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/466fba92829f6a922ccd2d57a7e3fdac.png" alt="image.png"></p>
-<p>从这个图上可以清楚看到大概每传输大概30K数据就有一个150ms的等待平台，这个150ms基本是client到美国的rt。</p>
-<p>从我们前面的阐述可以清楚了解到因为rt比较高，统一接入server每发送30K数据后要等150ms才能收到client的ack，然后继续发送，猜是因为上面设置的发送buffer大概是30K。</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/8e32414641c5006ca987781c295d1e7f.png" alt="image.png"></p>
-<p>可以看到接入server的配置里面果然有个32K buffer的配置</p>
-<h2 id="将buffer改大"><a href="#将buffer改大" class="headerlink" title="将buffer改大"></a>将buffer改大</h2><p>速度可以到420K，但是还没有跑满带宽：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/93e254c5154ce2e065bec9fb34f3db2b.png" alt="image.png"></p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/0a8c68a58da6f169573b57cde0ffba93.png" alt="image.png"></p>
-<p>接着看一下client上的抓包</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/822737a4ed6ffe6b920d4b225a1be5bf.png" alt="image.png"></p>
-<p>可以清楚看到 client的接收窗口是64K， 64K*1000/150=426K 这个64K是很明显16个位的最大值，应该是TCP握手有一方不支持window scaling factor</p>
-<p>继续分析一下握手包，syn：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/004886698ddbaa1cbc8342a9cd667c76.png" alt="image.png"></p>
-<p>说明client是支持的，再看 syn+ack：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/70155e021390cb1ee07091c306c375f4.png" alt="image.png"></p>
-<p>可以看到服务端不支持，那就最大只能用到64K。需要修改服务端代理程序，这主要是代理的锅。</p>
-<p>如果内网之间rt很小这个锅不会爆发，一旦网络慢一点就把问题恶化了</p>
-<p>比如：<br><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/a08a204ec7ad4bba7867dacea1668322.png" alt="image.png"></p>
-<p>长肥网络就像是很长很宽的高速公路，上面可以同时跑很多车，而如果发车能力不够，就容易跑不满高速公路</p>
-<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><ul>
-<li>一般来说绝对不要在程序中手工设置SO_SNDBUF和SO_RCVBUF，内核自动调整比你做的要好；</li>
-<li>SO_SNDBUF一般会比发送滑动窗口要大，因为发送出去并且ack了的才能从SO_SNDBUF中释放；</li>
-<li>TCP接收窗口跟SO_RCVBUF关系很复杂；</li>
-<li>SO_RCVBUF太小并且rtt很大的时候会严重影响性能；</li>
-<li>接收窗口比发送窗口复杂多了；</li>
-<li>发送窗口/SO_SNDBUF–发送仓库，带宽/拥塞窗口–马路通畅程度，接收窗口/SO_RCVBUF–接收仓库；</li>
-<li>发送仓库、马路通畅程度、接收仓库一起决定了传输速度–类比一下快递过程。</li>
-</ul>
-<p><strong>总之记住一句话：不要设置socket的**</strong>SO_SNDBUF和SO_RCVBUF**</p>
-<h1 id="相关和参考文章"><a href="#相关和参考文章" class="headerlink" title="相关和参考文章"></a>相关和参考文章</h1><p><a href="https://www.atatech.org/articles/80292" target="_blank" rel="external">经典的 nagle 和 dalay ack对性能的影响 就是要你懂 TCP– 最经典的TCP性能问题</a></p>
-<p><a href="https://www.atatech.org/articles/78858" target="_blank" rel="external">关于TCP 半连接队列和全连接队列</a></p>
-<p><a href="https://www.atatech.org/articles/60633" target="_blank" rel="external">MSS和MTU导致的悲剧</a></p>
-<p><a href="https://www.atatech.org/articles/73174" target="_blank" rel="external">双11通过网络优化提升10倍性能</a></p>
-<p><a href="https://www.atatech.org/articles/79660" target="_blank" rel="external">就是要你懂TCP的握手和挥手</a></p>
-<p><a href="https://www.atatech.org/articles/13203" target="_blank" rel="external">高性能网络编程7–tcp连接的内存使用</a></p>
-<p><a href="https://blog.cloudflare.com/the-story-of-one-latency-spike/" target="_blank" rel="external">The story of one latency spike</a></p>
-<p><a href="https://access.redhat.com/discussions/782343" target="_blank" rel="external">What is rcv_space in the ‘ss –info’ output, and why it’s value is larger than net.core.rmem_max</a></p>
 
           
         
@@ -2539,256 +2855,6 @@ ACK-FIN         ----&gt; *** ActiveConn=0 and 0 ESTABLISHED socket on realserver
 <li>wlc/lc在长连接下，如果同时创建的大量连接（比如sysbench压测），因为内核的lvs逻辑对active和inactive判定不太合理导致了这种场景下连接会严重不均衡。</li>
 </ul>
 <h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a href="http://www.austintek.com/LVS/LVS-HOWTO/HOWTO/LVS-HOWTO.ipvsadm.html#ActiveConn" target="_blank" rel="external">What is an ActiveConn/InActConn (Active/Inactive) connnection?</a></p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/07/12/就是要你懂网络监控--ss用法大全/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/07/12/就是要你懂网络监控--ss用法大全/" itemprop="url">就是要你懂网络监控--ss用法大全</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-07-12T15:30:03+08:00">
-                2019-07-12
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Network/" itemprop="url" rel="index">
-                    <span itemprop="name">Network</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/07/12/就是要你懂网络监控--ss用法大全/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2019/07/12/就是要你懂网络监控--ss用法大全/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="就是要你懂网络监控–ss用法大全"><a href="#就是要你懂网络监控–ss用法大全" class="headerlink" title="就是要你懂网络监控–ss用法大全"></a>就是要你懂网络监控–ss用法大全</h1><p>netstat命令大家肯定已经很熟悉了，但是在2001年的时候netstat 1.42版本之后就没更新了，之后取代的工具是ss命令，是iproute2 package的一员。</p>
-<pre><code># rpm -ql iproute | grep ss
-/usr/sbin/ss
-</code></pre><p>netstat的替代工具是nstat，当然netstat的大部分功能ss也可以替代</p>
-<p>ss可以显示跟netstat类似的信息，但是速度却比netstat快很多，netstat是基于/proc/net/netstat目录下查询相关信息输出的，用strace跟踪一下netstat查询tcp的连接，会看到他open的是/proc/net/tcp的信息。ss快的秘密就在于它利用的是TCP协议的tcp_diag模块，而且是从内核直接读取信息。</p>
-<p>/proc/net/snmp 存放的是系统启动以来的累加值，netstat -s 读取它<br>/proc/net/tcp  是存放目前活跃的tcp连接的统计值，连接断开统计值清空， ss -it 读取它</p>
-<h2 id="Buffer窗口"><a href="#Buffer窗口" class="headerlink" title="Buffer窗口"></a><a href="https://access.redhat.com/discussions/3624151" target="_blank" rel="external">Buffer窗口</a></h2><p>–memory/-m ： 展示buffer窗口的大小</p>
-<pre><code>ss -itmpn dst &quot;10.81.212.8&quot;
-State      Recv-Q Send-Q Local Address:Port  Peer Address:Port
-ESTAB      0      0      10.xx.xx.xxx:22     10.yy.yy.yyy:12345  users:((&quot;sshd&quot;,pid=1442,fd=3))
-         skmem:(r0,rb369280,t0,tb87040,f4096,w0,o0,bl0,d92)
-
-Here we can see this socket has Receive Buffer 369280 bytes, and Transmit Buffer 87040 bytes.Keep in mind the kernel will double any socket buffer allocation for overhead. 
-So a process asks for 256 KiB buffer with setsockopt(SO_RCVBUF) then it will get 512 KiB buffer space. This is described on man 7 tcp. 
-</code></pre><h2 id="ss-过滤地址和端口号，有点类似于tcpdump的用法"><a href="#ss-过滤地址和端口号，有点类似于tcpdump的用法" class="headerlink" title="ss 过滤地址和端口号，有点类似于tcpdump的用法"></a>ss 过滤地址和端口号，有点类似于tcpdump的用法</h2><p>过滤目标端口是80的或者源端口是1723的连接，dst后面要跟空格然后加“：”：</p>
-<pre><code># ss -ant dst :80 or src :1723 
-State      Recv-Q Send-Q                                               Local Address:Port                                                 Peer Address:Port 
-LISTEN     0      3                                                                *:1723                                                            *:*     
-TIME-WAIT  0      0                                                     172.31.23.95:37269                                              111.161.68.235:80    
-TIME-WAIT  0      0                                                     172.31.23.95:37263                                              111.161.68.235:80    
-TIME-WAIT  0      0                                                     172.31.23.95:37267 
-</code></pre><p>or：</p>
-<pre><code>ss -ant dport = :80 or sport = :1723
-</code></pre><p>地址筛选，目标地址是111.161.68.235的连接</p>
-<pre><code>ss -ant dst 111.161.68.235
-</code></pre><p>端口大小筛选，源端口大于1024的端口：</p>
-<pre><code>ss sport gt 1024
-</code></pre><p>How Do I Compare Local and/or Remote Port To A Number?<br>Use the following syntax:</p>
-<pre><code>## Compares remote port to a number ##
-ss dport OP PORT
-
-## Compares local port to a number ##
-sport OP PORT
-</code></pre><p>Where OP can be one of the following:</p>
-<pre><code>&lt;= or le : Less than or equal to port
-&gt;= or ge : Greater than or equal to port
-== or eq : Equal to port
-!= or ne : Not equal to port
-&lt; or gt : Less than to port
-&gt; or lt : Greater than to port
-Note: le, gt, eq, ne etc. are use in unix shell and are accepted as well.
-
-###################################################################################
-### Do not forget to escape special characters when typing them in command line ###
-###################################################################################
-
-ss  sport = :http
-ss  dport = :http
-ss  dport \&gt; :1024
-ss  sport \&gt; :1024
-ss sport \&lt; :32000
-ss  sport eq :22
-ss  dport != :22
-ss  state connected sport = :http
-ss \( sport = :http or sport = :https \)
-ss -o state fin-wait-1 \( sport = :http or sport = :https \) dst 192.168.1/24
-</code></pre><h2 id="按连接状态过滤"><a href="#按连接状态过滤" class="headerlink" title="按连接状态过滤"></a>按连接状态过滤</h2><p>Display All Established HTTP Connections</p>
-<pre><code>ss -o state established &apos;( dport = :http or sport = :http )&apos;
-</code></pre><p>List all the TCP sockets in state -FIN-WAIT-1 for our httpd to network 202.54.1/24 and look at their timers:</p>
-<pre><code>ss -o state fin-wait-1 &apos;( sport = :http or sport = :https )&apos; dst 202.54.1/24
-</code></pre><p>Filter Sockets Using TCP States</p>
-<pre><code>ss -4 state FILTER-NAME-HERE
-</code></pre><p>Where FILTER-NAME-HERE can be any one of the following,</p>
-<pre><code>established
-syn-sent
-syn-recv
-fin-wait-1
-fin-wait-2
-time-wait
-closed
-close-wait
-last-ack
-listen
-closing
-all : All of the above states
-connected : All the states except for listen and closed
-synchronized : All the connected states except for syn-sent
-bucket : Show states, which are maintained as minisockets, i.e. time-wait and syn-recv.
-big : Opposite to bucket state.
-</code></pre><h2 id="通过抓取ss命令，可以分析出来重传的包数量，然后将重传的流的数量和重传的包的数量按照对端IP-port的维度分段聚合，参考命令："><a href="#通过抓取ss命令，可以分析出来重传的包数量，然后将重传的流的数量和重传的包的数量按照对端IP-port的维度分段聚合，参考命令：" class="headerlink" title="通过抓取ss命令，可以分析出来重传的包数量，然后将重传的流的数量和重传的包的数量按照对端IP:port的维度分段聚合，参考命令："></a>通过抓取ss命令，可以分析出来重传的包数量，然后将重传的流的数量和重传的包的数量按照对端IP:port的维度分段聚合，参考命令：</h2><pre><code>ss -itn |grep -v &quot;Address:Port&quot; | xargs -L 1  | grep retrans | awk &apos;{gsub(&quot;retrans:.*/&quot;, &quot;&quot;,$21); print $5, $21}&apos; | awk &apos;{arr[$1]+=$2} END {for (i in arr) {print i,arr[i]}}&apos; | sort -rnk 2 
-</code></pre><p>高版本Linux内核的话，可以用systemtap或者bcc来获取每个连接的重传包以及发生重传的阶段</p>
-<h2 id="当前和最大全连接队列确认"><a href="#当前和最大全连接队列确认" class="headerlink" title="当前和最大全连接队列确认"></a>当前和最大全连接队列确认</h2><pre><code>$ss -lt
-State      Recv-Q Send-Q Local Address:Port                 Peer Address:Port                
-LISTEN     0      128    127.0.0.1:10248                       *:*                    
-LISTEN     0      128           *:2376                        *:*                    
-LISTEN     0      128    127.0.0.1:10249                       *:*                    
-LISTEN     0      128           *:7337                        *:*                    
-LISTEN     0      128           *:10250                       *:*                    
-LISTEN     0      128    11.163.187.44:7946                        *:*                    
-LISTEN     0      128    127.0.0.1:55631                       *:*                    
-LISTEN     0      128           *:10256                       *:*                    
-LISTEN     0      10            *:6640                        *:*                    
-LISTEN     0      128    127.0.0.1:vmware-fdm                  *:*                    
-LISTEN     0      128    11.163.187.44:vmware-fdm                  *:*                    
-LISTEN     0      128           *:ssh                         *:*                    
-LISTEN     0      10     127.0.0.1:15772                       *:*                    
-LISTEN     0      10     127.0.0.1:15776                       *:*                    
-LISTEN     0      10     127.0.0.1:19777                       *:*                    
-LISTEN     0      10     11.163.187.44:15778                       *:*                    
-LISTEN     0      128           *:tr-rsrb-p2                  *:*
-</code></pre><h2 id="ss-s"><a href="#ss-s" class="headerlink" title="ss -s"></a>ss -s</h2><p>统计所有连接的状态</p>
-<h2 id="nstat"><a href="#nstat" class="headerlink" title="nstat"></a>nstat</h2><p>nstat -z -t 1 类似 netstat -s  (ss –info 展示rto、拥塞算法等更详细信息； netstat -ant -o 展示keepalive是否)</p>
-<p>netstat<a href="http://perthcharles.github.io/2015/11/10/wiki-netstat-proc/" target="_blank" rel="external">参考</a></p>
-<h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a href="https://www.cyberciti.biz/tips/linux-investigate-sockets-network-connections.html" target="_blank" rel="external">https://www.cyberciti.biz/tips/linux-investigate-sockets-network-connections.html</a></p>
-<p><a href="http://perthcharles.github.io/2015/11/10/wiki-netstat-proc/" target="_blank" rel="external">http://perthcharles.github.io/2015/11/10/wiki-netstat-proc/</a></p>
-<p>源代码：<a href="https://github.com/sivasankariit/iproute2/blob/master/misc/ss.c" target="_blank" rel="external">https://github.com/sivasankariit/iproute2/blob/master/misc/ss.c</a></p>
 
           
         
