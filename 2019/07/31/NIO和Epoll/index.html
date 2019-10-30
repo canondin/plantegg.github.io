@@ -112,7 +112,7 @@
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/0c09f7457cd7914fc26573d9a4625de4.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/80c19a50442290e7f79e97d94a585cc3.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/7ece6c553c78927c7886f70c09d7e15b.png">
-<meta property="og:updated_time" content="2019-10-18T06:44:19.000Z">
+<meta property="og:updated_time" content="2019-10-30T10:55:41.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="NIO和epoll">
 <meta name="twitter:description" content="NIO和epoll从IO说起用户线程发起IO操作后（比如读），网络数据读取过程分两步：  用户线程等待内核将数据从网卡拷贝到内核空间 内核将数据从内核空间拷贝到用户空间  零拷贝零拷贝可以做到用户空间和内核空间共用同一块内存（Java中的DirectBuffer），这样少做一次拷贝。普通Buffer是在JVM堆上分配的内存，而DirectBuffer是堆外分配的（内核和JVM可以同时读写），这样不">
@@ -611,6 +611,15 @@ serverSock.configureBlocking(true);
 <p>Wisp2碰到执行时间比较长的任务的话，有个线程会过一段时间去监控，如果超过100ms，就触发一个safepoint，触发抢占。</p>
 <h2 id="Node-js"><a href="#Node-js" class="headerlink" title="Node.js"></a>Node.js</h2><p>Node.js：基于事件的异步非阻塞框架，基于V8，上层跑JavaScript应用。默认只有一个eventLoop导致也只能用一个核。</p>
 <p>Node.js 只有一个 EventLoop，也就是只占用一个 CPU 内核，当 Node.js 被CPU 密集型任务占用，导致其他任务被阻塞时，却还有 CPU 内核处于闲置状态，造成资源浪费。</p>
+<h2 id="比喻-1"><a href="#比喻-1" class="headerlink" title="比喻"></a>比喻</h2><p>关于JAVA的网络，之前有个比喻形式的总结，分享给大家：</p>
+<p>有一个养鸡的农场，里面养着来自各个农户（Thread）的鸡（Socket），每家农户都在农场中建立了自己的鸡舍（SocketChannel）</p>
+<ul>
+<li>1、BIO：Block IO，每个农户盯着自己的鸡舍，一旦有鸡下蛋，就去做捡蛋处理；</li>
+<li>2、NIO：No-Block IO-单Selector，农户们花钱请了一个饲养员（Selector），并告诉饲养员（register）如果哪家的鸡有任何情况（下蛋）均要向这家农户报告（select keys）；</li>
+<li>3、NIO：No-Block IO-多Selector，当农场中的鸡舍逐渐增多时，一个饲养员巡视（轮询）一次所需时间就会不断地加长，这样农户知道自己家的鸡有下蛋的情况就会发生较大的延迟。怎么解决呢？没错，多请几个饲养员（多Selector），每个饲养员分配管理鸡舍，这样就可以减轻一个饲养员的工作量，同时农户们可以更快的知晓自己家的鸡是否下蛋了；</li>
+<li>4、Epoll模式：如果采用Epoll方式，农场问题应该如何改进呢？其实就是饲养员不需要再巡视鸡舍，而是听到哪间鸡舍的鸡打鸣了（活跃连接），就知道哪家农户的鸡下蛋了；</li>
+<li>5、AIO：Asynchronous I/O, 鸡下蛋后，以前的NIO方式要求饲养员通知农户去取蛋，AIO模式出现以后，事情变得更加简单了，取蛋工作由饲养员自己负责，然后取完后，直接通知农户来拿即可，而不需要农户自己到鸡舍去取蛋。</li>
+</ul>
 <h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a href="https://www.atatech.org/articles/147345" target="_blank" rel="external">https://www.atatech.org/articles/147345</a></p>
 
       
@@ -662,8 +671,8 @@ serverSock.configureBlocking(true);
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2019/07/19/就是要你懂负载均衡--负载均衡调度算法和为什么不均衡/" rel="next" title="就是要你懂负载均衡--负载均衡调度算法和为什么不均衡">
-                <i class="fa fa-chevron-left"></i> 就是要你懂负载均衡--负载均衡调度算法和为什么不均衡
+              <a href="/2019/07/19/就是要你懂负载均衡--负载均衡调度算法和为什么不均衡/" rel="next" title="LVS 20倍的负载不均衡，原来是内核的这个Bug">
+                <i class="fa fa-chevron-left"></i> LVS 20倍的负载不均衡，原来是内核的这个Bug
               </a>
             
           </div>
@@ -753,7 +762,7 @@ serverSock.configureBlocking(true);
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">37</span>
+                <span class="site-state-item-count">38</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -775,7 +784,7 @@ serverSock.configureBlocking(true);
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">112</span>
+                <span class="site-state-item-count">116</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>
@@ -817,7 +826,7 @@ serverSock.configureBlocking(true);
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#NIO和epoll"><span class="nav-number">1.</span> <span class="nav-text">NIO和epoll</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#从IO说起"><span class="nav-number">1.1.</span> <span class="nav-text">从IO说起</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#零拷贝"><span class="nav-number">1.1.1.</span> <span class="nav-text">零拷贝</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#同步阻塞IO"><span class="nav-number">1.1.2.</span> <span class="nav-text">同步阻塞IO</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#同步非阻塞IO"><span class="nav-number">1.1.3.</span> <span class="nav-text">同步非阻塞IO</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IO多路复用、Epoll"><span class="nav-number">1.1.4.</span> <span class="nav-text">IO多路复用、Epoll</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#epoll-JStack-堆栈"><span class="nav-number">1.1.4.1.</span> <span class="nav-text">epoll JStack 堆栈</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#比喻"><span class="nav-number">1.1.5.</span> <span class="nav-text">比喻</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#一个比喻比较他们的不同"><span class="nav-number">1.1.6.</span> <span class="nav-text">一个比喻比较他们的不同</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Tomcat中的NIO-多路复用的实现"><span class="nav-number">1.1.7.</span> <span class="nav-text">Tomcat中的NIO+多路复用的实现</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Acceptor"><span class="nav-number">1.1.7.1.</span> <span class="nav-text">Acceptor</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Tomcat核心参数"><span class="nav-number">1.1.7.2.</span> <span class="nav-text">Tomcat核心参数</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#多路复用–多个socket共用同一个线程来读取socket中的数据"><span class="nav-number">1.1.8.</span> <span class="nav-text">多路复用–多个socket共用同一个线程来读取socket中的数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MySQL-Thread-Pool-带来的问题"><span class="nav-number">1.1.9.</span> <span class="nav-text">MySQL Thread Pool 带来的问题</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#协程"><span class="nav-number">1.2.</span> <span class="nav-text">协程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#多线程下的真正开销代价"><span class="nav-number">1.3.</span> <span class="nav-text">多线程下的真正开销代价</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#以ajdk的Wisp2协程为例"><span class="nav-number">1.3.1.</span> <span class="nav-text">以ajdk的Wisp2协程为例</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Node-js"><span class="nav-number">1.4.</span> <span class="nav-text">Node.js</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文章"><span class="nav-number">1.5.</span> <span class="nav-text">参考文章</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#NIO和epoll"><span class="nav-number">1.</span> <span class="nav-text">NIO和epoll</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#从IO说起"><span class="nav-number">1.1.</span> <span class="nav-text">从IO说起</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#零拷贝"><span class="nav-number">1.1.1.</span> <span class="nav-text">零拷贝</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#同步阻塞IO"><span class="nav-number">1.1.2.</span> <span class="nav-text">同步阻塞IO</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#同步非阻塞IO"><span class="nav-number">1.1.3.</span> <span class="nav-text">同步非阻塞IO</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IO多路复用、Epoll"><span class="nav-number">1.1.4.</span> <span class="nav-text">IO多路复用、Epoll</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#epoll-JStack-堆栈"><span class="nav-number">1.1.4.1.</span> <span class="nav-text">epoll JStack 堆栈</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#比喻"><span class="nav-number">1.1.5.</span> <span class="nav-text">比喻</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#一个比喻比较他们的不同"><span class="nav-number">1.1.6.</span> <span class="nav-text">一个比喻比较他们的不同</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Tomcat中的NIO-多路复用的实现"><span class="nav-number">1.1.7.</span> <span class="nav-text">Tomcat中的NIO+多路复用的实现</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Acceptor"><span class="nav-number">1.1.7.1.</span> <span class="nav-text">Acceptor</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Tomcat核心参数"><span class="nav-number">1.1.7.2.</span> <span class="nav-text">Tomcat核心参数</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#多路复用–多个socket共用同一个线程来读取socket中的数据"><span class="nav-number">1.1.8.</span> <span class="nav-text">多路复用–多个socket共用同一个线程来读取socket中的数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MySQL-Thread-Pool-带来的问题"><span class="nav-number">1.1.9.</span> <span class="nav-text">MySQL Thread Pool 带来的问题</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#协程"><span class="nav-number">1.2.</span> <span class="nav-text">协程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#多线程下的真正开销代价"><span class="nav-number">1.3.</span> <span class="nav-text">多线程下的真正开销代价</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#以ajdk的Wisp2协程为例"><span class="nav-number">1.3.1.</span> <span class="nav-text">以ajdk的Wisp2协程为例</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Node-js"><span class="nav-number">1.4.</span> <span class="nav-text">Node.js</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#比喻-1"><span class="nav-number">1.5.</span> <span class="nav-text">比喻</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文章"><span class="nav-number">1.6.</span> <span class="nav-text">参考文章</span></a></li></ol></li></ol></div>
             
 
           </div>
