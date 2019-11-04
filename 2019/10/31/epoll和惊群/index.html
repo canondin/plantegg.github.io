@@ -82,8 +82,6 @@
 
 
 
-  
-
 
   <link rel="alternate" href="/atom.xml" title="plantegg" type="application/atom+xml" />
 
@@ -110,7 +108,7 @@
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/9bbf15909be8d1bffd3ee1958463c041.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/6551777f24be3da9d2b41ceb20a2b040.png">
 <meta property="og:image" content="https://blog.cloudflare.com/content/images/2017/10/sharedqueue.png">
-<meta property="og:updated_time" content="2019-10-30T10:53:27.000Z">
+<meta property="og:updated_time" content="2019-10-31T01:34:59.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="epoll和惊群">
 <meta name="twitter:description" content="epoll和惊群本文尝试追踪不同的内核版本增加的方案来看内核是如何来尝试解决不同的惊群问题的。以及像 SO_REUSEPORT 和EPOLLEXCLUSIVE又带来了什么小问题。 先上总结非IO复用的惊群在2.6内核就通过增加WQ_FLAG_EXCLUSIVE在内核中就行排他解决惊群了；epoll的惊群在3.10内核加了SO_REUSEPORT来解决惊群，但同时带来了不同的worker有的饥饿有的">
@@ -494,9 +492,10 @@ ep_ptable_queue_proc
 <p><img src="https://blog.cloudflare.com/content/images/2017/10/worker2.png" alt=""></p>
 <p>连接从一个队列里由内核分发，不需要惊群，对worker是否忙也能感知（忙的worker就不分发连接过去）</p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/9bbf15909be8d1bffd3ee1958463c041.png" alt="image.png"></p>
-<h3 id="EPOLLEXCLUSIVE-带来的问题"><a href="#EPOLLEXCLUSIVE-带来的问题" class="headerlink" title="EPOLLEXCLUSIVE 带来的问题"></a>EPOLLEXCLUSIVE 带来的问题</h3><p>Nginx的Accept在压力不大的情况下会导致最后几个核cpu消耗时间更多一些</p>
-<p>EPOLLEXCLUSIVE在压力不大的时候会导致连接总是在少数几个worker上，如果并发连接多这个问题就不存在，所以最终来看EPOLLEXCLUSIVE没有产生什么实质性的不好的影响。值得推荐</p>
+<p>图中的电话机相当于一个worker，只是实际内核中空闲的worker像是在一个堆栈中（LIFO），有连接过来，worker堆栈会出栈，处理完毕又入栈，如此反复。而需要处理的消息是一个队列（FIFO），所以总会发现栈顶的几个worker做的事情更多。</p>
+<h4 id="EPOLLEXCLUSIVE-带来的问题"><a href="#EPOLLEXCLUSIVE-带来的问题" class="headerlink" title="EPOLLEXCLUSIVE 带来的问题"></a>EPOLLEXCLUSIVE 带来的问题</h4><p>下面这个case是观察发现Nginx在压力不大的情况下会导致最后几个核cpu消耗时间更多一些，如下图看到的：</p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/6551777f24be3da9d2b41ceb20a2b040.png" alt="image.png"></p>
+<p>这是因为如前面所述，所有worker像是在一个栈（LIFO）中等着任务处理，在压力不大的时候会导致连接总是在少数几个worker上（栈底的worker没什么机会出栈），如果并发任务多，导致worker栈经常空掉，这个问题就不存在了。当然最终来看EPOLLEXCLUSIVE没有产生什么实质性的不好的影响。值得推荐</p>
 <p>epoll的accept模型为LIFO，倾向于唤醒最活跃的进程。多进程场景下：默认的accept是FIFO，进程加入到监听socket等待队列的尾部，唤醒时从头部开始唤醒；epoll的accept是LIFO，在epoll_wait时把进程加入到监听socket等待队列的头部，唤醒时从头部开始唤醒。</p>
 <p>当并发数较小时，只有最后几个进程会被唤醒，它们使用的CPU时间会远高于其它进程。当并发数较大时，所有的进程都有机会被唤醒，各个进程之间的差距不大。内核社区中关于epoll accept是使用LIFO还是RR有过讨论，在4.9内核和最新版本中使用的都是LIFO。</p>
 <p>比如这个case，压力低的worker进程和压力高的worker进程差异比较大：</p>
@@ -504,7 +503,7 @@ ep_ptable_queue_proc
 <h3 id="比较下EPOLLEXCLUSIVE-和-SO-REUSEPORT"><a href="#比较下EPOLLEXCLUSIVE-和-SO-REUSEPORT" class="headerlink" title="比较下EPOLLEXCLUSIVE 和 SO_REUSEPORT"></a>比较下EPOLLEXCLUSIVE 和 SO_REUSEPORT</h3><p>EPOLLEXCLUSIVE 和 SO_REUSEPORT 都是在内核层面将连接分到多个worker，解决了epoll下的惊群，SO_REUSEPORT 会更均衡一些，EPOLLEXCLUSIVE在压力不大的时候会导致连接总是在少数几个worker上（如下case）。但是 SO_REUSEPORT在最坏的情况下会导致一个worker即使Hang了，OS也依然会派连接过去（后面有Case），这是非常致命的，所以4.5内核引入了 EPOLLEXCLUSIVE（总是给闲置等待队列的第一个worker派连接）</p>
 <p>相对 SO_REUSEPORT导致的stuck, EPOLLEXCLUSIV 还是更好接受一些。</p>
 <h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://blog.csdn.net/lyztyycode/article/details/78648798" target="_blank" rel="external">Linux惊群效应详解（最详细的了吧）</a></p>
-<p><a href="https://blog.csdn.net/dog250/article/details/80837278" target="_blank" rel="external">epoll、ET、LT、惊群</a></p>
+<p><a href="https://blog.csdn.net/dog250/article/details/80837278" target="_blank" rel="external">再谈Linux epoll惊群问题的原因和解决方案</a></p>
 <p><a href="https://www.atatech.org/articles/117111" target="_blank" rel="external">epoll lifo引发的nginx “负载不均”</a> </p>
 <p><a href="https://blog.cloudflare.com/the-sad-state-of-linux-socket-balancing/" target="_blank" rel="external">Why does one NGINX worker take all the load?</a></p>
 <p><a href="https://www.atatech.org/articles/89653" target="_blank" rel="external">一次Nginx Gzip 导致的诡异健康检查失败问题调查</a> </p>
@@ -710,7 +709,7 @@ ep_ptable_queue_proc
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#epoll和惊群"><span class="nav-number">1.</span> <span class="nav-text">epoll和惊群</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#先上总结"><span class="nav-number">1.1.</span> <span class="nav-text">先上总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#什么是惊群"><span class="nav-number">1.2.</span> <span class="nav-text">什么是惊群</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#无IO复用时Accept"><span class="nav-number">1.3.</span> <span class="nav-text">无IO复用时Accept</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#epoll的Accept"><span class="nav-number">1.4.</span> <span class="nav-text">epoll的Accept</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#SO-REUSEPORT"><span class="nav-number">1.4.1.</span> <span class="nav-text">SO_REUSEPORT</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#SO-REUSEPORT-带来的小问题"><span class="nav-number">1.4.1.1.</span> <span class="nav-text">SO_REUSEPORT 带来的小问题</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#EPOLLEXCLUSIVE"><span class="nav-number">1.4.2.</span> <span class="nav-text">EPOLLEXCLUSIVE</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#EPOLLEXCLUSIVE-带来的问题"><span class="nav-number">1.4.3.</span> <span class="nav-text">EPOLLEXCLUSIVE 带来的问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#比较下EPOLLEXCLUSIVE-和-SO-REUSEPORT"><span class="nav-number">1.4.4.</span> <span class="nav-text">比较下EPOLLEXCLUSIVE 和 SO_REUSEPORT</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">1.5.</span> <span class="nav-text">参考资料</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#epoll和惊群"><span class="nav-number">1.</span> <span class="nav-text">epoll和惊群</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#先上总结"><span class="nav-number">1.1.</span> <span class="nav-text">先上总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#什么是惊群"><span class="nav-number">1.2.</span> <span class="nav-text">什么是惊群</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#无IO复用时Accept"><span class="nav-number">1.3.</span> <span class="nav-text">无IO复用时Accept</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#epoll的Accept"><span class="nav-number">1.4.</span> <span class="nav-text">epoll的Accept</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#SO-REUSEPORT"><span class="nav-number">1.4.1.</span> <span class="nav-text">SO_REUSEPORT</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#SO-REUSEPORT-带来的小问题"><span class="nav-number">1.4.1.1.</span> <span class="nav-text">SO_REUSEPORT 带来的小问题</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#EPOLLEXCLUSIVE"><span class="nav-number">1.4.2.</span> <span class="nav-text">EPOLLEXCLUSIVE</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#EPOLLEXCLUSIVE-带来的问题"><span class="nav-number">1.4.2.1.</span> <span class="nav-text">EPOLLEXCLUSIVE 带来的问题</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#比较下EPOLLEXCLUSIVE-和-SO-REUSEPORT"><span class="nav-number">1.4.3.</span> <span class="nav-text">比较下EPOLLEXCLUSIVE 和 SO_REUSEPORT</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">1.5.</span> <span class="nav-text">参考资料</span></a></li></ol></li></ol></div>
             
 
           </div>
