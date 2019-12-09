@@ -261,6 +261,222 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/12/09/epoll的LT和ET/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/12/09/epoll的LT和ET/" itemprop="url">epoll的LT和ET</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-12-09T12:30:03+08:00">
+                2019-12-09
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/12/09/epoll的LT和ET/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2019/12/09/epoll的LT和ET/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="epoll的LT和ET"><a href="#epoll的LT和ET" class="headerlink" title="epoll的LT和ET"></a>epoll的LT和ET</h1><ul>
+<li><p>LT水平触发(翻译为 条件触发 更合适） </p>
+<blockquote>
+<p>   如果事件来了，不管来了几个，只要仍然有未处理的事件，epoll都会通知你。比如事件来了，打印一行通知，但是不去处理事件，那么会不停滴打印通知。水平触发模式的 epoll 的扩展性很差。</p>
+</blockquote>
+</li>
+<li><p>ET边沿触发<br>&gt;</p>
+<blockquote>
+<p>  如果事件来了，不管来了几个，你若不处理或者没有处理完，除非下一个事件到来，否则epoll将不会再通知你。 比如事件来了，打印一行通知，但是不去处理事件，那么打印一行通知</p>
+</blockquote>
+</li>
+</ul>
+<p>LT比ET会多一次重新加入就绪队列的动作，也就是意味着一定有一次poll不到东西，效率是有影响但是队列长度有限所以基本可以不用考虑。但是LT编程方式上要简单多了，所以LT也是默认的。</p>
+<h3 id="水平触发的问题：不必要的唤醒"><a href="#水平触发的问题：不必要的唤醒" class="headerlink" title="水平触发的问题：不必要的唤醒"></a>水平触发的问题：不必要的唤醒</h3><ol>
+<li>内核：收到一个新建连接的请求</li>
+<li>内核：由于 “惊群效应” ，唤醒两个正在 epoll_wait() 的线程 A 和线程 B</li>
+<li>线程A：epoll_wait() 返回</li>
+<li>线程B：epoll_wait() 返回</li>
+<li>线程A：执行 accept() 并且成功</li>
+<li>线程B：执行 accept() 失败，accept() 返回 EAGAIN</li>
+</ol>
+<h3 id="边缘触发的问题：不必要的唤醒以及饥饿"><a href="#边缘触发的问题：不必要的唤醒以及饥饿" class="headerlink" title="边缘触发的问题：不必要的唤醒以及饥饿"></a>边缘触发的问题：不必要的唤醒以及饥饿</h3><p>不必要的唤醒：</p>
+<ol>
+<li>内核：收到第一个连接请求。线程 A 和 线程 B 两个线程都在 epoll_wait() 上等待。由于采用边缘触发模式，所以只有一个线程会收到通知。这里假定线程 A 收到通知</li>
+<li>线程A：epoll_wait() 返回</li>
+<li>线程A：调用 accpet() 并且成功</li>
+<li>内核：此时 accept queue 为空，所以将边缘触发的 socket 的状态从可读置成不可读</li>
+<li>内核：收到第二个建连请求</li>
+<li>内核：此时，由于线程 A 还在执行 accept() 处理，只剩下线程 B 在等待 epoll_wait()，于是唤醒线程 B</li>
+<li>线程A：继续执行 accept() 直到返回 EAGAIN</li>
+<li>线程B：执行 accept()，并返回 EAGAIN，此时线程 B 可能有点困惑(“明明通知我有事件，结果却返回 EAGAIN”)</li>
+<li>线程A：再次执行 accept()，这次终于返回 EAGAIN</li>
+</ol>
+<p>饥饿：</p>
+<ol>
+<li>内核：接收到两个建连请求。线程 A 和 线程 B 两个线程都在等在 epoll_wait()。由于采用边缘触发模式，只有一个线程会被唤醒，我们这里假定线程 A 先被唤醒</li>
+<li>线程A：epoll_wait() 返回</li>
+<li>线程A：调用 accpet() 并且成功</li>
+<li>内核：收到第三个建连请求。由于线程 A 还没有处理完(没有返回 EAGAIN)，当前 socket 还处于可读的状态，由于是边缘触发模式，所有不会产生新的事件</li>
+<li>线程A：继续执行 accept() 希望返回 EAGAIN 再进入 epoll_wait() 等待，然而它又 accept() 成功并处理了一个新连接</li>
+<li>内核：又收到了第四个建连请求</li>
+<li>线程A：又继续执行 accept()，结果又返回成功</li>
+</ol>
+<p>ET的话会要求应用一直要把消息处理完毕，比如nginx用ET模式，来了一个上传大文件并压缩的任务，会造成这么一个循环：</p>
+<pre><code>nginx读数据（未读完）-&gt;Gzip(需要时间，套接字又有数据过来)-&gt;读数据（未读完）-&gt;Gzip .....
+</code></pre><p>新的accpt进来，因为前一个nginx worker已经被唤醒并且还在read(这个时候内核因为accept queue为空所以已经将socket设置成不可读），所以即使其它worker 被唤醒，看到的也是一个不可读的socket，所以很快因为EAGAIN返回了。</p>
+<p>这样就会造成nginx的这个worker假死了一样。如果上传速度慢，这个循环无法持续存在，也就是一旦读完nginx切走（再有数据进来等待下次触发），不会造成假死。</p>
+<p>JDK中的NIO是条件触发（level-triggered），不支持ET。netty，nginx和redis默认是边缘触发（edge-triggered），netty因为JDK不支持ET，所以自己实现了Netty-native的抽象，不依赖JDK来提供ET。</p>
+<p>边缘触发会比条件触发更高效一些，因为边缘触发不会让同一个文件描述符多次被处理,比如有些文件描述符已经不需要再读写了,但是在条件触发下每次都会返回,而边缘触发只会返回一次。</p>
+<p>如果设置边缘触发,则必须将对应的文件描述符设置为非阻塞模式并且循环读取数据。否则会导致程序的效率大大下降或丢消息。</p>
+<p>poll和epoll默认采用的都是条件触发,只是epoll可以修改成边缘触发。条件触发同时支持block和non-block，使用更简单一些。</p>
+<h3 id="epoll-LT惊群的发生"><a href="#epoll-LT惊群的发生" class="headerlink" title="epoll LT惊群的发生"></a>epoll LT惊群的发生</h3><pre><code>// 否则会阻塞在IO系统调用，导致没有机会再epoll
+set_socket_nonblocking(sd);
+epfd = epoll_create(64);
+event.data.fd = sd;
+epoll_ctl(epfd, EPOLL_CTL_ADD, sd, &amp;event);
+while (1) {
+    epoll_wait(epfd, events, 64, xx);
+    ... // 危险区域！如果有共享同一个epfd的进程/线程调用epoll_wait，它们也将会被唤醒！
+    // 这个accept将会有多个进程/线程调用，如果并发请求数很少，那么将仅有几个进程会成功：
+    // 1. 假设accept队列中有n个请求，则仅有n个进程能成功，其它将全部返回EAGAIN (Resource temporarily unavailable)
+    // 2. 如果n很大(即增加请求负载)，虽然返回EAGAIN的比率会降低，但这些进程也并不一定取到了epoll_wait返回当下的那个预期的请求。
+    csd = accept(sd, &amp;in_addr, &amp;in_len); 
+    ...
+}
+</code></pre><p>再看一遍LT的描述“如果事件来了，不管来了几个，只要仍然有未处理的事件，epoll都会通知你。”，显然，epoll_wait刚刚取到事件的时候的时候，不可能马上就调用accept去处理，事实上，逻辑在epoll_wait函数调用的ep_poll中还没返回的，这个时候，显然符合“仍然有未处理的事件”这个条件，显然这个时候为了实现这个语义，需要做的就是通知别的同样阻塞在同一个epoll句柄睡眠队列上的进程！在实现上，这个语义由两点来保证：</p>
+<p>保证1：在LT模式下，“就绪链表”上取出的epi上报完事件后会重新加回“就绪链表”；<br>保证2：如果“就绪链表”不为空，且此时有进程阻塞在同一个epoll句柄的睡眠队列上，则唤醒它。</p>
+<p>epoll LT模式下有进程被不必要唤醒，这一点并不是内核无意而为之的，内核肯定是知道这件事的，这个并不像之前accept惊群那样算是内核的一个缺陷。epoll LT模式只是提供了一种模式，误用这种模式将会造成类似惊群那样的效应。但是不管怎么说，为了讨论上的方便，后面我们姑且将这种效应称作epoll LT惊群吧。</p>
+<h3 id="epoll-ET模式可以解决上面的问题，但是带来了新的麻烦"><a href="#epoll-ET模式可以解决上面的问题，但是带来了新的麻烦" class="headerlink" title="epoll ET模式可以解决上面的问题，但是带来了新的麻烦"></a>epoll ET模式可以解决上面的问题，但是带来了新的麻烦</h3><p>由于epi entry的callback即ep_poll_callback所做的事情仅仅是将该epi自身加入到epoll句柄的“就绪链表”，同时唤醒在epoll句柄睡眠队列上的task，所以这里并不对事件的细节进行计数，比如说，<strong>如果ep_poll_callback在将一个epi加入“就绪链表”之前发现它已经在“就绪链表”了，那么就不会再次添加，因此可以说，一个epi可能pending了多个事件，注意到这点非常重要！</strong></p>
+<p>一个epi上pending多个事件，这个在LT模式下没有任何问题，因为获取事件的epi总是会被重新添加回“就绪链表”，那么如果还有事件，在下次check的时候总会取到。然而对于ET模式，仅仅将epi从“就绪链表”删除并将事件本身上报后就返回了，因此如果该epi里还有事件，则只能等待再次发生事件，进而调用ep_poll_callback时将该epi加入“就绪队列”。这意味着什么？</p>
+<p>这意味着，应用程序，即epoll_wait的调用进程必须自己在获取事件后将其处理干净后方可再次调用epoll_wait，否则epoll_wait不会返回，而是必须等到下次产生事件的时候方可返回。这会导致事件堆积，所以一般会死循环一直拉取事件，直到拉取不到了再返回。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://www.atatech.org/articles/157349" target="_blank" rel="external">Epoll is fundamentally broken</a> </p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/12/07/如何追踪网络流量/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -445,7 +661,7 @@ sudo tcptrack -r 5 -i eth0 host 10.0.48.1 //filter 语法和tcpdump一样
         
           <h2 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2019/11/06/谁动了我的TCP连接/" itemprop="url">就是要你网络--谁动了我的TCP连接</a></h2>
+                <a class="post-title-link" href="/2019/11/06/谁动了我的TCP连接/" itemprop="url">就是要你懂网络--谁动了我的TCP连接</a></h2>
         
 
         <div class="post-meta">
@@ -553,27 +769,29 @@ sudo tcptrack -r 5 -i eth0 host 10.0.48.1 //filter 语法和tcpdump一样
 <h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><p>用户用navicat从自己访问云上的MySQL的时候，点开数据库总是报错（不是稳定报错，有一定的概率报错）</p>
 <h2 id="抓包"><a href="#抓包" class="headerlink" title="抓包"></a>抓包</h2><p>在 Navicat 机器上抓包如下：</p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/83b07725d92b9e4d3eb4a504cf83cc09.png" alt="image.png"></p>
-<p>从抓包可以清楚看到 Navicat 发送 Use Database后收到了 MySQL（来自3306端口）的Reset重接连接命令，所以连接强行中断，然后 Navicat报错了。注意图中红框中的 Identification 两次都是13502，先留下不表，这是个线索。</p>
+<p>从抓包可以清楚看到 Navicat 发送 Use Database后收到了 MySQL（来自3306端口）的Reset重接连接命令，所以连接强行中断，然后 Navicat报错了。注意图中红框中的 Identification 两次都是13052，先留下不表，这是个线索。</p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/53b5dc8e0a90ed9ad641caf38399141b.png" alt="image.png"></p>
 <h2 id="MySQL-Server上抓包"><a href="#MySQL-Server上抓包" class="headerlink" title="MySQL Server上抓包"></a>MySQL Server上抓包</h2><p>特别说明下，MySQL上抓到的不是跟Navicat上抓到的同一次报错，所以报错的端口等会不一样</p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/70287488290b38cd4753d9fce0bee945.png" alt="image.png"></p>
 <p>从这个图中可以清楚看到reset是从 Navicat 客户端发过来的，并且 Use Database被拦截了，没有发到MySQL上。</p>
 <p>从这里基本可以判断是客户的防火墙之类的中间设备监控到了关键字之类的触发了防火墙向两边发送了reset，导致了 Navicat 报错。</p>
+<h3 id="如果连接已经断开"><a href="#如果连接已经断开" class="headerlink" title="如果连接已经断开"></a>如果连接已经断开</h3><p>如果连接已经断开后还收到Client的请求包，因为连接在Server上是不存在的，这个时候Server收到这个包后也会发一个reset回去，这个reset的特点是identification是0.</p>
 <h2 id="到底是谁动了这个连接呢？"><a href="#到底是谁动了这个连接呢？" class="headerlink" title="到底是谁动了这个连接呢？"></a>到底是谁动了这个连接呢？</h2><h3 id="得帮客户解决问题"><a href="#得帮客户解决问题" class="headerlink" title="得帮客户解决问题"></a>得帮客户解决问题</h3><p>虽然原因很清楚，但是客户说连本地 MySQL就没这个问题，连你的云上MySQL就这样，你让我们怎么用？你们得帮我们找到是哪个设备。</p>
-<h3 id="线索一-Identification"><a href="#线索一-Identification" class="headerlink" title="线索一 Identification"></a>线索一 Identification</h3><p>还记得第一个截图中的两个相同的identification 13502吧，让我们来看看基础知识：</p>
+<h3 id="线索一-Identification"><a href="#线索一-Identification" class="headerlink" title="线索一 Identification"></a>线索一 Identification</h3><p>还记得第一个截图中的两个相同的identification 13052吧，让我们来看看基础知识：</p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/eed9ba1f9ba492ed8954ae7f39e72803.png" alt="image.png"></p>
 <p>（摘自 TCP卷一），简单来说这个 identification 用来标识一个连接中的每个包，这个序号按包的个数依次递增，通信双方是两个不同的序列。</p>
 <p>所以如果这个reset是MySQL发出来的话，因为MySQL发出的前一个包的 identification 是23403，所以这个必须是23404，实际上居然是13502（而且还和Navicat发出的 Use Database包是同一个 identification），这是非常不对的。</p>
-<p>所以可以大胆猜测，这里有个中间设备收到 Use Database后触发了不放行的逻辑，于是冒充 Navicat给 MySQL Server发了reset包，src ip/src port/seq等都直接用Navicat的，identification也用Navicat的，所以 MySQL Server收到的 Reset看起来很正常（啥都是对的）。</p>
-<p>但是这个时候可以有点难为中间设备了，这个中间设备还要冒充MySQL Server给 Navicat 发个reset，可是这个时候中间设备手里只有 Navicat 发出来的包， src ip/src port/seq 都比较好反过来，但是 identification 就不好糊弄了，手里只有 Navicat的，因为 Navicat和MySQL Server是两个序列的 identification，这下中间设备搞不出来MySQL Server的identification，怎么办？ 只能糊弄了，就随手用 Navicat 自己的 identification填回去了（所以看到这么个奇怪的 identification）</p>
+<p>所以可以大胆猜测，这里有个中间设备收到 Use Database后触发了不放行的逻辑，于是冒充 Navicat给 MySQL Server发了reset包，src ip/src port/seq等都直接用Navicat的，identification也用Navicat的，所以 MySQL Server收到的 Reset看起来很正常（啥都是对的，没留下一点冒充的痕迹）。</p>
+<p>但是这个中间设备还要冒充MySQL Server给 Navicat 也发个reset，有点难为中间设备了，这个时候中间设备手里只有 Navicat 发出来的包， src ip/src port/seq 都比较好反过来，但是 identification 就不好糊弄了，手里只有 Navicat的，因为 Navicat和MySQL Server是两个序列的 identification，这下中间设备搞不出来MySQL Server的identification，怎么办？ 只能糊弄了，就随手用 Navicat 自己的 identification填回去了（所以看到这么个奇怪的 identification）</p>
 <p>但是这不影响实际连接被reset，也就是验证包的时候不会判断identification的正确性。</p>
-<h3 id="TTL"><a href="#TTL" class="headerlink" title="TTL"></a>TTL</h3><p>说了半天identification还是没解决委托啊，还得进一步找到是哪个机器，我们先来看一个基础知识 TTL(Time-to-Live):</p>
+<h3 id="TTL"><a href="#TTL" class="headerlink" title="TTL"></a>TTL</h3><p>说了半天identification还是没解决问题啊，还得进一步找到是哪个机器，我们先来看一个基础知识 TTL(Time-to-Live):</p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ed8c624b704b0c94da2ca76a37b39916.png" alt="image.png"></p>
 <p>然后我们再看看 Navicat收到的这个reset包的ttl是63，而正常的MySQL Server回过来的包是47，而发出的第一个包初始ttl是64，所以这里可以很清楚地看到在Navicat 下一跳发出的这个reset</p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/b288a740f9f10007485e37fd339051f8.png" alt="image.png"></p>
 <p>既然是下一跳干的直接拿这个包的src mac地址，然后到内网中找这个内网设备就可以了，最终找到是一个锐捷的防火墙。</p>
-<h3 id="扩展一下"><a href="#扩展一下" class="headerlink" title="扩展一下"></a>扩展一下</h3><p>假如这里不是下一跳，而是隔了几跳，那么这个src mac地址就不是发去reset设备的mac了，那该怎么办呢？</p>
-<p>可以根据中间的跳数，再配合 traceroute来找到这个设备的ip</p>
+<h3 id="扩展一下"><a href="#扩展一下" class="headerlink" title="扩展一下"></a>扩展一下</h3><p>假如这里不是下一跳，而是隔了几跳发过来的reset，那么这个src mac地址就不是发reset设备的mac了，那该怎么办呢？</p>
+<p>可以根据中间的跳数(TTL)，再配合 traceroute 来找到这个设备的ip</p>
+<h2 id="slb主动reset的话"><a href="#slb主动reset的话" class="headerlink" title="slb主动reset的话"></a>slb主动reset的话</h2><p>ttl是102, identification是31415，探活reset不是这样的。</p>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>基础知识很重要，但是知道ttl、identification到会用ttl、identification是两个不同的层次。只是看书的话未必会有很深的印象，实际也不会定会灵活使用。</p>
 <p>平时不要看那么多书，会用才是关键。</p>
 
@@ -727,7 +945,7 @@ sudo tcptrack -r 5 -i eth0 host 10.0.48.1 //filter 语法和tcpdump一样
 <h2 id="无IO复用时Accept"><a href="#无IO复用时Accept" class="headerlink" title="无IO复用时Accept"></a>无IO复用时Accept</h2><blockquote>
 <p>无IO复用的accept 不会有惊群，epoll_wait 才会。accept一定是只需要一个进程处理消息，内核可以解决。但是select、epoll就不一定了，所以内核只能唤醒所有的。</p>
 </blockquote>
-<p>在linux2.6版本以后，linux内核已经解决了accept（）函数的“惊群”现象，大概的处理方式就是，当内核接收到一个客户连接后，只会唤醒等待队列上的第一个进程（线程）,所以如果服务器采用accept阻塞调用方式，在最新的linux系统中已经没有“惊群效应”了。</p>
+<p>在linux2.6版本以后，linux内核已经解决了accept()函数的“惊群”现象，大概的处理方式就是，当内核接收到一个客户连接后，只会唤醒等待队列上的第一个进程（线程）,所以如果服务器采用accept阻塞调用方式，在2.6的linux系统中已经没有“惊群效应”了。</p>
 <pre><code> /* nr_exclusive的值默认设为1 */
  #define wake_up_interruptible_sync_poll(x, m)              \
     __wake_up_sync_key((x), TASK_INTERRUPTIBLE, 1, (void *) (m))
@@ -748,8 +966,8 @@ list_for_each_entry_safe(curr, next, &amp;q-&gt;task_list, task_list)
 <p>这个socket等待队列是一个FIFO，所以最终是均衡的，也不需要惊群，有tcp connection ready的话直接让等待队列中第一个的线程出队就好了。</p>
 <p>2.6内核层面添加了一个WQ_FLAG_EXCLUSIVE标记，告诉内核进行排他性的唤醒，即唤醒一个进程后即退出唤醒的过程(适合accept，但是不适合 epoll–因为epoll除了有accept，还有其它IO事件）</p>
 <p>所以这就是大家经常看到的accept不存在惊群问题，内核10年前就解决了这个问题的场景，实际指的是非epoll下的accept 惊群。</p>
-<h2 id="epoll的Accept"><a href="#epoll的Accept" class="headerlink" title="epoll的Accept"></a>epoll的Accept</h2><p>epoll监听句柄，后续可能是accept，也有可能是其它网络IO事件，这些IO事件不一定只能由一个进程处理（积极少见需要多个进程处理的），所以内核层面没直接解决epoll的惊群，交由上层应用来根据IO事件如何处理。</p>
-<pre><code>主进程中：
+<h2 id="epoll的Accept"><a href="#epoll的Accept" class="headerlink" title="epoll的Accept"></a>epoll的Accept</h2><p>epoll监听句柄，后续可能是accept，也有可能是其它网络IO事件，这些IO事件不一定只能由一个进程处理（很少见需要多个进程处理的），所以内核层面没直接解决epoll的惊群，交由上层应用来根据IO事件如何处理。</p>
+<pre><code>//主进程中：
 ngx_init_cycle
 ngx_open_listening_sockets
     socket
@@ -758,7 +976,7 @@ ngx_open_listening_sockets
     epoll_create
     epoll_ctl
 
-子进程中：
+//子进程中：
 ngx_event_process_init
 ngx_prcocess_events_and_timers
 ngx_epoll_process_events
@@ -816,6 +1034,8 @@ __wake_up_common
 <p>用图形展示大概如下：</p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/49d19ef1eaf13638b488ad126beb58ef.png" alt="image.png"></p>
 <p>比如中间的worker即使处理得很慢，内核还是正常派连接过来，即使其它worker空闲</p>
+<h4 id="SO-REUSEPORT另外的问题"><a href="#SO-REUSEPORT另外的问题" class="headerlink" title="SO_REUSEPORT另外的问题"></a>SO_REUSEPORT另外的问题</h4><p>在OS层面一个连接hash到了某个socket fd，但是正好这个 listen socket fd 被关了，已经被分到这个 listen socket fd 的 accept 队列上的请求会被丢掉，具体可以<a href="https://engineeringblog.yelp.com/2015/04/true-zero-downtime-haproxy-reloads.html" target="_blank" rel="external">参考</a> 和 LWN 上的 <a href="https://lwn.net/Articles/542866/" target="_blank" rel="external">comment</a></p>
+<p>从 Linux 4.5 开始引入了 SO_ATTACH_REUSEPORT_CBPF 和 SO_ATTACH_REUSEPORT_EBPF 这两个 BPF 相关的 socket option。通过巧妙的设计，应该可以避免掉建连请求被丢掉的情况。</p>
 <h3 id="EPOLLEXCLUSIVE"><a href="#EPOLLEXCLUSIVE" class="headerlink" title="EPOLLEXCLUSIVE"></a>EPOLLEXCLUSIVE</h3><p>epoll引起的accept惊群，在4.5内核中再次引入<strong>EPOLLEXCLUSIVE</strong>来解决，且需要应用层的配合，Ngnix 在 1.11.3 之后添加了NGX_EXCLUSIVE_EVENT来支持。像tengine尚不支持，所以只能在应用层面上来避免惊群，开启accept_mutex才可避免惊群。</p>
 <p>在epoll_ctl ADD描述符时设置 EPOLLEXCLUSIVE 标识。</p>
 <pre><code>epoll_ctl
@@ -842,15 +1062,15 @@ ep_ptable_queue_proc
 <p><img src="https://blog.cloudflare.com/content/images/2017/10/worker2.png" alt=""></p>
 <p>连接从一个队列里由内核分发，不需要惊群，对worker是否忙也能感知（忙的worker就不分发连接过去）</p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/9bbf15909be8d1bffd3ee1958463c041.png" alt="image.png"></p>
-<p>图中的电话机相当于一个worker，只是实际内核中空闲的worker像是在一个堆栈中（LIFO），有连接过来，worker堆栈会出栈，处理完毕又入栈，如此反复。而需要处理的消息是一个队列（FIFO），所以总会发现栈顶的几个worker做的事情更多。</p>
+<p>图中的电话机相当于一个worker，只是<strong>实际内核中空闲的worker像是在一个堆栈中（LIFO），有连接过来，worker堆栈会出栈，处理完毕又入栈，如此反复</strong>。而需要处理的消息是一个队列（FIFO），所以总会发现栈顶的几个worker做的事情更多。</p>
 <h4 id="EPOLLEXCLUSIVE-带来的问题"><a href="#EPOLLEXCLUSIVE-带来的问题" class="headerlink" title="EPOLLEXCLUSIVE 带来的问题"></a>EPOLLEXCLUSIVE 带来的问题</h4><p>下面这个case是观察发现Nginx在压力不大的情况下会导致最后几个核cpu消耗时间更多一些，如下图看到的：</p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/6551777f24be3da9d2b41ceb20a2b040.png" alt="image.png"></p>
-<p>这是因为如前面所述，所有worker像是在一个栈（LIFO）中等着任务处理，在压力不大的时候会导致连接总是在少数几个worker上（栈底的worker没什么机会出栈），如果并发任务多，导致worker栈经常空掉，这个问题就不存在了。当然最终来看EPOLLEXCLUSIVE没有产生什么实质性的不好的影响。值得推荐</p>
-<p>epoll的accept模型为LIFO，倾向于唤醒最活跃的进程。多进程场景下：默认的accept是FIFO，进程加入到监听socket等待队列的尾部，唤醒时从头部开始唤醒；epoll的accept是LIFO，在epoll_wait时把进程加入到监听socket等待队列的头部，唤醒时从头部开始唤醒。</p>
+<p>这是如前面所述，所有worker像是在一个栈（LIFO）中等着任务处理，在压力不大的时候会导致连接总是在少数几个worker上（栈底的worker没什么机会出栈），如果并发任务多，导致worker栈经常空掉，这个问题就不存在了。当然最终来看EPOLLEXCLUSIVE没有产生什么实质性的不好的影响。值得推荐</p>
+<p>epoll的accept模型为LIFO，倾向于唤醒最活跃的进程。多进程场景下：默认的accept(非复用)是FIFO，进程加入到监听socket等待队列的尾部，唤醒时从头部开始唤醒；epoll的accept是LIFO，在epoll_wait时把进程加入到监听socket等待队列的头部，唤醒时从头部开始唤醒。</p>
 <p>当并发数较小时，只有最后几个进程会被唤醒，它们使用的CPU时间会远高于其它进程。当并发数较大时，所有的进程都有机会被唤醒，各个进程之间的差距不大。内核社区中关于epoll accept是使用LIFO还是RR有过讨论，在4.9内核和最新版本中使用的都是LIFO。</p>
 <p>比如这个case，压力低的worker进程和压力高的worker进程差异比较大：</p>
 <p><img src="https://blog.cloudflare.com/content/images/2017/10/sharedqueue.png" alt=""></p>
-<h3 id="比较下EPOLLEXCLUSIVE-和-SO-REUSEPORT"><a href="#比较下EPOLLEXCLUSIVE-和-SO-REUSEPORT" class="headerlink" title="比较下EPOLLEXCLUSIVE 和 SO_REUSEPORT"></a>比较下EPOLLEXCLUSIVE 和 SO_REUSEPORT</h3><p>EPOLLEXCLUSIVE 和 SO_REUSEPORT 都是在内核层面将连接分到多个worker，解决了epoll下的惊群，SO_REUSEPORT 会更均衡一些，EPOLLEXCLUSIVE在压力不大的时候会导致连接总是在少数几个worker上（如下case）。但是 SO_REUSEPORT在最坏的情况下会导致一个worker即使Hang了，OS也依然会派连接过去（后面有Case），这是非常致命的，所以4.5内核引入了 EPOLLEXCLUSIVE（总是给闲置等待队列的第一个worker派连接）</p>
+<h3 id="比较下EPOLLEXCLUSIVE-和-SO-REUSEPORT"><a href="#比较下EPOLLEXCLUSIVE-和-SO-REUSEPORT" class="headerlink" title="比较下EPOLLEXCLUSIVE 和 SO_REUSEPORT"></a>比较下EPOLLEXCLUSIVE 和 SO_REUSEPORT</h3><p>EPOLLEXCLUSIVE 和 SO_REUSEPORT 都是在内核层面将连接分到多个worker，解决了epoll下的惊群，SO_REUSEPORT 会更均衡一些，EPOLLEXCLUSIVE在压力不大的时候会导致连接总是在少数几个worker上（如下case）。但是 SO_REUSEPORT在最坏的情况下会导致一个worker即使Hang了，OS也依然会派连接过去，这是非常致命的，所以4.5内核引入了 EPOLLEXCLUSIVE（总是给闲置等待队列的第一个worker派连接）</p>
 <p>相对 SO_REUSEPORT导致的stuck, EPOLLEXCLUSIV 还是更好接受一些。</p>
 <h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://blog.csdn.net/lyztyycode/article/details/78648798" target="_blank" rel="external">Linux惊群效应详解（最详细的了吧）</a></p>
 <p><a href="https://blog.csdn.net/dog250/article/details/80837278" target="_blank" rel="external">再谈Linux epoll惊群问题的原因和解决方案</a></p>
@@ -5691,198 +5911,11 @@ sudo ip tcp_metrics delete 100.118.58.7
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/04/04/就是要你懂抓包--Unix-Socket抓包/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/04/04/就是要你懂抓包--Unix-Socket抓包/" itemprop="url">就是要你懂Unix Socket 进行抓包解析</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-04-04T11:30:03+08:00">
-                2019-04-04
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/04/04/就是要你懂抓包--Unix-Socket抓包/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2019/04/04/就是要你懂抓包--Unix-Socket抓包/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="通过tcpdump对Unix-Socket-进行抓包解析"><a href="#通过tcpdump对Unix-Socket-进行抓包解析" class="headerlink" title="通过tcpdump对Unix Socket 进行抓包解析"></a>通过tcpdump对Unix Socket 进行抓包解析</h1><h2 id="背景介绍"><a href="#背景介绍" class="headerlink" title="背景介绍"></a>背景介绍</h2><p>大多时候我们可以通过tcpdump对网络抓包分析一些访问数据，以及反向解析一些数据，也就是希望看到具体请求、想用内容。但是如果程序是通过Unix Socket方式来访问的那么tcpdump就看不到Unix Socket里面具体流淌的内容了，本文希望找到一种方法达到如同查看网卡内容一样来查看Unix Socket上具体的请求、响应数据</p>
-<h2 id="socat工具"><a href="#socat工具" class="headerlink" title="socat工具"></a>socat工具</h2><p>类似nc，但是是个超级增强版的nc，<a href="https://payloads.online/tools/socat" target="_blank" rel="external">主要用作两个独立数据通道之间的双向数据传输的继电器（或者说代理）</a></p>
-<p>基本原理，通过socat在Unix-Socket和TCP/UDP port之间建立一个代理，然后对代理上的端口进行抓包</p>
-<h2 id="通过socat-启动一个tcp端口来代理unix-socket"><a href="#通过socat-启动一个tcp端口来代理unix-socket" class="headerlink" title="通过socat 启动一个tcp端口来代理unix socket"></a>通过socat 启动一个tcp端口来代理unix socket</h2><p>启动本地8080端口，将docker.sock映射到8080端口,8080收到的东西都会转给docker.sock，docker.sock收到的东西都通过抓8080的包看到,但是要求应用访问8080而不是docker.sock。</p>
-<pre><code>socat -d -d TCP-LISTEN:8080,fork,bind=127.0.0.1 UNIX:/var/run/docker.sock
-</code></pre><p><strong>缺点：需要修改客户端的访问方式</strong></p>
-<pre><code>sudo curl --unix-socket /var/run/docker.sock http://localhost/images/json
-</code></pre><p>上面的访问方式对8080抓包还是抓不到，因为绕过了我们的代理</p>
-<pre><code>sudo curl http://localhost:8080/images/json
-</code></pre><p>只能通过如上方式访问8080端口，然后请求通过socat代理转发给docker.sock，整个结果跟访问–unix-socket是一样的，这个时候通过8080端口抓包能看到–unix-socket的工作数据</p>
-<h2 id="通过socat启动另外一个unix-socket代理，但是不是tcpdump抓包"><a href="#通过socat启动另外一个unix-socket代理，但是不是tcpdump抓包" class="headerlink" title="通过socat启动另外一个unix socket代理，但是不是tcpdump抓包"></a>通过socat启动另外一个unix socket代理，但是不是tcpdump抓包</h2><pre><code>sudo mv /var/run/docker.sock /var/run/docker.sock.original
-sudo socat -t100 -d -x -v UNIX-LISTEN:/var/run/docker.sock,mode=777,reuseaddr,fork UNIX-CONNECT:/var/run/docker.sock.original
-</code></pre><p>优点：客户端访问方式不变，还是直接访问–unix-socket<br>缺点：输出的数据不如tcpdump方便，也就不能用wireshark来分析了</p>
-<p>本质也还是socat代理，只是不是用的一个tcp端口来代理了，而是通过一个unix-socet代理了另外一个unix-socket，直接在代理上输出所有收发的数据</p>
-<h2 id="完美的办法，客户端不用改访问方式，tcpdump也能抓到数据"><a href="#完美的办法，客户端不用改访问方式，tcpdump也能抓到数据" class="headerlink" title="完美的办法，客户端不用改访问方式，tcpdump也能抓到数据"></a>完美的办法，客户端不用改访问方式，tcpdump也能抓到数据</h2><pre><code>sudo mv /var/run/docker.sock /var/run/docker.sock.original
-sudo socat TCP-LISTEN:8089,reuseaddr,fork UNIX-CONNECT:/var/run/docker.sock.original
-sudo socat UNIX-LISTEN:/var/run/docker.sock,fork TCP-CONNECT:127.0.0.1:8089
-</code></pre><p>然后客户端还是直接访问–unix-socket</p>
-<pre><code>sudo curl --unix-socket /var/run/docker.sock http://localhost/images/json
-</code></pre><p>这个时候通过tcpdump在8089端口上就能抓到数据了</p>
-<pre><code>sudo tcpdump -i lo -netvv port 8089
-</code></pre><p>实际是结合前面两种方法，做了两次代理，先将socket映射到8089端口上，然后再将8089端口映射到一个新的socket上，最后client访问这个新的socket。</p>
-<p>实际流程如下： client -&gt; 新socket -&gt; 8089 -&gt; 原来的socket  这个时候对8089可以任意抓包了.</p>
-<p>参考来源：<a href="https://mivehind.net/2018/04/20/sniffing-unix-domain-sockets/" target="_blank" rel="external">https://mivehind.net/2018/04/20/sniffing-unix-domain-sockets/</a>    </p>
-<h2 id="一些socat的其它用法"><a href="#一些socat的其它用法" class="headerlink" title="一些socat的其它用法"></a>一些socat的其它用法</h2><p> 把监听在远程主机12.34.56.78上的mysql服务unix socket映射到本地的/var/run/mysqld.temp.sock, 这样就可以用mysql -S /var/run/mysqld/mysqld.sock来访问远程主机的mysql服务了。</p>
-<pre><code>socat &quot;UNIX-LISTEN:/var/run/mysqld.temp.sock,reuseaddr,fork&quot; EXEC:&quot;ssh root@12.34.56.78 socat STDIO UNIX-CONNECT:/var/run/mysqld/mysqld.sock&quot;
-</code></pre><p> 还可以用下面的命令把12.34.56.78上的mysql映射到本地的5500端口，然后使用mysql -p 5500命令访问。</p>
-<pre><code>socat TCP-LISTEN:5500 EXEC:&apos;ssh root@12.34.56.78 &quot;socat STDIO UNIX-CONNECT:/var/run/mysqld/mysqld.sock&quot;&apos;
-</code></pre><p> 把12.34.56.78的udp 161端口映射到本地的1611端口</p>
-<pre><code>socat udp-listen:1611 system:&apos;ssh root@12.34.56.78 &quot;socat stdio udp-connect:remotetarget:161&quot;&apos;    
-</code></pre><p> 通过socat启动server，带有各种参数，比nc更灵活</p>
-<pre><code>Server: socat -dd tcp-listen:2000,keepalive,keepidle=10,keepcnt=2,reuseaddr,keepintvl=1 -
-Client: socat -dd - tcp:localhost:2000,keepalive,keepidle=10,keepcnt=2,keepintvl=1
-
-Drop Connection (Unplug Cable, Shut down Link(WiFi/Interface)): sudo iptables -A INPUT -p tcp --dport 2000 -j DROP
-</code></pre><h2 id="curl-7-57版本可以直接访问-–unix-socket"><a href="#curl-7-57版本可以直接访问-–unix-socket" class="headerlink" title="curl 7.57版本可以直接访问 –unix-socket"></a>curl 7.57版本可以直接访问 –unix-socket</h2><p>7.57之后的版本才支持curl –unix-socket，大大方便了我们的测试</p>
-<pre><code>//Leave 测试断开一个网络
-curl -H &quot;Content-Type: application/json&quot; -X POST -d &apos;{&quot;NetworkID&quot;:&quot;47866b0071e3df7e8053b9c8e499986dfe5c9c4947012db2d963c66ca971ed4b&quot;,&quot;EndpointID&quot;:&quot;3d716436e629701d3ce8650e7a85c133b0ff536aed173c624e4f62a381656862&quot;}&apos; --unix-socket /run/docker/plugins/vlan.sock http://localhost/NetworkDriver.Leave
-
-//取镜像列表
-sudo curl --unix-socket /var/run/docker.sock http://localhost/images/json
-</code></pre><h2 id="参考资料："><a href="#参考资料：" class="headerlink" title="参考资料："></a>参考资料：</h2><p><a href="https://mivehind.net/2018/04/20/sniffing-unix-domain-sockets/" target="_blank" rel="external">https://mivehind.net/2018/04/20/sniffing-unix-domain-sockets/</a>    </p>
-<p><a href="https://superuser.com/questions/484671/can-i-monitor-a-local-unix-domain-socket-like-tcpdump" target="_blank" rel="external">https://superuser.com/questions/484671/can-i-monitor-a-local-unix-domain-socket-like-tcpdump</a></p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right"></i></a>
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -5927,7 +5960,7 @@ sudo curl --unix-socket /var/run/docker.sock http://localhost/images/json
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">40</span>
+                <span class="site-state-item-count">41</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -5949,7 +5982,7 @@ sudo curl --unix-socket /var/run/docker.sock http://localhost/images/json
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">121</span>
+                <span class="site-state-item-count">125</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>
