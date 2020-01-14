@@ -121,9 +121,11 @@
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/f712640a787655ad1bcddec4c65215e5.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/9377127947c23dd166f6aa399b6a89b9.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d567449fe52725a9d0b9d4ec9baa372c.png">
+<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d0b0687ab72cfb785441bfb343b9f948.png">
+<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e4a2fb522be7aa65158778b7ea825207.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/2a5245c81a37d166c7e0b2ace45b9e4b.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/c47d2bd0e4d9d0f005d0e1132b385eab.png">
-<meta property="og:updated_time" content="2019-12-31T00:32:10.000Z">
+<meta property="og:updated_time" content="2020-01-14T07:06:37.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="记一次MySQL性能抖动定位">
 <meta name="twitter:description" content="记一次MySQL压测性能定位专有云场景下DRDS+MySQL集群的一次全表扫描性能优化过程 业务结构client -&amp;gt; DRDS -&amp;gt; slb -&amp;gt; MySQL（32实例，每个实例8Core） 场景描述：通过client压 DRDS和MySQL，MySQL是32个实例，业务逻辑是不带拆分键的全表扫描，也就是一个client SQL经过DRDS后会拆分成256个SQL发送给32个M">
@@ -466,7 +468,7 @@ ut_delay(ulint delay)  //delay 是[0,innodb_spin_wait_delay)之间的一个随�
         return(j);
 }
 </code></pre><p>innodb_spin_wait_delay的默认值为6. spin 等待延迟是一个动态全局参数，您可以在MySQL选项文件（my.cnf或my.ini）中指定该参数，或者在运行时使用SET GLOBAL 来修改。在我们的MySQL配置中默认改成了30，导致了这个问题。</p>
-<h3 id="Skylake架构的8163-和-E5-2682-CPU型号的不同"><a href="#Skylake架构的8163-和-E5-2682-CPU型号的不同" class="headerlink" title="Skylake架构的8163 和 E5-2682 CPU型号的不同"></a>Skylake架构的8163 和 E5-2682 CPU型号的不同</h3><p>UT_RELAX_CPU()的汇编指令为pause，在CPU指令同步数据时进行等待的空转，在pause期间，同一个core上的HT可以执行其他指令。</p>
+<h3 id="Skylake架构的8163-和-Broadwell架构-E5-2682-CPU型号的不同"><a href="#Skylake架构的8163-和-Broadwell架构-E5-2682-CPU型号的不同" class="headerlink" title="Skylake架构的8163 和 Broadwell架构 E5-2682 CPU型号的不同"></a>Skylake架构的8163 和 Broadwell架构 E5-2682 CPU型号的不同</h3><p>UT_RELAX_CPU()的汇编指令为pause，在CPU指令同步数据时进行等待的空转，在pause期间，同一个core上的HT可以执行其他指令。</p>
 <p>在Intel 64-ia-32-architectures-optimization-manual手册中提到：<br>The latency of the PAUSE instruction in prior generation microarchitectures is about 10 cycles, whereas in Skylake microarchitecture it has been extended to as many as 140 cycles.</p>
 <p><strong>Skylake架构的CPU的PAUSE指令从之前的10 cycles提升到140 cycles。</strong></p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/f712640a787655ad1bcddec4c65215e5.png" alt="image.png"></p>
@@ -481,6 +483,8 @@ ut_delay(ulint delay)  //delay 是[0,innodb_spin_wait_delay)之间的一个随�
 <p>Skylake 8163 CPU型号在不同的delay参数和不同并发压力下的写入性能数据：</p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d567449fe52725a9d0b9d4ec9baa372c.png" alt="image.png"></p>
 <p>因为8163的cycles从10改到了140，所以可以看到delay参数对性能的影响更加陡峻。</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d0b0687ab72cfb785441bfb343b9f948.png" alt="image.png"></p>
+<h4 id="不同的架构下的参数"><a href="#不同的架构下的参数" class="headerlink" title="不同的架构下的参数"></a>不同的架构下的参数</h4><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e4a2fb522be7aa65158778b7ea825207.png" alt="image.png"></p>
 <h3 id="cache-一致性"><a href="#cache-一致性" class="headerlink" title="cache 一致性"></a>cache 一致性</h3><p>处理器都实现了 Cache 一致性 (Cache Coherence）协议。如历史上 x86 曾实现了<a href="https://en.wikipedia.org/wiki/MESI_protocol" target="_blank" rel="external"> MESI 协议</a>，以及 MESIF 协议。</p>
 <p>假设两个处理器 A 和 B, 都在各自本地 Cache Line 里有同一个变量的拷贝时，此时该 Cache Line 处于 Shared 状态。当处理器 A 在本地修改了变量，除去把本地变量所属的 Cache Line 置为 Modified 状态以外，<br>还必须在另一个处理器 B 读同一个变量前，对该变量所在的 B 处理器本地 Cache Line 发起 Invaidate 操作，标记 B 处理器的那条 Cache Line 为 Invalidate 状态。<br>随后，若处理器 B 在对变量做读写操作时，如果遇到这个标记为 Invalidate 的状态的 Cache Line，即会引发 Cache Miss，从而将内存中最新的数据拷贝到 Cache Line 里，然后处理器 B 再对此 Cache Line 对变量做读写操作。</p>
 <p>cache ping-pong(cache-line ping-ponging) 是指不同的CPU共享位于同一个cache-line里边的变量，当不同的CPU频繁的对该变量进行读写时，会导致其他CPU cache-line的失效。</p>
@@ -573,6 +577,7 @@ btr_estimate_n_rows_in_range_on_level(
 <h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a href="https://cloud.tencent.com/developer/article/1005284" target="_blank" rel="external">https://cloud.tencent.com/developer/article/1005284</a></p>
 <p><a href="https://dev.mysql.com/doc/refman/5.7/en/innodb-performance-spin_lock_polling.html" target="_blank" rel="external">mysql doc</a></p>
 <p><a href="http://oliveryang.net/2018/01/cache-false-sharing-debug" target="_blank" rel="external">Cache Line 伪共享发现与优化</a></p>
+<p><a href="https://en.wikichip.org/w/images/e/eb/intel-ref-248966-037.pdf" target="_blank" rel="external">intel spec</a></p>
 
       
     </div>
@@ -631,8 +636,8 @@ btr_estimate_n_rows_in_range_on_level(
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/2117/06/07/文章索引index/" rel="prev" title="文章索引">
-                文章索引 <i class="fa fa-chevron-right"></i>
+              <a href="/2020/01/14/Linux cached内存问题/" rel="prev" title="Linux cached内存问题">
+                Linux cached内存问题 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -712,7 +717,7 @@ btr_estimate_n_rows_in_range_on_level(
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">44</span>
+                <span class="site-state-item-count">45</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -734,7 +739,7 @@ btr_estimate_n_rows_in_range_on_level(
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">129</span>
+                <span class="site-state-item-count">132</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>
@@ -776,7 +781,7 @@ btr_estimate_n_rows_in_range_on_level(
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#记一次MySQL压测性能定位"><span class="nav-number">1.</span> <span class="nav-text">记一次MySQL压测性能定位</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#业务结构"><span class="nav-number">1.1.</span> <span class="nav-text">业务结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#场景描述："><span class="nav-number">1.2.</span> <span class="nav-text">场景描述：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#说明："><span class="nav-number">1.3.</span> <span class="nav-text">说明：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#问题描述："><span class="nav-number">1.4.</span> <span class="nav-text">问题描述：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#排查-MySQL"><span class="nav-number">1.5.</span> <span class="nav-text">排查 MySQL</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#slb和网络的嫌疑"><span class="nav-number">1.6.</span> <span class="nav-text">slb和网络的嫌疑</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#问题的确认"><span class="nav-number">1.7.</span> <span class="nav-text">问题的确认</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#重心再次转向MySQL"><span class="nav-number">1.8.</span> <span class="nav-text">重心再次转向MySQL</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#MySQL部署awr"><span class="nav-number">1.9.</span> <span class="nav-text">MySQL部署awr</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#perf-top"><span class="nav-number">1.10.</span> <span class="nav-text">perf top</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#最终的性能"><span class="nav-number">1.11.</span> <span class="nav-text">最终的性能</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#关于-innodb-spin-wait-delay"><span class="nav-number">1.12.</span> <span class="nav-text">关于 innodb_spin_wait_delay</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Skylake架构的8163-和-E5-2682-CPU型号的不同"><span class="nav-number">1.12.1.</span> <span class="nav-text">Skylake架构的8163 和 E5-2682 CPU型号的不同</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#cache-一致性"><span class="nav-number">1.12.2.</span> <span class="nav-text">cache 一致性</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Cache-Line-伪共享"><span class="nav-number">1.12.2.1.</span> <span class="nav-text">Cache Line 伪共享</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#MESI-protocol"><span class="nav-number">1.12.2.2.</span> <span class="nav-text">MESI protocol</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#分析源代码"><span class="nav-number">1.13.</span> <span class="nav-text">分析源代码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结分析"><span class="nav-number">1.14.</span> <span class="nav-text">总结分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文章"><span class="nav-number">1.15.</span> <span class="nav-text">参考文章</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#记一次MySQL压测性能定位"><span class="nav-number">1.</span> <span class="nav-text">记一次MySQL压测性能定位</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#业务结构"><span class="nav-number">1.1.</span> <span class="nav-text">业务结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#场景描述："><span class="nav-number">1.2.</span> <span class="nav-text">场景描述：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#说明："><span class="nav-number">1.3.</span> <span class="nav-text">说明：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#问题描述："><span class="nav-number">1.4.</span> <span class="nav-text">问题描述：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#排查-MySQL"><span class="nav-number">1.5.</span> <span class="nav-text">排查 MySQL</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#slb和网络的嫌疑"><span class="nav-number">1.6.</span> <span class="nav-text">slb和网络的嫌疑</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#问题的确认"><span class="nav-number">1.7.</span> <span class="nav-text">问题的确认</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#重心再次转向MySQL"><span class="nav-number">1.8.</span> <span class="nav-text">重心再次转向MySQL</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#MySQL部署awr"><span class="nav-number">1.9.</span> <span class="nav-text">MySQL部署awr</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#perf-top"><span class="nav-number">1.10.</span> <span class="nav-text">perf top</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#最终的性能"><span class="nav-number">1.11.</span> <span class="nav-text">最终的性能</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#关于-innodb-spin-wait-delay"><span class="nav-number">1.12.</span> <span class="nav-text">关于 innodb_spin_wait_delay</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Skylake架构的8163-和-Broadwell架构-E5-2682-CPU型号的不同"><span class="nav-number">1.12.1.</span> <span class="nav-text">Skylake架构的8163 和 Broadwell架构 E5-2682 CPU型号的不同</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#不同的架构下的参数"><span class="nav-number">1.12.1.1.</span> <span class="nav-text">不同的架构下的参数</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#cache-一致性"><span class="nav-number">1.12.2.</span> <span class="nav-text">cache 一致性</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Cache-Line-伪共享"><span class="nav-number">1.12.2.1.</span> <span class="nav-text">Cache Line 伪共享</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#MESI-protocol"><span class="nav-number">1.12.2.2.</span> <span class="nav-text">MESI protocol</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#分析源代码"><span class="nav-number">1.13.</span> <span class="nav-text">分析源代码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结分析"><span class="nav-number">1.14.</span> <span class="nav-text">总结分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文章"><span class="nav-number">1.15.</span> <span class="nav-text">参考文章</span></a></li></ol></li></ol></div>
             
 
           </div>
