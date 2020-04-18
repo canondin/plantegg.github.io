@@ -261,6 +261,179 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/08/01/如何徒手撕Bug/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/08/01/如何徒手撕Bug/" itemprop="url">如何徒手撕Bug</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-08-01T10:30:03+08:00">
+                2017-08-01
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/performance/" itemprop="url" rel="index">
+                    <span itemprop="name">performance</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2017/08/01/如何徒手撕Bug/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2017/08/01/如何徒手撕Bug/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="如何徒手撕Bug"><a href="#如何徒手撕Bug" class="headerlink" title="如何徒手撕Bug"></a>如何徒手撕Bug</h1><p>经常碰到bug，如果有源代码，或者源代码比较简单一般通过bug现象结合读源代码，基本能比较快解决掉。但是有些时候源代码过于复杂，比如linux kernel，比如 docker，复杂的另一方面是没法比较清晰地去理清源代码的结构。</p>
+<p>所以不到万不得已不要碰积极复杂的源代码</p>
+<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>docker daemon重启，上面有几十个容器，重启后daemon基本上卡死不动了。 docker ps/exec 都没有任何响应，同时能看到很多这样的进程：</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/ed7f275935b32c7fd5fef3e0caf2eb0c.png" alt="image.png"></p>
+<p>这个进程是docker daemon在启动的时候去设置每个容器的iptables，来实现dns解析。</p>
+<p>这个时候执行 sudo iptables -L 也告诉你有其他应用锁死iptables了：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/901fd2057fb3b32ff79dc5a29c9cdd67.png" alt="image.png"></p>
+<pre><code>$sudo fuser /run/xtables.lock 
+/run/xtables.lock:1203  5544 10161 14451 14482 14503 14511 14530 14576 14602 14617 14637 14659 14664 14680 14698 14706 14752 14757 14777 14807 14815 14826 14834 14858 14872 14889 14915 14972 14973 14979 14991 15006 15031 15067 15076 15104 15127 15155 15176 15178 15179 15180 16506 17656 17657 17660 21904 21910 24174 28424 29741 29839 29847 30018 32418 32424 32743 33056 33335 59949 64006
+</code></pre><p>通过上面的命令基本可以看到哪些进程在等iptables这个锁，之所以有这么多进程在等这个锁，应该是拿到锁的进程执行比较慢所以导致后面的进程拿不到锁，卡在这里</p>
+<h2 id="跟踪具体拿到锁的进程"><a href="#跟踪具体拿到锁的进程" class="headerlink" title="跟踪具体拿到锁的进程"></a>跟踪具体拿到锁的进程</h2><pre><code>$sudo lsof  /run/xtables.lock | grep 3rW
+iptables 36057 root3rW  REG   0,190 48341 /run/xtables.lock
+</code></pre><p>通过strace这个拿到锁的进程可以看到：</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/27d266ab8fd492f009fb7047d9337518.png" alt="image.png"></p>
+<p>发现在这个配置容器dns的进程同时还在执行一些dns查询任务（容器发起了dns查询），但是这个时候dns还没配置好，所以这个查询会超时</p>
+<p>看看物理机上的dns服务器配置：</p>
+<pre><code>$cat /etc/resolv.conf   
+options timeout:2 attempts:2   
+nameserver 10.0.0.1  
+nameserver 10.0.0.2
+nameserver 10.0.0.3
+</code></pre><p>尝试将 timeout 改到20秒、1秒分别验证一下，发现如果timeout改到20秒strace这里也会卡20秒，如果是1秒（这个时候attempts改成1，后面两个dns去掉），那么整体没有感知到任何卡顿，就是所有iptables修改的进程都很快执行完毕了</p>
+<h2 id="strace某个等锁的进程，拿到锁后非常快"><a href="#strace某个等锁的进程，拿到锁后非常快" class="headerlink" title="strace某个等锁的进程，拿到锁后非常快"></a>strace某个等锁的进程，拿到锁后非常快</h2><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/25ab3e2385e08e8e23eeb1309d949839.png" alt="image.png"></p>
+<p>拿到锁后如果这个时候没有收到 dns 查询，那么很快iptables修改完毕，也不会导致卡住</p>
+<h2 id="我的分析"><a href="#我的分析" class="headerlink" title="我的分析"></a>我的分析</h2><p>docker启动的时候要修改每个容器的dns（iptables规则），如果这个时候又收到了dns查询，但是查询的时候dns还没配置好，所以只能等待dns默认超时，等到超时完了再往后执行修改dns动作然后释放iptables锁。这里会发生恶性循环，导致dns修改时占用iptables的时间非常长，进而看着像把物理机iptables锁死，同时docker daemon不响应任何请求。</p>
+<p>这应该是docker daemon实现上的小bug，也就是改iptables这里没加锁，如果修改dns的时候同时收到了dns查询，要是让查询等锁的话就不至于出现这种恶性循环</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>其实这个问题还是挺容易出现的，daemon重启，上面有很多容器，容器里面的任务启动的时候都要做dns解析，这个时候daemon还在修改dns，冲进来很多dns查询的话会导致修改进程变慢</p>
+<p>这也跟物理机的 /etc/resolv.conf 配置有关</p>
+<p>暂时先只留一个dns server，同时把timeout改成1秒（似乎没法改成比1秒更小），同时 attempts:1 ，也就是加快dns查询的失败，当然这会导致应用启动的时候dns解析失败，最终还是需要从docker的源代码修复这个问题。</p>
+<p>解决过程中无数次想放弃，但是反复在那里strace，正是看到了有dns和没有dns查询的两个strace才想清楚这个问题，感谢自己的坚持和很多同事的帮助，手撕的过程中必然有很多不理解的东西，需要请教同事</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/07/31/优酷双11全链路压测中通过Perf发现的一个SpringMVC 的性能问题/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1275,6 +1448,834 @@ net.ipv4.tcp_keepalive_intvl = 3
 
 
     
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/03/24/╖╜╓█╗╖╛│╚▌╞ў╡ў╢╚/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/03/24/╖╜╓█╗╖╛│╚▌╞ў╡ў╢╚/" itemprop="url">方舟环境容器调度</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-03-24T17:30:03+08:00">
+                2017-03-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/docker/" itemprop="url" rel="index">
+                    <span itemprop="name">docker</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2017/03/24/╖╜╓█╗╖╛│╚▌╞ў╡ў╢╚/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2017/03/24/╖╜╓█╗╖╛│╚▌╞ў╡ў╢╚/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="方舟环境容器调度"><a href="#方舟环境容器调度" class="headerlink" title="方舟环境容器调度"></a>方舟环境容器调度</h1><h2 id="主要功能"><a href="#主要功能" class="headerlink" title="主要功能"></a>主要功能</h2><ul>
+<li>恢复宿主机死机或者断网后上面需要调度的所有容器</li>
+<li>恢复非正常的容器状态到正常</li>
+<li>调度的容器能够支持vlan网络和Host模式</li>
+<li>调度容器本身通过Leader-Follower的模式保证高可用性</li>
+<li>调度容器支持cron定时任务（精确到秒级）</li>
+<li>查询哪个节点是Leader</li>
+<li>停止或者打开调度（方便容器维护、正常启停）</li>
+</ul>
+<h2 id="通过-ark-schedule-镜像启动调度"><a href="#通过-ark-schedule-镜像启动调度" class="headerlink" title="通过 ark-schedule 镜像启动调度"></a>通过 ark-schedule 镜像启动调度</h2><p>必须在swarm manager节点上以 docker 容器的方式来启动，下面的 -e 参数对应后面的 export 参数和作用注释</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">docker run -d --restart=always --name=ark-schedule -e ACS_CLUSTER_SECURITY_GROUP=false -e ACS_CLUSTER_SCHEME=tcp -e ACS_CLUSTER_ENDPOINT=11.239.155.112:3376 -e ACS_NETWORK_NAME=vlan701 -e ACS_CRONTAB=&quot;7 * * * * *&quot; -e ACS_PORT=3375 -e ACS_ADVERTISE=11.239.155.112:3375 -e ACS_NETWORK_STORE_CLUSTER=zk://11.239.155.112:2181,11.239.155.103:2181,11.239.155.97:2181/Cluster -e affinity:container==swarm-manager --net=host reg.docker.alibaba-inc.com/ark/ark-schedule:0.6-20180530-68e7bed /ark-schedule/ark-schedule --debug start</div></pre></td></tr></table></figure>
+<p>如果需要调度容器本身高可以用，需要在不同的宿主机上启动多个 ark-schedule 容器， 同时可以给调度容器自己增加调度标签</p>
+<h3 id="环境变量参数说明"><a href="#环境变量参数说明" class="headerlink" title="环境变量参数说明"></a>环境变量参数说明</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">export ACS_CLUSTER_ENDPOINT=10.125.14.238:3376; //跟自己在同一台宿主机的swarm-manager</div><div class="line">export ACS_NETWORK_NAME=vlan192;  //方舟网络名称 docker network ls 看到vlan开头的名字</div><div class="line">export ACS_NETWORK_STORE_CLUSTER=zk://10.125.26.108:2181,10.125.14.238:2181,10.125.1.45:2181/Cluster; //方舟zk集群，同部署的ark.properties中的</div><div class="line">export ACS_CRONTAB=&quot;*/7 * * * * *&quot; </div><div class="line">export ACS_PORT=&quot;3375&quot; //schedule 自身api暴露端口</div><div class="line">export ACS_ADVERTISE=&quot;10.125.14.238:3375&quot; //宿主机ip+自身api暴露端口 多个schedule容器唯一</div><div class="line">./ark-schedule --debug start</div></pre></td></tr></table></figure>
+<p>ark-schedule 容器默认占用3375端口，如果要用别的端口需要通过 -e ACS_PORT 参数传入</p>
+<p><code>-e ACS_CRONTAB=&quot;7 * * * * *&quot; （秒 分 时 天 月 星期）</code></p>
+<p>这个参数如果没有，那么需要外部来触发调度API（见下面）</p>
+<p>ACS_ADVERTISE=”10.125.26.108:3375”  这个参数是多容器选举用的，每个容器用自己的IP+PORT来标识</p>
+<p>容器日志主要在 /root/logs/ark-schedule-container-2017-12-12.log 中， 可以映射到宿主机上，查看更方便</p>
+<h3 id="镜像版本"><a href="#镜像版本" class="headerlink" title="镜像版本"></a>镜像版本</h3><p>0.1 带cron功能，自动定时扫描并恢复容器<br>0.2-election 有多个ark-schedule节点选举功能，抢到主的开始cron，没有抢到或者失去主的stop cron<br>0.3-election 在0.2的基础上修复了docker/libkv的bug，能够在弱网络、断网的条件下正常运行<br>0.4-switch 增加查询leader节点和cron是否开始的API，增加对Leader的cron启停的API<br>0.5-labels 增加对restart/recreate 标签的支持<br>0.6 去掉了对多个zk的支持，简化启动参数<br>0.7 修复了重复endpoint导致的容器的域名不通、inspect notfound（集群多个同名容器的时候）等各种问题</p>
+<h2 id="所有需要调度的容器增加调度标志标签"><a href="#所有需要调度的容器增加调度标志标签" class="headerlink" title="所有需要调度的容器增加调度标志标签"></a>所有需要调度的容器增加调度标志标签</h2><p>在docker run中增加一个标签： –label “ark.labels.schedule=haproxy”</p>
+<p>详细命令：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sudo docker update --label-add=&quot;ark.labels.schedule=haproxy&quot; --label-add=&quot;ark.enable_restart=true&quot; --label-add=&quot;ark.enable_recreate=true&quot; 容器名1 容器名2</div></pre></td></tr></table></figure>
+<p><strong>上述命令不需要重启容器，但是要重新调snapshot API 做一次快照，让他们生效</strong></p>
+<p>ark-schedule容器在调度容器的时候，先检查快照中的容器，如果容器不见了或者状态不是up，又包含如上标签，就会重新在其它机器上把这个容器拉起来</p>
+<ul>
+<li><p>ark.enable_restart<br>是否允许通过重启来恢复容器（默认是true）。true为可以，false不可以</p>
+</li>
+<li><p>ark.enable_recreate<br>是否允许将消失的容器在其他宿主机重建（默认是true）。true为可以，false不可以</p>
+</li>
+</ul>
+<h2 id="API-（如下ip：10-125-14-238-在现场换成客户物理机IP）"><a href="#API-（如下ip：10-125-14-238-在现场换成客户物理机IP）" class="headerlink" title="API （如下ip：10.125.14.238 在现场换成客户物理机IP）"></a>API （如下ip：10.125.14.238 在现场换成客户物理机IP）</h2><ol>
+<li>中间件部署完毕，并检查无误，调用： curl -v “<a href="http://10.125.14.238:3375/schedule/snapshot" target="_blank" rel="external">http://10.125.14.238:3375/schedule/snapshot</a>“ 对中间件做快照，将来会按快照的状态来进行恢复，执行一次就可以</li>
+<li>手动恢复容器不见了，调用 curl -v “<a href="http://10.125.14.238:3375/schedule/snapshot/restore" target="_blank" rel="external">http://10.125.14.238:3375/schedule/snapshot/restore</a>“ 会将所有异常容器恢复回来</li>
+<li>schedule 容器本身的健康检查接口 $curl <a href="http://10.125.14.238:3375/schedule/leader" target="_blank" rel="external">http://10.125.14.238:3375/schedule/leader</a> http code 值是 200,说明schedule容器是健康的</li>
+<li>查询哪个节点是Leader curl 以及是否是停止调度（维护时）： “<a href="http://10.125.14.238:3375/schedule/leader" target="_blank" rel="external">http://10.125.14.238:3375/schedule/leader</a>“</li>
+<li>停止调度，先查询谁是leader，然后调： “<a href="http://leader-ip:3375/schedule/stop" target="_blank" rel="external">http://leader-ip:3375/schedule/stop</a>“</li>
+</ol>
+<h2 id="维护状态"><a href="#维护状态" class="headerlink" title="维护状态"></a>维护状态</h2><p>通过调度容器API停止调度，所有容器都不再被调度了，维护完毕再掉snapshot、start API恢复调度。</p>
+<p>如果只想对某个容器进行维护，其它容器还是希望被调度监控、调度可以通过下面的方式来实现：</p>
+<p><code>docker update --label-rm=&quot;ark.labels.schedule=haproxy&quot; 容器1 容器2 //还可以跟多个容器名</code><br><strong>然后调 snapshot API让刚刚的update生效</strong></p>
+<p>运维完毕，恢复运维后的容器进入可以调度状态，具体命令如下：</p>
+<p><code>docker update --label-add=&quot;ark.labels.schedule=haproxy&quot; 容器1 容器2 //还可以跟多个容器名</code></p>
+<p><strong>然后调 snapshot API让刚刚的update生效</strong></p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/b055cf8f275749491fc768fab1ffd1a5.png" alt="image.png"></p>
+<h2 id="升级ark-schedule步骤："><a href="#升级ark-schedule步骤：" class="headerlink" title="升级ark-schedule步骤："></a>升级ark-schedule步骤：</h2><h3 id="下载并导入新镜像"><a href="#下载并导入新镜像" class="headerlink" title="下载并导入新镜像"></a>下载并导入新镜像</h3><p>下载镜像：<a href="http://fzpackages.oss-cn-shanghai.aliyuncs.com/ark%2Fpatch%2Fark-schedule-0.6-20180530-68e7bed.tgz" target="_blank" rel="external">http://fzpackages.oss-cn-shanghai.aliyuncs.com/ark%2Fpatch%2Fark-schedule-0.6-20180530-68e7bed.tgz</a><br>sudo docker load -i ark-schedule-0.6-20180530-68e7bed.tgz</p>
+<h3 id="停止原来的ark-schedule"><a href="#停止原来的ark-schedule" class="headerlink" title="停止原来的ark-schedule"></a>停止原来的ark-schedule</h3><p>停止两个crontab(新的ark-schedule自带crontab，每分钟执行一次调度)</p>
+<p>停止两个ark-schedule容器</p>
+<h3 id="启动新的ark-schdule"><a href="#启动新的ark-schdule" class="headerlink" title="启动新的ark-schdule"></a>启动新的ark-schdule</h3><p>在停止的两个ark-schedule的两台机器上启动两个新的ark-schedule容器，启动参数需要修改参考前面的描述(用现场环境信息替换下面的信息)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">export ACS_CLUSTER_ENDPOINT=10.125.14.238:3376; //跟自己在同一台宿主机的swarm-manager</div><div class="line">export ACS_NETWORK_NAME=vlan192;  //方舟网络名称 docker network ls 看到vlan开头的名字</div><div class="line">export ACS_NETWORK_STORE_CLUSTER=zk://10.125.26.108:2181,10.125.14.238:2181,10.125.1.45:2181/Cluster; //方舟zk集群，同部署的ark.properties中的</div><div class="line">export ACS_CRONTAB=&quot;*/7 * * * * *&quot;  ----不需要改</div><div class="line">export ACS_PORT=&quot;3375&quot; //schedule 自身api暴露端口----不需要改</div><div class="line">export ACS_ADVERTISE=&quot;10.125.14.238:3375&quot; //宿主机ip+自身api暴露端口 多个schedule容器唯一</div><div class="line">./ark-schedule --debug start //----不需要改</div></pre></td></tr></table></figure>
+<h2 id="检查调度日志"><a href="#检查调度日志" class="headerlink" title="检查调度日志"></a>检查调度日志</h2><p>检查两个ark-schedule 谁是主： curl <a href="http://ark-schedule所在的宿主机-ip:3375/schedule/leader" target="_blank" rel="external">http://ark-schedule所在的宿主机-ip:3375/schedule/leader</a> </p>
+<p>进到是主的ark-schedule容器中看日志：cat /root/logs/ark-schedule-2018-日期.log</p>
+<h3 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h3><p>如何打标签 <a href="http://panama.alibaba-inc.com/qa/faq?id=1124" title="http://panama.alibaba-inc.com/qa/faq?id=1124" target="_blank" rel="external">http://panama.alibaba-inc.com/qa/faq?id=1124</a></p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/03/24/ansible ├№┴ю═и╡└╩╣╙├╩╓▓с/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2016/03/24/ansible ├№┴ю═и╡└╩╣╙├╩╓▓с/" itemprop="url">ansible 命令通道使用手册</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2016-03-24T17:30:03+08:00">
+                2016-03-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2016/03/24/ansible ├№┴ю═и╡└╩╣╙├╩╓▓с/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2016/03/24/ansible ├№┴ю═и╡└╩╣╙├╩╓▓с/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="ansible-命令通道使用手册"><a href="#ansible-命令通道使用手册" class="headerlink" title="ansible 命令通道使用手册"></a>ansible 命令通道使用手册</h1><h2 id="什么是命令通道？"><a href="#什么是命令通道？" class="headerlink" title="什么是命令通道？"></a>什么是命令通道？</h2><blockquote>
+<p>当我们需要批量操作、查看一组机器，或者在这些机器上批量执行某个命令、修改某个文件，都可以通过命令通道在一台机器上批量并发完成对所有机器的操作</p>
+<p>命令通道只是一个帮你将命令发送到多个目标机器，并将执行结果返回来给你的一个执行通道</p>
+</blockquote>
+<h2 id="使用场景"><a href="#使用场景" class="headerlink" title="使用场景"></a>使用场景</h2><blockquote>
+<p><a href="http://gitlab.alibaba-inc.com/middleware-ansible/ansible-doc/wikis/UDP_Command_channel#hosts-ini-uptime" target="_blank" rel="external">执行一行命令就能看到几十台机器的负载情况</a></p>
+<p><a href="http://gitlab.alibaba-inc.com/middleware-ansible/ansible-doc/wikis/UDP_Command_channel/#shell" target="_blank" rel="external">批量执行远程服务器上已经写好的Shell脚本</a></p>
+<p>查看所有Web服务器最近10000行Log中有没有ERROR</p>
+<p>查看所有DB服务器的内存使用情况</p>
+<p>批量将所有Diamond服务器的某个端口从7000改成9000</p>
+</blockquote>
+<h2 id="环境要求"><a href="#环境要求" class="headerlink" title="环境要求"></a>环境要求</h2><blockquote>
+<p>一台安装好了的UDP Engine服务器，安装办法见<a href="http://gitlab.alibaba-inc.com/middleware-ansible/ansible-engine/wikis/ansible-install" target="_blank" rel="external">UDP Engine安装脚本</a></p>
+<p>目前提供已经配置好的测试环境：10.125.0.169:/tmp/test_ansible_command/  可以到<a href="http://kfc.alibaba-inc.com/?spm=0.0.0.0.8nSW0t#/resource/server/account/push" target="_blank" rel="external">KFC申请这台机器的访问权限</a>【登上去后可以直接执行下面的使用案例】</p>
+<p>测试环境10.125.0.169上已经安装好了UDP Engine，编写好了hosts.ini，admin登录权限已经打通(不需要输入密码）</p>
+</blockquote>
+<h2 id="开始准备"><a href="#开始准备" class="headerlink" title="开始准备"></a>开始准备</h2><blockquote>
+<p>如果不想每次输入ssh密码的话请提前将本地公钥(~/.ssh/id_rsa.pub 没有的话 ssh-keygen生成一对)复制到目标机器的 ~/.ssh/authorized_keys 里面，否则每次执行命令都要输入密码</p>
+</blockquote>
+<h3 id="编写一个-hosts-ini-配置文件，内容如下"><a href="#编写一个-hosts-ini-配置文件，内容如下" class="headerlink" title="编写一个 hosts.ini 配置文件，内容如下:"></a>编写一个 hosts.ini 配置文件，内容如下:</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">[server]</div><div class="line">10.125.0.169 ansible_ssh_port=9999 #如果只有这台机器ssh走的是9999端口，其它没有设置的还是默认22端口</div><div class="line">10.125.3.33</div><div class="line">120.26.116.193  </div><div class="line"></div><div class="line">[worker]</div><div class="line">10.125.12.174</div><div class="line">10.125.14.238</div><div class="line"></div><div class="line">[target]</div><div class="line">10.125.192.40 </div><div class="line">10.125.7.151</div></pre></td></tr></table></figure>
+<blockquote>
+<p>server/worker/target表示将7台机器分成了三组，可以到所有7台机器执行同一个命令，也可以只在server/worker/target中的一组机器上执行某个命令.all代表所有7台机器</p>
+</blockquote>
+<h2 id="运行命令通道"><a href="#运行命令通道" class="headerlink" title="运行命令通道"></a>运行命令通道</h2><h3 id="查看-hosts-ini-里面所有服务器的-uptime"><a href="#查看-hosts-ini-里面所有服务器的-uptime" class="headerlink" title="查看 hosts.ini 里面所有服务器的 uptime"></a>查看 hosts.ini 里面所有服务器的 uptime</h3><pre><code><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">	$ ansible -i hosts.ini all -m raw -a &quot; uptime  &quot; -u admin</div><div class="line">	/usr/bin/ansible -i hosts.ini all -m raw -a  uptime   -u admin</div><div class="line">	</div><div class="line">	success =&gt; 10.125.12.174 =&gt; rc=0 =&gt;</div><div class="line">	 11:10:50 up 27 days, 15:40,  1 user,  load average: 0.05, 0.03, 0.05</div><div class="line"></div><div class="line"></div><div class="line">​	</div><div class="line">​	success =&gt; 120.26.116.193 =&gt; rc=0 =&gt;</div><div class="line">​	 11:10:50 up 13 days, 21:07,  1 user,  load average: 0.00, 0.00, 0.00</div><div class="line">​</div></pre></td></tr></table></figure>
+</code></pre><blockquote>
+<p>命令参数说明</p>
+<p>   <strong>all:</strong>  表示对hosts.ini里面的所有服务器执行后面的命令 </p>
+<p>   <strong>-i:</strong>   指定hosts.ini文件所在的位置</p>
+<p>   <strong>-m raw -a:</strong> 指定需要执行的命令</p>
+<p>   <strong>“ uptime “</strong> 双引号里面写上需要执行的命令</p>
+<p>   <strong>-u admin</strong> 表示通过用户名admin 去执行命令【如果没有做好免密码，请加上 -k 参数，会出来提示输入SSH密码】</p>
+</blockquote>
+<h3 id="查看-hosts-ini-里面-server-组服务器的-home目录下的文件结构"><a href="#查看-hosts-ini-里面-server-组服务器的-home目录下的文件结构" class="headerlink" title="查看 hosts.ini 里面 server 组服务器的 home目录下的文件结构"></a>查看 hosts.ini 里面 server 组服务器的 home目录下的文件结构</h3><pre><code>$ ansible -i hosts.ini server -m raw -a &quot; ls -lh ~/  &quot; -u admin
+
+/usr/bin/ansible -i hosts.ini server -m raw -a  ls -lh ~/   -u admin
+
+success =&gt; 10.125.0.169 =&gt; rc=0 =&gt;
+total 12K
+drwxr-xr-x  2 root  root  4.0K Nov 13 12:34 files
+drwxr-xr-x 11 admin admin 4.0K Oct 20 10:49 tomcat
+drwxr-xr-x  3 test  games 4.0K Nov 18 15:40 ansible-engine
+</code></pre><p>​<br>​    success =&gt; 10.125.3.33 =&gt; rc=0 =&gt;<br>​    total 20K<br>​    -rw——-  1 admin admin 1.4K Nov 12 13:39 authorized_keys<br>​    drwxr-xr-x  2 root  root  4.0K Nov 12 16:24 engine<br>​    drwxr-xr-x  2 root  root  4.0K Nov 13 12:22 files<br>​    drwxr-xr-x 11 admin admin 4.0K Nov 18 15:43 tomcat<br>​    drwxr-xr-x  3 test  games 4.0K Nov 18 15:40 ansible-engine</p>
+<h3 id="一次执行多个命令"><a href="#一次执行多个命令" class="headerlink" title="一次执行多个命令"></a>一次执行多个命令</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line">$ ansible -i hosts.ini server -m raw -a &quot; which nc ; find /opt/aliUDP/logs/  &quot; -u admin</div><div class="line"></div><div class="line">/usr/bin/ansible -i hosts.ini server -m raw -a  which nc ; find /opt/aliUDP/logs/   -u admin</div><div class="line"></div><div class="line">FAILED =&gt; 120.26.116.193 =&gt; rc=1 =&gt;</div><div class="line">which: no nc in (/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin)</div><div class="line">find: /opt/aliUDP: No such file or directory</div><div class="line"></div><div class="line"></div><div class="line">success =&gt; 10.125.3.33 =&gt; rc=0 =&gt;</div><div class="line">/usr/bin/nc</div><div class="line">/opt/aliUDP/logs/</div><div class="line">/opt/aliUDP/logs/ansible.log.bak</div><div class="line">/opt/aliUDP/logs/ansible.log</div><div class="line"></div><div class="line"></div><div class="line">success =&gt; 10.125.0.169 =&gt; rc=0 =&gt;</div><div class="line">/usr/bin/nc</div><div class="line">/opt/aliUDP/logs/</div><div class="line">/opt/aliUDP/logs/ansible.log.bak</div><div class="line">/opt/aliUDP/logs/ansible.log</div></pre></td></tr></table></figure>
+<blockquote>
+<p>结果说明</p>
+<p>  其中  120.26.116.193 上没有命令 nc 和 /opt/aliUDP 文件夹所有执行失败，但是其他两台机器都正常返回了结果</p>
+</blockquote>
+<h3 id="Copy本地的某个文件到服务器上【前面的例子中都是单独在远程机器上执行的命令】"><a href="#Copy本地的某个文件到服务器上【前面的例子中都是单独在远程机器上执行的命令】" class="headerlink" title="Copy本地的某个文件到服务器上【前面的例子中都是单独在远程机器上执行的命令】"></a>Copy本地的某个文件到服务器上【前面的例子中都是单独在远程机器上执行的命令】</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div></pre></td><td class="code"><pre><div class="line">$ ansible  -i hosts.ini server  -m copy -a &quot; src=&apos;~/.ssh/id_rsa.pub&apos; dest=&apos;/tmp/&apos; &quot; -u admin</div><div class="line"></div><div class="line">SUCCESS =&gt; 120.26.116.193 =&gt; &#123;</div><div class="line">    &quot;changed&quot;: true, </div><div class="line">    &quot;checksum&quot;: &quot;b12ccf236ab788bbaebd7159c563e97411389c9e&quot;, </div><div class="line">    &quot;dest&quot;: &quot;/tmp/id_rsa.pub&quot;, </div><div class="line">    &quot;gid&quot;: 0, </div><div class="line">    &quot;group&quot;: &quot;root&quot;, </div><div class="line">    &quot;md5sum&quot;: &quot;b6ba28284ab95aaa0f47602bdab49f46&quot;, </div><div class="line">    &quot;mode&quot;: &quot;0644&quot;, </div><div class="line">    &quot;owner&quot;: &quot;root&quot;, </div><div class="line">    &quot;size&quot;: 392, </div><div class="line">    &quot;src&quot;: &quot;/root/.ansible/ansible-tmp-1449109886.94-70134064194486/source&quot;, </div><div class="line">    &quot;state&quot;: &quot;file&quot;, </div><div class="line">    &quot;uid&quot;: 0</div><div class="line">&#125;</div><div class="line"></div><div class="line">SUCCESS =&gt; 10.125.0.169 =&gt; &#123;</div><div class="line">    &quot;changed&quot;: true, </div><div class="line">    &quot;checksum&quot;: &quot;b12ccf236ab788bbaebd7159c563e97411389c9e&quot;, </div><div class="line">    &quot;dest&quot;: &quot;/tmp/id_rsa.pub&quot;, </div><div class="line">    &quot;gid&quot;: 500, </div><div class="line">    &quot;group&quot;: &quot;admin&quot;, </div><div class="line">    &quot;md5sum&quot;: &quot;b6ba28284ab95aaa0f47602bdab49f46&quot;, </div><div class="line">    &quot;mode&quot;: &quot;0664&quot;, </div><div class="line">    &quot;owner&quot;: &quot;admin&quot;, </div><div class="line">    &quot;size&quot;: 392, </div><div class="line">    &quot;src&quot;: &quot;/home/admin/.ansible/ansible-tmp-1449109886.78-98797505042348/source&quot;, </div><div class="line">    &quot;state&quot;: &quot;file&quot;, </div><div class="line">    &quot;uid&quot;: 500</div><div class="line">&#125;</div><div class="line"></div><div class="line">SUCCESS =&gt; 10.125.3.33 =&gt; &#123;</div><div class="line">    &quot;changed&quot;: true, </div><div class="line">    &quot;checksum&quot;: &quot;b12ccf236ab788bbaebd7159c563e97411389c9e&quot;, </div><div class="line">    &quot;dest&quot;: &quot;/tmp/id_rsa.pub&quot;, </div><div class="line">    &quot;gid&quot;: 500, </div><div class="line">    &quot;group&quot;: &quot;admin&quot;, </div><div class="line">    &quot;md5sum&quot;: &quot;b6ba28284ab95aaa0f47602bdab49f46&quot;, </div><div class="line">    &quot;mode&quot;: &quot;0664&quot;, </div><div class="line">    &quot;owner&quot;: &quot;admin&quot;, </div><div class="line">    &quot;size&quot;: 392, </div><div class="line">    &quot;src&quot;: &quot;/home/admin/.ansible/ansible-tmp-1449109886.81-269249309502640/source&quot;, </div><div class="line">    &quot;state&quot;: &quot;file&quot;, </div><div class="line">    &quot;uid&quot;: 500</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<blockquote>
+<p>参数说明</p>
+<p>   <strong>-m copy -a:</strong> 指定这是 <strong>copy</strong> 的命令</p>
+<p>   <strong>“  src=’~/.ssh/id_rsa.pub’ dest=’/tmp/‘ “</strong> src表示本地文件 dest表示远程目标位置</p>
+</blockquote>
+<h3 id="验证一下刚刚copy上去的文件的MD5值"><a href="#验证一下刚刚copy上去的文件的MD5值" class="headerlink" title="验证一下刚刚copy上去的文件的MD5值"></a>验证一下刚刚copy上去的文件的MD5值</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">$ ansible  -i hosts.ini server  -m command -a &quot; md5sum /tmp/id_rsa.pub &quot; -u admin</div><div class="line"></div><div class="line">success =&gt; 10.125.0.169 =&gt; rc=0 =&gt;</div><div class="line">b6ba28284ab95aaa0f47602bdab49f46  /tmp/id_rsa.pub</div><div class="line"></div><div class="line">success =&gt; 10.125.3.33 =&gt; rc=0 =&gt;</div><div class="line">b6ba28284ab95aaa0f47602bdab49f46  /tmp/id_rsa.pub</div><div class="line"></div><div class="line">success =&gt; 120.26.116.193 =&gt; rc=0 =&gt;</div><div class="line">b6ba28284ab95aaa0f47602bdab49f46  /tmp/id_rsa.pub</div></pre></td></tr></table></figure>
+<blockquote>
+<p>结果说明</p>
+<p>  md5都是b6ba28284ab95aaa0f47602bdab49f46 跟本地的一致，说明成功复制到目标机器了</p>
+</blockquote>
+<h3 id="执行远程服务器上已经写好的Shell脚本"><a href="#执行远程服务器上已经写好的Shell脚本" class="headerlink" title="执行远程服务器上已经写好的Shell脚本"></a>执行远程服务器上已经写好的Shell脚本</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">$ cat test.sh </div><div class="line">#/bin/sh</div><div class="line"></div><div class="line">ifconfig | grep &apos;inet addr&apos; </div><div class="line">echo &quot;-------------&quot;</div><div class="line">uptime</div><div class="line">echo &quot;-------------&quot;</div><div class="line">date</div><div class="line"></div><div class="line">df -lh</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div></pre></td><td class="code"><pre><div class="line">$ ansible  -i hosts.ini server  -m command -a &quot; sh /tmp/test.sh &quot; -u admin</div><div class="line"></div><div class="line">/usr/bin/ansible -i hosts.ini server -m command -a  sh /tmp/test.sh  -u admin</div><div class="line"></div><div class="line">success =&gt; 10.125.3.33 =&gt; rc=0 =&gt;</div><div class="line">          inet addr:10.125.3.33  Bcast:10.125.15.255  Mask:255.255.240.0</div><div class="line">          inet addr:127.0.0.1  Mask:255.0.0.0</div><div class="line">-------------</div><div class="line"> 10:50:51 up 28 days, 15:20,  2 users,  load average: 0.01, 0.05, 0.06</div><div class="line">-------------</div><div class="line">Thu Dec  3 10:50:51 CST 2015</div><div class="line">Filesystem            Size  Used Avail Use% Mounted on</div><div class="line">/dev/xvda1            250G  7.8G  230G   4% /</div><div class="line">tmpfs                 2.0G  148K  2.0G   1% /dev/shm</div><div class="line"></div><div class="line">success =&gt; 10.125.0.169 =&gt; rc=0 =&gt;</div><div class="line">          inet addr:10.125.0.169  Bcast:10.125.15.255  Mask:255.255.240.0</div><div class="line">          inet addr:127.0.0.1  Mask:255.0.0.0</div><div class="line">-------------</div><div class="line"> 10:50:51 up 29 days, 44 min,  3 users,  load average: 0.00, 0.01, 0.05</div><div class="line">-------------</div><div class="line">Thu Dec  3 10:50:51 CST 2015</div><div class="line">Filesystem            Size  Used Avail Use% Mounted on</div><div class="line">/dev/xvda1            250G  8.2G  230G   4% /</div><div class="line">tmpfs                 2.0G   72K  2.0G   1% /dev/shm</div><div class="line"></div><div class="line">success =&gt; 120.26.116.193 =&gt; rc=0 =&gt;</div><div class="line">          inet addr:10.51.38.122  Bcast:10.51.39.255  Mask:255.255.248.0</div><div class="line">          inet addr:120.26.116.193  Bcast:120.26.119.255  Mask:255.255.252.0</div><div class="line">          inet addr:127.0.0.1  Mask:255.0.0.0</div><div class="line">-------------</div><div class="line"> 10:50:51 up 14 days, 20:47,  0 users,  load average: 0.00, 0.00, 0.00</div><div class="line">-------------</div><div class="line">2015年 12月 03日 星期四 10:50:51 CST</div><div class="line">Filesystem            Size  Used Avail Use% Mounted on</div><div class="line">/dev/hda1              20G  1.5G   19G   8% /</div><div class="line">tmpfs                 249M     0  249M   0% /dev/shm</div></pre></td></tr></table></figure>
+<h3 id="copy个人笔记本的公钥到服务器上，以后从笔记本登录服务器不再需要输入密码"><a href="#copy个人笔记本的公钥到服务器上，以后从笔记本登录服务器不再需要输入密码" class="headerlink" title="copy个人笔记本的公钥到服务器上，以后从笔记本登录服务器不再需要输入密码"></a>copy个人笔记本的公钥到服务器上，以后从笔记本登录服务器不再需要输入密码</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ ansible -i ansible-hosts.ini all -m authorized_key -a &quot; user=xijun.rxj key=\&quot;&#123;&#123; lookup(&apos;file&apos;, &apos;/tmp/id_rsa.pub&apos;) &#125;&#125; \&quot;  &quot; -u xijun.rxj -k</div></pre></td></tr></table></figure>
+<blockquote>
+<p>执行说明</p>
+<p>  首先将你本地 ~/.ssh/id_rsa.pub 复制到ansible机器的/tmp/下面，然后执行上面的命令</p>
+</blockquote>
+<h3 id="不使用-hosts-ini文件，从命令行中传入目标机的-ip-列表"><a href="#不使用-hosts-ini文件，从命令行中传入目标机的-ip-列表" class="headerlink" title="不使用 hosts.ini文件，从命令行中传入目标机的 ip 列表"></a>不使用 hosts.ini文件，从命令行中传入目标机的 ip 列表</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">$ ansible -i 10.125.0.169,10.125.192.40 all -e &quot;ansible_ssh_port=22&quot; -a &quot;uptime&quot; -u xijun.rxj</div><div class="line"></div><div class="line">success =&gt; 10.125.192.40 =&gt; rc=0 =&gt;</div><div class="line"> 12:31:50 up 48 days, 17:01,  0 users,  load average: 0.13, 0.06, 0.05</div><div class="line"></div><div class="line">success =&gt; 10.125.0.169 =&gt; rc=0 =&gt;</div><div class="line"> 12:31:50 up 49 days,  2:25,  0 users,  load average: 0.00, 0.01, 0.05</div></pre></td></tr></table></figure>
+<blockquote>
+<p>执行说明</p>
+<p>   -i 后面带入ip列表，注意每个IP后面一定要有 “,” 分割开来，all 关键字也是必须的</p>
+<p>   -e 中ansible_ssh_port=22表示ssh使用22端口（默认），如果ssh使用9999端口在这里将22改成9999即可</p>
+</blockquote>
+<h3 id="使用root-sudo权限来执行命令"><a href="#使用root-sudo权限来执行命令" class="headerlink" title="使用root sudo权限来执行命令"></a>使用root sudo权限来执行命令</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">ansible -i 10.125.6.93, all -m  shell -a &quot; ls -lh /home/admin/&quot;    -u xijun.rxj --become-user=root --ask-become-pass --become-method=sudo --become -k</div></pre></td></tr></table></figure>
+<h3 id="给admin授权登录server不需要输入密码（也不知道admin的密码）"><a href="#给admin授权登录server不需要输入密码（也不知道admin的密码）" class="headerlink" title="给admin授权登录server不需要输入密码（也不知道admin的密码）"></a>给admin授权登录server不需要输入密码（也不知道admin的密码）</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">通过 xijun.rxj(已知密码) 以root 权限将本机pub key复制到server上的 /home/admin, 再通过admin账号登录server就不需要密码了：</div><div class="line">ansible -i 10.125.6.93, all -m  authorized_key -a &quot; user=admin key=\&quot;&#123;&#123; lookup(&apos;file&apos;, &apos;/home/ren/.ssh/id_rsa.pub&apos;) &#125;&#125; \&quot;  &quot; -u xijun.rxj --become-user=root --ask-become-pass --become-method=sudo --become -k</div><div class="line"></div><div class="line">不需要密码就可以执行：</div><div class="line">ansible -i 10.125.6.93, all -m shell -a &quot; ls -lha /home/admin/  &quot; -u admin</div></pre></td></tr></table></figure>
+<h3 id="将远程服务器上的public-key-读取到本地"><a href="#将远程服务器上的public-key-读取到本地" class="headerlink" title="将远程服务器上的public key 读取到本地"></a>将远程服务器上的public key 读取到本地</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">ansible -i kfc.ini hadoop -m fetch -a &quot; src=/home/admin/.ssh/id_rsa.pub dest=./test/  &quot;  -u admin</div><div class="line"></div><div class="line">find test/ -type f | xargs cat &gt; ./authorized_keys</div><div class="line"></div><div class="line">#push all the public keys to the server</div><div class="line">ansible -i ~/ali/ansible-edas/kfc.ini hadoop -m  copy -a &quot; src=./authorized_keys dest=/home/admin/.ssh/authorized_keys mode=600  &quot; -u admin</div></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/03/23/ansible │г╝√╬╩╠т/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2016/03/23/ansible │г╝√╬╩╠т/" itemprop="url">ansible 常见问题</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2016-03-23T17:30:03+08:00">
+                2016-03-23
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2016/03/23/ansible │г╝√╬╩╠т/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2016/03/23/ansible │г╝√╬╩╠т/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="ansible-常见问题"><a href="#ansible-常见问题" class="headerlink" title="ansible 常见问题"></a>ansible 常见问题</h1><table>
+<thead>
+<tr>
+<th>问题</th>
+<th>解决方案</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>性能　</td>
+<td>　udp现在并发执行的任务好像还不够，执行批量传大文件的任务等的比较久</td>
+</tr>
+<tr>
+<td>sudoers</td>
+<td>尝试解决udp不能执行的问题，搜索各种英文文档，有人说版本的原因，有人反馈是脚本错误，最终无解。 继续在本地进行测试，发现使用原始的udp命令可以执行ls，但是sudo ls时会提示 sudo need tty 之类的报错。 定位这个错误是因为在/etc/sudoers文件中设置了  Defaults requiretty，修改为 #Defaults requiretty，重试发现问题解决。 手工修改所有机器的配置文件，问题解决。{“msg”: “ssh connection closed waiting for a privilege escalation password prompt”}—实际在部分机器上执行udp命令时仍然有：sudo: no tty present and no askpass program specified  可以给ssh 增加-t/-tt参数来强制分配一个tty</td>
+</tr>
+<tr>
+<td>failed to transfer file to  xxx</td>
+<td>远端机器磁盘已经满,查看df -h，特别是/tmp</td>
+</tr>
+<tr>
+<td>requires a json module, none found</td>
+<td>问题已经通过nginx进行解决部署,安装UDP的时候，在目标机器上面安装 python-simplejson 通过如下命令：yum install python-simplejson -y</td>
+</tr>
+<tr>
+<td>openssh升级后无法登录报错</td>
+<td>sshrpm 升级后会修改/etc/pam.d/sshd 文件。需要升级前备份此文件最后还原即可登录。</td>
+</tr>
+<tr>
+<td>安装EagleEye出现的问题</td>
+<td>1.hadoop name -format 这个需要输入Y/N；2.ssh-key没搞定；3.我们原来可以for循环的地方，古谦脚本只能1条1条的加</td>
+</tr>
+<tr>
+<td>使用lineinfile方法时，内容不能包含”: “(冒号+空格)，这个与ansible底层的分隔符冲突；</td>
+<td>让用户在内容中不要包含”: “</td>
+</tr>
+<tr>
+<td>https 相关</td>
+<td>SSL validation is not available in your version of python. You can use validate_certs=no, however this is unsafe and not recommended. You can also install python-ssl from EPEL</td>
+</tr>
+<tr>
+<td>You need a C++ compiler for C++ support</td>
+<td>yum install -y gcc gcc-c++</td>
+</tr>
+<tr>
+<td>草谷问题  １：udp权限问题，有时候会出现权限认证失败；２：udp如何执行本地命令；　３：udp线上有什么方便的安装方法</td>
+<td>问题1:方法一 去掉sudo试试（报访问文件 /opt/aliUDP/logs/udp.log 失败，备份重新建一个udp.log 文件给于 777 权限）; 方法二 指定 –private-key=PRIVATE_KEY_FILE （先试试直接ssh登录某台目标机器行不行）  问题2：udp支持直接运行目标机器上的命令，用法：udp server  -i ~/ali/udp-roles/roles/udp-install/udp-hosts.ini  -m shell -a “ uptime ; df -lh “ -u admin</td>
+</tr>
+<tr>
+<td>彦林问题  同一个ip部署不同的工程时，定义的变量会冲突；例如ip1同时部署mysql和diamond，都定义project_name；这样上面的会生效，下面定义的会被冲掉</td>
+<td>Wiki：<a href="http://gitlab.alibaba-inc.com/middleware-udp/udp-doc/wikis/Different_Hosts_With_Different_Variables" target="_blank" rel="external">http://gitlab.alibaba-inc.com/middleware-udp/udp-doc/wikis/Different_Hosts_With_Different_Variables</a>  将变量分别定义在 ./roles/mysql/defaults/main.yml 和 ./roles/diamond/defaults/main.yml中 或者使用不同的变量名</td>
+</tr>
+<tr>
+<td>启善提供：执行udp-play-book 时会报找不到key的问题</td>
+<td>在udp机器上执行 ssh-keygen 来生成key，解决</td>
+</tr>
+<tr>
+<td>ssh 的时候需要手工 yes/no</td>
+<td>增加参数 -o StrictHostKeyChecking no 就不需要输入了</td>
+</tr>
+<tr>
+<td>防火墙问题，本地可以访问，远程不能</td>
+<td>通过抓包/telnet等方式来确认这个问题， 通过iptables stop 来临时关闭防火墙； 修改iptables 的配置永久关闭或者增加所有其它节点到白名单中</td>
+</tr>
+<tr>
+<td>沈询提供</td>
+<td>重要！ hostname -i 一定要是本机在局域网内的真实ip地址（不是127.0.0.1 ）。  要绑定etc/hosts 下面 把自己的hostname绑定到对应的真实ip上。</td>
+</tr>
+<tr>
+<td>在UDP PlayBook中如何定义不同的机器、不同的Role使用不同的变量</td>
+<td><a href="http://gitlab.alibaba-inc.com/middleware-udp/udp-doc/wikis/Different_Hosts_With_Different_Variables" target="_blank" rel="external">http://gitlab.alibaba-inc.com/middleware-udp/udp-doc/wikis/Different_Hosts_With_Different_Variables</a></td>
+</tr>
+<tr>
+<td>Dauth部署问题总结</td>
+<td><a href="http://gitlab.alibaba-inc.com/middleware-udp/udp-doc/wikis/Dauth-UDP-deployment-issues" target="_blank" rel="external">http://gitlab.alibaba-inc.com/middleware-udp/udp-doc/wikis/Dauth-UDP-deployment-issues</a></td>
+</tr>
+<tr>
+<td>Device or resource busy</td>
+<td>一般出现在Docker中修改/etc/hosts会有这个问题，ansible会rm它，实际它是-v进去的，通过脚本补丁绕过去</td>
+</tr>
+</tbody>
+</table>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/03/22/ansible PlayBook╓╨╚ч║╬╢и╥х▓╗═м╡─╗·╞ўбв▓╗═м╡─Role╩╣╙├▓╗═м╡─▒ф┴┐/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2016/03/22/ansible PlayBook╓╨╚ч║╬╢и╥х▓╗═м╡─╗·╞ўбв▓╗═м╡─Role╩╣╙├▓╗═м╡─▒ф┴┐/" itemprop="url">在ansible PlayBook中如何定义不同的机器、不同的Role使用不同的变量</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2016-03-22T17:30:03+08:00">
+                2016-03-22
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2016/03/22/ansible PlayBook╓╨╚ч║╬╢и╥х▓╗═м╡─╗·╞ўбв▓╗═м╡─Role╩╣╙├▓╗═м╡─▒ф┴┐/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2016/03/22/ansible PlayBook╓╨╚ч║╬╢и╥х▓╗═м╡─╗·╞ўбв▓╗═м╡─Role╩╣╙├▓╗═м╡─▒ф┴┐/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="在ansible-PlayBook中如何定义不同的机器、不同的Role使用不同的变量"><a href="#在ansible-PlayBook中如何定义不同的机器、不同的Role使用不同的变量" class="headerlink" title="在ansible PlayBook中如何定义不同的机器、不同的Role使用不同的变量"></a>在ansible PlayBook中如何定义不同的机器、不同的Role使用不同的变量</h1><h2 id="问题场景1"><a href="#问题场景1" class="headerlink" title="问题场景1"></a>问题场景1</h2><blockquote>
+<p> 在安装Edas Agent脚本的时候发现在不同的机房[深圳、杭州、北京]有不同的网络定义[VPC、Normal],希望不同机房的机器在不同网络下使用不同的下载地址</p>
+</blockquote>
+<h2 id="问题场景2"><a href="#问题场景2" class="headerlink" title="问题场景2"></a>问题场景2</h2><blockquote>
+<p> 在同一台机器上安装MySQL和Diamond，需要定义一个Project_Name, 如果定义在Hosts.ini中必然会覆盖，一台机器相当于一个作用域【同一个函数中也不允许你定义两个一样的名字吧！】</p>
+</blockquote>
+<h2 id="问题场景1的解决"><a href="#问题场景1的解决" class="headerlink" title="问题场景1的解决"></a>问题场景1的解决</h2><h3 id="在hosts-ini文件中定义不同的机器和变量"><a href="#在hosts-ini文件中定义不同的机器和变量" class="headerlink" title="在hosts.ini文件中定义不同的机器和变量"></a>在hosts.ini文件中定义不同的机器和变量</h3><pre><code>[sz_vpc]
+10.125.0.169 
+10.125.192.40
+
+[sz_normal]
+10.125.12.174 
+
+[sz:children]
+sz_vpc
+sz_normal
+
+[hz_vpc]
+10.125.3.33  
+[hz_normal]
+10.125.14.238
+
+[hz:children]
+hz_vpc
+hz_normal
+
+############variables
+[sz_vpc:vars]
+script_url=&quot;sz_vpc&quot;
+
+[sz_normal:vars]
+script_url=&quot;sz_normal&quot;
+
+[hz_vpc:vars]
+script_url=&quot;hz_vpc&quot;
+
+[hz_normal:vars]
+script_url=&quot;hz_normal&quot;
+</code></pre><h3 id="执行代码"><a href="#执行代码" class="headerlink" title="执行代码"></a>执行代码</h3><pre><code><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">- name: test variables</div><div class="line">  debug: msg=&#123;&#123; script_url &#125;&#125;  #对所有机器输出他们的url来验证一下我们的定义生效没有</div><div class="line">  tags: test</div></pre></td></tr></table></figure>
+</code></pre><h3 id="执行结果"><a href="#执行结果" class="headerlink" title="执行结果"></a>执行结果</h3><pre><code><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line">	$udp-playbook -i udp-hosts.ini site.yml -b -u admin -t test    </div><div class="line">	</div><div class="line">	UDP-PLAY-START: [apply common configuration to all nodes] ********************* </div><div class="line">	</div><div class="line">	UDP-TASK: [test variables] **************************************************** </div><div class="line">	ok =&gt; 10.125.3.33 =&gt; &#123;</div><div class="line">	    &quot;msg&quot;: &quot;hz_vpc&quot;</div><div class="line">	&#125;</div><div class="line">	ok =&gt; 10.125.0.169 =&gt; &#123;</div><div class="line">	    &quot;msg&quot;: &quot;sz_vpc&quot;</div><div class="line">	&#125;</div><div class="line">	ok =&gt; 10.125.192.40 =&gt; &#123;</div><div class="line">	    &quot;msg&quot;: &quot;sz_vpc&quot;</div><div class="line">	&#125;</div><div class="line">	ok =&gt; 10.125.14.238 =&gt; &#123;</div><div class="line">	    &quot;msg&quot;: &quot;hz_normal&quot;</div><div class="line">	&#125;</div><div class="line">	ok =&gt; 10.125.12.174 =&gt; &#123;</div><div class="line">	    &quot;msg&quot;: &quot;sz_normal&quot;</div><div class="line">	&#125;</div><div class="line"></div><div class="line"></div><div class="line">​</div></pre></td></tr></table></figure>
+</code></pre><h2 id="问题场景2的解决"><a href="#问题场景2的解决" class="headerlink" title="问题场景2的解决"></a>问题场景2的解决</h2><blockquote>
+<p>在这里变量不要放在hosts.ini中，到MySQL、Diamond的roles中新建两个yml文件,在 里面分别写上 MySQL和Diamond的 Project_Name 这样就不会覆盖了</p>
+</blockquote>
+<h3 id="目录结构"><a href="#目录结构" class="headerlink" title="目录结构"></a>目录结构</h3><pre><code><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">$ find roles</div><div class="line">roles/</div><div class="line">roles/mysql</div><div class="line">roles/mysql/tasks</div><div class="line">roles/mysql/tasks/main.yml</div><div class="line">roles/mysql/defaults</div><div class="line">roles/mysql/defaults/main.yml</div><div class="line">roles/diamond</div><div class="line">roles/diamond/tasks</div><div class="line">roles/diamond/tasks/main.yml</div><div class="line">roles/diamond/defaults</div><div class="line">roles/diamond/defaults/main.yml</div></pre></td></tr></table></figure>
+</code></pre><h3 id="变量定义"><a href="#变量定义" class="headerlink" title="变量定义"></a>变量定义</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">$ cat roles/mysql/defaults/main.yml</div><div class="line"></div><div class="line">project: &#123;</div><div class="line">        &quot;project_name&quot;: mysql,</div><div class="line">		&quot;version&quot;: 5.6.0</div><div class="line">        &#125;</div><div class="line"></div><div class="line">$ cat roles/daimond/defaults/main.yml</div><div class="line"></div><div class="line">project: &#123;</div><div class="line">        &quot;project_name&quot;: daimond,</div><div class="line">		&quot;version&quot;: 3.5.0</div><div class="line">        &#125;</div></pre></td></tr></table></figure>
+<h3 id="变量使用"><a href="#变量使用" class="headerlink" title="变量使用"></a>变量使用</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">- name: print the tar file name</div><div class="line">  debug: msg=&quot;&#123;&#123; project.project_name &#125;&#125;&quot;</div><div class="line">  tags: test</div></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
   </section>
 
   
@@ -1324,7 +2325,7 @@ net.ipv4.tcp_keepalive_intvl = 3
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">45</span>
+                <span class="site-state-item-count">50</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -1335,7 +2336,7 @@ net.ipv4.tcp_keepalive_intvl = 3
             
             <div class="site-state-item site-state-categories">
               
-                <span class="site-state-item-count">16</span>
+                <span class="site-state-item-count">18</span>
                 <span class="site-state-item-name">分类</span>
               
             </div>
