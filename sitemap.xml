@@ -2,37 +2,58 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
-    <loc>http://yoursite.com/2017/03/24/%E2%95%96%E2%95%9C%E2%95%93%E2%96%88%E2%95%97%E2%95%96%E2%95%9B%E2%94%82%E2%95%9A%E2%96%8C%E2%95%9E%D1%9E%E2%95%A1%D1%9E%E2%95%A2%E2%95%9A/</loc>
+    <loc>http://yoursite.com/2018/03/24/Linux%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F/</loc>
     
-    <lastmod>2020-04-18T06:26:50.000Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>http://yoursite.com/2018/03/24/%E2%95%9A%D1%87%E2%95%91%E2%95%AC%E2%95%A9%E2%95%93%E2%95%A2%D0%BF%E2%95%AC%D0%BAdocker%20daemon%E2%95%A0%D1%8D%E2%95%9D%E2%95%99label/</loc>
-    
-    <lastmod>2020-04-18T06:26:20.000Z</lastmod>
+    <lastmod>2020-04-22T05:59:01.000Z</lastmod>
     
   </url>
   
   <url>
-    <loc>http://yoursite.com/2016/03/22/ansible%20PlayBook%E2%95%93%E2%95%A8%E2%95%9A%D1%87%E2%95%91%E2%95%AC%E2%95%A2%D0%B8%E2%95%A5%D1%85%E2%96%93%E2%95%97%E2%95%90%D0%BC%E2%95%A1%E2%94%80%E2%95%97%C2%B7%E2%95%9E%D1%9E%D0%B1%D0%B2%E2%96%93%E2%95%97%E2%95%90%D0%BC%E2%95%A1%E2%94%80Role%E2%95%A9%E2%95%A3%E2%95%99%E2%94%9C%E2%96%93%E2%95%97%E2%95%90%D0%BC%E2%95%A1%E2%94%80%E2%96%92%D1%84%E2%94%B4%E2%94%90/</loc>
+    <loc>http://yoursite.com/2016/03/23/ansible%20%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98/</loc>
     
-    <lastmod>2020-04-18T02:28:54.000Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>http://yoursite.com/2016/03/23/ansible%20%E2%94%82%D0%B3%E2%95%9D%E2%88%9A%E2%95%AC%E2%95%A9%E2%95%A0%D1%82/</loc>
-    
-    <lastmod>2020-04-18T02:28:24.000Z</lastmod>
+    <lastmod>2020-04-22T05:59:01.000Z</lastmod>
     
   </url>
   
   <url>
-    <loc>http://yoursite.com/2016/03/24/ansible%20%E2%94%9C%E2%84%96%E2%94%B4%D1%8E%E2%95%90%D0%B8%E2%95%A1%E2%94%94%E2%95%A9%E2%95%A3%E2%95%99%E2%94%9C%E2%95%A9%E2%95%93%E2%96%93%D1%81/</loc>
+    <loc>http://yoursite.com/2017/03/24/%E6%96%B9%E8%88%9F%E7%8E%AF%E5%A2%83%E5%AE%B9%E5%99%A8%E8%B0%83%E5%BA%A6/</loc>
     
-    <lastmod>2020-04-18T02:28:06.000Z</lastmod>
+    <lastmod>2020-04-22T05:59:01.000Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>http://yoursite.com/2019/12/09/%E5%A6%82%E4%BD%95%E5%9C%A8%E5%B7%A5%E4%BD%9C%E4%B8%AD%E5%AD%A6%E4%B9%A0-2019V2%E7%89%88/</loc>
+    
+    <lastmod>2020-04-22T05:59:01.000Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>http://yoursite.com/2018/03/24/template/</loc>
+    
+    <lastmod>2020-04-22T05:59:01.000Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>http://yoursite.com/2016/03/22/ansible%20PlayBook%E4%B8%AD%E5%A6%82%E4%BD%95%E5%AE%9A%E4%B9%89%E4%B8%8D%E5%90%8C%E7%9A%84%E6%9C%BA%E5%99%A8%E3%80%81%E4%B8%8D%E5%90%8C%E7%9A%84Role%E4%BD%BF%E7%94%A8%E4%B8%8D%E5%90%8C%E7%9A%84%E5%8F%98%E9%87%8F/</loc>
+    
+    <lastmod>2020-04-22T05:59:01.000Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>http://yoursite.com/2016/03/24/ansible%20%E5%91%BD%E4%BB%A4%E9%80%9A%E9%81%93%E4%BD%BF%E7%94%A8%E6%89%8B%E5%86%8C/</loc>
+    
+    <lastmod>2020-04-22T05:59:01.000Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>http://yoursite.com/2018/03/24/docker%20daemon%E6%B7%BB%E5%8A%A0label/</loc>
+    
+    <lastmod>2020-04-22T05:59:01.000Z</lastmod>
     
   </url>
   
@@ -75,13 +96,6 @@
     <loc>http://yoursite.com/2018/05/23/%E5%A6%82%E4%BD%95%E5%9C%A8%E5%B7%A5%E4%BD%9C%E4%B8%AD%E5%AD%A6%E4%B9%A0/</loc>
     
     <lastmod>2019-12-16T08:03:05.000Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>http://yoursite.com/2019/12/09/%E5%A6%82%E4%BD%95%E5%9C%A8%E5%B7%A5%E4%BD%9C%E4%B8%AD%E5%AD%A6%E4%B9%A0-2019V2%E7%89%88/</loc>
-    
-    <lastmod>2019-12-16T08:02:25.000Z</lastmod>
     
   </url>
   
