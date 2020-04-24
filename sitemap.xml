@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>http://yoursite.com/2018/03/24/docker%20swarm%E7%9A%84Label%E4%BD%BF%E7%94%A8/</loc>
+    
+    <lastmod>2020-04-24T03:24:42.800Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://yoursite.com/2016/03/24/ansible%20%E4%BD%BF%E7%94%A8%E6%89%8B%E5%86%8C/</loc>
     
     <lastmod>2020-04-24T03:21:46.620Z</lastmod>
@@ -17,13 +24,6 @@
   
   <url>
     <loc>http://yoursite.com/2016/03/23/ansible%20%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98/</loc>
-    
-    <lastmod>2020-04-24T03:02:07.000Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>http://yoursite.com/2018/03/24/docker%20swarm%E7%9A%84Label%E4%BD%BF%E7%94%A8/</loc>
     
     <lastmod>2020-04-24T03:02:07.000Z</lastmod>
     
