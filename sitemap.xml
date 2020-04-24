@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
-    <loc>http://yoursite.com/2018/03/24/docker%20swarm%E7%9A%84Label%E4%BD%BF%E7%94%A8/</loc>
+    <loc>http://yoursite.com/2016/03/23/ansible%20%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98/</loc>
     
     <lastmod>2020-04-24T03:02:07.000Z</lastmod>
     
@@ -16,7 +16,7 @@
   </url>
   
   <url>
-    <loc>http://yoursite.com/2016/03/23/ansible%20%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98/</loc>
+    <loc>http://yoursite.com/2018/03/24/docker%20swarm%E7%9A%84Label%E4%BD%BF%E7%94%A8/</loc>
     
     <lastmod>2020-04-24T03:02:07.000Z</lastmod>
     
@@ -44,34 +44,6 @@
   </url>
   
   <url>
-    <loc>http://yoursite.com/2016/03/22/ansible%20PlayBook%E4%B8%AD%E5%A6%82%E4%BD%95%E5%AE%9A%E4%B9%89%E4%B8%8D%E5%90%8C%E7%9A%84%E6%9C%BA%E5%99%A8%E3%80%81%E4%B8%8D%E5%90%8C%E7%9A%84Role%E4%BD%BF%E7%94%A8%E4%B8%8D%E5%90%8C%E7%9A%84%E5%8F%98%E9%87%8F/</loc>
-    
-    <lastmod>2020-04-22T05:59:01.000Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>http://yoursite.com/2018/03/24/Linux%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F/</loc>
-    
-    <lastmod>2020-04-22T05:59:01.000Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>http://yoursite.com/2017/03/24/%E6%96%B9%E8%88%9F%E7%8E%AF%E5%A2%83%E5%AE%B9%E5%99%A8%E8%B0%83%E5%BA%A6/</loc>
-    
-    <lastmod>2020-04-22T05:59:01.000Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>http://yoursite.com/2018/03/24/template/</loc>
-    
-    <lastmod>2020-04-22T05:59:01.000Z</lastmod>
-    
-  </url>
-  
-  <url>
     <loc>http://yoursite.com/2019/12/09/%E5%A6%82%E4%BD%95%E5%9C%A8%E5%B7%A5%E4%BD%9C%E4%B8%AD%E5%AD%A6%E4%B9%A0-2019V2%E7%89%88/</loc>
     
     <lastmod>2020-04-22T05:59:01.000Z</lastmod>
@@ -86,7 +58,35 @@
   </url>
   
   <url>
+    <loc>http://yoursite.com/2016/03/22/ansible%20PlayBook%E4%B8%AD%E5%A6%82%E4%BD%95%E5%AE%9A%E4%B9%89%E4%B8%8D%E5%90%8C%E7%9A%84%E6%9C%BA%E5%99%A8%E3%80%81%E4%B8%8D%E5%90%8C%E7%9A%84Role%E4%BD%BF%E7%94%A8%E4%B8%8D%E5%90%8C%E7%9A%84%E5%8F%98%E9%87%8F/</loc>
+    
+    <lastmod>2020-04-22T05:59:01.000Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://yoursite.com/2018/03/24/docker%20daemon%E6%B7%BB%E5%8A%A0label/</loc>
+    
+    <lastmod>2020-04-22T05:59:01.000Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>http://yoursite.com/2018/03/24/template/</loc>
+    
+    <lastmod>2020-04-22T05:59:01.000Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>http://yoursite.com/2017/03/24/%E6%96%B9%E8%88%9F%E7%8E%AF%E5%A2%83%E5%AE%B9%E5%99%A8%E8%B0%83%E5%BA%A6/</loc>
+    
+    <lastmod>2020-04-22T05:59:01.000Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>http://yoursite.com/2018/03/24/Linux%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F/</loc>
     
     <lastmod>2020-04-22T05:59:01.000Z</lastmod>
     
