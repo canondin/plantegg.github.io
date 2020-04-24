@@ -261,6 +261,306 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/06/20/就是要你懂负载均衡--lvs和转发模式/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/06/20/就是要你懂负载均衡--lvs和转发模式/" itemprop="url">就是要你懂负载均衡--lvs和转发模式</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-06-20T15:30:03+08:00">
+                2019-06-20
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/06/20/就是要你懂负载均衡--lvs和转发模式/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2019/06/20/就是要你懂负载均衡--lvs和转发模式/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="就是要你懂负载均衡–lvs和转发模式"><a href="#就是要你懂负载均衡–lvs和转发模式" class="headerlink" title="就是要你懂负载均衡–lvs和转发模式"></a>就是要你懂负载均衡–lvs和转发模式</h1><blockquote>
+<p>本文希望阐述清楚LVS的各种转发模式，以及他们的工作流程和优缺点，同时从网络包的流转原理上解释清楚优缺点的来由，并结合阿里云的slb来说明优缺点。</p>
+</blockquote>
+<p>如果对网络包是怎么流转的不太清楚，推荐先看这篇基础：<a href="https://www.atatech.org/articles/80573" target="_blank" rel="external">程序员的网络知识 – 一个网络包的旅程</a> ，对后面理解LVS的各个转发模式非常有帮助。</p>
+<h2 id="几个术语和缩写"><a href="#几个术语和缩写" class="headerlink" title="几个术语和缩写"></a>几个术语和缩写</h2><pre><code>cip：Client IP，客户端地址
+vip：Virtual IP，LVS实例IP
+rip：Real IP，后端RS地址
+RS: Real Server 后端真正提供服务的机器
+LB： Load Balance 负载均衡器
+LVS： Linux Virtual Server
+sip： source ip
+dip： destination
+</code></pre><h2 id="LVS的几种转发模式"><a href="#LVS的几种转发模式" class="headerlink" title="LVS的几种转发模式"></a>LVS的几种转发模式</h2><ul>
+<li>DR模型 – （Director Routing-直接路由）</li>
+<li>NAT模型 – (NetWork Address Translation-网络地址转换)</li>
+<li>fullNAT – （full NAT）</li>
+<li>ENAT –（enhence NAT 或者叫三角模式/DNAT，阿里云提供）</li>
+<li>IP TUN模型 – (IP Tunneling - IP隧道)</li>
+</ul>
+<h2 id="DR模型-Director-Routing–直接路由"><a href="#DR模型-Director-Routing–直接路由" class="headerlink" title="DR模型(Director Routing–直接路由)"></a>DR模型(Director Routing–直接路由)</h2><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/574a12e18ebbf0bafcfc97b1984305b5.png" alt="image.png"></p>
+<p>如上图所示基本流程(假设 cip 是200.200.200.2， vip是200.200.200.1）：</p>
+<ol>
+<li>请求流量(sip 200.200.200.2, dip 200.200.200.1) 先到达 LVS</li>
+<li>然后LVS，根据负载策略挑选众多 RS中的一个，然后将这个网络包的MAC地址修改成这个选中的RS的MAC</li>
+<li>然后丢给交换机，交换机将这个包丢给选中的RS</li>
+<li>选中的RS看到MAC地址是自己的、dip也是自己的，愉快地手下并处理、回复</li>
+<li>回复包（sip 200.200.200.1， dip 200.200.200.2）</li>
+<li>经过交换机直接回复给client了（不再走LVS）</li>
+</ol>
+<p>我们看到上面流程，请求包到达LVS后，LVS只对包的目的MAC地址作了修改，回复包直接回给了client。</p>
+<p>同时还能看到多个RS和LVS都共用了同一个IP但是用的不同的MAC，在二层路由不需要IP，他们又在同一个vlan，所以这里没问题。</p>
+<p>RS上会将vip配置在lo回环网卡上，同时route中添加相应的规则，这样在第四步收到的包能被os正常处理。</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/739447baddd120ca23c68ac85c0ea36d.png" alt="image.png"></p>
+<p>优点：</p>
+<ul>
+<li>DR模式是性能最好的一种模式，入站请求走LVS，回复报文绕过LVS直接发给Client</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li>要求LVS和rs在同一个vlan；</li>
+<li>RS需要配置vip同时特殊处理arp；</li>
+<li>不支持端口映射。</li>
+</ul>
+<h3 id="为什么要求LVS和RS在同一个vlan（或者说同一个二层网络里）"><a href="#为什么要求LVS和RS在同一个vlan（或者说同一个二层网络里）" class="headerlink" title="为什么要求LVS和RS在同一个vlan（或者说同一个二层网络里）"></a>为什么要求LVS和RS在同一个vlan（或者说同一个二层网络里）</h3><p>因为DR模式依赖多个RS和LVS共用同一个VIP，然后依据MAC地址来在LVS和多个RS之间路由，所以LVS和RS必须在一个vlan或者说同一个二层网络里</p>
+<h3 id="DR-模式为什么性能最好"><a href="#DR-模式为什么性能最好" class="headerlink" title="DR 模式为什么性能最好"></a>DR 模式为什么性能最好</h3><p>因为回复包不走LVS了，大部分情况下都是请求包小，回复包大，LVS很容易成为流量瓶颈，同时LVS只需要修改进来的包的MAC地址。</p>
+<h3 id="DR-模式为什么回包不需要走LVS了"><a href="#DR-模式为什么回包不需要走LVS了" class="headerlink" title="DR 模式为什么回包不需要走LVS了"></a>DR 模式为什么回包不需要走LVS了</h3><p>因为RS和LVS共享同一个vip，回复的时候RS能正确地填好sip为vip，不再需要LVS来多修改一次（后面讲的NAT、Full NAT都需要）</p>
+<h3 id="总结下-DR的结构"><a href="#总结下-DR的结构" class="headerlink" title="总结下 DR的结构"></a>总结下 DR的结构</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/bb209bc08a21a28e99703e700acc82e4.png" alt="image.png"></p>
+<p>绿色是请求包进来，红色是修改过MAC的请求包</p>
+<h2 id="NAT模型-NetWork-Address-Translation-网络地址转换"><a href="#NAT模型-NetWork-Address-Translation-网络地址转换" class="headerlink" title="NAT模型(NetWork Address Translation - 网络地址转换)"></a>NAT模型(NetWork Address Translation - 网络地址转换)</h2><p>nat模式的结构图如下：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/b806e1615d99f6a018c537a18addc464.png" alt="image.png"></p>
+<p>基本流程：</p>
+<ol>
+<li>client发出请求（sip 200.200.200.2，dip 200.200.200.1）</li>
+<li>请求包到达lvs，lvs修改请求包为（sip 200.200.200.2， dip rip）</li>
+<li>请求包到达rs， rs回复（sip rip，dip 200.200.200.2）</li>
+<li>这个回复包不能直接给client，因为rip不是VIP会被reset掉</li>
+<li>但是因为lvs是网关，所以这个回复包先走到网关，网关有机会修改sip</li>
+<li>网关修改sip为VIP，修改后的回复包（sip 200.200.200.1，dip 200.200.200.2）发给client</li>
+</ol>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/bd311051c55f08c8d0add3cb329b87bf.png" alt="image.png"></p>
+<p>优点：</p>
+<ul>
+<li>配置简单</li>
+<li>支持端口映射（看名字就知道）</li>
+<li>RIP一般是私有地址，主要用户LVS和RS之间通信</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li>LVS和所有RS必须在同一个vlan</li>
+<li>进出流量都要走LVS转发</li>
+<li>LVS容易成为瓶颈</li>
+<li>一般而言需要将VIP配置成RS的网关</li>
+</ul>
+<h3 id="为什么NAT要求lvs和RS在同一个vlan"><a href="#为什么NAT要求lvs和RS在同一个vlan" class="headerlink" title="为什么NAT要求lvs和RS在同一个vlan"></a>为什么NAT要求lvs和RS在同一个vlan</h3><p>因为回复包必须经过lvs再次修改sip为vip，client才认，如果回复包的sip不是client包请求的dip（也就是vip），那么这个连接会被reset掉。如果LVS不是网关，因为回复包的dip是cip，那么可能从其它路由就走了，LVS没有机会修改回复包的sip</p>
+<h3 id="总结下NAT结构"><a href="#总结下NAT结构" class="headerlink" title="总结下NAT结构"></a>总结下NAT结构</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/51b694409882318d5acd6a1422afce03.png" alt="image.png"></p>
+<p>注意这里LVS修改进出包的(sip, dip)的时候只改了其中一个，所以才有接下来的full NAT。当然NAT最大的缺点是要求LVS和RS必须在同一个vlan，这样限制了LVS集群和RS集群的部署灵活性，尤其是在阿里云这种对外售卖的公有云环境下，NAT基本不实用。</p>
+<h2 id="full-NAT模型-full-NetWork-Address-Translation-全部网络地址转换"><a href="#full-NAT模型-full-NetWork-Address-Translation-全部网络地址转换" class="headerlink" title="full NAT模型(full NetWork Address Translation-全部网络地址转换)"></a>full NAT模型(full NetWork Address Translation-全部网络地址转换)</h2><p>基本流程（类似NAT）：</p>
+<ol>
+<li>client发出请求（sip 200.200.200.2 dip 200.200.200.1）</li>
+<li>请求包到达lvs，lvs修改请求包为<strong>（sip 200.200.200.1， dip rip）</strong> 注意这里sip/dip都被修改了</li>
+<li>请求包到达rs， rs回复（sip rip，dip 200.200.200.1）</li>
+<li>这个回复包的目的IP是VIP(不像NAT中是 cip)，所以LVS和RS不在一个vlan通过IP路由也能到达lvs</li>
+<li>lvs修改sip为vip， dip为cip，修改后的回复包（sip 200.200.200.1，dip 200.200.200.2）发给client</li>
+</ol>
+<p>优点：</p>
+<ul>
+<li>解决了NAT对LVS和RS要求在同一个vlan的问题，适用更复杂的部署形式</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li>RS看不到cip（NAT模式下可以看到）</li>
+<li>进出流量还是都走的lvs，容易成为瓶颈（跟NAT一样都有这个问题）</li>
+</ul>
+<h3 id="为什么full-NAT解决了NAT中要求的LVS和RS必须在同一个vlan的问题"><a href="#为什么full-NAT解决了NAT中要求的LVS和RS必须在同一个vlan的问题" class="headerlink" title="为什么full NAT解决了NAT中要求的LVS和RS必须在同一个vlan的问题"></a>为什么full NAT解决了NAT中要求的LVS和RS必须在同一个vlan的问题</h3><p>因为LVS修改进来的包的时候把(sip, dip)都修改了(这也是full的主要含义吧)，RS的回复包目的地址是vip（NAT中是cip），所以只要vip和rs之间三层可通就行，这样LVS和RS可以在不同的vlan了，也就是LVS不再要求是网关，从而LVS和RS可以在更复杂的网络环境下部署。</p>
+<h3 id="为什么full-NAT后RS看不见cip了"><a href="#为什么full-NAT后RS看不见cip了" class="headerlink" title="为什么full NAT后RS看不见cip了"></a>为什么full NAT后RS看不见cip了</h3><p>因为cip被修改掉了，RS只能看到LVS的vip，在阿里内部会将cip放入TCP包的Option中传递给RS，RS上一般部署自己写的toa模块来从Options中读取的cip，这样RS能看到cip了, 当然这不是一个开源的通用方案。</p>
+<h3 id="总结下full-NAT的结构"><a href="#总结下full-NAT的结构" class="headerlink" title="总结下full NAT的结构"></a>总结下full NAT的结构</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/94d55b926b5bb1573c4cab8353428712.png" alt="image.png"> </p>
+<p><strong>注意上图中绿色的进包和红色的出包他们的地址变化</strong></p>
+<p>那么到现在full NAT解决了NAT的同vlan的要求，<strong>基本上可以用于公有云了</strong>，但是还是没解决进出流量都走LVS的问题（LVS要修改进出的包）。</p>
+<h3 id="比较下NAT和Full-NAT"><a href="#比较下NAT和Full-NAT" class="headerlink" title="比较下NAT和Full NAT"></a>比较下NAT和Full NAT</h3><p>两者进出都要走LVS，NAT必须要求vip是RS的网关，这个限制在公有云这种应用场景下不能忍，于是Full NAT通过修改请求包的source ip，将原来的source ip从cip改成vip，这样RS回复的时候回复包的目标IP也是vip，所以LVS和RS之间不再要求是同一vlan的关系了。当然带来了新的问题，RS看不见cip了（这个可以通过自定义的toa模块来复原）</p>
+<p>那么有没有一个方案能够像full NAT一样不限制lvs和RS之间的网络关系，同时出去的流量跟DR模式一样也不走LVS呢？</p>
+<h2 id="阿里云的ENAT模式-enhence-NAT"><a href="#阿里云的ENAT模式-enhence-NAT" class="headerlink" title="阿里云的ENAT模式(enhence NAT)"></a>阿里云的ENAT模式(enhence NAT)</h2><p>优点：</p>
+<ul>
+<li>不要求LVS和RS在同一个vlan</li>
+<li>出去的流量不需要走LVS，性能好</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li>阿里集团内部实现的自定义方案，需要在所有RS上安装ctk组件（类似full NAT中的toa）</li>
+</ul>
+<p>基本流程：</p>
+<ol>
+<li>client发出请求（cip，vip）</li>
+<li>请求包到达lvs，lvs修改请求包为（vip，rip），并将cip放入TCP Option中</li>
+<li>请求包根据ip路由到达rs， ctk模块读取TCP Option中的cip</li>
+<li>回复包(RIP, vip)被ctk模块截获，并将回复包改写为（vip, cip)</li>
+<li>因为回复包的目的地址是cip所以不需要经过lvs，可以直接发给client</li>
+</ol>
+<p>ENAT模式在内部也会被称为 三角模式或者DNAT/SNAT模式</p>
+<h3 id="为什么ENAT的回复包不需要走回LVS了"><a href="#为什么ENAT的回复包不需要走回LVS了" class="headerlink" title="为什么ENAT的回复包不需要走回LVS了"></a>为什么ENAT的回复包不需要走回LVS了</h3><p>因为之前full NAT模式下要走回去是需要LVS再次改写回复包的IP，而ENAT模式下，这件事情在RS上被ctk模块提前做掉了</p>
+<h3 id="为什么ENAT的LVS和RS可以在不同的vlan"><a href="#为什么ENAT的LVS和RS可以在不同的vlan" class="headerlink" title="为什么ENAT的LVS和RS可以在不同的vlan"></a>为什么ENAT的LVS和RS可以在不同的vlan</h3><p>跟full NAT一样</p>
+<h3 id="总结下-ENAT的结构"><a href="#总结下-ENAT的结构" class="headerlink" title="总结下 ENAT的结构"></a>总结下 ENAT的结构</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/5b498ed88c3233977a592f924affc43a.png" alt="image.png"></p>
+<p>最后说一下不太常用的 TUN模型</p>
+<h2 id="IP-TUN模型-IP-Tunneling-IP隧道"><a href="#IP-TUN模型-IP-Tunneling-IP隧道" class="headerlink" title="IP TUN模型(IP Tunneling - IP隧道)"></a>IP TUN模型(IP Tunneling - IP隧道)</h2><p>基本流程：</p>
+<ol>
+<li>请求包到达LVS后，LVS将请求包封装成一个新的IP报文</li>
+<li>新的IP包的目的IP是某一RS的IP，然后转发给RS</li>
+<li>RS收到报文后IPIP内核模块解封装，取出用户的请求报文</li>
+<li>发现目的IP是VIP，而自己的tunl0网卡上配置了这个IP，从而愉快地处理请求并将结果直接发送给客户</li>
+</ol>
+<p>优点：</p>
+<ul>
+<li>集群节点可以跨vlan</li>
+<li>跟DR一样，响应报文直接发给client</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li>RS上必须安装运行IPIP模块</li>
+<li>多增加了一个IP头</li>
+<li>LVS和RS上的tunl0虚拟网卡上配置同一个VIP（类似DR）</li>
+</ul>
+<p><strong>DR模式中LVS修改的是目的MAC</strong></p>
+<h3 id="为什么IP-TUN不要求同一个vlan"><a href="#为什么IP-TUN不要求同一个vlan" class="headerlink" title="为什么IP TUN不要求同一个vlan"></a>为什么IP TUN不要求同一个vlan</h3><p>因为IP TUN中不是修改MAC来路由，所以不要求同一个vlan，只要求lvs和rs之间ip能通就行。DR模式要求的是lvs和RS之间广播能通</p>
+<h3 id="IP-TUN性能"><a href="#IP-TUN性能" class="headerlink" title="IP TUN性能"></a>IP TUN性能</h3><p>回包不走LVS，但是多做了一次封包解包，不如DR好</p>
+<h3 id="总结下-IP-TUN的结构"><a href="#总结下-IP-TUN的结构" class="headerlink" title="总结下 IP TUN的结构"></a>总结下 IP TUN的结构</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/218e93e6fa37b6f04dae9669de0e3fe3.png" alt="image.png"></p>
+<p>图中红线是再次封装过的包，ipip是操作系统的一个内核模块。</p>
+<p>DR可能在小公司用的比较多，IP TUN用的少一些，相对而言NAT、FullNAT、ENAT这三种在集团内部比较类似，用的也比较多，他们之间的可比较性很强，所以放在一块了。</p>
+<h2 id="阿里云slb的fnat"><a href="#阿里云slb的fnat" class="headerlink" title="阿里云slb的fnat"></a>阿里云slb的fnat</h2><p>就是前面所讲的fullnat，但是在阿里云公网上，宿主机默认都会帮你将source-ip（本来是lvs ip）替换成真正的client ip，这样当包进到ecs的时候source ip已经是client ip了，所以slb默认的fnat模式会让你直接能拿到client ip。回包依然会经过lvs（虽然理论上可以不需要了，但是要考虑rs和client不能直接通）</p>
+<p>这个进出的替换过程在物理机上是avs来做，如果没有avs就得安装slb的toa模块来做了。</p>
+<p>这就是为什么slb比直接用lvs要方便些。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://www.atatech.org/articles/15279" target="_blank" rel="external">https://www.atatech.org/articles/15279</a></p>
+<p><a href="https://www.atatech.org/articles/48739" target="_blank" rel="external">https://www.atatech.org/articles/48739</a></p>
+<p><a href="https://www.atatech.org/articles/48571" target="_blank" rel="external">https://www.atatech.org/articles/48571</a></p>
+<p><a href="https://www.atatech.org/articles/106276" target="_blank" rel="external">云服务ALB接入，后端依赖内核模块及接口使用指南</a></p>
+<p><a href="https://www.atatech.org/articles/80573" target="_blank" rel="external">程序员的网络知识 – 一个网络包的旅程</a></p>
+<p><a href="https://yq.aliyun.com/articles/52752" target="_blank" rel="external">章文嵩（正明）博士和他背后的负载均衡(LOAD BANLANCER)帝国</a></p>
+<p>@长源 关于LVS的PPT</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/06/09/就是要你懂DNS--一文搞懂域名解析相关问题/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -3168,6 +3468,203 @@ debug1: Executing proxy command: exec ssh -l alibaba 139.*.*.* exec /usr/bin/nc 
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/03/24/docker swarm的Label使用/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/03/24/docker swarm的Label使用/" itemprop="url">docker、swarm的Label使用</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-03-24T17:30:03+08:00">
+                2018-03-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/docker/" itemprop="url" rel="index">
+                    <span itemprop="name">docker</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/03/24/docker swarm的Label使用/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2018/03/24/docker swarm的Label使用/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="docker、swarm的Label使用"><a href="#docker、swarm的Label使用" class="headerlink" title="docker、swarm的Label使用"></a>docker、swarm的Label使用</h1><h2 id="需求背景"><a href="#需求背景" class="headerlink" title="需求背景"></a>需求背景</h2><p>广发银行需要把方舟集群部署在多个机房（多个机房组成一个大集群），这样物理机和容器vlan没法互相完全覆盖，</p>
+<p>也就是可能会出现A机房的网络subnet:192.168.1.0/24, B 机房的网络subnet：192.168.100.0/24 但是他们属于同一个vlan，要求如果容器在A机房的物理机拉起，分到的是192.168.1.0/24中的IP，B机房的容器分到的IP是：192.168.100.0/24</p>
+<p><strong>功能实现：</strong></p>
+<ul>
+<li><strong>本质就是对所有物理机打标签，同一个asw下的物理机用同样的标签，不同asw下的物理机标签不同；</strong></li>
+<li><strong>创建容器网络的时候也加标签，不同asw下的网络标签不一样，同时跟这个asw下的物理机标签匹配；</strong></li>
+<li><strong>创建容器的时候使用 –net=driver:vlan 来动态选择多个vlan网络中的任意一个，然后swarm根据网络的标签要和物理机的标签一致，从而把容器调度到正确的asw下的物理机上。</strong></li>
+</ul>
+<p><strong>分为如下三个改造点</strong></p>
+<p><strong>1：</strong></p>
+<p>daemon启动的时候增加标签（其中一个就行）：</p>
+<table>
+<thead>
+<tr>
+<th>上联交换机组的名称，多个逗号隔开</th>
+<th>com.alipay.acs.engine.asw.hostname</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>2：</strong><br>创建网络的时候使用对应的标签：</p>
+<table>
+<thead>
+<tr>
+<th>网络域交换机组asw列表的名称，多个逗号隔开</th>
+<th>com.alipay.acs.network.asw.hostname</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>该VLAN网络是否必须显式指定，默认为0即不必须，此时当传入–net driver:vlan时ACS会根据调度结果自行选择一个可用的VLAN网络并拼装到参数中</td>
+<td>com.alipay.acs.network.explicit</td>
+</tr>
+</tbody>
+</table>
+<p><strong>3：</strong></p>
+<p>Swarm manager增加可选启动选项netarch.multiscope，值为true</p>
+<h3 id="功能实现逻辑"><a href="#功能实现逻辑" class="headerlink" title="功能实现逻辑"></a>功能实现逻辑</h3><ol>
+<li>Swarm manager增加可选启动选项netarch.multiscope，当为1时，network create时强制要求必须指定label描述配置VLAN的ASW信息</li>
+<li>Swarm manager在创建容器时检查网络类型，VLAN网络时则将网络ASW的label放入过滤器中，在调度时按照机器的ASW标签过滤</li>
+<li>如果使用者如果不关心具体使用哪个VLAN，则可以指定–net=”driver:vlan”，会自动查找driver=vlan的network，并根据调度结果（Node所关联的ASW）自动选择合适的network填入Config.HostConfig.NetworkMode传递给Docker daemon.</li>
+</ol>
+<p>如果是现存的环境，修改zk来更新网络标签：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">[zk: localhost:2181(CONNECTED) 21] get /Cluster/docker/network/v1.0/network/c79e533e4444294ac9cb7838608115c961c6e403d3610367ff4b197ef6b981fc </div><div class="line">&#123;&quot;addrSpace&quot;:&quot;GlobalDefault&quot;,&quot;enableIPv6&quot;:false,&quot;generic&quot;:&#123;&quot;com.docker.network.enable_ipv6&quot;:false,&quot;com.docker.network.generic&quot;:&#123;&quot;VlanId&quot;:&quot;192&quot;&#125;&#125;,&quot;id&quot;:&quot;c79e533e4444294ac9cb7838608115c961c6e403d3610367ff4b197ef6b981fc&quot;,&quot;inDelete&quot;:false,&quot;internal&quot;:false,&quot;ipamOptions&quot;:&#123;&quot;VlanId&quot;:&quot;192&quot;&#125;,&quot;ipamType&quot;:&quot;default&quot;,&quot;ipamV4Config&quot;:&quot;[&#123;\&quot;PreferredPool\&quot;:\&quot;192.168.8.0/24\&quot;,\&quot;SubPool\&quot;:\&quot;\&quot;,\&quot;Gateway\&quot;:\&quot;192.168.8.1\&quot;,\&quot;AuxAddresses\&quot;:null&#125;]&quot;,&quot;ipamV4Info&quot;:&quot;[&#123;\&quot;IPAMData\&quot;:\&quot;&#123;\\\&quot;AddressSpace\\\&quot;:\\\&quot;\\\&quot;,\\\&quot;Gateway\\\&quot;:\\\&quot;192.168.8.1/24\\\&quot;,\\\&quot;Pool\\\&quot;:\\\&quot;192.168.8.0/24\\\&quot;&#125;\&quot;,\&quot;PoolID\&quot;:\&quot;GlobalDefault/192.168.8.0/24\&quot;&#125;]&quot;,&quot;labels&quot;:&#123;&#125;,&quot;name&quot;:&quot;vlan192-8&quot;,&quot;networkType&quot;:&quot;vlan&quot;,&quot;persist&quot;:true,&quot;postIPv6&quot;:false,&quot;scope&quot;:&quot;global&quot;&#125;</div><div class="line">cZxid = 0x4100008cce</div><div class="line">ctime = Fri Mar 09 12:46:44 CST 2018</div><div class="line">mZxid = 0x4100008cce</div><div class="line">mtime = Fri Mar 09 12:46:44 CST 2018</div><div class="line">pZxid = 0x4100008cce</div><div class="line">cversion = 0</div><div class="line">dataVersion = 0</div><div class="line">aclVersion = 0</div><div class="line">ephemeralOwner = 0x0</div><div class="line">dataLength = 716</div><div class="line">numChildren = 0</div></pre></td></tr></table></figure>
+<p>//注意上面的网络还没有标签，修改如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">[zk: localhost:2181(CONNECTED) 28] set /Cluster/docker/network/v1.0/network/c79e533e4444294ac9cb7838608115c961c6e403d3610367ff4b197ef6b981fc &#123;&quot;addrSpace&quot;:&quot;GlobalDefault&quot;,&quot;enableIPv6&quot;:false,&quot;generic&quot;:&#123;&quot;com.docker.network.enable_ipv6&quot;:false,&quot;com.docker.network.generic&quot;:&#123;&quot;VlanId&quot;:&quot;192&quot;&#125;&#125;,&quot;id&quot;:&quot;c79e533e4444294ac9cb7838608115c961c6e403d3610367ff4b197ef6b981fc&quot;,&quot;inDelete&quot;:false,&quot;internal&quot;:false,&quot;ipamOptions&quot;:&#123;&quot;VlanId&quot;:&quot;192&quot;&#125;,&quot;ipamType&quot;:&quot;default&quot;,&quot;ipamV4Config&quot;:&quot;[&#123;\&quot;PreferredPool\&quot;:\&quot;192.168.8.0/24\&quot;,\&quot;SubPool\&quot;:\&quot;\&quot;,\&quot;Gateway\&quot;:\&quot;192.168.8.1\&quot;,\&quot;AuxAddresses\&quot;:null&#125;]&quot;,&quot;ipamV4Info&quot;:&quot;[&#123;\&quot;IPAMData\&quot;:\&quot;&#123;\\\&quot;AddressSpace\\\&quot;:\\\&quot;\\\&quot;,\\\&quot;Gateway\\\&quot;:\\\&quot;192.168.8.1/24\\\&quot;,\\\&quot;Pool\\\&quot;:\\\&quot;192.168.8.0/24\\\&quot;&#125;\&quot;,\&quot;PoolID\&quot;:\&quot;GlobalDefault/192.168.8.0/24\&quot;&#125;]&quot;,**&quot;labels&quot;:&#123;&quot;com.alipay.acs.network.asw.hostname&quot;:&quot;238&quot;&#125;,**&quot;name&quot;:&quot;vlan192-8&quot;,&quot;networkType&quot;:&quot;vlan&quot;,&quot;persist&quot;:true,&quot;postIPv6&quot;:false,&quot;scope&quot;:&quot;global&quot;&#125;</div></pre></td></tr></table></figure>
+<p>example：</p>
+<p>创建网络：//–label=”com.alipay.acs.network.asw.hostname=vlan902-63”<br>docker network create -d vlan –label=”com.alipay.acs.network.asw.hostname=vlan902-63” –subnet=11.162.63.0/24  –gateway=11.162.63.247  –opt VlanId=902 –ipam-opt VlanId=902 hanetwork2<br>跟daemon中的标签：com.alipay.acs.engine.asw.hostname=vlan902-63 对应，匹配调度</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">$sudo cat /etc/docker/daemon.json</div><div class="line">&#123;&quot;labels&quot;:[&quot;com.alipay.acs.engine.hostname=11.239.142.46&quot;,&quot;com.alipay.acs.engine.ip=11.239.142.46&quot;,&quot;com.alipay.acs.engine.device_type=Server&quot;,&quot;com.alipay.acs.engine.status=free&quot;,&quot;ark.network.vlan.range=vlan902-63&quot;,&quot;com.alipay.acs.engine.asw.hostname=vlan902-63&quot;,&quot;com.alipay.acs.network.asw.hostname=vlan902-63&quot;]&#125;</div><div class="line">//不指定具体网络，有多个网络的时候自动调度  --net driver:vlan 必须是network打过标签了</div><div class="line">docker run -d -it --name=&quot;udp10&quot; --net driver:vlan --restart=always reg.docker.alibaba-inc.com/middleware.udp</div></pre></td></tr></table></figure>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/03/24/template/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -3270,6 +3767,306 @@ debug1: Executing proxy command: exec ssh -l alibaba 139.*.*.* exec /usr/bin/nc 
         
           
             
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/03/24/就是要你懂Linux--Linux环境变量/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/03/24/就是要你懂Linux--Linux环境变量/" itemprop="url">就是要你懂Linux环境变量 问题汇总</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-03-24T17:30:03+08:00">
+                2018-03-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/03/24/就是要你懂Linux--Linux环境变量/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2018/03/24/就是要你懂Linux--Linux环境变量/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="就是要你懂Linux环境变量问题汇总"><a href="#就是要你懂Linux环境变量问题汇总" class="headerlink" title="就是要你懂Linux环境变量问题汇总"></a>就是要你懂Linux环境变量问题汇总</h1><h3 id="测试好的脚本放到-crontab-里就报错-找不到命令"><a href="#测试好的脚本放到-crontab-里就报错-找不到命令" class="headerlink" title="测试好的脚本放到 crontab 里就报错: 找不到命令"></a>测试好的脚本放到 crontab 里就报错: 找不到命令</h3><p>写好一个脚本，测试没有问题，然后放到crontab 想要定时执行，但是总是报错，去看日志的话显示某些命令找不到，这种一般都是因为PATH环境变量变了导致的</p>
+<p>自己在shell命令行下测试的时候当前环境变量就是这个用户的环境变量，可以通过命令：env 看到，脚本放到crontab 里面后一般都加了sudo 这个时候 env 变了。比如你可以在命令行下执行 env 和 sudo env 比较一下就发现他们很不一样</p>
+<p>为了解决这个问题 sudo有一个参数 -E （–preserver-env）就是为了解决这个问题的。</p>
+<p>这个时候再比较一下 </p>
+<ul>
+<li>env</li>
+<li>sudo env</li>
+<li>sudo -E env</li>
+</ul>
+<p>大概就能理解这里的区别了</p>
+<h3 id="同样一个命令ssh执行不了，-报找不到命令"><a href="#同样一个命令ssh执行不了，-报找不到命令" class="headerlink" title="同样一个命令ssh执行不了， 报找不到命令"></a>同样一个命令ssh执行不了， 报找不到命令</h3><p>比如：</p>
+<p>ssh user@ip “ ip a “  报错： bash: ip: command not found</p>
+<p>但是你要是先执行 ssh user@ip 连上服务器后，再执行 ip a 就可以，这里是同一个命令通过两种不同的方式但是环境变量也不一样了。</p>
+<p>同样想要解决这个问题的话可以先 ssh 连上服务器，再执行 which ip ; env | grep PATH  </p>
+<pre><code>$ which ip
+/usr/sbin/ip
+$ env | grep PATH
+PATH=/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
+</code></pre><p>很明显这里因为 ip在/usr/sbin下，而/usr/sbin又在PATH变量中，所以可以找到。</p>
+<p>那么接下来我们看看 </p>
+<pre><code>$ssh user@ip &quot;env | grep PATH&quot;
+PATH=/usr/local/bin:/usr/bin
+</code></pre><p>很明显这里的PATH比上面的PATH短了一截，/usr/sbin也没有在里面，所以/usr/sbin 下的ip命令自然也找不到了，这里虽然都是同一个用户，但是他们的环境变量还不一样，有点出乎我的意料之外。</p>
+<p>主要原因是我们的shell 分为login shell 和 no-login shell , 先ssh 登陆上去再执行命令就是一个login shell，Linux要为这个终端分配资源。</p>
+<p>而下面的直接在ssh 里面放执行命令实际上就不需要login，所以这是一个no-login shell.</p>
+<h4 id="login-shell-和-no-login-shell又有什么区别呢？"><a href="#login-shell-和-no-login-shell又有什么区别呢？" class="headerlink" title="login shell 和 no-login shell又有什么区别呢？"></a>login shell 和 no-login shell又有什么区别呢？</h4><ul>
+<li>login shell加载环境变量的顺序是：① /etc/profile ② ~/.bash_profile ③ ~/.bashrc ④ /etc/bashrc </li>
+<li>而non-login shell加载环境变量的顺序是： ① ~/.bashrc ② /etc/bashrc</li>
+</ul>
+<p>也就是nog-login少了前面两步，我们先看后面两步。</p>
+<p>下面是一个 .bashrc 的内容：</p>
+<pre><code>[ ~]$ cat .bashrc 
+# .bashrc
+
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+    . /etc/bashrc
+fi
+</code></pre><p>基本没有什么内容，它主要是去加载 /etc/bashrc  而他里面也没有看到sbin相关的东西</p>
+<p>那我们再看non-login少的两步： ① /etc/profile ② ~/.bash_profile </p>
+<p>cat /etc/profile :</p>
+<pre><code>if [ &quot;$EUID&quot; = &quot;0&quot; ]; then
+    pathmunge /usr/sbin
+    pathmunge /usr/local/sbin
+else
+    pathmunge /usr/local/sbin after
+    pathmunge /usr/sbin after
+fi
+</code></pre><p>这几行代码就是把 /usr/sbin 添加到 PATH 变量中，正是他们的区别决定了这里的环境变量不一样。</p>
+<p><strong>用一张图来表述他们的结构，箭头代表加载顺序，红框代表不同的shell的初始入口</strong>：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/ae3095f063dede80a8c1ee79ec25685c.png" alt="image.png"></p>
+<p>像 ansible 这种自动化工具，或者我们自己写的自动化脚本，底层通过ssh这种non-login的方式来执行的话，那么都有可能碰到这个问题，如何修复呢？</p>
+<p>在 /etc/profile.d/ 下创建一个文件：/etc/profile.d/my_bashenv.sh 内容如下：</p>
+<pre><code>$cat /etc/profile.d/my_bashenv.sh 
+
+pathmunge () {
+if ! echo $PATH | /bin/egrep -q &quot;(^|:)$1($|:)&quot; ; then
+   if [ &quot;$2&quot; = &quot;after&quot; ] ; then
+  PATH=$PATH:$1
+   else
+  PATH=$1:$PATH
+   fi
+fi
+}
+
+pathmunge /sbin
+pathmunge /usr/sbin
+pathmunge /usr/local/sbin
+pathmunge /usr/local/bin
+pathmunge /usr/X11R6/bin after
+
+unset pathmunge
+
+complete -cf sudo
+
+
+alias chgrp=&apos;chgrp --preserve-root&apos;
+alias chown=&apos;chown --preserve-root&apos;
+alias chmod=&apos;chmod --preserve-root&apos;
+alias rm=&apos;rm -i --preserve-root&apos;
+
+
+HISTTIMEFORMAT=&apos;[%F %T] &apos;
+HISTSIZE=1000
+
+export EDITOR=vim
+
+
+export PS1=&apos;\n\e[1;37m[\e[m\e[1;32m\u\e[m\e[1;33m@\e[m\e[1;35m\H\e[m \e[4m`pwd`\e[m\e[1;37m]\e[m\e[1;36m\e[m\n\$&apos;
+</code></pre><p>通过前面我们可以看到 /etc/bashrc 总是会去加载 /etc/profile.d/ 下的所有 *.sh 文件，同时我们还可以在这个文件中修改我们喜欢的 shell 配色方案和环境变量等等 </p>
+<h3 id="BASH"><a href="#BASH" class="headerlink" title="BASH"></a>BASH</h3><p>1、交互式的登录shell （bash –il xxx.sh）<br>载入的信息：<br>/etc/profile<br>~/.bash_profile（ -&gt;  ~/.bashrc  -&gt;  /etc/bashrc）<br>~/.bash_login<br>~/.profile</p>
+<p>2、非交互式的登录shell （bash –l xxx.sh）<br>载入的信息：<br>/etc/profile<br>~/.bash_profile （ -&gt;  ~/.bashrc  -&gt;  /etc/bashrc）<br>~/.bash_login<br>~/.profile<br>$BASH_ENV</p>
+<p>3、交互式的非登录shell （bash –i xxx.sh）<br>载入的信息：<br>~/.bashrc （ -&gt;  /etc/bashrc）</p>
+<p>4、非交互式的非登录shell （bash xxx.sh）<br>载入的信息：<br>$BASH_ENV</p>
+<h3 id="SH"><a href="#SH" class="headerlink" title="SH"></a>SH</h3><p>1、交互式的登录shell<br>载入的信息：<br>/etc/profile<br>~/.profile</p>
+<p>2、非交互式的登录shell<br>载入的信息：<br>/etc/profile<br>~/.profile</p>
+<p>3、交互式的非登录shell<br>载入的信息：<br>$ENV</p>
+<h4 id="练习验证一下bash、sh和login、non-login"><a href="#练习验证一下bash、sh和login、non-login" class="headerlink" title="练习验证一下bash、sh和login、non-login"></a>练习验证一下bash、sh和login、non-login</h4><ul>
+<li>sudo ll 或者 sudo cd 是不是都报找不到命令</li>
+<li>先sudo bash 然后执行 ll或者cd就可以了</li>
+<li>先sudo sh   然后执行 ll或者cd还是报找不到命令</li>
+<li>sudo env | grep PATH 然后 sudo bash 后再执行 env | grep PATH 看到的PATH环境变量不一样了</li>
+</ul>
+<p>4、非交互式的非登录shell<br>载入的信息：<br>nothing</p>
+<h3 id="export命令的作用"><a href="#export命令的作用" class="headerlink" title="export命令的作用"></a>export命令的作用</h3><p>Linux 中export是一种命令工具通过export命令把shell变量中包含的用户变量导入给子程序.<strong>默认情况下子程序仅会继承父程序的环境变量</strong>，子程序不会继承父程序的自定义变量，所以需要export让父程序中的<strong>自定义变量</strong>变成环境变量，然后子程序就能继承过来了。</p>
+<p>我们来看一个例子， 有一个变量，名字 abc 内容123 如果没有export ，那么通过bash创建一个新的shell（新shell是之前bash的子程序），在新的shell里面就没有abc这个变量， export之后在新的 shell 里面才可以看到这个变量，但是退出重新login后（产生了一个新的bash，只会加载env）abc变量都不在了</p>
+<pre><code>$echo $abc
+
+
+$abc=&quot;123&quot;
+
+
+$echo $abc
+123
+
+$bash
+
+$echo $abc
+
+
+$exit
+exit
+
+$export abc
+
+$echo $abc
+123
+
+$bash
+
+$echo $abc
+123
+</code></pre><h2 id="一些常见问题"><a href="#一些常见问题" class="headerlink" title="一些常见问题"></a>一些常见问题</h2><h3 id="执行好好地shell-脚本换台服务器就：source-not-found"><a href="#执行好好地shell-脚本换台服务器就：source-not-found" class="headerlink" title="执行好好地shell 脚本换台服务器就：source: not found"></a>执行好好地shell 脚本换台服务器就：source: not found</h3><p>source 是bash的一个内建命令（所以你找不到一个/bin/source 这样的可执行文件），也就是他是bash自带的，如果我们执行脚本是这样： sh shell.sh 而shell.sh中用到了source命令的话就会报 source: not found</p>
+<p>这是因为bash 和 sh是两个东西，sh是 POSIX shell，你可以把它看成是一个兼容某个规范的shell，而bash是 Bourne-Again shell script， bash是 POSIX shell的扩展，就是bash支持所有符合POSIX shell的规范，但是反过来就不一定了，而这里的 source 恰好就是 bash内建的，不符合 POSIX shell的规范（<strong>POSIX shell 中用 . 来代替source</strong>)</p>
+<h3 id="在centos执行好好的脚本放到Ubuntu上就不行了，报语法错误"><a href="#在centos执行好好的脚本放到Ubuntu上就不行了，报语法错误" class="headerlink" title="在centos执行好好的脚本放到Ubuntu上就不行了，报语法错误"></a>在centos执行好好的脚本放到Ubuntu上就不行了，报语法错误</h3><p>同上，如果到ubuntu上用 bash shell.sh是可以的，但是sh shell.sh就报语法错误，但是在centos上执行：sh或者bash shell.sh 都可以通过。 在centos上执行 ls -lh /usr/bin/sh 可以看到 /usr/bin/sh link到了 /usr/bin/bash 也就是sh等同于bash，所以都可以通过不足为奇。 </p>
+<p>但是在ubuntu上执行 ls -lh /usr/bin/sh 可以看到 /usr/bin/sh link到了 <strong>/usr/bin/dash</strong> ， 这就是为什么ubuntu上会报错</p>
+<h3 id="source-shell-sh-和-bash-shell-sh以及-shell-sh的区别"><a href="#source-shell-sh-和-bash-shell-sh以及-shell-sh的区别" class="headerlink" title="source shell.sh 和 bash shell.sh以及 ./shell.sh的区别"></a>source shell.sh 和 bash shell.sh以及 ./shell.sh的区别</h3><p>source shell.sh就在本shell中展开执行<br>bash shell.sh表示在本shell启动一个子程序（bash），在子程序中执行 shell.sh (shell.sh中产生的一些环境变量就没法带回父shell进程了)， 有读 shell.sh 权限就可以执行<br>./shell.sh 跟bash shell.sh类似，但是必须要求shell.sh有rx权限，然后根据shell.sh前面的 #! 后面的指示来确定用bash还是sh </p>
+<pre><code>$cat test.sh 
+echo $$
+
+$echo $$
+2299
+
+$source test.sh 
+2299
+
+$bash test.sh 
+4037
+
+$./test.sh 
+4040
+</code></pre><p>如上实例，只有source的时候进程ID和bash进程ID一样，其它方式都创建了一个新的bash进程，所以ID也变了</p>
+<h3 id="参考文章："><a href="#参考文章：" class="headerlink" title="参考文章："></a>参考文章：</h3><p><a href="https://blog.csdn.net/u010871982/article/details/78525367" target="_blank" rel="external">关于ansible远程执行的环境变量问题</a></p>
+<p><a href="http://bbs.chinaunix.net/thread-1068678-1-1.html" target="_blank" rel="external">Bash和Sh的区别</a></p>
+<p><a href="http://kodango.com/what-is-interactive-and-login-shell" target="_blank" rel="external">什么是交互式登录 Shell what-is-interactive-and-login-shell</a></p>
+<p><a href="http://kodango.com/explain-shell-default-options" target="_blank" rel="external">Shell 默认选项 himBH 的解释</a></p>
+<p><a href="http://kodango.com/useful-documents-about-shell" target="_blank" rel="external">useful-documents-about-shell</a></p>
+
           
         
       
@@ -3784,306 +4581,6 @@ cp is /usr/bin/cp
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/03/24/就是要你懂Linux--Linux环境变量/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/03/24/就是要你懂Linux--Linux环境变量/" itemprop="url">就是要你懂Linux环境变量 问题汇总</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-03-24T17:30:03+08:00">
-                2018-03-24
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2018/03/24/就是要你懂Linux--Linux环境变量/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2018/03/24/就是要你懂Linux--Linux环境变量/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="就是要你懂Linux环境变量问题汇总"><a href="#就是要你懂Linux环境变量问题汇总" class="headerlink" title="就是要你懂Linux环境变量问题汇总"></a>就是要你懂Linux环境变量问题汇总</h1><h3 id="测试好的脚本放到-crontab-里就报错-找不到命令"><a href="#测试好的脚本放到-crontab-里就报错-找不到命令" class="headerlink" title="测试好的脚本放到 crontab 里就报错: 找不到命令"></a>测试好的脚本放到 crontab 里就报错: 找不到命令</h3><p>写好一个脚本，测试没有问题，然后放到crontab 想要定时执行，但是总是报错，去看日志的话显示某些命令找不到，这种一般都是因为PATH环境变量变了导致的</p>
-<p>自己在shell命令行下测试的时候当前环境变量就是这个用户的环境变量，可以通过命令：env 看到，脚本放到crontab 里面后一般都加了sudo 这个时候 env 变了。比如你可以在命令行下执行 env 和 sudo env 比较一下就发现他们很不一样</p>
-<p>为了解决这个问题 sudo有一个参数 -E （–preserver-env）就是为了解决这个问题的。</p>
-<p>这个时候再比较一下 </p>
-<ul>
-<li>env</li>
-<li>sudo env</li>
-<li>sudo -E env</li>
-</ul>
-<p>大概就能理解这里的区别了</p>
-<h3 id="同样一个命令ssh执行不了，-报找不到命令"><a href="#同样一个命令ssh执行不了，-报找不到命令" class="headerlink" title="同样一个命令ssh执行不了， 报找不到命令"></a>同样一个命令ssh执行不了， 报找不到命令</h3><p>比如：</p>
-<p>ssh user@ip “ ip a “  报错： bash: ip: command not found</p>
-<p>但是你要是先执行 ssh user@ip 连上服务器后，再执行 ip a 就可以，这里是同一个命令通过两种不同的方式但是环境变量也不一样了。</p>
-<p>同样想要解决这个问题的话可以先 ssh 连上服务器，再执行 which ip ; env | grep PATH  </p>
-<pre><code>$ which ip
-/usr/sbin/ip
-$ env | grep PATH
-PATH=/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
-</code></pre><p>很明显这里因为 ip在/usr/sbin下，而/usr/sbin又在PATH变量中，所以可以找到。</p>
-<p>那么接下来我们看看 </p>
-<pre><code>$ssh user@ip &quot;env | grep PATH&quot;
-PATH=/usr/local/bin:/usr/bin
-</code></pre><p>很明显这里的PATH比上面的PATH短了一截，/usr/sbin也没有在里面，所以/usr/sbin 下的ip命令自然也找不到了，这里虽然都是同一个用户，但是他们的环境变量还不一样，有点出乎我的意料之外。</p>
-<p>主要原因是我们的shell 分为login shell 和 no-login shell , 先ssh 登陆上去再执行命令就是一个login shell，Linux要为这个终端分配资源。</p>
-<p>而下面的直接在ssh 里面放执行命令实际上就不需要login，所以这是一个no-login shell.</p>
-<h4 id="login-shell-和-no-login-shell又有什么区别呢？"><a href="#login-shell-和-no-login-shell又有什么区别呢？" class="headerlink" title="login shell 和 no-login shell又有什么区别呢？"></a>login shell 和 no-login shell又有什么区别呢？</h4><ul>
-<li>login shell加载环境变量的顺序是：① /etc/profile ② ~/.bash_profile ③ ~/.bashrc ④ /etc/bashrc </li>
-<li>而non-login shell加载环境变量的顺序是： ① ~/.bashrc ② /etc/bashrc</li>
-</ul>
-<p>也就是nog-login少了前面两步，我们先看后面两步。</p>
-<p>下面是一个 .bashrc 的内容：</p>
-<pre><code>[ ~]$ cat .bashrc 
-# .bashrc
-
-# Source global definitions
-if [ -f /etc/bashrc ]; then
-    . /etc/bashrc
-fi
-</code></pre><p>基本没有什么内容，它主要是去加载 /etc/bashrc  而他里面也没有看到sbin相关的东西</p>
-<p>那我们再看non-login少的两步： ① /etc/profile ② ~/.bash_profile </p>
-<p>cat /etc/profile :</p>
-<pre><code>if [ &quot;$EUID&quot; = &quot;0&quot; ]; then
-    pathmunge /usr/sbin
-    pathmunge /usr/local/sbin
-else
-    pathmunge /usr/local/sbin after
-    pathmunge /usr/sbin after
-fi
-</code></pre><p>这几行代码就是把 /usr/sbin 添加到 PATH 变量中，正是他们的区别决定了这里的环境变量不一样。</p>
-<p><strong>用一张图来表述他们的结构，箭头代表加载顺序，红框代表不同的shell的初始入口</strong>：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/ae3095f063dede80a8c1ee79ec25685c.png" alt="image.png"></p>
-<p>像 ansible 这种自动化工具，或者我们自己写的自动化脚本，底层通过ssh这种non-login的方式来执行的话，那么都有可能碰到这个问题，如何修复呢？</p>
-<p>在 /etc/profile.d/ 下创建一个文件：/etc/profile.d/my_bashenv.sh 内容如下：</p>
-<pre><code>$cat /etc/profile.d/my_bashenv.sh 
-
-pathmunge () {
-if ! echo $PATH | /bin/egrep -q &quot;(^|:)$1($|:)&quot; ; then
-   if [ &quot;$2&quot; = &quot;after&quot; ] ; then
-  PATH=$PATH:$1
-   else
-  PATH=$1:$PATH
-   fi
-fi
-}
-
-pathmunge /sbin
-pathmunge /usr/sbin
-pathmunge /usr/local/sbin
-pathmunge /usr/local/bin
-pathmunge /usr/X11R6/bin after
-
-unset pathmunge
-
-complete -cf sudo
-
-
-alias chgrp=&apos;chgrp --preserve-root&apos;
-alias chown=&apos;chown --preserve-root&apos;
-alias chmod=&apos;chmod --preserve-root&apos;
-alias rm=&apos;rm -i --preserve-root&apos;
-
-
-HISTTIMEFORMAT=&apos;[%F %T] &apos;
-HISTSIZE=1000
-
-export EDITOR=vim
-
-
-export PS1=&apos;\n\e[1;37m[\e[m\e[1;32m\u\e[m\e[1;33m@\e[m\e[1;35m\H\e[m \e[4m`pwd`\e[m\e[1;37m]\e[m\e[1;36m\e[m\n\$&apos;
-</code></pre><p>通过前面我们可以看到 /etc/bashrc 总是会去加载 /etc/profile.d/ 下的所有 *.sh 文件，同时我们还可以在这个文件中修改我们喜欢的 shell 配色方案和环境变量等等 </p>
-<h3 id="BASH"><a href="#BASH" class="headerlink" title="BASH"></a>BASH</h3><p>1、交互式的登录shell （bash –il xxx.sh）<br>载入的信息：<br>/etc/profile<br>~/.bash_profile（ -&gt;  ~/.bashrc  -&gt;  /etc/bashrc）<br>~/.bash_login<br>~/.profile</p>
-<p>2、非交互式的登录shell （bash –l xxx.sh）<br>载入的信息：<br>/etc/profile<br>~/.bash_profile （ -&gt;  ~/.bashrc  -&gt;  /etc/bashrc）<br>~/.bash_login<br>~/.profile<br>$BASH_ENV</p>
-<p>3、交互式的非登录shell （bash –i xxx.sh）<br>载入的信息：<br>~/.bashrc （ -&gt;  /etc/bashrc）</p>
-<p>4、非交互式的非登录shell （bash xxx.sh）<br>载入的信息：<br>$BASH_ENV</p>
-<h3 id="SH"><a href="#SH" class="headerlink" title="SH"></a>SH</h3><p>1、交互式的登录shell<br>载入的信息：<br>/etc/profile<br>~/.profile</p>
-<p>2、非交互式的登录shell<br>载入的信息：<br>/etc/profile<br>~/.profile</p>
-<p>3、交互式的非登录shell<br>载入的信息：<br>$ENV</p>
-<h4 id="练习验证一下bash、sh和login、non-login"><a href="#练习验证一下bash、sh和login、non-login" class="headerlink" title="练习验证一下bash、sh和login、non-login"></a>练习验证一下bash、sh和login、non-login</h4><ul>
-<li>sudo ll 或者 sudo cd 是不是都报找不到命令</li>
-<li>先sudo bash 然后执行 ll或者cd就可以了</li>
-<li>先sudo sh   然后执行 ll或者cd还是报找不到命令</li>
-<li>sudo env | grep PATH 然后 sudo bash 后再执行 env | grep PATH 看到的PATH环境变量不一样了</li>
-</ul>
-<p>4、非交互式的非登录shell<br>载入的信息：<br>nothing</p>
-<h3 id="export命令的作用"><a href="#export命令的作用" class="headerlink" title="export命令的作用"></a>export命令的作用</h3><p>Linux 中export是一种命令工具通过export命令把shell变量中包含的用户变量导入给子程序.<strong>默认情况下子程序仅会继承父程序的环境变量</strong>，子程序不会继承父程序的自定义变量，所以需要export让父程序中的<strong>自定义变量</strong>变成环境变量，然后子程序就能继承过来了。</p>
-<p>我们来看一个例子， 有一个变量，名字 abc 内容123 如果没有export ，那么通过bash创建一个新的shell（新shell是之前bash的子程序），在新的shell里面就没有abc这个变量， export之后在新的 shell 里面才可以看到这个变量，但是退出重新login后（产生了一个新的bash，只会加载env）abc变量都不在了</p>
-<pre><code>$echo $abc
-
-
-$abc=&quot;123&quot;
-
-
-$echo $abc
-123
-
-$bash
-
-$echo $abc
-
-
-$exit
-exit
-
-$export abc
-
-$echo $abc
-123
-
-$bash
-
-$echo $abc
-123
-</code></pre><h2 id="一些常见问题"><a href="#一些常见问题" class="headerlink" title="一些常见问题"></a>一些常见问题</h2><h3 id="执行好好地shell-脚本换台服务器就：source-not-found"><a href="#执行好好地shell-脚本换台服务器就：source-not-found" class="headerlink" title="执行好好地shell 脚本换台服务器就：source: not found"></a>执行好好地shell 脚本换台服务器就：source: not found</h3><p>source 是bash的一个内建命令（所以你找不到一个/bin/source 这样的可执行文件），也就是他是bash自带的，如果我们执行脚本是这样： sh shell.sh 而shell.sh中用到了source命令的话就会报 source: not found</p>
-<p>这是因为bash 和 sh是两个东西，sh是 POSIX shell，你可以把它看成是一个兼容某个规范的shell，而bash是 Bourne-Again shell script， bash是 POSIX shell的扩展，就是bash支持所有符合POSIX shell的规范，但是反过来就不一定了，而这里的 source 恰好就是 bash内建的，不符合 POSIX shell的规范（<strong>POSIX shell 中用 . 来代替source</strong>)</p>
-<h3 id="在centos执行好好的脚本放到Ubuntu上就不行了，报语法错误"><a href="#在centos执行好好的脚本放到Ubuntu上就不行了，报语法错误" class="headerlink" title="在centos执行好好的脚本放到Ubuntu上就不行了，报语法错误"></a>在centos执行好好的脚本放到Ubuntu上就不行了，报语法错误</h3><p>同上，如果到ubuntu上用 bash shell.sh是可以的，但是sh shell.sh就报语法错误，但是在centos上执行：sh或者bash shell.sh 都可以通过。 在centos上执行 ls -lh /usr/bin/sh 可以看到 /usr/bin/sh link到了 /usr/bin/bash 也就是sh等同于bash，所以都可以通过不足为奇。 </p>
-<p>但是在ubuntu上执行 ls -lh /usr/bin/sh 可以看到 /usr/bin/sh link到了 <strong>/usr/bin/dash</strong> ， 这就是为什么ubuntu上会报错</p>
-<h3 id="source-shell-sh-和-bash-shell-sh以及-shell-sh的区别"><a href="#source-shell-sh-和-bash-shell-sh以及-shell-sh的区别" class="headerlink" title="source shell.sh 和 bash shell.sh以及 ./shell.sh的区别"></a>source shell.sh 和 bash shell.sh以及 ./shell.sh的区别</h3><p>source shell.sh就在本shell中展开执行<br>bash shell.sh表示在本shell启动一个子程序（bash），在子程序中执行 shell.sh (shell.sh中产生的一些环境变量就没法带回父shell进程了)， 有读 shell.sh 权限就可以执行<br>./shell.sh 跟bash shell.sh类似，但是必须要求shell.sh有rx权限，然后根据shell.sh前面的 #! 后面的指示来确定用bash还是sh </p>
-<pre><code>$cat test.sh 
-echo $$
-
-$echo $$
-2299
-
-$source test.sh 
-2299
-
-$bash test.sh 
-4037
-
-$./test.sh 
-4040
-</code></pre><p>如上实例，只有source的时候进程ID和bash进程ID一样，其它方式都创建了一个新的bash进程，所以ID也变了</p>
-<h3 id="参考文章："><a href="#参考文章：" class="headerlink" title="参考文章："></a>参考文章：</h3><p><a href="https://blog.csdn.net/u010871982/article/details/78525367" target="_blank" rel="external">关于ansible远程执行的环境变量问题</a></p>
-<p><a href="http://bbs.chinaunix.net/thread-1068678-1-1.html" target="_blank" rel="external">Bash和Sh的区别</a></p>
-<p><a href="http://kodango.com/what-is-interactive-and-login-shell" target="_blank" rel="external">什么是交互式登录 Shell what-is-interactive-and-login-shell</a></p>
-<p><a href="http://kodango.com/explain-shell-default-options" target="_blank" rel="external">Shell 默认选项 himBH 的解释</a></p>
-<p><a href="http://kodango.com/useful-documents-about-shell" target="_blank" rel="external">useful-documents-about-shell</a></p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/03/14/就是要你懂git代理--如何设置git Proxy/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -4467,359 +4964,6 @@ ProxyCommand ssh -l root 2.2.2.2 exec /usr/bin/nc %h %p
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/12/13/就是要你懂DNS--Docker中的DNS解析过程/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/12/13/就是要你懂DNS--Docker中的DNS解析过程/" itemprop="url">Docker中的DNS解析过程</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-12-13T10:30:03+08:00">
-                2017-12-13
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/dns/" itemprop="url" rel="index">
-                    <span itemprop="name">dns</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2017/12/13/就是要你懂DNS--Docker中的DNS解析过程/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2017/12/13/就是要你懂DNS--Docker中的DNS解析过程/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="就是要你懂DNS–Docker中的DNS解析过程"><a href="#就是要你懂DNS–Docker中的DNS解析过程" class="headerlink" title="就是要你懂DNS–Docker中的DNS解析过程"></a>就是要你懂DNS–Docker中的DNS解析过程</h1><h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><blockquote>
-<p>同一个Docker集群中两个容器中通过 nslookup 同一个域名，这个域名是容器启动的时候通过net alias指定的，但是返回来的IP不一样</p>
-</blockquote>
-<p>如图所示：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/892a98b53c7f9e65da79d1d6d890c3b0.png" alt="image.png"></p>
-<p>图中上面的容器中 nslookup 返回来了两个IP，但是只有146是正确的，155是多出来，不对的。</p>
-<p>要想解决这个问题抓包就没用了，因为Docker 中的net alias 域名是 Docker Daemon自己来解析的，也就是在容器中做域名解析（nslookup、ping）的时候，Docker Daemon先看这个域名是不是net alias的，是的话返回对应的ip，如果不是（比如 www.baidu.com) ，那么Docker Daemon再把这个域名丢到宿主机上去解析，在宿主机上的解析过程就是标准的DNS，可以抓包分析。但是Docker Daemon内部的解析过程没有走DNS协议，不好分析，所以得先了解一下 Docker Daemon的域名解析原理</p>
-<p>具体参考文章： <a href="http://www.jianshu.com/p/4433f4c70cf0" target="_blank" rel="external">http://www.jianshu.com/p/4433f4c70cf0</a> <a href="http://www.bijishequ.com/detail/261401?p=70-67" target="_blank" rel="external">http://www.bijishequ.com/detail/261401?p=70-67</a></p>
-<h2 id="继续分析所有容器对这个域名的解析"><a href="#继续分析所有容器对这个域名的解析" class="headerlink" title="继续分析所有容器对这个域名的解析"></a>继续分析所有容器对这个域名的解析</h2><p>继续分析所有容器对这个域名的解析发现只有某一台宿主机上的有这个问题，而且这台宿主机上所有容器都有着问题，结合上面的文章，那么这个问题比较明朗了，这台有问题的宿主机的Docker Daemon中残留了一个net alias，你可以理解成cache中有脏数据没有清理。</p>
-<p>进而跟业务的同学们沟通，确实155这个IP的容器做过升级，改动过配置，可能升级前这个155也绑定过这个域名，但是升级后绑到146这个容器上去了，但是Docker Daemon中还残留这条记录。</p>
-<h2 id="重启Docker-Daemon后问题解决（容器不需要重启）"><a href="#重启Docker-Daemon后问题解决（容器不需要重启）" class="headerlink" title="重启Docker Daemon后问题解决（容器不需要重启）"></a>重启Docker Daemon后问题解决（容器不需要重启）</h2><p>重启Docker Daemon的时候容器还在正常运行，只是这段时间的域名解析会不正常，其它业务长连接都能正常运行，在Docker Daemon重启的时候它会去检查所有容器的endpoint、重建sandbox、清理network等等各种事情，所以就把这个脏数据修复掉了。</p>
-<p>在Docker Daemon重启过程中，会给每个容器构建DNS Resovler（setup-resolver），如果构建DNS Resovler这个过程中容器发送了大量域名查询过来同时这些域名又查询不到的话Docker Daemon在重启过程中需要等待这下查询超时，然后才能继续往下走重启流程，<a href="https://www.atatech.org/articles/87339" target="_blank" rel="external">问题严重的时候导致Docker Daemon长时间无法启动</a></p>
-<p>Docker的域名解析为什么要这么做，是因为容器中有两种域名解析需求：</p>
-<ol>
-<li>容器启动时通过 net alias 命名的域名</li>
-<li>容器中正常对外网各种域名的解析（比如 baidu.com/api.taobao.com)</li>
-</ol>
-<p>对于第一种只能由docker daemon来解析了，所以容器中碰到的任何域名解析都会丢给 docker daemon(127.0.0.11), 如果 docker daemon 发现这个域名不认识，也就是不是net alias命名的域名，那么docker就会把这个域名解析丢给宿主机配置的 nameserver 来解析【非常非常像 dns-f/vipclient 的解析原理】</p>
-<h2 id="容器中的域名解析"><a href="#容器中的域名解析" class="headerlink" title="容器中的域名解析"></a>容器中的域名解析</h2><p>容器启动的时候读取宿主机的 /etc/resolv.conf (去掉127.0.0.1/16 的nameserver）然后当成容器的 /etc/resolv.conf, 但是实际在容器中看到的 /etc/resolve.conf 中的nameserver只有一个：127.0.0.11</p>
-<p>容器 -&gt; docker daemon(127.0.0.11) -&gt; 宿主机中的/etc/resolv.conf 中的nameserver</p>
-<p>如果宿主机中的/etc/resolv.conf 中的nameserver没有，那么daemon默认会用8.8.8.8/8.8.4.4来做下一级dns server，如果在一些隔离网络中（跟外部不通），那么域名解析就会超时，因为一直无法连接到 8.8.8.8/8.8.4.4 ，进而导致故障。</p>
-<p>比如 vipserver 中需要解析 armory的域名，如果这个时候在私有云环境，宿主机又没有配置 nameserver, 那么这个域名解析会发送给 8.8.8.8/8.8.4.4 ，长时间没有响应，超时后 vipserver 会关闭自己的探活功能，从而导致 vipserver 基本不可用一样。</p>
-<p>修改 宿主机的/etc/resolv.conf后 重新启动、创建的容器才会load新的nameserver</p>
-<h2 id="如果容器中需要解析vipserver中的域名"><a href="#如果容器中需要解析vipserver中的域名" class="headerlink" title="如果容器中需要解析vipserver中的域名"></a>如果容器中需要解析vipserver中的域名</h2><ol>
-<li>容器中安装vipclient，同时容器的 /etc/resolv.conf 配置 nameserver 127.0.0.1 </li>
-<li>要保证vipclient起来之后才能启动业务</li>
-</ol>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/12/13/就是要你懂DNS--windows7的wifi总是报DNS域名异常无法上网/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/12/13/就是要你懂DNS--windows7的wifi总是报DNS域名异常无法上网/" itemprop="url">windows7的wifi总是报DNS域名异常无法上网</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-12-13T10:30:03+08:00">
-                2017-12-13
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/dns/" itemprop="url" rel="index">
-                    <span itemprop="name">dns</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2017/12/13/就是要你懂DNS--windows7的wifi总是报DNS域名异常无法上网/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2017/12/13/就是要你懂DNS--windows7的wifi总是报DNS域名异常无法上网/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="就是要你懂DNS–windows7的wifi总是报DNS域名异常无法上网"><a href="#就是要你懂DNS–windows7的wifi总是报DNS域名异常无法上网" class="headerlink" title="就是要你懂DNS–windows7的wifi总是报DNS域名异常无法上网"></a>就是要你懂DNS–windows7的wifi总是报DNS域名异常无法上网</h1><p>Windows7笔记本+公司wifi（dhcp）环境下，用着用着dns服务不可用（无法通过域名上网，通过IP地址可以访问），找到一个跟我一模一样的Case了：<a href="https://superuser.com/questions/629559/why-is-my-computer-suddenly-using-nbns-instead-of-dns" target="_blank" rel="external">https://superuser.com/questions/629559/why-is-my-computer-suddenly-using-nbns-instead-of-dns</a> 一样的环境，看来这个问题也不只是我一个人碰到了。</p>
-<p>其实之前一直有，一个月偶尔出来一两次，以为是其他原因就没管，这次换了新电脑还是这个毛病有点不能忍，于是决定彻底解决一下</p>
-<p>这个问题出现后，通过下面三个办法都可以让DNS恢复正常：</p>
-<ol>
-<li>重启大法，恢复正常</li>
-<li>禁用wifi驱动再启用，恢复正常</li>
-<li>不用DHCP，而是手工填入一个DNS服务器，比如114.114.114.114【公司域名就无法解析了】</li>
-</ol>
-<p>如果只是停用一下wifi再启用问题还在。</p>
-<h2 id="找IT升级了网卡驱动不管用"><a href="#找IT升级了网卡驱动不管用" class="headerlink" title="找IT升级了网卡驱动不管用"></a>找IT升级了网卡驱动不管用</h2><h2 id="重现的时候抓包看看"><a href="#重现的时候抓包看看" class="headerlink" title="重现的时候抓包看看"></a>重现的时候抓包看看</h2><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/c110f232829cbea9d5503166531d7f1d.png" alt="image.png"></p>
-<p>这肯定不对了，254上根本就没有跑DNS服务，可是当时没有检查 ipconfig，看看是否将网关IP动态配置到dns server里面去了，等下次重现后再确认吧。</p>
-<p>第二次重现后抓包，发现不一样了：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/295797df3c311d6902d68fb16f6212d8.png" alt="image.png"></p>
-<p>出来一个 NBNS 的鬼东西，赶紧查了一下，把它禁掉，如下图所示：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/9f06b680ae1f8b4cb781360f7c0ac2eb.png" alt="image.png"></p>
-<p>把NBNS服务关了就能上网了，同时也能抓到各种DNS Query包</p>
-<h2 id="事情没有这么简单"><a href="#事情没有这么简单" class="headerlink" title="事情没有这么简单"></a>事情没有这么简单</h2><p>过一段时间后还是会出现上面的症状，但是因为NBNS关闭了，所以这次 ping www.baidu.com 的时候没有任何包了，没有DNS Query包，也没有NBNS包，这下好尴尬。</p>
-<p>尝试Enable NBNS，又恢复了正常，看来开关 NBNS 仍然只是一个workaround，他不是导致问题的根因，开关一下没有真正解决问题，只是临时相当于重启了dns修复了问题而已。</p>
-<p>继续在网络不通的时候尝试直接ping dns server ip，发现一个奇怪的现象，丢包很多，丢包的时候还总是从 192.168.0.11返回来的，这就奇怪了，我的笔记本基本IP是30开头的，dns server ip也是30开头的，route 路由表也是对的，怎么就走到 192.168.0.11 上了啊（<a href="https://www.atatech.org/articles/80573" target="_blank" rel="external">参考我的另外一篇文章，网络到底通不通</a>），赶紧 ipconfig /all | grep 192 </p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/5212ee5e7496dafb122ce144293184e1.png" alt="image.png"></p>
-<p>发现这个IP是VirtualBox虚拟机在笔记本上虚拟出来的网卡IP，这下我倒是能理解为啥总是我碰到这个问题了，因为我的工作笔记本一拿到后第一件事情就是装VirtualBox 跑虚拟机。</p>
-<p>VirtualBox为啥导致了这个问题就是一个很偏的方向，我实在无能为力了，尝试找到了一个和VirtualBox的DNS相关的开关命令，只能死马当或马医了（像极了算命大师和老中医）</p>
-<pre><code>./VBoxManage.exe  modifyvm &quot;ubuntu&quot; --natdnshostresolver1 on
-</code></pre><p>执行完上面的命令观察了一个多月了，暂时没有再出现这个问题，忐忑中啊……</p>
-<h2 id="另外DHCP也许可以做一些事情"><a href="#另外DHCP也许可以做一些事情" class="headerlink" title="另外DHCP也许可以做一些事情"></a>另外DHCP也许可以做一些事情</h2><p>下面是来自微软官方的建议：</p>
-<blockquote>
-<p> One big advise – do not disable the DHCP Client service on any server, whether the machine is a DHCP client or statically configured. Somewhat of a misnomer, this service performs Dynamic DNS registration and is tied in with the client resolver service. If disabled on a DC, you’ll get a slew of errors, and no DNS queries will get resolved.</p>
-<p>No DNS Name Resolution If DHCP Client Service Is Not Running. When you try to resolve a host name using Domain Name Service (DNS), the attempt is unsuccessful. Communication by Internet Protocol (IP) address (even to …</p>
-<p><a href="http://support.microsoft.com/kb/268674" target="_blank" rel="external">http://support.microsoft.com/kb/268674</a></p>
-</blockquote>
-<p>from： <a href="https://blogs.msmvps.com/acefekay/2009/11/29/dns-wins-netbios-amp-the-client-side-resolver-browser-service-disabling-netbios-direct-hosted-smb-directsmb-if-one-dc-is-down-does-a-client-logon-to-another-dc-and-dns-forwarders-algorithm/#section4" target="_blank" rel="external">https://blogs.msmvps.com/acefekay/2009/11/29/dns-wins-netbios-amp-the-client-side-resolver-browser-service-disabling-netbios-direct-hosted-smb-directsmb-if-one-dc-is-down-does-a-client-logon-to-another-dc-and-dns-forwarders-algorithm/#section4</a></p>
-<h2 id="NBNS也许会导致nslookup-OK-but-ping-fail的问题"><a href="#NBNS也许会导致nslookup-OK-but-ping-fail的问题" class="headerlink" title="NBNS也许会导致nslookup OK but ping fail的问题"></a>NBNS也许会导致nslookup OK but ping fail的问题</h2><p><a href="https://www.experts-exchange.com/questions/28894006/NetBios-name-resolution-instead-of-DNS.html" target="_blank" rel="external">https://www.experts-exchange.com/questions/28894006/NetBios-name-resolution-instead-of-DNS.html</a></p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>碰到问题绕过去也不是长久之计，还是要从根本上了解问题的本质，这个问题在其它公司没有碰到过，我觉得跟公司的DNS、DHCP的配置也有点关系吧，但是这个我不好确认，应该还有好多用Windows本本的同学同样会碰到这个问题的，希望对你们有些帮助</p>
-<p><a href="https://support.microsoft.com/en-us/help/172218/microsoft-tcp-ip-host-name-resolution-order" target="_blank" rel="external">https://support.microsoft.com/en-us/help/172218/microsoft-tcp-ip-host-name-resolution-order</a></p>
-<p><a href="http://www.man7.org/linux/man-pages/man5/resolv.conf.5.html" target="_blank" rel="external">http://www.man7.org/linux/man-pages/man5/resolv.conf.5.html</a></p>
-<hr>
-<h2 id="本文附带鸡汤："><a href="#本文附带鸡汤：" class="headerlink" title="本文附带鸡汤："></a>本文附带鸡汤：</h2><p><strong>有些技能初学很难，大家水平都差不多，但是日积月累就会形成极强的优势，而且一旦突破某个临界点，它就会突飞猛进，这种技能叫指数型技能，是值得长期投资的，比如物理学就是一种指数型技能。</strong></p>
-<p>那么抓包算不算呢？​​</p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
@@ -4869,7 +5013,7 @@ ProxyCommand ssh -l root 2.2.2.2 exec /usr/bin/nc %h %p
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">54</span>
+                <span class="site-state-item-count">56</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -4891,7 +5035,7 @@ ProxyCommand ssh -l root 2.2.2.2 exec /usr/bin/nc %h %p
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">135</span>
+                <span class="site-state-item-count">136</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>
