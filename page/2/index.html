@@ -261,214 +261,6 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/06/09/就是要你懂DNS--一文搞懂域名解析相关问题/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/06/09/就是要你懂DNS--一文搞懂域名解析相关问题/" itemprop="url">就是要你懂DNS--一文搞懂域名解析相关问题</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-06-09T10:30:03+08:00">
-                2019-06-09
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/dns/" itemprop="url" rel="index">
-                    <span itemprop="name">dns</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/06/09/就是要你懂DNS--一文搞懂域名解析相关问题/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2019/06/09/就是要你懂DNS--一文搞懂域名解析相关问题/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="一文搞懂域名解析相关问题"><a href="#一文搞懂域名解析相关问题" class="headerlink" title="一文搞懂域名解析相关问题"></a>一文搞懂域名解析相关问题</h1><blockquote>
-<p>本文希望通过一篇文章解决所有域名解析中相关的问题</p>
-</blockquote>
-<h2 id="Linux下域名解析流程"><a href="#Linux下域名解析流程" class="headerlink" title="Linux下域名解析流程"></a>Linux下域名解析流程</h2><ul>
-<li>DNS域名解析的时候先根据 /etc/host.conf、/etc/nsswitch.conf 配置的顺序进行dns解析（name service switch），一般是这样配置：hosts: files dns 【files代表 /etc/hosts ； dns 代表 /etc/resolv.conf】(<strong>ping是这个流程，但是nslookup和dig不是</strong>)</li>
-<li>如果本地有DNS Client Cache，先走Cache查询，所以有时候看不到DNS网络包。Linux下nscd可以做这个cache，Windows下有 ipconfig /displaydns ipconfig /flushdns </li>
-<li>如果 /etc/resolv.conf 中配置了多个nameserver，默认使用第一个，只有第一个失败【如53端口不响应、查不到域名后再用后面的nameserver顶上】</li>
-</ul>
-<h2 id="Linux下域名解析流程需要注意的地方"><a href="#Linux下域名解析流程需要注意的地方" class="headerlink" title="Linux下域名解析流程需要注意的地方"></a>Linux下域名解析流程需要注意的地方</h2><ul>
-<li>如果 /etc/resolv.conf 中配置了rotate，那么多个nameserver轮流使用. <a href="https://access.redhat.com/solutions/1426263" target="_blank" rel="external">但是因为底层库的原因用了rotate 会触发nameserver排序的时候第二个总是排在第一位</a></li>
-<li>如果被解析的域名不是以 “.” 结尾,那么解释失败后还会尝试resolv.conf中search追加到后面，<a href="https://access.redhat.com/solutions/58028" target="_blank" rel="external">resolv.conf最多支持6个search域</a></li>
-<li>ping调用的是glibc的 gethostbyname() 函数流程–背后是NameServiceSwitch，nslookup不是.所以你会经常看到其中一个可以另一个不可以，那么就要按第一部分讲解的流程来排查了。</li>
-</ul>
-<h2 id="Linux下域名解析诊断工具"><a href="#Linux下域名解析诊断工具" class="headerlink" title="Linux下域名解析诊断工具"></a>Linux下域名解析诊断工具</h2><ul>
-<li>ping</li>
-<li>nslookup (nslookup domain @dns-server-ip)</li>
-<li>dig (dig +trace domain)</li>
-<li>tcpdump (tcpdump -i eth0 host server-ip and port 53 and udp)</li>
-<li>strace</li>
-</ul>
-<h3 id="案例"><a href="#案例" class="headerlink" title="案例"></a>案例</h3><pre><code>[ren@vb 08:50 /home/ren]
-$head -2 /etc/hosts
-127.0.0.1　 test.unknow.host
-127.0.0.1   test.localhost
-
-[ren@vb 08:50 /home/ren]
-$ping test.unknow.host
-ping: unknown host test.unknow.host
-
-[ren@vb 08:50 /home/ren]
-$ping -c 1 test.localhost
-PING test.localhost (127.0.0.1) 56(84) bytes of data.
-64 bytes from test.localhost (127.0.0.1): icmp_seq=1 ttl=64 time=0.016 ms
-
---- test.localhost ping statistics ---
-1 packets transmitted, 1 received, 0% packet loss, time 0ms
-rtt min/avg/max/mdev = 0.016/0.016/0.016/0.000 ms
-
-[ren@vb 08:50 /home/ren]
-$
-</code></pre><p>向 /etc/hosts 中添加了一条test.unknow.host, 然后无法解析到。</p>
-<p>为什么 test.unknow.host 没法解析到？<br>可能有哪些因素导致这种现象？</p>
-<p>尝试 ping -c 1 test.localhost 的目的是做什么？</p>
-<p>看完前面的理论我的猜测是两种可能导致这种情况：</p>
-<ul>
-<li>/etc/hosts 没有启用</li>
-<li>有本地缓存记录了一个unknow host记录</li>
-</ul>
-<h4 id="验证"><a href="#验证" class="headerlink" title="验证"></a>验证</h4><pre><code>ping -c 1 test.localhost
-</code></pre><p>可以通，说明 /etc/hosts 是在起作用的，毕竟如果别人求助你，你不能给他讲一堆理论，让他挨个去检查，所以最好验证 /etc/hosts 在起作用的方法是往其中添加一条新纪录，然后验证一下</p>
-<p>那接下来只能看本地有没有启动 nscd 这样的缓存了，见后发现也没有，这个时候就可以上 strace 追踪ping的流程了</p>
-<p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1560992498945-66445687-3184-4c7d-9fbd-764552025041.png" alt="undefined"> </p>
-<p>从上图可以清晰地看到读取了 /etc/host.conf, 然后读了 /etc/hosts, 再然后读取到我们添加的那条记录，似乎没问题，仔细看这应该是 ip地址后面带的是一个中文字符的空格，这就是问题所在。</p>
-<p>到这里可能的情况要追加第三种了：</p>
-<ul>
-<li>/etc/hosts 中添加的记录没生效(比如中文符号）</li>
-</ul>
-<h2 id="微服务下的域名解析、负载均衡"><a href="#微服务下的域名解析、负载均衡" class="headerlink" title="微服务下的域名解析、负载均衡"></a>微服务下的域名解析、负载均衡</h2><p>微服务中多个服务之间一般都是通过一个vip或者域名之类的来做服务发现和负载均衡、弹性伸缩，所以这里也需要域名解析（一个微服务申请一个域名）</p>
-<h3 id="域名解析通过jar、lib包"><a href="#域名解析通过jar、lib包" class="headerlink" title="域名解析通过jar、lib包"></a>域名解析通过jar、lib包</h3><p>基本与上面的逻辑没什么关系，jar包会去通过特定的协议联系server，解析出域名对应的多个ip、机房、权重等</p>
-<h3 id="域名解析通过dns-server"><a href="#域名解析通过dns-server" class="headerlink" title="域名解析通过dns server"></a>域名解析通过dns server</h3><p>跟前面介绍逻辑一致，一般是/etc/resolv.conf中配置的第一个nameserver负责解析微服务的域名，解析不到的（如baidu.com)再转发给上一级通用的dns server，解析到了说明是微服务自定义的域名，就可以返回来了</p>
-<p>如果这种情况下/etc/resolv.conf中配置的第一个nameserver是127.0.0.1,意味着本地跑了一个dns server, 这个服务使用dns协议监听本地udp 53端口</p>
-<p>验证方式： nslookup 域名 @127.0.0.1 看看能否解析到你想要的地址</p>
-<h2 id="kubernetes-和-docker中的域名解析"><a href="#kubernetes-和-docker中的域名解析" class="headerlink" title="kubernetes 和 docker中的域名解析"></a>kubernetes 和 docker中的域名解析</h2><p>一般是通过iptables配置转发规则来实现，这种用iptables和tcpdump基本都可以看清楚。如果是集群内部的话可以通过CoreDNS来实现，通过K8S动态向CoreDNS增删域名，增删ip，所以这种域名肯定只能在k8s集群内部使用</p>
-<h3 id="参考文章："><a href="#参考文章：" class="headerlink" title="参考文章："></a>参考文章：</h3><p><a href="http://blog.bruceding.com/516.html" target="_blank" rel="external">GO DNS 原理解析</a></p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/05/15/网络通不通是个大问题--半夜鸡叫/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -3168,7 +2960,7 @@ debug1: Executing proxy command: exec ssh -l alibaba 139.*.*.* exec /usr/bin/nc 
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/03/24/docker daemon添加label/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/03/24/就是要你懂Linux--Linux环境变量/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="weibo @plantegg">
@@ -3187,7 +2979,7 @@ debug1: Executing proxy command: exec ssh -l alibaba 139.*.*.* exec /usr/bin/nc 
         
           <h2 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2018/03/24/docker daemon添加label/" itemprop="url">如何手动为docker daemon添加label</a></h2>
+                <a class="post-title-link" href="/2018/03/24/就是要你懂Linux--Linux环境变量/" itemprop="url">就是要你懂Linux环境变量 问题汇总</a></h2>
         
 
         <div class="post-meta">
@@ -3222,8 +3014,8 @@ debug1: Executing proxy command: exec ssh -l alibaba 139.*.*.* exec /usr/bin/nc 
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Docker/" itemprop="url" rel="index">
-                    <span itemprop="name">Docker</span>
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
                   </a>
                 </span>
 
@@ -3240,9 +3032,9 @@ debug1: Executing proxy command: exec ssh -l alibaba 139.*.*.* exec /usr/bin/nc 
                 <span class="post-meta-item-icon">
                   <i class="fa fa-comment-o"></i>
                 </span>
-                <a href="/2018/03/24/docker daemon添加label/#comments" itemprop="discussionUrl">
+                <a href="/2018/03/24/就是要你懂Linux--Linux环境变量/#comments" itemprop="discussionUrl">
                   <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2018/03/24/docker daemon添加label/" itemprop="commentCount"></span>
+                        data-disqus-identifier="2018/03/24/就是要你懂Linux--Linux环境变量/" itemprop="commentCount"></span>
                 </a>
               </span>
             
@@ -3269,18 +3061,163 @@ debug1: Executing proxy command: exec ssh -l alibaba 139.*.*.* exec /usr/bin/nc 
       
         
           
-            <h1 id="如何手动为docker-daemon添加label"><a href="#如何手动为docker-daemon添加label" class="headerlink" title="如何手动为docker daemon添加label"></a>如何手动为docker daemon添加label</h1><ol>
-<li><p>编辑或创建/etc/docker/daemon.json</p>
-</li>
-<li><p>将一个或多个lable以json格式写入文件，示例如下</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># 为docker分配两个label，分别是nodetype和red</div><div class="line">&#123;"labels":["nodetype=dbpaas", "color=red"]&#125;</div></pre></td></tr></table></figure>
-</li>
-<li><p>重启docker daemon</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">service docker restart</div></pre></td></tr></table></figure>
-</li>
-</ol>
-<p>4 /etc/docker/daemon.json 参考</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div></pre></td><td class="code"><pre><div class="line">&#123;</div><div class="line">    &quot;api-cors-header&quot;: &quot;&quot;,</div><div class="line">    &quot;authorization-plugins&quot;: [],</div><div class="line">    &quot;bip&quot;: &quot;&quot;,</div><div class="line">    &quot;bridge&quot;: &quot;&quot;,</div><div class="line">    &quot;cgroup-parent&quot;: &quot;&quot;,</div><div class="line">    &quot;cluster-store&quot;: &quot;&quot;,</div><div class="line">    &quot;cluster-store-opts&quot;: &#123;&#125;,</div><div class="line">    &quot;cluster-advertise&quot;: &quot;&quot;,</div><div class="line">    &quot;debug&quot;: true,</div><div class="line">    &quot;default-gateway&quot;: &quot;&quot;,</div><div class="line">    &quot;default-gateway-v6&quot;: &quot;&quot;,</div><div class="line">    &quot;default-runtime&quot;: &quot;runc&quot;,</div><div class="line">    &quot;default-ulimits&quot;: &#123;&#125;,</div><div class="line">    &quot;disable-legacy-registry&quot;: false,</div><div class="line">    &quot;dns&quot;: [],</div><div class="line">    &quot;dns-opts&quot;: [],</div><div class="line">    &quot;dns-search&quot;: [],</div><div class="line">    &quot;exec-opts&quot;: [],</div><div class="line">    &quot;exec-root&quot;: &quot;&quot;,</div><div class="line">    &quot;fixed-cidr&quot;: &quot;&quot;,</div><div class="line">    &quot;fixed-cidr-v6&quot;: &quot;&quot;,</div><div class="line">    &quot;graph&quot;: &quot;&quot;,</div><div class="line">    &quot;group&quot;: &quot;&quot;,</div><div class="line">    &quot;hosts&quot;: [],</div><div class="line">    &quot;icc&quot;: false,</div><div class="line">    &quot;insecure-registries&quot;: [],</div><div class="line">    &quot;ip&quot;: &quot;0.0.0.0&quot;,</div><div class="line">    &quot;iptables&quot;: false,</div><div class="line">    &quot;ipv6&quot;: false,</div><div class="line">    &quot;ip-forward&quot;: false,</div><div class="line">    &quot;ip-masq&quot;: false,</div><div class="line">    &quot;labels&quot;: [&quot;nodetype=drds-server&quot;, &quot;ark.ip=11.239.155.83&quot;],</div><div class="line">    &quot;live-restore&quot;: true,</div><div class="line">    &quot;log-driver&quot;: &quot;&quot;,</div><div class="line">    &quot;log-level&quot;: &quot;&quot;,</div><div class="line">    &quot;log-opts&quot;: &#123;&#125;,</div><div class="line">    &quot;max-concurrent-downloads&quot;: 3,</div><div class="line">    &quot;max-concurrent-uploads&quot;: 5,</div><div class="line">    &quot;mtu&quot;: 0,</div><div class="line">    &quot;oom-score-adjust&quot;: -500,</div><div class="line">    &quot;pidfile&quot;: &quot;&quot;,</div><div class="line">    &quot;raw-logs&quot;: false,</div><div class="line">    &quot;registry-mirrors&quot;: [],</div><div class="line">    &quot;runtimes&quot;: &#123;</div><div class="line">        &quot;runc&quot;: &#123;</div><div class="line">            &quot;path&quot;: &quot;runc&quot;</div><div class="line">        &#125;,</div><div class="line">        &quot;custom&quot;: &#123;</div><div class="line">            &quot;path&quot;: &quot;/usr/local/bin/my-runc-replacement&quot;,</div><div class="line">            &quot;runtimeArgs&quot;: [</div><div class="line">                &quot;--debug&quot;</div><div class="line">            ]</div><div class="line">        &#125;</div><div class="line">    &#125;,</div><div class="line">    &quot;selinux-enabled&quot;: false,</div><div class="line">    &quot;storage-driver&quot;: &quot;&quot;,</div><div class="line">    &quot;storage-opts&quot;: [],</div><div class="line">    &quot;swarm-default-advertise-addr&quot;: &quot;&quot;,</div><div class="line">    &quot;tls&quot;: true,</div><div class="line">    &quot;tlscacert&quot;: &quot;&quot;,</div><div class="line">    &quot;tlscert&quot;: &quot;&quot;,</div><div class="line">    &quot;tlskey&quot;: &quot;&quot;,</div><div class="line">    &quot;tlsverify&quot;: true,</div><div class="line">    &quot;userland-proxy&quot;: false,</div><div class="line">    &quot;userns-remap&quot;: &quot;&quot;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+            <h1 id="就是要你懂Linux环境变量问题汇总"><a href="#就是要你懂Linux环境变量问题汇总" class="headerlink" title="就是要你懂Linux环境变量问题汇总"></a>就是要你懂Linux环境变量问题汇总</h1><h3 id="测试好的脚本放到-crontab-里就报错-找不到命令"><a href="#测试好的脚本放到-crontab-里就报错-找不到命令" class="headerlink" title="测试好的脚本放到 crontab 里就报错: 找不到命令"></a>测试好的脚本放到 crontab 里就报错: 找不到命令</h3><p>写好一个脚本，测试没有问题，然后放到crontab 想要定时执行，但是总是报错，去看日志的话显示某些命令找不到，这种一般都是因为PATH环境变量变了导致的</p>
+<p>自己在shell命令行下测试的时候当前环境变量就是这个用户的环境变量，可以通过命令：env 看到，脚本放到crontab 里面后一般都加了sudo 这个时候 env 变了。比如你可以在命令行下执行 env 和 sudo env 比较一下就发现他们很不一样</p>
+<p>为了解决这个问题 sudo有一个参数 -E （–preserver-env）就是为了解决这个问题的。</p>
+<p>这个时候再比较一下 </p>
+<ul>
+<li>env</li>
+<li>sudo env</li>
+<li>sudo -E env</li>
+</ul>
+<p>大概就能理解这里的区别了</p>
+<h3 id="同样一个命令ssh执行不了，-报找不到命令"><a href="#同样一个命令ssh执行不了，-报找不到命令" class="headerlink" title="同样一个命令ssh执行不了， 报找不到命令"></a>同样一个命令ssh执行不了， 报找不到命令</h3><p>比如：</p>
+<p>ssh user@ip “ ip a “  报错： bash: ip: command not found</p>
+<p>但是你要是先执行 ssh user@ip 连上服务器后，再执行 ip a 就可以，这里是同一个命令通过两种不同的方式但是环境变量也不一样了。</p>
+<p>同样想要解决这个问题的话可以先 ssh 连上服务器，再执行 which ip ; env | grep PATH  </p>
+<pre><code>$ which ip
+/usr/sbin/ip
+$ env | grep PATH
+PATH=/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
+</code></pre><p>很明显这里因为 ip在/usr/sbin下，而/usr/sbin又在PATH变量中，所以可以找到。</p>
+<p>那么接下来我们看看 </p>
+<pre><code>$ssh user@ip &quot;env | grep PATH&quot;
+PATH=/usr/local/bin:/usr/bin
+</code></pre><p>很明显这里的PATH比上面的PATH短了一截，/usr/sbin也没有在里面，所以/usr/sbin 下的ip命令自然也找不到了，这里虽然都是同一个用户，但是他们的环境变量还不一样，有点出乎我的意料之外。</p>
+<p>主要原因是我们的shell 分为login shell 和 no-login shell , 先ssh 登陆上去再执行命令就是一个login shell，Linux要为这个终端分配资源。</p>
+<p>而下面的直接在ssh 里面放执行命令实际上就不需要login，所以这是一个no-login shell.</p>
+<h4 id="login-shell-和-no-login-shell又有什么区别呢？"><a href="#login-shell-和-no-login-shell又有什么区别呢？" class="headerlink" title="login shell 和 no-login shell又有什么区别呢？"></a>login shell 和 no-login shell又有什么区别呢？</h4><ul>
+<li>login shell加载环境变量的顺序是：① /etc/profile ② ~/.bash_profile ③ ~/.bashrc ④ /etc/bashrc </li>
+<li>而non-login shell加载环境变量的顺序是： ① ~/.bashrc ② /etc/bashrc</li>
+</ul>
+<p>也就是nog-login少了前面两步，我们先看后面两步。</p>
+<p>下面是一个 .bashrc 的内容：</p>
+<pre><code>[ ~]$ cat .bashrc 
+# .bashrc
+
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+    . /etc/bashrc
+fi
+</code></pre><p>基本没有什么内容，它主要是去加载 /etc/bashrc  而他里面也没有看到sbin相关的东西</p>
+<p>那我们再看non-login少的两步： ① /etc/profile ② ~/.bash_profile </p>
+<p>cat /etc/profile :</p>
+<pre><code>if [ &quot;$EUID&quot; = &quot;0&quot; ]; then
+    pathmunge /usr/sbin
+    pathmunge /usr/local/sbin
+else
+    pathmunge /usr/local/sbin after
+    pathmunge /usr/sbin after
+fi
+</code></pre><p>这几行代码就是把 /usr/sbin 添加到 PATH 变量中，正是他们的区别决定了这里的环境变量不一样。</p>
+<p><strong>用一张图来表述他们的结构，箭头代表加载顺序，红框代表不同的shell的初始入口</strong>：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/ae3095f063dede80a8c1ee79ec25685c.png" alt="image.png"></p>
+<p>像 ansible 这种自动化工具，或者我们自己写的自动化脚本，底层通过ssh这种non-login的方式来执行的话，那么都有可能碰到这个问题，如何修复呢？</p>
+<p>在 /etc/profile.d/ 下创建一个文件：/etc/profile.d/my_bashenv.sh 内容如下：</p>
+<pre><code>$cat /etc/profile.d/my_bashenv.sh 
+
+pathmunge () {
+if ! echo $PATH | /bin/egrep -q &quot;(^|:)$1($|:)&quot; ; then
+   if [ &quot;$2&quot; = &quot;after&quot; ] ; then
+  PATH=$PATH:$1
+   else
+  PATH=$1:$PATH
+   fi
+fi
+}
+
+pathmunge /sbin
+pathmunge /usr/sbin
+pathmunge /usr/local/sbin
+pathmunge /usr/local/bin
+pathmunge /usr/X11R6/bin after
+
+unset pathmunge
+
+complete -cf sudo
+
+
+alias chgrp=&apos;chgrp --preserve-root&apos;
+alias chown=&apos;chown --preserve-root&apos;
+alias chmod=&apos;chmod --preserve-root&apos;
+alias rm=&apos;rm -i --preserve-root&apos;
+
+
+HISTTIMEFORMAT=&apos;[%F %T] &apos;
+HISTSIZE=1000
+
+export EDITOR=vim
+
+
+export PS1=&apos;\n\e[1;37m[\e[m\e[1;32m\u\e[m\e[1;33m@\e[m\e[1;35m\H\e[m \e[4m`pwd`\e[m\e[1;37m]\e[m\e[1;36m\e[m\n\$&apos;
+</code></pre><p>通过前面我们可以看到 /etc/bashrc 总是会去加载 /etc/profile.d/ 下的所有 *.sh 文件，同时我们还可以在这个文件中修改我们喜欢的 shell 配色方案和环境变量等等 </p>
+<h3 id="BASH"><a href="#BASH" class="headerlink" title="BASH"></a>BASH</h3><p>1、交互式的登录shell （bash –il xxx.sh）<br>载入的信息：<br>/etc/profile<br>~/.bash_profile（ -&gt;  ~/.bashrc  -&gt;  /etc/bashrc）<br>~/.bash_login<br>~/.profile</p>
+<p>2、非交互式的登录shell （bash –l xxx.sh）<br>载入的信息：<br>/etc/profile<br>~/.bash_profile （ -&gt;  ~/.bashrc  -&gt;  /etc/bashrc）<br>~/.bash_login<br>~/.profile<br>$BASH_ENV</p>
+<p>3、交互式的非登录shell （bash –i xxx.sh）<br>载入的信息：<br>~/.bashrc （ -&gt;  /etc/bashrc）</p>
+<p>4、非交互式的非登录shell （bash xxx.sh）<br>载入的信息：<br>$BASH_ENV</p>
+<h3 id="SH"><a href="#SH" class="headerlink" title="SH"></a>SH</h3><p>1、交互式的登录shell<br>载入的信息：<br>/etc/profile<br>~/.profile</p>
+<p>2、非交互式的登录shell<br>载入的信息：<br>/etc/profile<br>~/.profile</p>
+<p>3、交互式的非登录shell<br>载入的信息：<br>$ENV</p>
+<h4 id="练习验证一下bash、sh和login、non-login"><a href="#练习验证一下bash、sh和login、non-login" class="headerlink" title="练习验证一下bash、sh和login、non-login"></a>练习验证一下bash、sh和login、non-login</h4><ul>
+<li>sudo ll 或者 sudo cd 是不是都报找不到命令</li>
+<li>先sudo bash 然后执行 ll或者cd就可以了</li>
+<li>先sudo sh   然后执行 ll或者cd还是报找不到命令</li>
+<li>sudo env | grep PATH 然后 sudo bash 后再执行 env | grep PATH 看到的PATH环境变量不一样了</li>
+</ul>
+<p>4、非交互式的非登录shell<br>载入的信息：<br>nothing</p>
+<h3 id="export命令的作用"><a href="#export命令的作用" class="headerlink" title="export命令的作用"></a>export命令的作用</h3><p>Linux 中export是一种命令工具通过export命令把shell变量中包含的用户变量导入给子程序.<strong>默认情况下子程序仅会继承父程序的环境变量</strong>，子程序不会继承父程序的自定义变量，所以需要export让父程序中的<strong>自定义变量</strong>变成环境变量，然后子程序就能继承过来了。</p>
+<p>我们来看一个例子， 有一个变量，名字 abc 内容123 如果没有export ，那么通过bash创建一个新的shell（新shell是之前bash的子程序），在新的shell里面就没有abc这个变量， export之后在新的 shell 里面才可以看到这个变量，但是退出重新login后（产生了一个新的bash，只会加载env）abc变量都不在了</p>
+<pre><code>$echo $abc
+
+
+$abc=&quot;123&quot;
+
+
+$echo $abc
+123
+
+$bash
+
+$echo $abc
+
+
+$exit
+exit
+
+$export abc
+
+$echo $abc
+123
+
+$bash
+
+$echo $abc
+123
+</code></pre><h2 id="一些常见问题"><a href="#一些常见问题" class="headerlink" title="一些常见问题"></a>一些常见问题</h2><h3 id="执行好好地shell-脚本换台服务器就：source-not-found"><a href="#执行好好地shell-脚本换台服务器就：source-not-found" class="headerlink" title="执行好好地shell 脚本换台服务器就：source: not found"></a>执行好好地shell 脚本换台服务器就：source: not found</h3><p>source 是bash的一个内建命令（所以你找不到一个/bin/source 这样的可执行文件），也就是他是bash自带的，如果我们执行脚本是这样： sh shell.sh 而shell.sh中用到了source命令的话就会报 source: not found</p>
+<p>这是因为bash 和 sh是两个东西，sh是 POSIX shell，你可以把它看成是一个兼容某个规范的shell，而bash是 Bourne-Again shell script， bash是 POSIX shell的扩展，就是bash支持所有符合POSIX shell的规范，但是反过来就不一定了，而这里的 source 恰好就是 bash内建的，不符合 POSIX shell的规范（<strong>POSIX shell 中用 . 来代替source</strong>)</p>
+<h3 id="在centos执行好好的脚本放到Ubuntu上就不行了，报语法错误"><a href="#在centos执行好好的脚本放到Ubuntu上就不行了，报语法错误" class="headerlink" title="在centos执行好好的脚本放到Ubuntu上就不行了，报语法错误"></a>在centos执行好好的脚本放到Ubuntu上就不行了，报语法错误</h3><p>同上，如果到ubuntu上用 bash shell.sh是可以的，但是sh shell.sh就报语法错误，但是在centos上执行：sh或者bash shell.sh 都可以通过。 在centos上执行 ls -lh /usr/bin/sh 可以看到 /usr/bin/sh link到了 /usr/bin/bash 也就是sh等同于bash，所以都可以通过不足为奇。 </p>
+<p>但是在ubuntu上执行 ls -lh /usr/bin/sh 可以看到 /usr/bin/sh link到了 <strong>/usr/bin/dash</strong> ， 这就是为什么ubuntu上会报错</p>
+<h3 id="source-shell-sh-和-bash-shell-sh以及-shell-sh的区别"><a href="#source-shell-sh-和-bash-shell-sh以及-shell-sh的区别" class="headerlink" title="source shell.sh 和 bash shell.sh以及 ./shell.sh的区别"></a>source shell.sh 和 bash shell.sh以及 ./shell.sh的区别</h3><p>source shell.sh就在本shell中展开执行<br>bash shell.sh表示在本shell启动一个子程序（bash），在子程序中执行 shell.sh (shell.sh中产生的一些环境变量就没法带回父shell进程了)， 有读 shell.sh 权限就可以执行<br>./shell.sh 跟bash shell.sh类似，但是必须要求shell.sh有rx权限，然后根据shell.sh前面的 #! 后面的指示来确定用bash还是sh </p>
+<pre><code>$cat test.sh 
+echo $$
+
+$echo $$
+2299
+
+$source test.sh 
+2299
+
+$bash test.sh 
+4037
+
+$./test.sh 
+4040
+</code></pre><p>如上实例，只有source的时候进程ID和bash进程ID一样，其它方式都创建了一个新的bash进程，所以ID也变了</p>
+<h3 id="参考文章："><a href="#参考文章：" class="headerlink" title="参考文章："></a>参考文章：</h3><p><a href="https://blog.csdn.net/u010871982/article/details/78525367" target="_blank" rel="external">关于ansible远程执行的环境变量问题</a></p>
+<p><a href="http://bbs.chinaunix.net/thread-1068678-1-1.html" target="_blank" rel="external">Bash和Sh的区别</a></p>
+<p><a href="http://kodango.com/what-is-interactive-and-login-shell" target="_blank" rel="external">什么是交互式登录 Shell what-is-interactive-and-login-shell</a></p>
+<p><a href="http://kodango.com/explain-shell-default-options" target="_blank" rel="external">Shell 默认选项 himBH 的解释</a></p>
+<p><a href="http://kodango.com/useful-documents-about-shell" target="_blank" rel="external">useful-documents-about-shell</a></p>
+
           
         
       
@@ -3640,7 +3577,7 @@ cp is /usr/bin/cp
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/03/24/就是要你懂Linux--Linux环境变量/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/03/24/docker daemon添加label/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="weibo @plantegg">
@@ -3659,7 +3596,7 @@ cp is /usr/bin/cp
         
           <h2 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2018/03/24/就是要你懂Linux--Linux环境变量/" itemprop="url">就是要你懂Linux环境变量 问题汇总</a></h2>
+                <a class="post-title-link" href="/2018/03/24/docker daemon添加label/" itemprop="url">如何手动为docker daemon添加label</a></h2>
         
 
         <div class="post-meta">
@@ -3694,8 +3631,8 @@ cp is /usr/bin/cp
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
+                  <a href="/categories/Docker/" itemprop="url" rel="index">
+                    <span itemprop="name">Docker</span>
                   </a>
                 </span>
 
@@ -3712,9 +3649,9 @@ cp is /usr/bin/cp
                 <span class="post-meta-item-icon">
                   <i class="fa fa-comment-o"></i>
                 </span>
-                <a href="/2018/03/24/就是要你懂Linux--Linux环境变量/#comments" itemprop="discussionUrl">
+                <a href="/2018/03/24/docker daemon添加label/#comments" itemprop="discussionUrl">
                   <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2018/03/24/就是要你懂Linux--Linux环境变量/" itemprop="commentCount"></span>
+                        data-disqus-identifier="2018/03/24/docker daemon添加label/" itemprop="commentCount"></span>
                 </a>
               </span>
             
@@ -3741,163 +3678,18 @@ cp is /usr/bin/cp
       
         
           
-            <h1 id="就是要你懂Linux环境变量问题汇总"><a href="#就是要你懂Linux环境变量问题汇总" class="headerlink" title="就是要你懂Linux环境变量问题汇总"></a>就是要你懂Linux环境变量问题汇总</h1><h3 id="测试好的脚本放到-crontab-里就报错-找不到命令"><a href="#测试好的脚本放到-crontab-里就报错-找不到命令" class="headerlink" title="测试好的脚本放到 crontab 里就报错: 找不到命令"></a>测试好的脚本放到 crontab 里就报错: 找不到命令</h3><p>写好一个脚本，测试没有问题，然后放到crontab 想要定时执行，但是总是报错，去看日志的话显示某些命令找不到，这种一般都是因为PATH环境变量变了导致的</p>
-<p>自己在shell命令行下测试的时候当前环境变量就是这个用户的环境变量，可以通过命令：env 看到，脚本放到crontab 里面后一般都加了sudo 这个时候 env 变了。比如你可以在命令行下执行 env 和 sudo env 比较一下就发现他们很不一样</p>
-<p>为了解决这个问题 sudo有一个参数 -E （–preserver-env）就是为了解决这个问题的。</p>
-<p>这个时候再比较一下 </p>
-<ul>
-<li>env</li>
-<li>sudo env</li>
-<li>sudo -E env</li>
-</ul>
-<p>大概就能理解这里的区别了</p>
-<h3 id="同样一个命令ssh执行不了，-报找不到命令"><a href="#同样一个命令ssh执行不了，-报找不到命令" class="headerlink" title="同样一个命令ssh执行不了， 报找不到命令"></a>同样一个命令ssh执行不了， 报找不到命令</h3><p>比如：</p>
-<p>ssh user@ip “ ip a “  报错： bash: ip: command not found</p>
-<p>但是你要是先执行 ssh user@ip 连上服务器后，再执行 ip a 就可以，这里是同一个命令通过两种不同的方式但是环境变量也不一样了。</p>
-<p>同样想要解决这个问题的话可以先 ssh 连上服务器，再执行 which ip ; env | grep PATH  </p>
-<pre><code>$ which ip
-/usr/sbin/ip
-$ env | grep PATH
-PATH=/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
-</code></pre><p>很明显这里因为 ip在/usr/sbin下，而/usr/sbin又在PATH变量中，所以可以找到。</p>
-<p>那么接下来我们看看 </p>
-<pre><code>$ssh user@ip &quot;env | grep PATH&quot;
-PATH=/usr/local/bin:/usr/bin
-</code></pre><p>很明显这里的PATH比上面的PATH短了一截，/usr/sbin也没有在里面，所以/usr/sbin 下的ip命令自然也找不到了，这里虽然都是同一个用户，但是他们的环境变量还不一样，有点出乎我的意料之外。</p>
-<p>主要原因是我们的shell 分为login shell 和 no-login shell , 先ssh 登陆上去再执行命令就是一个login shell，Linux要为这个终端分配资源。</p>
-<p>而下面的直接在ssh 里面放执行命令实际上就不需要login，所以这是一个no-login shell.</p>
-<h4 id="login-shell-和-no-login-shell又有什么区别呢？"><a href="#login-shell-和-no-login-shell又有什么区别呢？" class="headerlink" title="login shell 和 no-login shell又有什么区别呢？"></a>login shell 和 no-login shell又有什么区别呢？</h4><ul>
-<li>login shell加载环境变量的顺序是：① /etc/profile ② ~/.bash_profile ③ ~/.bashrc ④ /etc/bashrc </li>
-<li>而non-login shell加载环境变量的顺序是： ① ~/.bashrc ② /etc/bashrc</li>
-</ul>
-<p>也就是nog-login少了前面两步，我们先看后面两步。</p>
-<p>下面是一个 .bashrc 的内容：</p>
-<pre><code>[ ~]$ cat .bashrc 
-# .bashrc
-
-# Source global definitions
-if [ -f /etc/bashrc ]; then
-    . /etc/bashrc
-fi
-</code></pre><p>基本没有什么内容，它主要是去加载 /etc/bashrc  而他里面也没有看到sbin相关的东西</p>
-<p>那我们再看non-login少的两步： ① /etc/profile ② ~/.bash_profile </p>
-<p>cat /etc/profile :</p>
-<pre><code>if [ &quot;$EUID&quot; = &quot;0&quot; ]; then
-    pathmunge /usr/sbin
-    pathmunge /usr/local/sbin
-else
-    pathmunge /usr/local/sbin after
-    pathmunge /usr/sbin after
-fi
-</code></pre><p>这几行代码就是把 /usr/sbin 添加到 PATH 变量中，正是他们的区别决定了这里的环境变量不一样。</p>
-<p><strong>用一张图来表述他们的结构，箭头代表加载顺序，红框代表不同的shell的初始入口</strong>：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/ae3095f063dede80a8c1ee79ec25685c.png" alt="image.png"></p>
-<p>像 ansible 这种自动化工具，或者我们自己写的自动化脚本，底层通过ssh这种non-login的方式来执行的话，那么都有可能碰到这个问题，如何修复呢？</p>
-<p>在 /etc/profile.d/ 下创建一个文件：/etc/profile.d/my_bashenv.sh 内容如下：</p>
-<pre><code>$cat /etc/profile.d/my_bashenv.sh 
-
-pathmunge () {
-if ! echo $PATH | /bin/egrep -q &quot;(^|:)$1($|:)&quot; ; then
-   if [ &quot;$2&quot; = &quot;after&quot; ] ; then
-  PATH=$PATH:$1
-   else
-  PATH=$1:$PATH
-   fi
-fi
-}
-
-pathmunge /sbin
-pathmunge /usr/sbin
-pathmunge /usr/local/sbin
-pathmunge /usr/local/bin
-pathmunge /usr/X11R6/bin after
-
-unset pathmunge
-
-complete -cf sudo
-
-
-alias chgrp=&apos;chgrp --preserve-root&apos;
-alias chown=&apos;chown --preserve-root&apos;
-alias chmod=&apos;chmod --preserve-root&apos;
-alias rm=&apos;rm -i --preserve-root&apos;
-
-
-HISTTIMEFORMAT=&apos;[%F %T] &apos;
-HISTSIZE=1000
-
-export EDITOR=vim
-
-
-export PS1=&apos;\n\e[1;37m[\e[m\e[1;32m\u\e[m\e[1;33m@\e[m\e[1;35m\H\e[m \e[4m`pwd`\e[m\e[1;37m]\e[m\e[1;36m\e[m\n\$&apos;
-</code></pre><p>通过前面我们可以看到 /etc/bashrc 总是会去加载 /etc/profile.d/ 下的所有 *.sh 文件，同时我们还可以在这个文件中修改我们喜欢的 shell 配色方案和环境变量等等 </p>
-<h3 id="BASH"><a href="#BASH" class="headerlink" title="BASH"></a>BASH</h3><p>1、交互式的登录shell （bash –il xxx.sh）<br>载入的信息：<br>/etc/profile<br>~/.bash_profile（ -&gt;  ~/.bashrc  -&gt;  /etc/bashrc）<br>~/.bash_login<br>~/.profile</p>
-<p>2、非交互式的登录shell （bash –l xxx.sh）<br>载入的信息：<br>/etc/profile<br>~/.bash_profile （ -&gt;  ~/.bashrc  -&gt;  /etc/bashrc）<br>~/.bash_login<br>~/.profile<br>$BASH_ENV</p>
-<p>3、交互式的非登录shell （bash –i xxx.sh）<br>载入的信息：<br>~/.bashrc （ -&gt;  /etc/bashrc）</p>
-<p>4、非交互式的非登录shell （bash xxx.sh）<br>载入的信息：<br>$BASH_ENV</p>
-<h3 id="SH"><a href="#SH" class="headerlink" title="SH"></a>SH</h3><p>1、交互式的登录shell<br>载入的信息：<br>/etc/profile<br>~/.profile</p>
-<p>2、非交互式的登录shell<br>载入的信息：<br>/etc/profile<br>~/.profile</p>
-<p>3、交互式的非登录shell<br>载入的信息：<br>$ENV</p>
-<h4 id="练习验证一下bash、sh和login、non-login"><a href="#练习验证一下bash、sh和login、non-login" class="headerlink" title="练习验证一下bash、sh和login、non-login"></a>练习验证一下bash、sh和login、non-login</h4><ul>
-<li>sudo ll 或者 sudo cd 是不是都报找不到命令</li>
-<li>先sudo bash 然后执行 ll或者cd就可以了</li>
-<li>先sudo sh   然后执行 ll或者cd还是报找不到命令</li>
-<li>sudo env | grep PATH 然后 sudo bash 后再执行 env | grep PATH 看到的PATH环境变量不一样了</li>
-</ul>
-<p>4、非交互式的非登录shell<br>载入的信息：<br>nothing</p>
-<h3 id="export命令的作用"><a href="#export命令的作用" class="headerlink" title="export命令的作用"></a>export命令的作用</h3><p>Linux 中export是一种命令工具通过export命令把shell变量中包含的用户变量导入给子程序.<strong>默认情况下子程序仅会继承父程序的环境变量</strong>，子程序不会继承父程序的自定义变量，所以需要export让父程序中的<strong>自定义变量</strong>变成环境变量，然后子程序就能继承过来了。</p>
-<p>我们来看一个例子， 有一个变量，名字 abc 内容123 如果没有export ，那么通过bash创建一个新的shell（新shell是之前bash的子程序），在新的shell里面就没有abc这个变量， export之后在新的 shell 里面才可以看到这个变量，但是退出重新login后（产生了一个新的bash，只会加载env）abc变量都不在了</p>
-<pre><code>$echo $abc
-
-
-$abc=&quot;123&quot;
-
-
-$echo $abc
-123
-
-$bash
-
-$echo $abc
-
-
-$exit
-exit
-
-$export abc
-
-$echo $abc
-123
-
-$bash
-
-$echo $abc
-123
-</code></pre><h2 id="一些常见问题"><a href="#一些常见问题" class="headerlink" title="一些常见问题"></a>一些常见问题</h2><h3 id="执行好好地shell-脚本换台服务器就：source-not-found"><a href="#执行好好地shell-脚本换台服务器就：source-not-found" class="headerlink" title="执行好好地shell 脚本换台服务器就：source: not found"></a>执行好好地shell 脚本换台服务器就：source: not found</h3><p>source 是bash的一个内建命令（所以你找不到一个/bin/source 这样的可执行文件），也就是他是bash自带的，如果我们执行脚本是这样： sh shell.sh 而shell.sh中用到了source命令的话就会报 source: not found</p>
-<p>这是因为bash 和 sh是两个东西，sh是 POSIX shell，你可以把它看成是一个兼容某个规范的shell，而bash是 Bourne-Again shell script， bash是 POSIX shell的扩展，就是bash支持所有符合POSIX shell的规范，但是反过来就不一定了，而这里的 source 恰好就是 bash内建的，不符合 POSIX shell的规范（<strong>POSIX shell 中用 . 来代替source</strong>)</p>
-<h3 id="在centos执行好好的脚本放到Ubuntu上就不行了，报语法错误"><a href="#在centos执行好好的脚本放到Ubuntu上就不行了，报语法错误" class="headerlink" title="在centos执行好好的脚本放到Ubuntu上就不行了，报语法错误"></a>在centos执行好好的脚本放到Ubuntu上就不行了，报语法错误</h3><p>同上，如果到ubuntu上用 bash shell.sh是可以的，但是sh shell.sh就报语法错误，但是在centos上执行：sh或者bash shell.sh 都可以通过。 在centos上执行 ls -lh /usr/bin/sh 可以看到 /usr/bin/sh link到了 /usr/bin/bash 也就是sh等同于bash，所以都可以通过不足为奇。 </p>
-<p>但是在ubuntu上执行 ls -lh /usr/bin/sh 可以看到 /usr/bin/sh link到了 <strong>/usr/bin/dash</strong> ， 这就是为什么ubuntu上会报错</p>
-<h3 id="source-shell-sh-和-bash-shell-sh以及-shell-sh的区别"><a href="#source-shell-sh-和-bash-shell-sh以及-shell-sh的区别" class="headerlink" title="source shell.sh 和 bash shell.sh以及 ./shell.sh的区别"></a>source shell.sh 和 bash shell.sh以及 ./shell.sh的区别</h3><p>source shell.sh就在本shell中展开执行<br>bash shell.sh表示在本shell启动一个子程序（bash），在子程序中执行 shell.sh (shell.sh中产生的一些环境变量就没法带回父shell进程了)， 有读 shell.sh 权限就可以执行<br>./shell.sh 跟bash shell.sh类似，但是必须要求shell.sh有rx权限，然后根据shell.sh前面的 #! 后面的指示来确定用bash还是sh </p>
-<pre><code>$cat test.sh 
-echo $$
-
-$echo $$
-2299
-
-$source test.sh 
-2299
-
-$bash test.sh 
-4037
-
-$./test.sh 
-4040
-</code></pre><p>如上实例，只有source的时候进程ID和bash进程ID一样，其它方式都创建了一个新的bash进程，所以ID也变了</p>
-<h3 id="参考文章："><a href="#参考文章：" class="headerlink" title="参考文章："></a>参考文章：</h3><p><a href="https://blog.csdn.net/u010871982/article/details/78525367" target="_blank" rel="external">关于ansible远程执行的环境变量问题</a></p>
-<p><a href="http://bbs.chinaunix.net/thread-1068678-1-1.html" target="_blank" rel="external">Bash和Sh的区别</a></p>
-<p><a href="http://kodango.com/what-is-interactive-and-login-shell" target="_blank" rel="external">什么是交互式登录 Shell what-is-interactive-and-login-shell</a></p>
-<p><a href="http://kodango.com/explain-shell-default-options" target="_blank" rel="external">Shell 默认选项 himBH 的解释</a></p>
-<p><a href="http://kodango.com/useful-documents-about-shell" target="_blank" rel="external">useful-documents-about-shell</a></p>
-
+            <h1 id="如何手动为docker-daemon添加label"><a href="#如何手动为docker-daemon添加label" class="headerlink" title="如何手动为docker daemon添加label"></a>如何手动为docker daemon添加label</h1><ol>
+<li><p>编辑或创建/etc/docker/daemon.json</p>
+</li>
+<li><p>将一个或多个lable以json格式写入文件，示例如下</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># 为docker分配两个label，分别是nodetype和red</div><div class="line">&#123;"labels":["nodetype=dbpaas", "color=red"]&#125;</div></pre></td></tr></table></figure>
+</li>
+<li><p>重启docker daemon</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">service docker restart</div></pre></td></tr></table></figure>
+</li>
+</ol>
+<p>4 /etc/docker/daemon.json 参考</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div></pre></td><td class="code"><pre><div class="line">&#123;</div><div class="line">    &quot;api-cors-header&quot;: &quot;&quot;,</div><div class="line">    &quot;authorization-plugins&quot;: [],</div><div class="line">    &quot;bip&quot;: &quot;&quot;,</div><div class="line">    &quot;bridge&quot;: &quot;&quot;,</div><div class="line">    &quot;cgroup-parent&quot;: &quot;&quot;,</div><div class="line">    &quot;cluster-store&quot;: &quot;&quot;,</div><div class="line">    &quot;cluster-store-opts&quot;: &#123;&#125;,</div><div class="line">    &quot;cluster-advertise&quot;: &quot;&quot;,</div><div class="line">    &quot;debug&quot;: true,</div><div class="line">    &quot;default-gateway&quot;: &quot;&quot;,</div><div class="line">    &quot;default-gateway-v6&quot;: &quot;&quot;,</div><div class="line">    &quot;default-runtime&quot;: &quot;runc&quot;,</div><div class="line">    &quot;default-ulimits&quot;: &#123;&#125;,</div><div class="line">    &quot;disable-legacy-registry&quot;: false,</div><div class="line">    &quot;dns&quot;: [],</div><div class="line">    &quot;dns-opts&quot;: [],</div><div class="line">    &quot;dns-search&quot;: [],</div><div class="line">    &quot;exec-opts&quot;: [],</div><div class="line">    &quot;exec-root&quot;: &quot;&quot;,</div><div class="line">    &quot;fixed-cidr&quot;: &quot;&quot;,</div><div class="line">    &quot;fixed-cidr-v6&quot;: &quot;&quot;,</div><div class="line">    &quot;graph&quot;: &quot;&quot;,</div><div class="line">    &quot;group&quot;: &quot;&quot;,</div><div class="line">    &quot;hosts&quot;: [],</div><div class="line">    &quot;icc&quot;: false,</div><div class="line">    &quot;insecure-registries&quot;: [],</div><div class="line">    &quot;ip&quot;: &quot;0.0.0.0&quot;,</div><div class="line">    &quot;iptables&quot;: false,</div><div class="line">    &quot;ipv6&quot;: false,</div><div class="line">    &quot;ip-forward&quot;: false,</div><div class="line">    &quot;ip-masq&quot;: false,</div><div class="line">    &quot;labels&quot;: [&quot;nodetype=drds-server&quot;, &quot;ark.ip=11.239.155.83&quot;],</div><div class="line">    &quot;live-restore&quot;: true,</div><div class="line">    &quot;log-driver&quot;: &quot;&quot;,</div><div class="line">    &quot;log-level&quot;: &quot;&quot;,</div><div class="line">    &quot;log-opts&quot;: &#123;&#125;,</div><div class="line">    &quot;max-concurrent-downloads&quot;: 3,</div><div class="line">    &quot;max-concurrent-uploads&quot;: 5,</div><div class="line">    &quot;mtu&quot;: 0,</div><div class="line">    &quot;oom-score-adjust&quot;: -500,</div><div class="line">    &quot;pidfile&quot;: &quot;&quot;,</div><div class="line">    &quot;raw-logs&quot;: false,</div><div class="line">    &quot;registry-mirrors&quot;: [],</div><div class="line">    &quot;runtimes&quot;: &#123;</div><div class="line">        &quot;runc&quot;: &#123;</div><div class="line">            &quot;path&quot;: &quot;runc&quot;</div><div class="line">        &#125;,</div><div class="line">        &quot;custom&quot;: &#123;</div><div class="line">            &quot;path&quot;: &quot;/usr/local/bin/my-runc-replacement&quot;,</div><div class="line">            &quot;runtimeArgs&quot;: [</div><div class="line">                &quot;--debug&quot;</div><div class="line">            ]</div><div class="line">        &#125;</div><div class="line">    &#125;,</div><div class="line">    &quot;selinux-enabled&quot;: false,</div><div class="line">    &quot;storage-driver&quot;: &quot;&quot;,</div><div class="line">    &quot;storage-opts&quot;: [],</div><div class="line">    &quot;swarm-default-advertise-addr&quot;: &quot;&quot;,</div><div class="line">    &quot;tls&quot;: true,</div><div class="line">    &quot;tlscacert&quot;: &quot;&quot;,</div><div class="line">    &quot;tlscert&quot;: &quot;&quot;,</div><div class="line">    &quot;tlskey&quot;: &quot;&quot;,</div><div class="line">    &quot;tlsverify&quot;: true,</div><div class="line">    &quot;userland-proxy&quot;: false,</div><div class="line">    &quot;userns-remap&quot;: &quot;&quot;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
           
         
       
@@ -4820,6 +4612,431 @@ ProxyCommand ssh -l root 2.2.2.2 exec /usr/bin/nc %h %p
 
 
     
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/08/31/vxlan网络性能测试/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/08/31/vxlan网络性能测试/" itemprop="url">vxlan网络性能测试</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-08-31T12:30:03+08:00">
+                2017-08-31
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/performance/" itemprop="url" rel="index">
+                    <span itemprop="name">performance</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2017/08/31/vxlan网络性能测试/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2017/08/31/vxlan网络性能测试/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="vxlan网络性能测试"><a href="#vxlan网络性能测试" class="headerlink" title="vxlan网络性能测试"></a>vxlan网络性能测试</h1><hr>
+<h2 id="缘起"><a href="#缘起" class="headerlink" title="缘起"></a>缘起</h2><blockquote>
+<p>Docker集群中需要给每个容器分配一个独立的IP，同时在不同宿主机环境上的容器IP又要能够互相联通，所以需要一个overlay的网络（vlan也可以解决这个问题）</p>
+<p>overlay网络就是把容器之间的网络包重新打包在宿主机的IP包里面，传到目的容器所在的宿主机后，再把这个overlay的网络包还原成容器包交给容器</p>
+<p>这里多了一次封包解包的过程，所以性能上必然有些损耗</p>
+<p>封包解包可以在应用层（比如Flannel的UDP封装），但是需要将每个网络包从内核态复制到应用态进行封包，所以性能非常差</p>
+<p>比较新的Linux内核带了vxlan功能，也就是将网络包直接在内核态完成封包，所以性能要好很多，本文vxlan指的就是这种方式</p>
+</blockquote>
+<h2 id="本文主要是比较通过vxlan实现的overlay网络之间的性能（相对宿主机之间而言）"><a href="#本文主要是比较通过vxlan实现的overlay网络之间的性能（相对宿主机之间而言）" class="headerlink" title="本文主要是比较通过vxlan实现的overlay网络之间的性能（相对宿主机之间而言）"></a>本文主要是比较通过vxlan实现的overlay网络之间的性能（相对宿主机之间而言）</h2><h2 id="测试环境宿主机的基本配置情况"><a href="#测试环境宿主机的基本配置情况" class="headerlink" title="测试环境宿主机的基本配置情况"></a>测试环境宿主机的基本配置情况</h2><pre><code>conf:
+loc_node   =  e12174.bja
+loc_cpu=  2 Cores: Intel Xeon E5-2430 0 @ 2.20GHz
+loc_os =  Linux 3.10.0-327.ali2010.alios7.x86_64
+loc_qperf  =  0.4.9
+rem_node   =  e26108.bja
+rem_cpu=  2 Cores: Intel Xeon E5-2430 0 @ 2.20GHz
+rem_os =  Linux 3.10.0-327.ali2010.alios7.x86_64
+rem_qperf  =  0.4.9
+</code></pre><h2 id="iperf3-下载和安装"><a href="#iperf3-下载和安装" class="headerlink" title="iperf3 下载和安装"></a>iperf3 下载和安装</h2><ul>
+<li>wget <a href="http://downloads.es.net/pub/iperf/iperf-3.0.6.tar.gz" target="_blank" rel="external">http://downloads.es.net/pub/iperf/iperf-3.0.6.tar.gz</a></li>
+<li>tar zxvf iperf-3.0.6.tar.gz</li>
+<li>cd iperf-3.0.6</li>
+<li>./configure</li>
+<li>make install</li>
+</ul>
+<h3 id="容器到自身宿主机之间-跟两容器在同一宿主机，速度差不多"><a href="#容器到自身宿主机之间-跟两容器在同一宿主机，速度差不多" class="headerlink" title="容器到自身宿主机之间, 跟两容器在同一宿主机，速度差不多"></a>容器到自身宿主机之间, 跟两容器在同一宿主机，速度差不多</h3><pre><code>$iperf3 -c 192.168.6.6 
+Connecting to host 192.168.6.6, port 5201
+[  4] local 192.168.6.1 port 21112 connected to 192.168.6.6 port 5201
+[ ID] Interval   Transfer Bandwidth   Retr
+[  4]   0.00-10.00  sec  13.9 GBytes  11.9 Gbits/sec1 sender
+[  4]   0.00-10.00  sec  13.9 GBytes  11.9 Gbits/sec  receiver
+
+[ ID] Interval   Transfer Bandwidth   Retr
+[  4]   0.00-10.00  sec  14.2 GBytes  12.2 Gbits/sec  139 sender
+[  4]   0.00-10.00  sec  14.2 GBytes  12.2 Gbits/sec  receiver
+
+[ ID] Interval   Transfer Bandwidth   Retr
+[  4]   0.00-10.00  sec  13.9 GBytes  11.9 Gbits/sec   96 sender
+[  4]   0.00-10.00  sec  13.9 GBytes  11.9 Gbits/sec  receiver
+</code></pre><h3 id="从宿主机A到宿主机B上的容器"><a href="#从宿主机A到宿主机B上的容器" class="headerlink" title="从宿主机A到宿主机B上的容器"></a>从宿主机A到宿主机B上的容器</h3><pre><code>$iperf3 -c 192.168.6.6
+Connecting to host 192.168.6.6, port 5201
+[  4] local 192.168.6.1 port 47940 connected to 192.168.6.6 port 5201
+[ ID] Interval   Transfer Bandwidth   Retr
+[  4]   0.00-10.00  sec   409 MBytes   343 Mbits/sec0 sender
+[  4]   0.00-10.00  sec   405 MBytes   340 Mbits/sec  receiver
+
+[ ID] Interval   Transfer Bandwidth   Retr
+[  4]   0.00-10.00  sec   389 MBytes   326 Mbits/sec   14 sender
+[  4]   0.00-10.00  sec   386 MBytes   324 Mbits/sec  receiver
+
+[ ID] Interval   Transfer Bandwidth   Retr
+[  4]   0.00-10.00  sec   460 MBytes   386 Mbits/sec7 sender
+[  4]   0.00-10.00  sec   458 MBytes   384 Mbits/sec  receiver
+</code></pre><h3 id="两宿主机之间测试"><a href="#两宿主机之间测试" class="headerlink" title="两宿主机之间测试"></a>两宿主机之间测试</h3><pre><code>$iperf3 -c 10.0.26.108
+Connecting to host 10.0.26.108, port 5201
+[  4] local 10.0.12.174 port 24309 connected to 10.0.26.108 port 5201
+[ ID] Interval   Transfer Bandwidth   Retr
+[  4]   0.00-10.00  sec   471 MBytes   395 Mbits/sec0 sender
+[  4]   0.00-10.00  sec   469 MBytes   393 Mbits/sec  receiver
+
+[ ID] Interval   Transfer Bandwidth   Retr
+[  4]   0.00-10.00  sec   428 MBytes   359 Mbits/sec0 sender
+[  4]   0.00-10.00  sec   426 MBytes   357 Mbits/sec  receiver
+
+[ ID] Interval   Transfer Bandwidth   Retr
+[  4]   0.00-10.00  sec   430 MBytes   360 Mbits/sec0 sender
+[  4]   0.00-10.00  sec   427 MBytes   358 Mbits/sec  receiver
+</code></pre><h3 id="两容器之间（跨宿主机）"><a href="#两容器之间（跨宿主机）" class="headerlink" title="两容器之间（跨宿主机）"></a>两容器之间（跨宿主机）</h3><pre><code>$iperf3 -c 192.168.6.6
+Connecting to host 192.168.6.6, port 5201
+[  4] local 192.168.6.5 port 37719 connected to 192.168.6.6 port 5201
+[ ID] Interval   Transfer Bandwidth   Retr
+[  4]   0.00-10.00  sec   403 MBytes   338 Mbits/sec   18 sender
+[  4]   0.00-10.00  sec   401 MBytes   336 Mbits/sec  receiver
+
+[ ID] Interval   Transfer Bandwidth   Retr
+[  4]   0.00-10.00  sec   428 MBytes   359 Mbits/sec   15 sender
+[  4]   0.00-10.00  sec   425 MBytes   356 Mbits/sec  receiver
+
+[ ID] Interval   Transfer Bandwidth   Retr
+[  4]   0.00-10.00  sec   508 MBytes   426 Mbits/sec   11 sender
+[  4]   0.00-10.00  sec   506 MBytes   424 Mbits/sec  receiver
+</code></pre><h2 id="netperf-安装依赖-automake-1-14-环境无法升级，放弃"><a href="#netperf-安装依赖-automake-1-14-环境无法升级，放弃" class="headerlink" title="netperf 安装依赖 automake-1.14, 环境无法升级，放弃"></a>netperf 安装依赖 automake-1.14, 环境无法升级，放弃</h2><h2 id="qperf-测试工具"><a href="#qperf-测试工具" class="headerlink" title="qperf 测试工具"></a>qperf 测试工具</h2><ul>
+<li>sudo yum install qperf -y</li>
+</ul>
+<h3 id="两台宿主机之间"><a href="#两台宿主机之间" class="headerlink" title="两台宿主机之间"></a>两台宿主机之间</h3><pre><code>$qperf -t 10  10.0.26.108 tcp_bw tcp_lat
+tcp_bw:
+bw  =  50.5 MB/sec
+tcp_lat:
+latency  =  332 us
+</code></pre><h4 id="包的大小分别为1和128"><a href="#包的大小分别为1和128" class="headerlink" title="包的大小分别为1和128"></a>包的大小分别为1和128</h4><pre><code>$qperf  -oo msg_size:1   10.0.26.108 tcp_bw tcp_lat
+tcp_bw:
+bw  =  1.75 MB/sec
+tcp_lat:
+latency  =  428 us
+
+$qperf  -oo msg_size:128   10.0.26.108 tcp_bw tcp_lat
+tcp_bw:
+bw  =  57.8 MB/sec
+tcp_lat:
+latency  =  504 us
+</code></pre><h4 id="两台宿主机之间，包的大小从一个字节每次翻倍测试"><a href="#两台宿主机之间，包的大小从一个字节每次翻倍测试" class="headerlink" title="两台宿主机之间，包的大小从一个字节每次翻倍测试"></a>两台宿主机之间，包的大小从一个字节每次翻倍测试</h4><pre><code>$qperf  -oo msg_size:1:4K:*2 -vu  10.0.26.108 tcp_bw tcp_lat 
+tcp_bw:
+bw=  1.86 MB/sec
+msg_size  = 1 bytes
+tcp_bw:
+bw=  3.54 MB/sec
+msg_size  = 2 bytes
+tcp_bw:
+bw=  6.43 MB/sec
+msg_size  = 4 bytes
+tcp_bw:
+bw=  14.3 MB/sec
+msg_size  = 8 bytes
+tcp_bw:
+bw=  27.1 MB/sec
+msg_size  =16 bytes
+tcp_bw:
+bw=  42.3 MB/sec
+msg_size  =32 bytes
+tcp_bw:
+bw=  51.8 MB/sec
+msg_size  =64 bytes
+tcp_bw:
+bw=  49.7 MB/sec
+msg_size  =   128 bytes
+tcp_bw:
+bw=  48.2 MB/sec
+msg_size  =   256 bytes
+tcp_bw:
+bw=   58 MB/sec
+msg_size  =  512 bytes
+tcp_bw:
+bw=  54.6 MB/sec
+msg_size  = 1 KiB (1,024)
+tcp_bw:
+bw=  48.7 MB/sec
+msg_size  = 2 KiB (2,048)
+tcp_bw:
+bw=  53.6 MB/sec
+msg_size  = 4 KiB (4,096)
+tcp_lat:
+latency   =  432 us
+msg_size  =1 bytes
+tcp_lat:
+latency   =  480 us
+msg_size  =2 bytes
+tcp_lat:
+latency   =  441 us
+msg_size  =4 bytes
+tcp_lat:
+latency   =  487 us
+msg_size  =8 bytes
+tcp_lat:
+latency   =  404 us
+msg_size  =   16 bytes
+tcp_lat:
+latency   =  335 us
+msg_size  =   32 bytes
+tcp_lat:
+latency   =  338 us
+msg_size  =   64 bytes
+tcp_lat:
+latency   =  401 us
+msg_size  =  128 bytes
+tcp_lat:
+latency   =  496 us
+msg_size  =  256 bytes
+tcp_lat:
+latency   =  684 us
+msg_size  =  512 bytes
+tcp_lat:
+latency   =  534 us
+msg_size  =1 KiB (1,024)
+tcp_lat:
+latency   =  681 us
+msg_size  =2 KiB (2,048)
+tcp_lat:
+latency   =  701 us
+msg_size  =4 KiB (4,096)
+</code></pre><h3 id="两个容器之间（分别在两台宿主机上）"><a href="#两个容器之间（分别在两台宿主机上）" class="headerlink" title="两个容器之间（分别在两台宿主机上）"></a>两个容器之间（分别在两台宿主机上）</h3><pre><code>$qperf -t 10  192.168.6.6 tcp_bw tcp_lat 
+tcp_bw:
+bw  =  44.4 MB/sec
+tcp_lat:
+latency  =  512 us
+</code></pre><h4 id="包的大小分别为1和128-1"><a href="#包的大小分别为1和128-1" class="headerlink" title="包的大小分别为1和128"></a>包的大小分别为1和128</h4><pre><code>$qperf -oo msg_size:1  192.168.6.6 tcp_bw tcp_lat 
+tcp_bw:
+bw  =  1.13 MB/sec
+tcp_lat:
+latency  =  630 us
+
+$qperf -oo msg_size:128  192.168.6.6 tcp_bw tcp_lat 
+tcp_bw:
+bw  =  44.2 MB/sec
+tcp_lat:
+latency  =  526 us
+</code></pre><h4 id="两个容器之间，包的大小从一个字节每次翻倍测试"><a href="#两个容器之间，包的大小从一个字节每次翻倍测试" class="headerlink" title="两个容器之间，包的大小从一个字节每次翻倍测试"></a>两个容器之间，包的大小从一个字节每次翻倍测试</h4><pre><code>$qperf -oo msg_size:1:4K:*2  192.168.6.6 -vu tcp_bw tcp_lat 
+tcp_bw:
+bw=  1.06 MB/sec
+msg_size  = 1 bytes
+tcp_bw:
+bw=  2.29 MB/sec
+msg_size  = 2 bytes
+tcp_bw:
+bw=  3.79 MB/sec
+msg_size  = 4 bytes
+tcp_bw:
+bw=  7.66 MB/sec
+msg_size  = 8 bytes
+tcp_bw:
+bw=  14 MB/sec
+msg_size  =  16 bytes
+tcp_bw:
+bw=  24.4 MB/sec
+msg_size  =32 bytes
+tcp_bw:
+bw=  36 MB/sec
+msg_size  =  64 bytes
+tcp_bw:
+bw=  46.7 MB/sec
+msg_size  =   128 bytes
+tcp_bw:
+bw=   56 MB/sec
+msg_size  =  256 bytes
+tcp_bw:
+bw=  42.2 MB/sec
+msg_size  =   512 bytes
+tcp_bw:
+bw=  57.6 MB/sec
+msg_size  = 1 KiB (1,024)
+tcp_bw:
+bw=  52.3 MB/sec
+msg_size  = 2 KiB (2,048)
+tcp_bw:
+bw=  41.7 MB/sec
+msg_size  = 4 KiB (4,096)
+tcp_lat:
+latency   =  447 us
+msg_size  =1 bytes
+tcp_lat:
+latency   =  417 us
+msg_size  =2 bytes
+tcp_lat:
+latency   =  503 us
+msg_size  =4 bytes
+tcp_lat:
+latency   =  488 us
+msg_size  =8 bytes
+tcp_lat:
+latency   =  452 us
+msg_size  =   16 bytes
+tcp_lat:
+latency   =  537 us
+msg_size  =   32 bytes
+tcp_lat:
+latency   =  712 us
+msg_size  =   64 bytes
+tcp_lat:
+latency   =  521 us
+msg_size  =  128 bytes
+tcp_lat:
+latency   =  450 us
+msg_size  =  256 bytes
+tcp_lat:
+latency   =  442 us
+msg_size  =  512 bytes
+tcp_lat:
+latency   =  630 us
+msg_size  =1 KiB (1,024)
+tcp_lat:
+latency   =  519 us
+msg_size  =2 KiB (2,048)
+tcp_lat:
+latency   =  621 us
+msg_size  =4 KiB (4,096)
+</code></pre><h2 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h2><ul>
+<li>iperf3测试带宽方面vxlan网络基本和宿主机一样，没有什么损失</li>
+<li>qperf测试vxlan的带宽只相当于宿主机的60-80%</li>
+<li>qperf测试一个字节的小包vxlan的带宽只相当于宿主机的60-65%</li>
+<li>由上面的结论猜测：物理带宽更大的情况下vxlan跟宿主机的差别会扩大</li>
+</ul>
+<p><strong>qperf安装更容易，功能更强大，推荐</strong></p>
+<h2 id="参考文章："><a href="#参考文章：" class="headerlink" title="参考文章："></a>参考文章：</h2><p><a href="https://linoxide.com/monitoring-2/install-iperf-test-network-speed-bandwidth/" target="_blank" rel="external">https://linoxide.com/monitoring-2/install-iperf-test-network-speed-bandwidth/</a><br><a href="http://blog.yufeng.info/archives/2234" target="_blank" rel="external">http://blog.yufeng.info/archives/2234</a></p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
   </section>
 
   
@@ -4869,7 +5086,7 @@ ProxyCommand ssh -l root 2.2.2.2 exec /usr/bin/nc %h %p
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">53</span>
+                <span class="site-state-item-count">52</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
