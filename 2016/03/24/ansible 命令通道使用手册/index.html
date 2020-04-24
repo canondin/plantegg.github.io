@@ -102,7 +102,7 @@
 <meta property="og:url" content="http://yoursite.com/2016/03/24/ansible 命令通道使用手册/index.html">
 <meta property="og:site_name" content="plantegg">
 <meta property="og:description" content="ansible 命令通道使用手册什么是命令通道？ 当我们需要批量操作、查看一组机器，或者在这些机器上批量执行某个命令、修改某个文件，都可以通过命令通道在一台机器上批量并发完成对所有机器的操作 命令通道只是一个帮你将命令发送到多个目标机器，并将执行结果返回来给你的一个执行通道  使用场景 执行一行命令就能看到几十台机器的负载情况 批量执行远程服务器上已经写好的Shell脚本 查看所有Web服务器最近">
-<meta property="og:updated_time" content="2020-04-22T05:59:01.000Z">
+<meta property="og:updated_time" content="2020-04-24T03:54:34.903Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="ansible 命令通道使用手册">
 <meta name="twitter:description" content="ansible 命令通道使用手册什么是命令通道？ 当我们需要批量操作、查看一组机器，或者在这些机器上批量执行某个命令、修改某个文件，都可以通过命令通道在一台机器上批量并发完成对所有机器的操作 命令通道只是一个帮你将命令发送到多个目标机器，并将执行结果返回来给你的一个执行通道  使用场景 执行一行命令就能看到几十台机器的负载情况 批量执行远程服务器上已经写好的Shell脚本 查看所有Web服务器最近">
@@ -386,7 +386,7 @@
 <blockquote>
 <p>server/worker/target表示将7台机器分成了三组，可以到所有7台机器执行同一个命令，也可以只在server/worker/target中的一组机器上执行某个命令.all代表所有7台机器</p>
 </blockquote>
-<h2 id="运行命令通道"><a href="#运行命令通道" class="headerlink" title="运行命令通道"></a>运行命令通道</h2><h3 id="查看-hosts-ini-里面所有服务器的-uptime"><a href="#查看-hosts-ini-里面所有服务器的-uptime" class="headerlink" title="查看 hosts.ini 里面所有服务器的 uptime"></a>查看 hosts.ini 里面所有服务器的 uptime</h3><pre><code><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">	$ ansible -i hosts.ini all -m raw -a &quot; uptime  &quot; -u admin</div><div class="line">	/usr/bin/ansible -i hosts.ini all -m raw -a  uptime   -u admin</div><div class="line">	</div><div class="line">	success =&gt; 10.125.12.174 =&gt; rc=0 =&gt;</div><div class="line">	 11:10:50 up 27 days, 15:40,  1 user,  load average: 0.05, 0.03, 0.05</div><div class="line"></div><div class="line"></div><div class="line">​	</div><div class="line">​	success =&gt; 120.26.116.193 =&gt; rc=0 =&gt;</div><div class="line">​	 11:10:50 up 13 days, 21:07,  1 user,  load average: 0.00, 0.00, 0.00</div><div class="line">​</div></pre></td></tr></table></figure>
+<h2 id="运行命令通道"><a href="#运行命令通道" class="headerlink" title="运行命令通道"></a>运行命令通道</h2><h3 id="查看-hosts-ini-里面所有服务器的-uptime"><a href="#查看-hosts-ini-里面所有服务器的-uptime" class="headerlink" title="查看 hosts.ini 里面所有服务器的 uptime"></a>查看 hosts.ini 里面所有服务器的 uptime</h3><pre><code><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">	$ ansible -i hosts.ini all -m raw -a &quot; uptime  &quot; -u admin</div><div class="line">	/usr/bin/ansible -i hosts.ini all -m raw -a  uptime   -u admin</div><div class="line">	</div><div class="line">	success =&gt; 10.125.12.174 =&gt; rc=0 =&gt;</div><div class="line">	 11:10:50 up 27 days, 15:40,  1 user,  load average: 0.05, 0.03, 0.05</div><div class="line"></div><div class="line"></div><div class="line">​	</div><div class="line">​	success =&gt; 120.26.116.193 =&gt; rc=0 =&gt;</div><div class="line">​	 11:10:50 up 13 days, 21:07,  1 user,  load average: 0.00, 0.00, 0.00</div><div class="line">​	</div><div class="line">​</div></pre></td></tr></table></figure>
 </code></pre><blockquote>
 <p>命令参数说明</p>
 <p>   <strong>all:</strong>  表示对hosts.ini里面的所有服务器执行后面的命令 </p>
@@ -488,8 +488,8 @@ drwxr-xr-x  3 test  games 4.0K Nov 18 15:40 ansible-engine
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/2017/03/24/物理机磁盘空间去哪了/" rel="prev" title="物理机磁盘空间都去哪里了">
-                物理机磁盘空间都去哪里了 <i class="fa fa-chevron-right"></i>
+              <a href="/2017/03/24/docker swarm的Label使用/" rel="prev" title="docker、swarm的Label使用">
+                docker、swarm的Label使用 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -591,7 +591,7 @@ drwxr-xr-x  3 test  games 4.0K Nov 18 15:40 ansible-engine
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">136</span>
+                <span class="site-state-item-count">137</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>
