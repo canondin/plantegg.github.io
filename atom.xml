@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://yoursite.com/"/>
-  <updated>2020-04-24T03:32:48.244Z</updated>
+  <updated>2020-04-26T02:13:00.294Z</updated>
   <id>http://yoursite.com/</id>
   
   <author>
@@ -20,13 +20,13 @@
     <link href="http://yoursite.com/2117/06/07/%E6%96%87%E7%AB%A0%E7%B4%A2%E5%BC%95index/"/>
     <id>http://yoursite.com/2117/06/07/文章索引index/</id>
     <published>2117-06-07T10:30:03.000Z</published>
-    <updated>2020-04-24T03:32:48.244Z</updated>
+    <updated>2020-04-26T02:13:00.294Z</updated>
     
     <content type="html"><![CDATA[<h1 id="文章索引"><a href="#文章索引" class="headerlink" title="文章索引"></a>文章索引</h1><h2 id="重点文章推荐"><a href="#重点文章推荐" class="headerlink" title="重点文章推荐"></a>重点文章推荐</h2><h4 id="《Intel-PAUSE指令变化是如何影响自旋锁以及MySQL的性能的》-从一个参数引起的rt抖动定位到OS锁等待再到CPU-Pause指令，以及不同CPU型号对Pause使用cycles不同的影响，最终反馈到应用层面的rt全过程。在MySQL内核开发的时候考虑了Pause，但是没有考虑不同的CPU型号，所以换了CPU型号后性能差异比较大"><a href="#《Intel-PAUSE指令变化是如何影响自旋锁以及MySQL的性能的》-从一个参数引起的rt抖动定位到OS锁等待再到CPU-Pause指令，以及不同CPU型号对Pause使用cycles不同的影响，最终反馈到应用层面的rt全过程。在MySQL内核开发的时候考虑了Pause，但是没有考虑不同的CPU型号，所以换了CPU型号后性能差异比较大" class="headerlink" title="《Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的》 从一个参数引起的rt抖动定位到OS锁等待再到CPU Pause指令，以及不同CPU型号对Pause使用cycles不同的影响，最终反馈到应用层面的rt全过程。在MySQL内核开发的时候考虑了Pause，但是没有考虑不同的CPU型号，所以换了CPU型号后性能差异比较大"></a><a href="https://plantegg.github.io/2019/12/16/Intel%20PAUSE%E6%8C%87%E4%BB%A4%E5%8F%98%E5%8C%96%E6%98%AF%E5%A6%82%E4%BD%95%E5%BD%B1%E5%93%8D%E8%87%AA%E6%97%8B%E9%94%81%E4%BB%A5%E5%8F%8AMySQL%E7%9A%84%E6%80%A7%E8%83%BD%E7%9A%84/" target="_blank" rel="external">《Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的》 从一个参数引起的rt抖动定位到OS锁等待再到CPU Pause指令，以及不同CPU型号对Pause使用cycles不同的影响，最终反馈到应用层面的rt全过程。在MySQL内核开发的时候考虑了Pause，但是没有考虑不同的CPU型号，所以换了CPU型号后性能差异比较大</a></h4><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/4dbd9dff9deacec0e9911e3a7d025578.png" alt="image.png"></p>
 <h4 id="10倍性能提升全过程-在双11的紧张流程下，将系统tps从500优化到5500，从网络到snat、再到Spring和StackTrace，看看一个性能全栈工程师如何在各种工具加持下发现各种问题的。"><a href="#10倍性能提升全过程-在双11的紧张流程下，将系统tps从500优化到5500，从网络到snat、再到Spring和StackTrace，看看一个性能全栈工程师如何在各种工具加持下发现各种问题的。" class="headerlink" title="10倍性能提升全过程 在双11的紧张流程下，将系统tps从500优化到5500，从网络到snat、再到Spring和StackTrace，看看一个性能全栈工程师如何在各种工具加持下发现各种问题的。"></a><a href="https://plantegg.github.io/2018/01/23/10+%E5%80%8D%E6%80%A7%E8%83%BD%E6%8F%90%E5%8D%87%E5%85%A8%E8%BF%87%E7%A8%8B/" target="_blank" rel="external">10倍性能提升全过程</a> 在双11的紧张流程下，将系统tps从500优化到5500，从网络到snat、再到Spring和StackTrace，看看一个性能全栈工程师如何在各种工具加持下发现各种问题的。</h4><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/05703c168e63e96821ea9f921d83712b.png" alt="image.png"></p>
 <h4 id="就是要你懂TCP–半连接队列和全连接队列：偶发性的连接reset异常、重启服务后短时间的连接异常，通过一篇文章阐明TCP连接的半连接队列和全连接队大小是怎么影响连接创建的，以及用什么工具来观察队列有没有溢出、连接为什么会RESET"><a href="#就是要你懂TCP–半连接队列和全连接队列：偶发性的连接reset异常、重启服务后短时间的连接异常，通过一篇文章阐明TCP连接的半连接队列和全连接队大小是怎么影响连接创建的，以及用什么工具来观察队列有没有溢出、连接为什么会RESET" class="headerlink" title="就是要你懂TCP–半连接队列和全连接队列：偶发性的连接reset异常、重启服务后短时间的连接异常，通过一篇文章阐明TCP连接的半连接队列和全连接队大小是怎么影响连接创建的，以及用什么工具来观察队列有没有溢出、连接为什么会RESET"></a><a href="https://plantegg.github.io/2017/06/07/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82TCP--%E5%8D%8A%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97%E5%92%8C%E5%85%A8%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/" target="_blank" rel="external">就是要你懂TCP–半连接队列和全连接队列：偶发性的连接reset异常、重启服务后短时间的连接异常，通过一篇文章阐明TCP连接的半连接队列和全连接队大小是怎么影响连接创建的，以及用什么工具来观察队列有没有溢出、连接为什么会RESET</a></h4><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/ec25ccb6cce8f554b7ef6927f05bd530.png" alt=""></p>
 <h4 id="就是要你懂TCP–性能和发送接收Buffer的关系：发送窗口大小-Buffer-、接收窗口大小-Buffer-对TCP传输速度的影响，以及怎么观察窗口对传输速度的影响。BDP、RT、带宽对传输速度又是怎么影响的"><a href="#就是要你懂TCP–性能和发送接收Buffer的关系：发送窗口大小-Buffer-、接收窗口大小-Buffer-对TCP传输速度的影响，以及怎么观察窗口对传输速度的影响。BDP、RT、带宽对传输速度又是怎么影响的" class="headerlink" title="就是要你懂TCP–性能和发送接收Buffer的关系：发送窗口大小(Buffer)、接收窗口大小(Buffer)对TCP传输速度的影响，以及怎么观察窗口对传输速度的影响。BDP、RT、带宽对传输速度又是怎么影响的"></a><a href="https://plantegg.github.io/2019/09/28/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82TCP--%E6%80%A7%E8%83%BD%E5%92%8C%E5%8F%91%E9%80%81%E6%8E%A5%E6%94%B6Buffer%E7%9A%84%E5%85%B3%E7%B3%BB/" target="_blank" rel="external">就是要你懂TCP–性能和发送接收Buffer的关系：发送窗口大小(Buffer)、接收窗口大小(Buffer)对TCP传输速度的影响，以及怎么观察窗口对传输速度的影响。BDP、RT、带宽对传输速度又是怎么影响的</a></h4><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e177d59ecb886daef5905ed80a84dfd2.png" alt=""></p>
-<h4 id="就是要你懂网络–一个网络包的旅程：教科书式地阐述书本中的路由、网关、子网、Mac地址、IP地址是如何一起协作让网络包最终传输到目标机器上。-同时可以跟讲这块的RFC1180比较一下，RFC1180-写的确实很好，清晰简洁，图文并茂，结构逻辑合理，但是对于90-的程序员没有什么卵用，因为看完几周后就忘得差不多，因为他不是从实践的角度来阐述问题，中间没有很多为什么，所以一般资质的程序员看完当时感觉很好，实际还是不会灵活运用"><a href="#就是要你懂网络–一个网络包的旅程：教科书式地阐述书本中的路由、网关、子网、Mac地址、IP地址是如何一起协作让网络包最终传输到目标机器上。-同时可以跟讲这块的RFC1180比较一下，RFC1180-写的确实很好，清晰简洁，图文并茂，结构逻辑合理，但是对于90-的程序员没有什么卵用，因为看完几周后就忘得差不多，因为他不是从实践的角度来阐述问题，中间没有很多为什么，所以一般资质的程序员看完当时感觉很好，实际还是不会灵活运用" class="headerlink" title="就是要你懂网络–一个网络包的旅程：教科书式地阐述书本中的路由、网关、子网、Mac地址、IP地址是如何一起协作让网络包最终传输到目标机器上。  同时可以跟讲这块的RFC1180比较一下，RFC1180 写的确实很好，清晰简洁，图文并茂，结构逻辑合理，但是对于90%的程序员没有什么卵用，因为看完几周后就忘得差不多，因为他不是从实践的角度来阐述问题，中间没有很多为什么，所以一般资质的程序员看完当时感觉很好，实际还是不会灵活运用"></a><a href="https://plantegg.github.io/2019/05/15/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82%E7%BD%91%E7%BB%9C--%E4%B8%80%E4%B8%AA%E7%BD%91%E7%BB%9C%E5%8C%85%E7%9A%84%E6%97%85%E7%A8%8B/" target="_blank" rel="external">就是要你懂网络–一个网络包的旅程：教科书式地阐述书本中的路由、网关、子网、Mac地址、IP地址是如何一起协作让网络包最终传输到目标机器上。</a>  同时可以跟讲这块的<a href="https://tools.ietf.org/html/rfc1180" target="_blank" rel="external">RFC1180</a>比较一下，RFC1180 写的确实很好，清晰简洁，图文并茂，结构逻辑合理，但是对于90%的程序员没有什么卵用，因为看完几周后就忘得差不多，因为他不是从实践的角度来阐述问题，中间没有很多为什么，所以一般资质的程序员看完当时感觉很好，实际还是不会灵活运用</h4><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/8f5d8518c1d92ed68d23218028e3cd11.png" alt=""></p>
+<h4 id="就是要你懂网络–一个网络包的旅程：教科书式地阐述书本中的路由、网关、子网、Mac地址、IP地址是如何一起协作让网络包最终传输到目标机器上。-同时可以跟讲这块的RFC1180比较一下，RFC1180-写的确实很好，清晰简洁，图文并茂，结构逻辑合理，但是对于90-的程序员没有什么卵用，看完几周后就忘得差不多，因为他不是从实践的角度来阐述问题，中间没有很多为什么，所以一般资质的程序员看完当时感觉很好，实际还是不会灵活运用"><a href="#就是要你懂网络–一个网络包的旅程：教科书式地阐述书本中的路由、网关、子网、Mac地址、IP地址是如何一起协作让网络包最终传输到目标机器上。-同时可以跟讲这块的RFC1180比较一下，RFC1180-写的确实很好，清晰简洁，图文并茂，结构逻辑合理，但是对于90-的程序员没有什么卵用，看完几周后就忘得差不多，因为他不是从实践的角度来阐述问题，中间没有很多为什么，所以一般资质的程序员看完当时感觉很好，实际还是不会灵活运用" class="headerlink" title="就是要你懂网络–一个网络包的旅程：教科书式地阐述书本中的路由、网关、子网、Mac地址、IP地址是如何一起协作让网络包最终传输到目标机器上。  同时可以跟讲这块的RFC1180比较一下，RFC1180 写的确实很好，清晰简洁，图文并茂，结构逻辑合理，但是对于90%的程序员没有什么卵用，看完几周后就忘得差不多，因为他不是从实践的角度来阐述问题，中间没有很多为什么，所以一般资质的程序员看完当时感觉很好，实际还是不会灵活运用"></a><a href="https://plantegg.github.io/2019/05/15/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82%E7%BD%91%E7%BB%9C--%E4%B8%80%E4%B8%AA%E7%BD%91%E7%BB%9C%E5%8C%85%E7%9A%84%E6%97%85%E7%A8%8B/" target="_blank" rel="external">就是要你懂网络–一个网络包的旅程：教科书式地阐述书本中的路由、网关、子网、Mac地址、IP地址是如何一起协作让网络包最终传输到目标机器上。</a>  同时可以跟讲这块的<a href="https://tools.ietf.org/html/rfc1180" target="_blank" rel="external">RFC1180</a>比较一下，RFC1180 写的确实很好，清晰简洁，图文并茂，结构逻辑合理，但是对于90%的程序员没有什么卵用，看完几周后就忘得差不多，因为他不是从实践的角度来阐述问题，中间没有很多为什么，所以一般资质的程序员看完当时感觉很好，实际还是不会灵活运用</h4><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/8f5d8518c1d92ed68d23218028e3cd11.png" alt=""></p>
 <h4 id="从网络路由连通性的原理上来看负载均衡lvs的DR、NAT、FullNAT到底搞了些什么鬼，以及为什么要这么搞，和带来的优缺点：《就是要你懂负载均衡–lvs和转发模式》"><a href="#从网络路由连通性的原理上来看负载均衡lvs的DR、NAT、FullNAT到底搞了些什么鬼，以及为什么要这么搞，和带来的优缺点：《就是要你懂负载均衡–lvs和转发模式》" class="headerlink" title="从网络路由连通性的原理上来看负载均衡lvs的DR、NAT、FullNAT到底搞了些什么鬼，以及为什么要这么搞，和带来的优缺点：《就是要你懂负载均衡–lvs和转发模式》"></a><a href="https://plantegg.github.io/2019/06/20/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1--lvs%E5%92%8C%E8%BD%AC%E5%8F%91%E6%A8%A1%E5%BC%8F/" target="_blank" rel="external">从网络路由连通性的原理上来看负载均衡lvs的DR、NAT、FullNAT到底搞了些什么鬼，以及为什么要这么搞，和带来的优缺点：《就是要你懂负载均衡–lvs和转发模式》</a></h4><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/94d55b926b5bb1573c4cab8353428712.png" alt=""></p>
 <h4 id="LVS-20倍的负载不均衡，原来是内核的这个Bug，这个内核bug现在还在，可以稳定重现，有兴趣的话去重现一下，然后对照源代码以及抓包分析一下就清楚了。"><a href="#LVS-20倍的负载不均衡，原来是内核的这个Bug，这个内核bug现在还在，可以稳定重现，有兴趣的话去重现一下，然后对照源代码以及抓包分析一下就清楚了。" class="headerlink" title="LVS 20倍的负载不均衡，原来是内核的这个Bug，这个内核bug现在还在，可以稳定重现，有兴趣的话去重现一下，然后对照源代码以及抓包分析一下就清楚了。"></a><a href="https://plantegg.github.io/2019/07/19/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1--%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95%E5%92%8C%E4%B8%BA%E4%BB%80%E4%B9%88%E4%B8%8D%E5%9D%87%E8%A1%A1/" target="_blank" rel="external">LVS 20倍的负载不均衡，原来是内核的这个Bug</a>，这个内核bug现在还在，可以稳定重现，有兴趣的话去重现一下，然后对照源代码以及抓包分析一下就清楚了。</h4><h4 id="就是要你懂TCP–握手和挥手，不是你想象中三次握手、四次挥手就理解了TCP，本文从握手的本质–握手都做了什么事情、连接的本质是什么等来阐述握手、挥手的原理"><a href="#就是要你懂TCP–握手和挥手，不是你想象中三次握手、四次挥手就理解了TCP，本文从握手的本质–握手都做了什么事情、连接的本质是什么等来阐述握手、挥手的原理" class="headerlink" title="就是要你懂TCP–握手和挥手，不是你想象中三次握手、四次挥手就理解了TCP，本文从握手的本质–握手都做了什么事情、连接的本质是什么等来阐述握手、挥手的原理"></a><a href="https://plantegg.github.io/2017/06/02/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82TCP--%E8%BF%9E%E6%8E%A5%E5%92%8C%E6%8F%A1%E6%89%8B/" target="_blank" rel="external">就是要你懂TCP–握手和挥手，不是你想象中三次握手、四次挥手就理解了TCP，本文从握手的本质–握手都做了什么事情、连接的本质是什么等来阐述握手、挥手的原理</a></h4><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/6d66dadecb72e11e3e5ab765c6c3ea2e.png" alt=""></p>
 <h4 id="nslookup-OK-but-ping-fail–看看老司机是如何解决问题的，解决问题的方法肯定比知识点重要多了，同时透过一个问题怎么样通篇来理解一大块知识，让这块原理真正在你的只是提示中扎根下来"><a href="#nslookup-OK-but-ping-fail–看看老司机是如何解决问题的，解决问题的方法肯定比知识点重要多了，同时透过一个问题怎么样通篇来理解一大块知识，让这块原理真正在你的只是提示中扎根下来" class="headerlink" title="nslookup OK but ping fail–看看老司机是如何解决问题的，解决问题的方法肯定比知识点重要多了，同时透过一个问题怎么样通篇来理解一大块知识，让这块原理真正在你的只是提示中扎根下来"></a><a href="https://plantegg.github.io/2019/01/09/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82ping--nslookup-OK-but-ping-fail/" target="_blank" rel="external">nslookup OK but ping fail–看看老司机是如何解决问题的，解决问题的方法肯定比知识点重要多了，同时透过一个问题怎么样通篇来理解一大块知识，让这块原理真正在你的只是提示中扎根下来</a></h4><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/ca466bb6430f1149958ceb41b9ffe591.png" alt=""></p>
@@ -52,57 +52,6 @@
       <category term="network" scheme="http://yoursite.com/tags/network/"/>
     
       <category term="tcpdump" scheme="http://yoursite.com/tags/tcpdump/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>netstat定位性能案例</title>
-    <link href="http://yoursite.com/2020/04/21/netstat%E5%AE%9A%E4%BD%8D%E6%80%A7%E8%83%BD%E6%A1%88%E4%BE%8B/"/>
-    <id>http://yoursite.com/2020/04/21/netstat定位性能案例/</id>
-    <published>2020-04-21T09:30:03.000Z</published>
-    <updated>2020-04-24T02:28:53.000Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="netstat定位性能案例"><a href="#netstat定位性能案例" class="headerlink" title="netstat定位性能案例"></a>netstat定位性能案例</h1><h2 id="netstat-命令"><a href="#netstat-命令" class="headerlink" title="netstat 命令"></a>netstat 命令</h2><p>netstat跟ss命令一样也能看到Send-Q、Recv-Q这些状态信息，不过如果这个连接不是<strong>Listen状态</strong>的话，Recv-Q就是指收到的数据还在缓存中，还没被进程读取，这个值就是还没被进程读取的 bytes；而 Send 则是发送队列中没有被远程主机确认的 bytes 数</p>
-<pre><code>$netstat -tn  
-Active Internet connections (w/o servers)
-Proto Recv-Q Send-Q Local Address   Foreign Address State  
-tcp0  0 server:8182  client-1:15260 SYN_RECV   
-tcp0 28 server:22    client-1:51708  ESTABLISHED
-tcp0  0 server:2376  client-1:60269 ESTABLISHED
-</code></pre><p> <strong>netstat -tn 看到的 Recv-Q 跟全连接半连接没有关系，这里特意拿出来说一下是因为容易跟 ss -lnt 的 Recv-Q 搞混淆，顺便建立知识体系，巩固相关知识点 </strong>  </p>
-<h3 id="Recv-Q-和-Send-Q-的说明"><a href="#Recv-Q-和-Send-Q-的说明" class="headerlink" title="Recv-Q 和 Send-Q 的说明"></a>Recv-Q 和 Send-Q 的说明</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">Recv-Q</div><div class="line">Established: The count of bytes not copied by the user program connected to this socket.</div><div class="line">Listening: Since Kernel 2.6.18 this column contains the current syn backlog.</div><div class="line"></div><div class="line">Send-Q</div><div class="line">Established: The count of bytes not acknowledged by the remote host.</div><div class="line">Listening: Since Kernel 2.6.18 this column contains the maximum size of the syn backlog.</div></pre></td></tr></table></figure>
-<h2 id="通过-netstat-发现问题的案例"><a href="#通过-netstat-发现问题的案例" class="headerlink" title="通过 netstat 发现问题的案例"></a>通过 netstat 发现问题的案例</h2><h4 id="自身太慢，比如如下netstat-t-看到的Recv-Q有大量数据堆积，那么一般是CPU处理不过来导致的："><a href="#自身太慢，比如如下netstat-t-看到的Recv-Q有大量数据堆积，那么一般是CPU处理不过来导致的：" class="headerlink" title="自身太慢，比如如下netstat -t 看到的Recv-Q有大量数据堆积，那么一般是CPU处理不过来导致的："></a>自身太慢，比如如下netstat -t 看到的Recv-Q有大量数据堆积，那么一般是CPU处理不过来导致的：</h4><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/77ed9ba81f70f7940546f0a22dabf010.png" alt="image.png"></p>
-<h4 id="下面的case是接收方太慢，从应用机器的netstat统计来看，也是压力端回复太慢（本机listen-9108端口"><a href="#下面的case是接收方太慢，从应用机器的netstat统计来看，也是压力端回复太慢（本机listen-9108端口" class="headerlink" title="下面的case是接收方太慢，从应用机器的netstat统计来看，也是压力端回复太慢（本机listen 9108端口)"></a>下面的case是接收方太慢，从应用机器的netstat统计来看，也是压力端回复太慢（本机listen 9108端口)</h4><p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2020/png/33359/1579241362064-807d8378-6c54-4a2c-a888-ff2337df817c.png" alt="image.png" style="zoom:80%;"></p>
-<p>send-q表示回复从9108发走了，没收到对方的ack，<strong>基本可以推断前端到9108之间有瓶颈</strong></p>
-<p>实际确实是前端到9108之间的带宽被打满了，调整带宽后问题解决</p>
-<h2 id="netstat-timer"><a href="#netstat-timer" class="headerlink" title="netstat timer"></a>netstat timer</h2><p>from: <a href="https://superuser.com/questions/240456/how-to-interpret-the-output-of-netstat-o-netstat-timers" target="_blank" rel="external">https://superuser.com/questions/240456/how-to-interpret-the-output-of-netstat-o-netstat-timers</a></p>
-<p>The timer column has two fields (from your o/p above):</p>
-<p>keepalive (6176.47/0/0)  </p>
-<p><1st field=""> <2nd field="">  </2nd></1st></p>
-<h4 id="The-1st-field-can-have-values"><a href="#The-1st-field-can-have-values" class="headerlink" title="The 1st field can have values:"></a>The 1st field can have values:</h4><p>keepalive - when the keepalive timer is ON for the socket<br>on - when the retransmission timer is ON for the socket<br>off - none of the above is ON</p>
-<h4 id="The-2nd-field-has-THREE-subfields"><a href="#The-2nd-field-has-THREE-subfields" class="headerlink" title="The 2nd field has THREE subfields:"></a>The 2nd field has THREE subfields:</h4><p>(6176.47/0/0) -&gt; (a/b/c)<br>a=timer value (a=keepalive timer, when 1st field=“keepalive”; a=retransmission timer, when 1st field=“on”)<br>b=number of retransmissions that have occurred<br>c=number of keepalive probes that have been sent</p>
-<h4 id="For-example-I-had-two-sockets-opened-between-a-client-amp-a-server-not-loopback-The-keepalive-setting-are"><a href="#For-example-I-had-two-sockets-opened-between-a-client-amp-a-server-not-loopback-The-keepalive-setting-are" class="headerlink" title="For example, I had two sockets opened between a client &amp; a server (not loopback). The keepalive setting are:"></a>For example, I had two sockets opened between a client &amp; a server (not loopback). The keepalive setting are:</h4><p>KEEPALIVE_IDLETIME   30<br>KEEPALIVE_NUMPROBES   4<br>KEEPALIVE_INTVL      10<br>And I did a shutdown of the client machine, so at …SHED on (2.47/254/2) </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">tcp        0    210 192.0.0.1:36483  192.0.68.1:43881   ESTABLISHED on (1.39/254/2)  </div><div class="line">tcp        0    210 192.0.0.1:36483  192.0.68.1:43881   ESTABLISHED on (0.31/254/2)</div></pre></td></tr></table></figure>
-<p>As you can see, in this case things are a little different. When the client went down, my server started sending keepalive messages, but while it was still sending those keepalives, my server tried to send a message to the client. Since the client had gone down, the server couldn’t get any ACK from the client, so the TCP retransmission started and the server tried to send the data again, each time incrementing the retransmit count (2nd field) when the retransmission timer (1st field) expired.</p>
-<p>Hope this explains the netstat –timer option well.</p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;netstat定位性能案例&quot;&gt;&lt;a href=&quot;#netstat定位性能案例&quot; class=&quot;headerlink&quot; title=&quot;netstat定位性能案例&quot;&gt;&lt;/a&gt;netstat定位性能案例&lt;/h1&gt;&lt;h2 id=&quot;netstat-命令&quot;&gt;&lt;a href=&quot;
-    
-    </summary>
-    
-      <category term="tcp" scheme="http://yoursite.com/categories/tcp/"/>
-    
-    
-      <category term="netstat" scheme="http://yoursite.com/tags/netstat/"/>
-    
-      <category term="recv-q" scheme="http://yoursite.com/tags/recv-q/"/>
-    
-      <category term="send-q" scheme="http://yoursite.com/tags/send-q/"/>
-    
-      <category term="timer(keepalive)" scheme="http://yoursite.com/tags/timer-keepalive/"/>
     
   </entry>
   
@@ -3121,6 +3070,188 @@ sudo ip tcp_metrics delete 100.118.58.7
       <category term="queue" scheme="http://yoursite.com/tags/queue/"/>
     
       <category term="bdp" scheme="http://yoursite.com/tags/bdp/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>就是要你懂负载均衡--lvs和转发模式</title>
+    <link href="http://yoursite.com/2019/06/20/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1--lvs%E5%92%8C%E8%BD%AC%E5%8F%91%E6%A8%A1%E5%BC%8F/"/>
+    <id>http://yoursite.com/2019/06/20/就是要你懂负载均衡--lvs和转发模式/</id>
+    <published>2019-06-20T07:30:03.000Z</published>
+    <updated>2019-10-30T10:54:05.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="就是要你懂负载均衡–lvs和转发模式"><a href="#就是要你懂负载均衡–lvs和转发模式" class="headerlink" title="就是要你懂负载均衡–lvs和转发模式"></a>就是要你懂负载均衡–lvs和转发模式</h1><blockquote>
+<p>本文希望阐述清楚LVS的各种转发模式，以及他们的工作流程和优缺点，同时从网络包的流转原理上解释清楚优缺点的来由，并结合阿里云的slb来说明优缺点。</p>
+</blockquote>
+<p>如果对网络包是怎么流转的不太清楚，推荐先看这篇基础：<a href="https://www.atatech.org/articles/80573" target="_blank" rel="external">程序员的网络知识 – 一个网络包的旅程</a> ，对后面理解LVS的各个转发模式非常有帮助。</p>
+<h2 id="几个术语和缩写"><a href="#几个术语和缩写" class="headerlink" title="几个术语和缩写"></a>几个术语和缩写</h2><pre><code>cip：Client IP，客户端地址
+vip：Virtual IP，LVS实例IP
+rip：Real IP，后端RS地址
+RS: Real Server 后端真正提供服务的机器
+LB： Load Balance 负载均衡器
+LVS： Linux Virtual Server
+sip： source ip
+dip： destination
+</code></pre><h2 id="LVS的几种转发模式"><a href="#LVS的几种转发模式" class="headerlink" title="LVS的几种转发模式"></a>LVS的几种转发模式</h2><ul>
+<li>DR模型 – （Director Routing-直接路由）</li>
+<li>NAT模型 – (NetWork Address Translation-网络地址转换)</li>
+<li>fullNAT – （full NAT）</li>
+<li>ENAT –（enhence NAT 或者叫三角模式/DNAT，阿里云提供）</li>
+<li>IP TUN模型 – (IP Tunneling - IP隧道)</li>
+</ul>
+<h2 id="DR模型-Director-Routing–直接路由"><a href="#DR模型-Director-Routing–直接路由" class="headerlink" title="DR模型(Director Routing–直接路由)"></a>DR模型(Director Routing–直接路由)</h2><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/574a12e18ebbf0bafcfc97b1984305b5.png" alt="image.png"></p>
+<p>如上图所示基本流程(假设 cip 是200.200.200.2， vip是200.200.200.1）：</p>
+<ol>
+<li>请求流量(sip 200.200.200.2, dip 200.200.200.1) 先到达 LVS</li>
+<li>然后LVS，根据负载策略挑选众多 RS中的一个，然后将这个网络包的MAC地址修改成这个选中的RS的MAC</li>
+<li>然后丢给交换机，交换机将这个包丢给选中的RS</li>
+<li>选中的RS看到MAC地址是自己的、dip也是自己的，愉快地手下并处理、回复</li>
+<li>回复包（sip 200.200.200.1， dip 200.200.200.2）</li>
+<li>经过交换机直接回复给client了（不再走LVS）</li>
+</ol>
+<p>我们看到上面流程，请求包到达LVS后，LVS只对包的目的MAC地址作了修改，回复包直接回给了client。</p>
+<p>同时还能看到多个RS和LVS都共用了同一个IP但是用的不同的MAC，在二层路由不需要IP，他们又在同一个vlan，所以这里没问题。</p>
+<p>RS上会将vip配置在lo回环网卡上，同时route中添加相应的规则，这样在第四步收到的包能被os正常处理。</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/739447baddd120ca23c68ac85c0ea36d.png" alt="image.png"></p>
+<p>优点：</p>
+<ul>
+<li>DR模式是性能最好的一种模式，入站请求走LVS，回复报文绕过LVS直接发给Client</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li>要求LVS和rs在同一个vlan；</li>
+<li>RS需要配置vip同时特殊处理arp；</li>
+<li>不支持端口映射。</li>
+</ul>
+<h3 id="为什么要求LVS和RS在同一个vlan（或者说同一个二层网络里）"><a href="#为什么要求LVS和RS在同一个vlan（或者说同一个二层网络里）" class="headerlink" title="为什么要求LVS和RS在同一个vlan（或者说同一个二层网络里）"></a>为什么要求LVS和RS在同一个vlan（或者说同一个二层网络里）</h3><p>因为DR模式依赖多个RS和LVS共用同一个VIP，然后依据MAC地址来在LVS和多个RS之间路由，所以LVS和RS必须在一个vlan或者说同一个二层网络里</p>
+<h3 id="DR-模式为什么性能最好"><a href="#DR-模式为什么性能最好" class="headerlink" title="DR 模式为什么性能最好"></a>DR 模式为什么性能最好</h3><p>因为回复包不走LVS了，大部分情况下都是请求包小，回复包大，LVS很容易成为流量瓶颈，同时LVS只需要修改进来的包的MAC地址。</p>
+<h3 id="DR-模式为什么回包不需要走LVS了"><a href="#DR-模式为什么回包不需要走LVS了" class="headerlink" title="DR 模式为什么回包不需要走LVS了"></a>DR 模式为什么回包不需要走LVS了</h3><p>因为RS和LVS共享同一个vip，回复的时候RS能正确地填好sip为vip，不再需要LVS来多修改一次（后面讲的NAT、Full NAT都需要）</p>
+<h3 id="总结下-DR的结构"><a href="#总结下-DR的结构" class="headerlink" title="总结下 DR的结构"></a>总结下 DR的结构</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/bb209bc08a21a28e99703e700acc82e4.png" alt="image.png"></p>
+<p>绿色是请求包进来，红色是修改过MAC的请求包</p>
+<h2 id="NAT模型-NetWork-Address-Translation-网络地址转换"><a href="#NAT模型-NetWork-Address-Translation-网络地址转换" class="headerlink" title="NAT模型(NetWork Address Translation - 网络地址转换)"></a>NAT模型(NetWork Address Translation - 网络地址转换)</h2><p>nat模式的结构图如下：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/b806e1615d99f6a018c537a18addc464.png" alt="image.png"></p>
+<p>基本流程：</p>
+<ol>
+<li>client发出请求（sip 200.200.200.2，dip 200.200.200.1）</li>
+<li>请求包到达lvs，lvs修改请求包为（sip 200.200.200.2， dip rip）</li>
+<li>请求包到达rs， rs回复（sip rip，dip 200.200.200.2）</li>
+<li>这个回复包不能直接给client，因为rip不是VIP会被reset掉</li>
+<li>但是因为lvs是网关，所以这个回复包先走到网关，网关有机会修改sip</li>
+<li>网关修改sip为VIP，修改后的回复包（sip 200.200.200.1，dip 200.200.200.2）发给client</li>
+</ol>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/bd311051c55f08c8d0add3cb329b87bf.png" alt="image.png"></p>
+<p>优点：</p>
+<ul>
+<li>配置简单</li>
+<li>支持端口映射（看名字就知道）</li>
+<li>RIP一般是私有地址，主要用户LVS和RS之间通信</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li>LVS和所有RS必须在同一个vlan</li>
+<li>进出流量都要走LVS转发</li>
+<li>LVS容易成为瓶颈</li>
+<li>一般而言需要将VIP配置成RS的网关</li>
+</ul>
+<h3 id="为什么NAT要求lvs和RS在同一个vlan"><a href="#为什么NAT要求lvs和RS在同一个vlan" class="headerlink" title="为什么NAT要求lvs和RS在同一个vlan"></a>为什么NAT要求lvs和RS在同一个vlan</h3><p>因为回复包必须经过lvs再次修改sip为vip，client才认，如果回复包的sip不是client包请求的dip（也就是vip），那么这个连接会被reset掉。如果LVS不是网关，因为回复包的dip是cip，那么可能从其它路由就走了，LVS没有机会修改回复包的sip</p>
+<h3 id="总结下NAT结构"><a href="#总结下NAT结构" class="headerlink" title="总结下NAT结构"></a>总结下NAT结构</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/51b694409882318d5acd6a1422afce03.png" alt="image.png"></p>
+<p>注意这里LVS修改进出包的(sip, dip)的时候只改了其中一个，所以才有接下来的full NAT。当然NAT最大的缺点是要求LVS和RS必须在同一个vlan，这样限制了LVS集群和RS集群的部署灵活性，尤其是在阿里云这种对外售卖的公有云环境下，NAT基本不实用。</p>
+<h2 id="full-NAT模型-full-NetWork-Address-Translation-全部网络地址转换"><a href="#full-NAT模型-full-NetWork-Address-Translation-全部网络地址转换" class="headerlink" title="full NAT模型(full NetWork Address Translation-全部网络地址转换)"></a>full NAT模型(full NetWork Address Translation-全部网络地址转换)</h2><p>基本流程（类似NAT）：</p>
+<ol>
+<li>client发出请求（sip 200.200.200.2 dip 200.200.200.1）</li>
+<li>请求包到达lvs，lvs修改请求包为<strong>（sip 200.200.200.1， dip rip）</strong> 注意这里sip/dip都被修改了</li>
+<li>请求包到达rs， rs回复（sip rip，dip 200.200.200.1）</li>
+<li>这个回复包的目的IP是VIP(不像NAT中是 cip)，所以LVS和RS不在一个vlan通过IP路由也能到达lvs</li>
+<li>lvs修改sip为vip， dip为cip，修改后的回复包（sip 200.200.200.1，dip 200.200.200.2）发给client</li>
+</ol>
+<p>优点：</p>
+<ul>
+<li>解决了NAT对LVS和RS要求在同一个vlan的问题，适用更复杂的部署形式</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li>RS看不到cip（NAT模式下可以看到）</li>
+<li>进出流量还是都走的lvs，容易成为瓶颈（跟NAT一样都有这个问题）</li>
+</ul>
+<h3 id="为什么full-NAT解决了NAT中要求的LVS和RS必须在同一个vlan的问题"><a href="#为什么full-NAT解决了NAT中要求的LVS和RS必须在同一个vlan的问题" class="headerlink" title="为什么full NAT解决了NAT中要求的LVS和RS必须在同一个vlan的问题"></a>为什么full NAT解决了NAT中要求的LVS和RS必须在同一个vlan的问题</h3><p>因为LVS修改进来的包的时候把(sip, dip)都修改了(这也是full的主要含义吧)，RS的回复包目的地址是vip（NAT中是cip），所以只要vip和rs之间三层可通就行，这样LVS和RS可以在不同的vlan了，也就是LVS不再要求是网关，从而LVS和RS可以在更复杂的网络环境下部署。</p>
+<h3 id="为什么full-NAT后RS看不见cip了"><a href="#为什么full-NAT后RS看不见cip了" class="headerlink" title="为什么full NAT后RS看不见cip了"></a>为什么full NAT后RS看不见cip了</h3><p>因为cip被修改掉了，RS只能看到LVS的vip，在阿里内部会将cip放入TCP包的Option中传递给RS，RS上一般部署自己写的toa模块来从Options中读取的cip，这样RS能看到cip了, 当然这不是一个开源的通用方案。</p>
+<h3 id="总结下full-NAT的结构"><a href="#总结下full-NAT的结构" class="headerlink" title="总结下full NAT的结构"></a>总结下full NAT的结构</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/94d55b926b5bb1573c4cab8353428712.png" alt="image.png"> </p>
+<p><strong>注意上图中绿色的进包和红色的出包他们的地址变化</strong></p>
+<p>那么到现在full NAT解决了NAT的同vlan的要求，<strong>基本上可以用于公有云了</strong>，但是还是没解决进出流量都走LVS的问题（LVS要修改进出的包）。</p>
+<h3 id="比较下NAT和Full-NAT"><a href="#比较下NAT和Full-NAT" class="headerlink" title="比较下NAT和Full NAT"></a>比较下NAT和Full NAT</h3><p>两者进出都要走LVS，NAT必须要求vip是RS的网关，这个限制在公有云这种应用场景下不能忍，于是Full NAT通过修改请求包的source ip，将原来的source ip从cip改成vip，这样RS回复的时候回复包的目标IP也是vip，所以LVS和RS之间不再要求是同一vlan的关系了。当然带来了新的问题，RS看不见cip了（这个可以通过自定义的toa模块来复原）</p>
+<p>那么有没有一个方案能够像full NAT一样不限制lvs和RS之间的网络关系，同时出去的流量跟DR模式一样也不走LVS呢？</p>
+<h2 id="阿里云的ENAT模式-enhence-NAT"><a href="#阿里云的ENAT模式-enhence-NAT" class="headerlink" title="阿里云的ENAT模式(enhence NAT)"></a>阿里云的ENAT模式(enhence NAT)</h2><p>优点：</p>
+<ul>
+<li>不要求LVS和RS在同一个vlan</li>
+<li>出去的流量不需要走LVS，性能好</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li>阿里集团内部实现的自定义方案，需要在所有RS上安装ctk组件（类似full NAT中的toa）</li>
+</ul>
+<p>基本流程：</p>
+<ol>
+<li>client发出请求（cip，vip）</li>
+<li>请求包到达lvs，lvs修改请求包为（vip，rip），并将cip放入TCP Option中</li>
+<li>请求包根据ip路由到达rs， ctk模块读取TCP Option中的cip</li>
+<li>回复包(RIP, vip)被ctk模块截获，并将回复包改写为（vip, cip)</li>
+<li>因为回复包的目的地址是cip所以不需要经过lvs，可以直接发给client</li>
+</ol>
+<p>ENAT模式在内部也会被称为 三角模式或者DNAT/SNAT模式</p>
+<h3 id="为什么ENAT的回复包不需要走回LVS了"><a href="#为什么ENAT的回复包不需要走回LVS了" class="headerlink" title="为什么ENAT的回复包不需要走回LVS了"></a>为什么ENAT的回复包不需要走回LVS了</h3><p>因为之前full NAT模式下要走回去是需要LVS再次改写回复包的IP，而ENAT模式下，这件事情在RS上被ctk模块提前做掉了</p>
+<h3 id="为什么ENAT的LVS和RS可以在不同的vlan"><a href="#为什么ENAT的LVS和RS可以在不同的vlan" class="headerlink" title="为什么ENAT的LVS和RS可以在不同的vlan"></a>为什么ENAT的LVS和RS可以在不同的vlan</h3><p>跟full NAT一样</p>
+<h3 id="总结下-ENAT的结构"><a href="#总结下-ENAT的结构" class="headerlink" title="总结下 ENAT的结构"></a>总结下 ENAT的结构</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/5b498ed88c3233977a592f924affc43a.png" alt="image.png"></p>
+<p>最后说一下不太常用的 TUN模型</p>
+<h2 id="IP-TUN模型-IP-Tunneling-IP隧道"><a href="#IP-TUN模型-IP-Tunneling-IP隧道" class="headerlink" title="IP TUN模型(IP Tunneling - IP隧道)"></a>IP TUN模型(IP Tunneling - IP隧道)</h2><p>基本流程：</p>
+<ol>
+<li>请求包到达LVS后，LVS将请求包封装成一个新的IP报文</li>
+<li>新的IP包的目的IP是某一RS的IP，然后转发给RS</li>
+<li>RS收到报文后IPIP内核模块解封装，取出用户的请求报文</li>
+<li>发现目的IP是VIP，而自己的tunl0网卡上配置了这个IP，从而愉快地处理请求并将结果直接发送给客户</li>
+</ol>
+<p>优点：</p>
+<ul>
+<li>集群节点可以跨vlan</li>
+<li>跟DR一样，响应报文直接发给client</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li>RS上必须安装运行IPIP模块</li>
+<li>多增加了一个IP头</li>
+<li>LVS和RS上的tunl0虚拟网卡上配置同一个VIP（类似DR）</li>
+</ul>
+<p><strong>DR模式中LVS修改的是目的MAC</strong></p>
+<h3 id="为什么IP-TUN不要求同一个vlan"><a href="#为什么IP-TUN不要求同一个vlan" class="headerlink" title="为什么IP TUN不要求同一个vlan"></a>为什么IP TUN不要求同一个vlan</h3><p>因为IP TUN中不是修改MAC来路由，所以不要求同一个vlan，只要求lvs和rs之间ip能通就行。DR模式要求的是lvs和RS之间广播能通</p>
+<h3 id="IP-TUN性能"><a href="#IP-TUN性能" class="headerlink" title="IP TUN性能"></a>IP TUN性能</h3><p>回包不走LVS，但是多做了一次封包解包，不如DR好</p>
+<h3 id="总结下-IP-TUN的结构"><a href="#总结下-IP-TUN的结构" class="headerlink" title="总结下 IP TUN的结构"></a>总结下 IP TUN的结构</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/218e93e6fa37b6f04dae9669de0e3fe3.png" alt="image.png"></p>
+<p>图中红线是再次封装过的包，ipip是操作系统的一个内核模块。</p>
+<p>DR可能在小公司用的比较多，IP TUN用的少一些，相对而言NAT、FullNAT、ENAT这三种在集团内部比较类似，用的也比较多，他们之间的可比较性很强，所以放在一块了。</p>
+<h2 id="阿里云slb的fnat"><a href="#阿里云slb的fnat" class="headerlink" title="阿里云slb的fnat"></a>阿里云slb的fnat</h2><p>就是前面所讲的fullnat，但是在阿里云公网上，宿主机默认都会帮你将source-ip（本来是lvs ip）替换成真正的client ip，这样当包进到ecs的时候source ip已经是client ip了，所以slb默认的fnat模式会让你直接能拿到client ip。回包依然会经过lvs（虽然理论上可以不需要了，但是要考虑rs和client不能直接通）</p>
+<p>这个进出的替换过程在物理机上是avs来做，如果没有avs就得安装slb的toa模块来做了。</p>
+<p>这就是为什么slb比直接用lvs要方便些。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://www.atatech.org/articles/15279" target="_blank" rel="external">https://www.atatech.org/articles/15279</a></p>
+<p><a href="https://www.atatech.org/articles/48739" target="_blank" rel="external">https://www.atatech.org/articles/48739</a></p>
+<p><a href="https://www.atatech.org/articles/48571" target="_blank" rel="external">https://www.atatech.org/articles/48571</a></p>
+<p><a href="https://www.atatech.org/articles/106276" target="_blank" rel="external">云服务ALB接入，后端依赖内核模块及接口使用指南</a></p>
+<p><a href="https://www.atatech.org/articles/80573" target="_blank" rel="external">程序员的网络知识 – 一个网络包的旅程</a></p>
+<p><a href="https://yq.aliyun.com/articles/52752" target="_blank" rel="external">章文嵩（正明）博士和他背后的负载均衡(LOAD BANLANCER)帝国</a></p>
+<p>@长源 关于LVS的PPT</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;就是要你懂负载均衡–lvs和转发模式&quot;&gt;&lt;a href=&quot;#就是要你懂负载均衡–lvs和转发模式&quot; class=&quot;headerlink&quot; title=&quot;就是要你懂负载均衡–lvs和转发模式&quot;&gt;&lt;/a&gt;就是要你懂负载均衡–lvs和转发模式&lt;/h1&gt;&lt;blockquo
+    
+    </summary>
+    
+      <category term="Linux" scheme="http://yoursite.com/categories/Linux/"/>
+    
+    
+      <category term="network" scheme="http://yoursite.com/tags/network/"/>
+    
+      <category term="LVS" scheme="http://yoursite.com/tags/LVS/"/>
+    
+      <category term="LoadBalance" scheme="http://yoursite.com/tags/LoadBalance/"/>
     
   </entry>
   
