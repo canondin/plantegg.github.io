@@ -261,6 +261,323 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/03/24/Linux环境变量/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/03/24/Linux环境变量/" itemprop="url">Linux环境变量问题汇总</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-03-24T17:30:03+08:00">
+                2018-03-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/03/24/Linux环境变量/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2018/03/24/Linux环境变量/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="Linux环境变量问题汇总"><a href="#Linux环境变量问题汇总" class="headerlink" title="Linux环境变量问题汇总"></a>Linux环境变量问题汇总</h1><h3 id="测试好的脚本放到-crontab-里就报错-找不到命令"><a href="#测试好的脚本放到-crontab-里就报错-找不到命令" class="headerlink" title="测试好的脚本放到 crontab 里就报错: 找不到命令"></a>测试好的脚本放到 crontab 里就报错: 找不到命令</h3><p>写好一个脚本，测试没有问题，然后放到crontab 想要定时执行，但是总是报错，去看日志的话显示某些命令找不到，这种一般都是因为PATH环境变量变了导致的</p>
+<p>自己在shell命令行下测试的时候当前环境变量就是这个用户的环境变量，可以通过命令：env 看到，脚本放到crontab 里面后一般都加了sudo 这个时候 env 变了。比如你可以在命令行下执行 env 和 sudo env 比较一下就发现他们很不一样</p>
+<p>sudo有一个参数 -E （–preserver-env）就是为了解决这个问题的。</p>
+<p>这个时候再比较一下 </p>
+<ul>
+<li>env</li>
+<li>sudo env</li>
+<li>sudo -E env</li>
+</ul>
+<p>大概就能理解这里的区别了。</p>
+<p>本文后面的回复中有同学提到了：</p>
+<blockquote>
+<p>第一个问题，sudo -E在阿里的容器中貌似是不行的，没有特别好的解，我们最后是通过在要执行的脚本中手动source “/etc/profile.d/dockerenv.sh”才行</p>
+</blockquote>
+<p>我也特意去测试了一下官方的Docker容器，也有同样的问题，/etc/profile.d/dockerenv.sh 中的脚本没有生效，然后debug看了看，主要是因为bashrc中的 . 和 source 不同导致的，不能说没有生效，而是加载 /etc/profile.d/dockerenv.sh 是在一个独立的bash 进程中，加载完毕进程结束，所有加载过的变量都完成了生命周期释放了，类似我文章中的export部分提到的。我尝试把 ~/.bashrc 中的 .  /etc/bashrc 改成 source /etc/bashrc , 同时也把 /etc/bashrc 中的 . 改成 source，就可以了，再次进到容器不需要任何操作就能看到所有：/etc/profile.d/dockerenv.sh 中的变量了，所以我们制作镜像的时候考虑改改这里</p>
+<h3 id="同样一个命令ssh执行不了，-报找不到命令"><a href="#同样一个命令ssh执行不了，-报找不到命令" class="headerlink" title="同样一个命令ssh执行不了， 报找不到命令"></a>同样一个命令ssh执行不了， 报找不到命令</h3><p>比如：</p>
+<p>ssh user@ip “ ip a “  报错： bash: ip: command not found</p>
+<p>但是你要是先执行 ssh user@ip 连上服务器后，再执行 ip a 就可以，这里是同一个命令通过两种不同的方式使用，但是环境变量也不一样了。</p>
+<p>同样想要解决这个问题的话可以先 ssh 连上服务器，再执行 which ip ; env | grep PATH  </p>
+<pre><code>$ which ip
+/usr/sbin/ip
+$ env | grep PATH
+PATH=/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
+</code></pre><p>很明显这里因为 ip在/usr/sbin下，而/usr/sbin又在PATH变量中，所以可以找到。</p>
+<p>那么接下来我们看看 </p>
+<pre><code>$ssh user@ip &quot;env | grep PATH&quot;
+PATH=/usr/local/bin:/usr/bin
+</code></pre><p>很明显这里的PATH比上面的PATH短了一截，/usr/sbin也没有在里面，所以/usr/sbin 下的ip命令自然也找不到了，这里虽然都是同一个用户，但是他们的环境变量还不一样，有点出乎我的意料之外。</p>
+<p>主要原因是我们的shell 分为login shell 和 no-login shell , 先ssh 登陆上去再执行命令就是一个login shell，Linux要为这个终端分配资源。</p>
+<p>而下面的直接在ssh 里面放执行命令实际上就不需要login，所以这是一个no-login shell.</p>
+<h4 id="login-shell-和-no-login-shell又有什么区别呢？"><a href="#login-shell-和-no-login-shell又有什么区别呢？" class="headerlink" title="login shell 和 no-login shell又有什么区别呢？"></a>login shell 和 no-login shell又有什么区别呢？</h4><ul>
+<li>login shell加载环境变量的顺序是：① /etc/profile ② ~/.bash_profile ③ ~/.bashrc ④ /etc/bashrc </li>
+<li>而non-login shell加载环境变量的顺序是： ① ~/.bashrc ② /etc/bashrc</li>
+</ul>
+<p>也就是nog-login少了前面两步，我们先看后面两步。</p>
+<p>下面是一个 .bashrc 的内容：</p>
+<pre><code>[ ~]$ cat .bashrc 
+# .bashrc
+
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+    . /etc/bashrc
+fi
+</code></pre><p>基本没有什么内容，它主要是去加载 /etc/bashrc  而他里面也没有看到sbin相关的东西</p>
+<p>那我们再看non-login少的两步： ① /etc/profile ② ~/.bash_profile </p>
+<p>cat /etc/profile :</p>
+<pre><code>if [ &quot;$EUID&quot; = &quot;0&quot; ]; then
+    pathmunge /usr/sbin
+    pathmunge /usr/local/sbin
+else
+    pathmunge /usr/local/sbin after
+    pathmunge /usr/sbin after
+fi
+</code></pre><p>这几行代码就是把 /usr/sbin 添加到 PATH 变量中，正是他们的区别决定了这里的环境变量不一样。</p>
+<p><strong>用一张图来表述他们的结构，箭头代表加载顺序，红框代表不同的shell的初始入口</strong>：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/ae3095f063dede80a8c1ee79ec25685c.png" alt="image.png"></p>
+<p>像 ansible 这种自动化工具，或者我们自己写的自动化脚本，底层通过ssh这种non-login的方式来执行的话，那么都有可能碰到这个问题，如何修复呢？</p>
+<p>在 /etc/profile.d/ 下创建一个文件：/etc/profile.d/my_bashenv.sh 内容如下：</p>
+<pre><code>$cat /etc/profile.d/my_bashenv.sh 
+
+pathmunge () {
+if ! echo $PATH | /bin/egrep -q &quot;(^|:)$1($|:)&quot; ; then
+   if [ &quot;$2&quot; = &quot;after&quot; ] ; then
+  PATH=$PATH:$1
+   else
+  PATH=$1:$PATH
+   fi
+fi
+}
+
+pathmunge /sbin
+pathmunge /usr/sbin
+pathmunge /usr/local/sbin
+pathmunge /usr/local/bin
+pathmunge /usr/X11R6/bin after
+
+unset pathmunge
+
+complete -cf sudo
+
+    alias chgrp=&apos;chgrp --preserve-root&apos;
+    alias chown=&apos;chown --preserve-root&apos;
+    alias chmod=&apos;chmod --preserve-root&apos;
+    alias rm=&apos;rm -i --preserve-root&apos;
+
+
+
+    HISTTIMEFORMAT=&apos;[%F %T] &apos;
+    HISTSIZE=1000
+
+export EDITOR=vim   
+
+export PS1=&apos;\n\e[1;37m[\e[m\e[1;32m\u\e[m\e[1;33m@\e[m\e[1;35m\H\e[m \e[4m`pwd`\e[m\e[1;37m]\e[m\e[1;36m\e[m\n\$&apos;
+</code></pre><p>通过前面我们可以看到 /etc/bashrc 总是会去加载 /etc/profile.d/ 下的所有 *.sh 文件，同时我们还可以在这个文件中修改我们喜欢的 shell 配色方案和环境变量等等 </p>
+<h3 id="BASH"><a href="#BASH" class="headerlink" title="BASH"></a>BASH</h3><p>1、交互式的登录shell （bash –il xxx.sh）<br>载入的信息：<br>/etc/profile<br>~/.bash_profile（ -&gt;  ~/.bashrc  -&gt;  /etc/bashrc）<br>~/.bash_login<br>~/.profile</p>
+<p>2、非交互式的登录shell （bash –l xxx.sh）<br>载入的信息：<br>/etc/profile<br>~/.bash_profile （ -&gt;  ~/.bashrc  -&gt;  /etc/bashrc）<br>~/.bash_login<br>~/.profile<br>$BASH_ENV</p>
+<p>3、交互式的非登录shell （bash –i xxx.sh）<br>载入的信息：<br>~/.bashrc （ -&gt;  /etc/bashrc）</p>
+<p>4、非交互式的非登录shell （bash xxx.sh）<br>载入的信息：<br>$BASH_ENV</p>
+<h3 id="SH"><a href="#SH" class="headerlink" title="SH"></a>SH</h3><p>1、交互式的登录shell<br>载入的信息：<br>/etc/profile<br>~/.profile</p>
+<p>2、非交互式的登录shell<br>载入的信息：<br>/etc/profile<br>~/.profile</p>
+<p>3、交互式的非登录shell<br>载入的信息：<br>$ENV</p>
+<h4 id="练习验证一下bash、sh和login、non-login"><a href="#练习验证一下bash、sh和login、non-login" class="headerlink" title="练习验证一下bash、sh和login、non-login"></a>练习验证一下bash、sh和login、non-login</h4><ul>
+<li>sudo ll 或者 sudo cd 是不是都报找不到命令</li>
+<li>先sudo bash 然后执行 ll或者cd就可以了</li>
+<li>先sudo sh   然后执行 ll或者cd还是报找不到命令</li>
+<li>sudo env | grep PATH 然后 sudo bash 后再执行 env | grep PATH 看到的PATH环境变量不一样了</li>
+</ul>
+<p><strong>找不到ll、cd命令不是因为login/non-login而是因为这两个命令是bash内部定义的，所以sh找不到，通过type -a cd 可以看到一个命令到底是哪里来的</strong></p>
+<p>4、非交互式的非登录shell<br>载入的信息：<br>nothing</p>
+<h3 id="export命令的作用"><a href="#export命令的作用" class="headerlink" title="export命令的作用"></a>export命令的作用</h3><p>Linux 中export是一种命令工具通过export命令把shell变量中包含的用户变量导入给子程序.<strong>默认情况下子程序仅会继承父程序的环境变量</strong>，子程序不会继承父程序的自定义变量，所以需要export让父程序中的<strong>自定义变量</strong>变成环境变量，然后子程序就能继承过来了。</p>
+<p>我们来看一个例子， 有一个变量，名字 abc 内容123 如果没有export ，那么通过bash创建一个新的shell（新shell是之前bash的子程序），在新的shell里面就没有abc这个变量， export之后在新的 shell 里面才可以看到这个变量，但是退出重新login后（产生了一个新的bash，只会加载env）abc变量都不在了</p>
+<pre><code>$echo $abc
+</code></pre><p>​<br>​    $abc=”123”</p>
+<p>​<br>​    $echo $abc<br>​    123<br>​<br>    $bash</p>
+<pre><code>$echo $abc
+</code></pre><p>​    $exit<br>​    exit<br>​    </p>
+<pre><code>$export abc
+
+$echo $abc
+123
+
+$bash
+
+$echo $abc
+123
+</code></pre><h2 id="一些常见问题"><a href="#一些常见问题" class="headerlink" title="一些常见问题"></a>一些常见问题</h2><h3 id="执行好好地shell-脚本换台服务器就：source-not-found"><a href="#执行好好地shell-脚本换台服务器就：source-not-found" class="headerlink" title="执行好好地shell 脚本换台服务器就：source: not found"></a>执行好好地shell 脚本换台服务器就：source: not found</h3><p>source 是bash的一个内建命令（所以你找不到一个/bin/source 这样的可执行文件），也就是他是bash自带的，如果我们执行脚本是这样： sh shell.sh 而shell.sh中用到了source命令的话就会报 source: not found</p>
+<p>这是因为bash 和 sh是两个东西，sh是 POSIX shell，你可以把它看成是一个兼容某个规范的shell，而bash是 Bourne-Again shell script， bash是 POSIX shell的扩展，就是bash支持所有符合POSIX shell的规范，但是反过来就不一定了，而这里的 source 恰好就是 bash内建的，不符合 POSIX shell的规范（<strong>POSIX shell 中用 . 来代替source</strong>)</p>
+<h3 id="在centos执行好好的脚本放到Ubuntu上就不行了，报语法错误"><a href="#在centos执行好好的脚本放到Ubuntu上就不行了，报语法错误" class="headerlink" title="在centos执行好好的脚本放到Ubuntu上就不行了，报语法错误"></a>在centos执行好好的脚本放到Ubuntu上就不行了，报语法错误</h3><p>同上，如果到ubuntu上用 bash shell.sh是可以的，但是sh shell.sh就报语法错误，但是在centos上执行：sh或者bash shell.sh 都可以通过。 在centos上执行 ls -lh /usr/bin/sh 可以看到 /usr/bin/sh link到了 /usr/bin/bash 也就是sh等同于bash，所以都可以通过不足为奇。 </p>
+<p>但是在ubuntu上执行 ls -lh /usr/bin/sh 可以看到 /usr/bin/sh link到了 <strong>/usr/bin/dash</strong> ， 这就是为什么ubuntu上会报错</p>
+<h3 id="source-shell-sh-和-bash-shell-sh以及-shell-sh的区别"><a href="#source-shell-sh-和-bash-shell-sh以及-shell-sh的区别" class="headerlink" title="source shell.sh 和 bash shell.sh以及 ./shell.sh的区别"></a>source shell.sh 和 bash shell.sh以及 ./shell.sh的区别</h3><p>source shell.sh就在本shell中展开执行<br>bash shell.sh表示在本shell启动一个子程序（bash），在子程序中执行 shell.sh (shell.sh中产生的一些环境变量就没法带回父shell进程了)， 有读 shell.sh 权限就可以执行<br>./shell.sh 跟bash shell.sh类似，但是必须要求shell.sh有rx权限，然后根据shell.sh前面的 #! 后面的指示来确定用bash还是sh </p>
+<pre><code>$cat test.sh 
+echo $$
+
+$echo $$
+2299
+
+$source test.sh 
+2299
+
+$bash test.sh 
+4037
+
+$./test.sh 
+4040
+</code></pre><p>如上实例，只有source的时候进程ID和bash进程ID一样，其它方式都创建了一个新的bash进程，所以ID也变了</p>
+<h3 id="通过ssh-执行命令（命令前有sudo）的时候报错：sudo-sorry-you-must-have-a-tty-to-run-sudo"><a href="#通过ssh-执行命令（命令前有sudo）的时候报错：sudo-sorry-you-must-have-a-tty-to-run-sudo" class="headerlink" title="通过ssh 执行命令（命令前有sudo）的时候报错：sudo: sorry, you must have a tty to run sudo"></a>通过ssh 执行命令（命令前有sudo）的时候报错：sudo: sorry, you must have a tty to run sudo</h3><p>这是因为 /etc/sudoers (Linux控制sudo行为、权限的配置文件）中指定了 requiretty（<a href="https://www.shell-tips.com/2014/09/08/sudo-sorry-you-must-have-a-tty-to-run-sudo/" target="_blank" rel="external">Redhat、Fedora默认行为</a>），但是 通过ssh远程执行命令是没有tty的（不需要交互）。<br>解决办法可以试试 ssh -t or -tt (强制分配tty）或者先修改 /etc/sudoers把 requiretty 删掉或者改成 !requiretty</p>
+<h3 id="cp-命令即使使用了-f-force参数，overwrite的时候还是弹出交互信息，必须手工输入Y、yes等"><a href="#cp-命令即使使用了-f-force参数，overwrite的时候还是弹出交互信息，必须手工输入Y、yes等" class="headerlink" title="cp 命令即使使用了 -f force参数，overwrite的时候还是弹出交互信息，必须手工输入Y、yes等"></a>cp 命令即使使用了 -f force参数，overwrite的时候还是弹出交互信息，必须手工输入Y、yes等</h3><p>Google搜索一下别人给出的方案是这样 echo yes | cp -rf xxx yyy 算是笨办法，但是没有找到这里为什么-f 不管用。<br>type -a cp 先确认一下 cp到底是个什么鬼东西：</p>
+<pre><code>#type -a cp
+cp is aliased to `cp -i&apos;
+cp is /usr/bin/cp
+</code></pre><p>这下算是有点清楚了，原来默认cp 都是-i了（-i, –interactive prompt before overwrite (overrides a previous -n option)），看起来就是默认情况下为了保护我们的目录不经意间被修改了。所以真的确认要overwrite的话直接用 /usr/bin/cp -f 就不需要每次yes确认了</p>
+<h3 id="重定向"><a href="#重定向" class="headerlink" title="重定向"></a>重定向</h3><p>sudo docker logs swarm-agent-master &gt;master.log 2&gt;&amp;1 输出重定向<a href="http://www.kissyu.org/2016/12/25/shell%E4%B8%AD%3E%20:dev:null%202%20%3E%20&amp;1%E6%98%AF%E4%BB%80%E4%B9%88%E9%AC%BC%EF%BC%9F/" target="_blank" rel="external">http://www.kissyu.org/2016/12/25/shell%E4%B8%AD%3E%20:dev:null%202%20%3E%20&amp;1%E6%98%AF%E4%BB%80%E4%B9%88%E9%AC%BC%EF%BC%9F/</a></p>
+<pre><code>&gt;/dev/null 2&gt;&amp;1 标准输出丢弃 错误输出丢弃
+2&gt;&amp;1 &gt;/dev/null 标准输出丢弃 错误输出屏幕
+</code></pre><p><a href="http://kodango.com/bash-one-liners-explained-part-three" target="_blank" rel="external">http://kodango.com/bash-one-liners-explained-part-three</a></p>
+<h3 id="umask"><a href="#umask" class="headerlink" title="umask"></a>umask</h3><p>创建文件的默认权限是 666 文件夹是777 但是都要跟 umask做运算（按位减法） 一般umask是002<br>所以创建出来文件最终是664，文件夹是775，如果umask 是027的话最终文件是 640 文件夹是750<br>『尽量不要以数字相加减啦！』你应该要这样想(-rw-rw- rw-) – (——–wx)=-rw-rw-r–这样就对啦！不要用十进制的数字喔！够能力的话，用二进制来算，不晓得的话，用 rwx 来算喔！</p>
+<h3 id="其它"><a href="#其它" class="headerlink" title="其它"></a>其它</h3><pre><code>echo $-   // himBH 
+</code></pre><p>“$-” 中含有“i”代表“交互式shell”<br>“$0”的显示结果为“-bash”，bash前面多个“-”，代表“登录shell”.<br>没有“i“和“-”的，是“非交互式的非登录shell”</p>
+<p>set +o histexpand （！ 是history展开符号， histexpand 可以打开或者关闭这个展开符）<br>alias 之后，想要用原来的命令：+alias  （命令前加)</p>
+<p>bash程序执行，当“$0”是“sh”的时候，则要求下面的代码遵循一定的规范，当不符合规范的语法存在时，则会报错，所以可以这样理解，“sh”并不是一个程序，而是一种标准（POSIX），这种标准，在一定程度上（具体区别见下面的“Things bash has that sh does not”）保证了脚本的跨系统性（跨UNIX系统）</p>
+<p>Linux 分 shell变量(set)，用户变量(env)， shell变量包含用户变量，export是一种命令工具，是显式那些通过export命令把shell变量中包含的用户变量导入给用户变量的那些变量.</p>
+<h3 id="引号"><a href="#引号" class="headerlink" title="引号"></a>引号</h3><p>shell 中：单引号的处理是比较简单的，被单引号包括的所有字符都保留原有的意思，例如’$a’不会被展开, ‘<code>cmd</code>‘也不会执行命令；而双引号，则相对比较松，在双引号中，以下几个字符$, <code>, \依然有其特殊的含义，比如$可以用于变量展开, 反引号</code>可以执行命令，反斜杠\可以用于转义。但是，在双引号包围的字符串里，反斜杠的转义也是有限的，它只能转义$, `, “, \或者newline（回车）这几个字符，后面如果跟着的不是这几个字符，只不会被黑底，反斜杠会被保留  <a href="http://kodango.com/simple-bash-programming-skills-2" target="_blank" rel="external">http://kodango.com/simple-bash-programming-skills-2</a></p>
+<h3 id="su-和-su-的区别"><a href="#su-和-su-的区别" class="headerlink" title="su 和 su - 的区别"></a>su 和 su - 的区别</h3><p>su命令和su -命令最大的本质区别就是：前者只是切换了root身份，但Shell环境仍然是普通用户的Shell；而后者连用户和Shell环境一起切换成root身份了。只有切换了Shell环境才不会出现PATH环境变量错误。su切换成root用户以后，pwd一下，发现工作目录仍然是普通用户的工作目录；而用su -命令切换以后，工作目录变成root的工作目录了。用echo $PATH命令看一下su和su -以后的环境变量有何不同。以此类推，要从当前用户切换到其它用户也一样，应该使用su -命令。</p>
+<p>比如：<br>   su admin 会重新加载 ~/.bashrc ，但是不会切换到adminhome目录。<br>   但是 su - admin 不会重新加载 ~/.bashrc ，但是会切换admin的home目录。</p>
+<p>The su command is used to become another user during a login session. Invoked without a username, su defaults to becoming the superuser. The optional argument - may be used to provide an environment similar to what the user would expect had the user logged in directly.</p>
+<h3 id="后台任务执行"><a href="#后台任务执行" class="headerlink" title="后台任务执行"></a>后台任务执行</h3><p>将任务放到后台，断开ssh后还能运行：<br>“ctrl-Z”将当前任务挂起；<br>“disown -h”让该任务忽略SIGHUP信号（不会因为掉线而终止执行）；<br>“bg”让该任务在后台恢复运行。</p>
+<p>创建文件的默认权限是 666 文件夹是777 但是都要跟 umask做运算（按位减法） 一般umask是002<br>所以创建出来文件最终是664，文件夹是775，如果umask 是027的话最终文件是 640 文件夹是750<br>『尽量不要以数字相加减啦！』你应该要这样想(-rw-rw- rw-) – (——–wx)=-rw-rw-r–这样就对啦！不要用十进制的数字喔！够能力的话，用二进制来算，不晓得的话，用 rwx 来算喔！</p>
+<h3 id="参考文章："><a href="#参考文章：" class="headerlink" title="参考文章："></a>参考文章：</h3><p><a href="https://blog.csdn.net/u010871982/article/details/78525367" target="_blank" rel="external">关于ansible远程执行的环境变量问题</a></p>
+<p><a href="http://bbs.chinaunix.net/thread-1068678-1-1.html" target="_blank" rel="external">Bash和Sh的区别</a></p>
+<p><a href="http://kodango.com/what-is-interactive-and-login-shell" target="_blank" rel="external">什么是交互式登录 Shell what-is-interactive-and-login-shell</a></p>
+<p><a href="http://kodango.com/explain-shell-default-options" target="_blank" rel="external">Shell 默认选项 himBH 的解释</a></p>
+<p><a href="http://kodango.com/useful-documents-about-shell" target="_blank" rel="external">useful-documents-about-shell</a></p>
+<p><a href="http://coolnull.com/4432.html" target="_blank" rel="external">linux cp实现强制覆盖</a></p>
+<p><a href="https://wangdoc.com/bash/startup.html" target="_blank" rel="external">https://wangdoc.com/bash/startup.html</a></p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/03/14/就是要你懂git代理--如何设置git Proxy/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -4055,173 +4372,6 @@ LISTEN     0      128           *:tr-rsrb-p2                  *:*
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/08/24/Linux tc qdisc的使用案例/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2016/08/24/Linux tc qdisc的使用案例/" itemprop="url">Linux tc qdisc的使用案例</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2016-08-24T17:30:03+08:00">
-                2016-08-24
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-
-                
-                
-                  ， 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/network/" itemprop="url" rel="index">
-                    <span itemprop="name">network</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2016/08/24/Linux tc qdisc的使用案例/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2016/08/24/Linux tc qdisc的使用案例/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="Linux-tc-qdisc的使用案例"><a href="#Linux-tc-qdisc的使用案例" class="headerlink" title="Linux tc qdisc的使用案例"></a>Linux tc qdisc的使用案例</h1><p>在linux下通过tc qdisc 很容易对rt延时、丢包、带宽进行控制，这样的话方便重现各种网络问题</p>
-<h2 id="延时"><a href="#延时" class="headerlink" title="延时"></a>延时</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">1. give packets from eth0 a delay of 2ms</div><div class="line">bash$ tc qdisc add dev eth0 root netem delay 2ms</div><div class="line"> </div><div class="line">2.change the delay to 300ms</div><div class="line">bash$ tc qdisc change dev eth0 root netem delay 3ms</div><div class="line"></div><div class="line">3.display eth0 delay setting</div><div class="line">bash$ tc qdisc show dev eth0</div><div class="line"> </div><div class="line">4.stop the delay</div><div class="line">bash$ tc qdisc del dev eth0 root</div></pre></td></tr></table></figure>
-<h2 id="模拟网络丢包"><a href="#模拟网络丢包" class="headerlink" title="模拟网络丢包"></a>模拟网络丢包</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">tc qdisc add dev eth0 root netem loss 1%</div></pre></td></tr></table></figure>
-<p>指定ip 172.31.65.30延时17ms， 测试发现181和183这两句命令顺序无所谓。恢复正常：179行命令</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">179  tc qdisc del dev eth0 root</div><div class="line">180  tc qdisc add dev eth0 root handle 1: prio</div><div class="line">181  tc filter add dev eth0 parent 1:0 protocol ip pref 55 handle ::55 u32 match ip dst 172.31.65.30 flowid 2:1</div><div class="line">182  tc qdisc ls</div><div class="line">183  tc qdisc add dev eth0 parent 1:1 handle 2: netem delay 17ms</div></pre></td></tr></table></figure>
-<h2 id="指定ip和端口延时"><a href="#指定ip和端口延时" class="headerlink" title="指定ip和端口延时"></a>指定ip和端口延时</h2><p>指定 eth0 网卡，来源 ip 是 10.10.1.45，目的端口是 4555 的访问延迟 20ms，上下浮动 2ms</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line"># 指定 eth0 网卡，来源 ip 是 10.0.200.45，目的端口是 3306 的访问延迟 20ms，上下浮动 2ms</div><div class="line">tc qdisc add dev eth0 root handle 1: prio bands 4</div><div class="line">tc qdisc add dev eth0 parent 1:4 handle 40: netem delay 20ms 2ms</div><div class="line">tc filter add dev eth0 parent 1: protocol ip prio 4 basic match &quot;cmp(u16 at 2 layer transport eq 3306)</div><div class="line">                            and cmp(u8 at 16 layer network eq 10)</div><div class="line">                            and cmp(u8 at 17 layer network eq 0)</div><div class="line">                            and cmp(u8 at 18 layer network eq 200)</div><div class="line">                            and cmp(u8 at 19 layer network eq 45)&quot; flowid 1:4</div><div class="line">                            </div><div class="line"># 删除过滤</div><div class="line">tc filter del dev eth0 parent 1: prio 4 basic</div><div class="line">tc qdisc del dev eth0 root</div></pre></td></tr></table></figure>
-<p>0 layer 代表 sport<br>2 layer 代表 dport</p>
-<h2 id="指定端口34001上，延时5ms"><a href="#指定端口34001上，延时5ms" class="headerlink" title="指定端口34001上，延时5ms"></a>指定端口34001上，延时5ms</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">tc qdisc add dev eth0 root handle 1: prio</div><div class="line">tc qdisc add dev eth0 parent 1:3 handle 30: netem delay 5ms</div><div class="line">tc filter add dev eth0 protocol ip parent 1:0 u32 match ip sport 34001 0xffff flowid 1:3</div></pre></td></tr></table></figure>
-<h2 id="限制eth0网卡的带宽为500kbit：网速-延时、乱序、丢包"><a href="#限制eth0网卡的带宽为500kbit：网速-延时、乱序、丢包" class="headerlink" title="限制eth0网卡的带宽为500kbit：网速 延时、乱序、丢包"></a>限制eth0网卡的带宽为500kbit：网速 延时、乱序、丢包</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">sudo tc qdisc add dev bond0 root handle 1: netem delay 10ms reorder 25% 50% loss 0.2%</div><div class="line">sudo tc qdisc add dev bond0 parent 1: handle 2: tbf rate 1mbit burst 32kbit latency 10ms</div><div class="line"></div><div class="line">/sbin/tc qdisc add dev eth0 root tbf rate 500kbit latency 50ms burst 15kb</div><div class="line"></div><div class="line">// 同时模拟20Mbps带宽，50msRTT和0.1%丢包率  </div><div class="line"># tc qdisc add dev eth5 root handle 1:0 tbf rate 20mbit burst 10kb limit 300000  </div><div class="line"># tc qdisc add dev eth5 parent 1:0 handle 10:0 netem delay 50ms loss 0.1 limit 300000</div></pre></td></tr></table></figure>
-<p>在eth0上设置一个tbf队列，网络带宽为200kbit，延迟10ms以内，超出的包会被drop掉，缓冲区为1540个字节<br>rate表示令牌的产生速率<br>latency表示数据包在队列中的最长等待时间<br>对burst参数解释一下：<br>  burst means the maximum amount of bytes that tokens can be available for instantaneously.<br>  如果数据包的到达速率与令牌的产生速率一致，即200kbit，则数据不会排队，令牌也不会剩余<br>  如果数据包的到达速率小于令牌的产生速率，则令牌会有一定的剩余。<br>  如果后续某一会数据包的到达速率超过了令牌的产生速率，则可以一次性的消耗一定量的令牌。<br>  burst就是用于限制这“一次性”消耗的令牌的数量的，以字节数为单位。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">tc qdisc add dev eth0 root tbf rate 200kbit latency 10ms burst 1540  </div><div class="line"></div><div class="line">tc qdisc ls dev eth0 // 查看eth0上的队列规则</div></pre></td></tr></table></figure>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
@@ -4271,7 +4421,7 @@ LISTEN     0      128           *:tr-rsrb-p2                  *:*
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">64</span>
+                <span class="site-state-item-count">65</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
