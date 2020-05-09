@@ -391,7 +391,7 @@ test.x86_64.rpm
     <link href="http://yoursite.com/2019/12/24/OS%E5%86%85%E6%A0%B8%E7%89%88%E6%9C%AC%E5%8D%87%E7%BA%A7%E5%90%8E30%25%E7%9A%84%E6%80%A7%E8%83%BD%E6%8F%90%E5%8D%87/"/>
     <id>http://yoursite.com/2019/12/24/OS内核版本升级后30%的性能提升/</id>
     <published>2019-12-24T09:30:03.000Z</published>
-    <updated>2020-05-06T04:27:42.367Z</updated>
+    <updated>2020-05-09T08:57:27.847Z</updated>
     
     <content type="html"><![CDATA[<h1 id="Linux内核版本升级，性能到底提升多少？拿数据说话"><a href="#Linux内核版本升级，性能到底提升多少？拿数据说话" class="headerlink" title="Linux内核版本升级，性能到底提升多少？拿数据说话"></a>Linux内核版本升级，性能到底提升多少？拿数据说话</h1><h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>DRDS在公有云售卖一直使用的2.6.32的内核，有点老并且有些内核配套工具不能用，于是想升级一下内核版本。预期新内核的性能不能比2.6.32差</p>
 <p>以下不作特殊说明的话都是在相同核数的Intel(R) Xeon(R) Platinum 8163 CPU @ 2.50GHz下得到的数据，最后还会比较相同内核下不同机型/CPU型号的性能差异。</p>
@@ -578,6 +578,8 @@ sudo perf top
     </summary>
     
       <category term="Linux" scheme="http://yoursite.com/categories/Linux/"/>
+    
+      <category term="performance" scheme="http://yoursite.com/categories/Linux/performance/"/>
     
     
       <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
