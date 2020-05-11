@@ -388,210 +388,6 @@ test.x86_64.rpm
   
   <entry>
     <title>Linux内核版本升级，性能到底提升多少？拿数据说话</title>
-    <link href="http://yoursite.com/2019/12/24/OS%E5%86%85%E6%A0%B8%E7%89%88%E6%9C%AC%E5%8D%87%E7%BA%A7%E5%90%8E30%25%E7%9A%84%E6%80%A7%E8%83%BD%E6%8F%90%E5%8D%87/"/>
-    <id>http://yoursite.com/2019/12/24/OS内核版本升级后30%的性能提升/</id>
-    <published>2019-12-24T09:30:03.000Z</published>
-    <updated>2020-05-09T08:57:27.847Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="Linux内核版本升级，性能到底提升多少？拿数据说话"><a href="#Linux内核版本升级，性能到底提升多少？拿数据说话" class="headerlink" title="Linux内核版本升级，性能到底提升多少？拿数据说话"></a>Linux内核版本升级，性能到底提升多少？拿数据说话</h1><h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>DRDS在公有云售卖一直使用的2.6.32的内核，有点老并且有些内核配套工具不能用，于是想升级一下内核版本。预期新内核的性能不能比2.6.32差</p>
-<p>以下不作特殊说明的话都是在相同核数的Intel(R) Xeon(R) Platinum 8163 CPU @ 2.50GHz下得到的数据，最后还会比较相同内核下不同机型/CPU型号的性能差异。</p>
-<p>场景都是用sysbench 100个并发跑点查。</p>
-<h2 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h2><p><strong>先说大家关心的数据，最终4.19内核性能比2.6.32好将近30%，建议大家升级新内核，不需要做任何改动，尤其是Java应用（不同场景会有差异）</strong></p>
-<p>本次比较的场景是Java应用的Proxy类服务，主要瓶颈是网络消耗，类似于MaxScale。后面有一个简单的MySQL Server场景下2.6.32和4.19的比较，性能也有33%的提升。</p>
-<h2 id="2-6-32性能数据"><a href="#2-6-32性能数据" class="headerlink" title="2.6.32性能数据"></a>2.6.32性能数据</h2><p>升级前先看看目前的性能数据好对比（以下各个场景都是CPU基本跑到85%）</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/b57c5ee5fe50ceb81cbad158f7b7aeeb.png" alt="image.png"></p>
-<h2 id="一波N折的4-19"><a href="#一波N折的4-19" class="headerlink" title="一波N折的4.19"></a>一波N折的4.19</h2><p>阿里云上默认买到的ALinux OS，同样配置跑起来后，tps只有16000，比2.6.32的22000差了不少，心里只能暗暗骂几句坑爹的货，看了下各项指标，看不出来什么问题，就像是CPU能力不行一样。如果这个时候直接找内核同学，估计他们心里会说 DRDS 是个什么东西？是不是你们测试有问题，是不是你们配置的问题，不要来坑我，内核性能我们每次发布都在实验室里跑过了，肯定是你们的应用问题。</p>
-<p>所以要找到一个公认的场景下的性能差异。</p>
-<h3 id="通过qperf来比较差异"><a href="#通过qperf来比较差异" class="headerlink" title="通过qperf来比较差异"></a>通过qperf来比较差异</h3><p>大包的情况下性能基本差不多，小包上差别还是很明显</p>
-<pre><code>qperf -t 40 -oo msg_size:1  4.19 tcp_bw tcp_lat
-tcp_bw:
-    bw  =  2.13 MB/sec
-tcp_lat:
-    latency  =  224 us
-tcp_bw:
-    bw  =  2.15 MB/sec
-tcp_lat:
-    latency  =  226 us
-
-qperf -t 40 -oo msg_size:1  2.6.32 tcp_bw tcp_lat
-tcp_bw:
-    bw  =  82 MB/sec
-tcp_lat:
-    latency  =  188 us
-tcp_bw:
-    bw  =  90.4 MB/sec
-tcp_lat:
-    latency  =  229 us
-</code></pre><p>这下不用怕内核同学怼回来了，拿着这个数据直接找他们，可以稳定重现。</p>
-<p>经过内核同学一顿排查后，发现默认镜像做了一些加固，简而言之就是CPU拿出一部分资源做了其它事情，比如旁路攻击的补丁之类的，需要关掉（因为DRDS的OS只给我们自己用，上面部署的代码都是DRDS自己的代码，没有客户代码，客户也不能够ssh连上DRDS节点）</p>
-<pre><code>去掉 melt、spec 能到20000， 去掉sonypatch能到21000 
-</code></pre><p>关闭的办法在grub配置中增加这些参数：</p>
-<pre><code>nopti nospectre_v2 nospectre_v1 l1tf=off nospec_store_bypass_disable no_stf_barrier mds=off mitigations=off
-</code></pre><p>关掉之后的状态看起来是这样的：</p>
-<pre><code>$sudo cat /sys/devices/system/cpu/vulnerabilities/*
-Mitigation: PTE Inversion
-Vulnerable; SMT Host state unknown
-Vulnerable
-Vulnerable
-Vulnerable: __user pointer sanitization and usercopy barriers only; no swapgs barriers
-Vulnerable, STIBP: disabled
-</code></pre><p>这块参考<a href="https://help.aliyun.com/document_detail/102087.html?spm=a2c4g.11186623.6.721.4a732223pEfyNC" target="_blank" rel="external">阿里云文档</a></p>
-<h3 id="4-9版本的内核性能"><a href="#4-9版本的内核性能" class="headerlink" title="4.9版本的内核性能"></a>4.9版本的内核性能</h3><p>但是性能还是不符合预期，总是比2.6.32差点。在中间经过几个星期排查不能解决问题，陷入僵局的过程中，尝试了一下4.9内核，果然有惊喜。</p>
-<p>下图中对4.9的内核版本验证发现，tps能到24000，明显比2.6.32要好，所以传说中的新内核版本性能要好看来是真的，这下坚定了升级的念头，同时也看到了兜底的方案–最差就升级到4.9</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/2f035e145f1bc41eb4a8b8bda8ed4ea2.png" alt="image.png"></p>
-<p><strong>多队列是指网卡多队列功能，也是这次升级的一个动力。看起来在没达到单核瓶颈前，网卡多队列性能反而差点，这也符合预期</strong></p>
-<h3 id="继续分析为什么4-19比4-9差了这么多"><a href="#继续分析为什么4-19比4-9差了这么多" class="headerlink" title="继续分析为什么4.19比4.9差了这么多"></a>继续分析为什么4.19比4.9差了这么多</h3><p>4.9和4.19这两个内核版本隔的近，比较好对比分析内核参数差异，4.19跟2.6.32差太多，比较起来很困难。</p>
-<p>最终仔细对比了两者配置的差异，发现ALinux的4.19中 transparent_hugepage 是 madvise ,这对Java应用来说可不是太友好：</p>
-<pre><code>$cat /sys/kernel/mm/transparent_hugepage/enabled
-always [madvise] never
-</code></pre><p>将其改到 always 后4.19的tps终于稳定在了28300</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/081c08801adb36cdfd8ff62be54fce94.png" alt="image.png"></p>
-<p>这个过程中花了两个月的一些其他折腾就不多说了，主要是内核补丁和transparent_hugepage导致了性能差异。</p>
-<p>transparent_hugepage，在redis、mongodb、memcache等场景（很多小内存分配）是推荐关闭的，所以要根据不同的业务场景来选择开关。</p>
-<h2 id="一些内核版本、机型和CPU的总结"><a href="#一些内核版本、机型和CPU的总结" class="headerlink" title="一些内核版本、机型和CPU的总结"></a>一些内核版本、机型和CPU的总结</h2><p>到此终于看到不需要应用做什么改变，整体性能将近有30%的提升。 在这个测试过程中发现不同CPU对性能影响很明显，相同机型也有不同的CPU型号（性能差异在20%以上–这个太坑了）</p>
-<p>性能方面 4.19&gt;4.9&gt;2.6.32</p>
-<p>没有做3.10内核版本的比较</p>
-<p>以下仅作为大家选择ECS的时候做参考。</p>
-<h3 id="不同机型-CPU对性能的影响"><a href="#不同机型-CPU对性能的影响" class="headerlink" title="不同机型/CPU对性能的影响"></a>不同机型/CPU对性能的影响</h3><p>还是先说结论：</p>
-<ul>
-<li>CPU:内存为1:2机型的性能排序：c6-&gt;c5-&gt;sn1ne-&gt;hfc5-&gt;s1</li>
-<li>CPU:内存为1:4机型的性能排序：g6-&gt;g5-&gt;sn2ne-&gt;hfg5-&gt;sn2</li>
-</ul>
-<p>性能差异主要来源于CPU型号的不同</p>
-<pre><code>c6/g6:                  Intel(R) Xeon(R) Platinum 8269CY CPU @ 2.50GHz
-c5/g5/sn1ne/sn2ne:      Intel(R) Xeon(R) Platinum 8163 CPU @ 2.50GHz
-</code></pre><p>8269比8163大概好5-10%，价格便宜一点点，8163比E5-2682好20%以上，价格便宜10%（该买什么机型你懂了吧，价格是指整个ECS，而不是单指CPU）</p>
-<p>要特别注意sn1ne/sn2ne 是8163和E5-2682 两种CPU型号随机的，如果买到的是E5-2682就自认倒霉吧</p>
-<p>C5的CPU都是8163，相比sn1ne价格便宜10%，网卡性能也一样。但是8核以上的sn1ne机型就把网络性能拉开了（价格还是维持c5便宜10%），从点查场景的测试来看网络不会成为瓶颈，到16核机型网卡多队列才会需要打开。</p>
-<p>顺便给一下部分机型的包月价格比较：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/7c8b107fb12e285c8eab2c2d136bbd4e.png" alt="image.png"></p>
-<p>官方给出的CPU数据：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/5f57f4228621378d14ffdd124fe54626.png" alt="image.png"></p>
-<h2 id="4-19内核在MySQL-Server场景下的性能比较"><a href="#4-19内核在MySQL-Server场景下的性能比较" class="headerlink" title="4.19内核在MySQL Server场景下的性能比较"></a>4.19内核在MySQL Server场景下的性能比较</h2><p>这只是sysbench点查场景粗略比较，因为本次的目标是对DRDS性能的改进</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/4f276e93cb914b3cdd312423be63c376.png" alt="image.png"></p>
-<p>（以上表格数据主要由 @夷则 团队和我一起测试得到）</p>
-<p><strong>重点注意2.6.32不但tps差30%，并发能力也差的比较多，如果同样用100个并发压2.6.32上的MySQL，TPS在30000左右。只有在减少并发到20个的时候压测才能达到图中最好的tps峰值：45000. </strong></p>
-<h2 id="新内核除了性能提升外带来的便利性"><a href="#新内核除了性能提升外带来的便利性" class="headerlink" title="新内核除了性能提升外带来的便利性"></a>新内核除了性能提升外带来的便利性</h2><p>升级内核带来的性能提升只是在极端场景下才会需要，大部分时候我们希望节省开发人员的时间，提升工作效率。</p>
-<h3 id="麻烦的网络重传率"><a href="#麻烦的网络重传率" class="headerlink" title="麻烦的网络重传率"></a>麻烦的网络重传率</h3><p>通过tsar或者其它方式发现网络重传率有点高，有可能是别的管理端口重传率高，有可能是往外连其它服务端口重传率高等，尤其是在整体流量小的情况下一点点管理端口的重传包拉升了整个机器的重传率，严重干扰了问题排查，所以需要进一步确认重传发生在哪个进程的哪个端口上，是否真正影响了我们的业务。</p>
-<p>在2.6.32内核下的排查过程是：抓包，然后写脚本分析（或者下载到本地通过wireshark分析），整个过程比较麻烦，需要的时间也比较长。那么在新镜像中我们可以利用内核自带的bcc来快速得到这些信息</p>
-<pre><code>sudo /usr/share/bcc/tools/tcpretrans -l
-</code></pre><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/c68cc22b2e6eb7dd51d8613c5e79e88c.png" alt="image.png"></p>
-<p>从截图可以看到重传时间、pid、tcp四元组、状态，针对重传发生的端口和阶段（SYN_SENT握手、ESTABLISHED）可以快速推断导致重传的不同原因。</p>
-<p>再也不需要像以前一样抓包、下载、写脚本分析了。</p>
-<h3 id="通过perf-top直接看Java函数的CPU消耗"><a href="#通过perf-top直接看Java函数的CPU消耗" class="headerlink" title="通过perf top直接看Java函数的CPU消耗"></a>通过perf top直接看Java函数的CPU消耗</h3><p>这个大家都比较了解，不多说，主要是top的时候能够把java函数给关联上，直接看截图：</p>
-<pre><code>sh ~/tools/perf-map-agent/bin/create-java-perf-map.sh pid
-sudo perf top
-</code></pre><p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/gif/33359/1568775788220-32745082-5155-4ecd-832a-e814a682c0df.gif" alt=""></p>
-<h3 id="快速定位Java中的锁等待"><a href="#快速定位Java中的锁等待" class="headerlink" title="快速定位Java中的锁等待"></a>快速定位Java中的锁等待</h3><p>如果CPU跑不起来，可能会存在锁瓶颈，需要快速找到它们</p>
-<p>如下测试中11万的tps是解决掉锁后得到的，4万tps是没解决锁等待前的tps：</p>
-<pre><code>#[ 210s] threads: 400, tps: 0.00, reads/s: 115845.43, writes/s: 0.00, response time: 7.57ms (95%)
-#[ 220s] threads: 400, tps: 0.00, reads/s: 116453.12, writes/s: 0.00, response time: 7.28ms (95%)
-#[ 230s] threads: 400, tps: 0.00, reads/s: 116400.31, writes/s: 0.00, response time: 7.33ms (95%)
-#[ 240s] threads: 400, tps: 0.00, reads/s: 116025.35, writes/s: 0.00, response time: 7.48ms (95%)
-#[ 250s] threads: 400, tps: 0.00, reads/s: 45260.97, writes/s: 0.00, response time: 29.57ms (95%)
-#[ 260s] threads: 400, tps: 0.00, reads/s: 41598.41, writes/s: 0.00, response time: 29.07ms (95%)
-#[ 270s] threads: 400, tps: 0.00, reads/s: 41939.98, writes/s: 0.00, response time: 28.96ms (95%)
-#[ 280s] threads: 400, tps: 0.00, reads/s: 40875.48, writes/s: 0.00, response time: 29.16ms (95%)
-#[ 290s] threads: 400, tps: 0.00, reads/s: 41053.73, writes/s: 0.00, response time: 29.07ms (95%)
-</code></pre><p>这行命令得到如下等锁的top 10堆栈（<a href="https://github.com/jvm-profiling-tools/async-profiler" target="_blank" rel="external">async-profiler</a>）：</p>
-<pre><code>$~/tools/async-profiler/profiler.sh -e lock -d 5 1560
-
---- 1687260767618 ns (100.00%), 91083 samples
- [ 0] ch.qos.logback.classic.sift.SiftingAppender
- [ 1] ch.qos.logback.core.AppenderBase.doAppend
- [ 2] ch.qos.logback.core.spi.AppenderAttachableImpl.appendLoopOnAppenders
- [ 3] ch.qos.logback.classic.Logger.appendLoopOnAppenders
- [ 4] ch.qos.logback.classic.Logger.callAppenders
- [ 5] ch.qos.logback.classic.Logger.buildLoggingEventAndAppend
- [ 6] ch.qos.logback.classic.Logger.filterAndLog_0_Or3Plus
- [ 7] ch.qos.logback.classic.Logger.info
- [ 8] com.*****.logger.slf4j.Slf4jLogger.info
- [ 9] com.*****.utils.logger.support.FailsafeLogger.info
- [10] com.*****.util.LogUtils.recordSql
-
-
-
-
-&quot;ServerExecutor-3-thread-480&quot; #753 daemon prio=5 os_prio=0 tid=0x00007f8265842000 nid=0x26f1 waiting for monitor entry [0x00007f82270bf000]
-  java.lang.Thread.State: BLOCKED (on object monitor)
-    at ch.qos.logback.core.AppenderBase.doAppend(AppenderBase.java:64)
-    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-    at ch.qos.logback.core.spi.AppenderAttachableImpl.appendLoopOnAppenders(AppenderAttachableImpl.java:48)
-    at ch.qos.logback.classic.Logger.appendLoopOnAppenders(Logger.java:282)
-    at ch.qos.logback.classic.Logger.callAppenders(Logger.java:269)
-    at ch.qos.logback.classic.Logger.buildLoggingEventAndAppend(Logger.java:470)
-    at ch.qos.logback.classic.Logger.filterAndLog_0_Or3Plus(Logger.java:424)
-    at ch.qos.logback.classic.Logger.info(Logger.java:628)
-    at com.****.utils.logger.slf4j.Slf4jLogger.info(Slf4jLogger.java:42)
-    at com.****.utils.logger.support.FailsafeLogger.info(FailsafeLogger.java:102)
-    at com.****.util.LogUtils.recordSql(LogUtils.java:115)
-
-          ns  percent  samples  top
-  ----------  -------  -------  ---
-160442633302   99.99%    38366  ch.qos.logback.classic.sift.SiftingAppender
-    12480081    0.01%       19  java.util.Properties
-     3059572    0.00%        9  com.***.$$$.common.IdGenerator
-      244394    0.00%        1  java.lang.Object
-</code></pre><p>堆栈中也可以看到大量的：</p>
-<pre><code>- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-  - locked &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-</code></pre><p>当然还有很多其他爽得要死的命令，比如一键生成火焰图等，不再一一列举，可以从业务层面的需要从这次镜像升级的便利中将他们固化到镜像中，以后排查问题不再需要繁琐的安装、配置、调试过程了。</p>
-<h2 id="跟内核无关的应用层的优化"><a href="#跟内核无关的应用层的优化" class="headerlink" title="跟内核无关的应用层的优化"></a>跟内核无关的应用层的优化</h2><p>到此我们基本不用任何改动得到了30%的性能提升，但是对整个应用来说，通过以上工具让我们看到了一些明显的问题，还可以从应用层面继续提升性能。</p>
-<p>如上描述通过锁排序定位到logback确实会出现锁瓶颈，同时在一些客户场景中，因为网盘的抖动也带来了灾难性的影响，所以日志需要异步处理，经过异步化后tps 达到了32000，关键的是rt 95线下降明显，这个rt下降对DRDS这种Proxy类型的应用是非常重要的（经常被客户指责多了一层转发，rt增加了）。</p>
-<p>日志异步化和使用协程后的性能数据：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/bec4e8105091bc4b8a263aef245c0ce9.png" alt="image.png"></p>
-<h3 id="Wisp2-协程带来的红利"><a href="#Wisp2-协程带来的红利" class="headerlink" title="Wisp2 协程带来的红利"></a>Wisp2 协程带来的红利</h3><p>参考 <a href="https://www.atatech.org/articles/147345" target="_blank" rel="external">@梁希 的 Wisp2: 开箱即用的Java协程</a>：</p>
-<p>在整个测试过程中都很顺利，只是发现Wisp2在阻塞不明显的场景下，抖的厉害。简单来说就是压力比较大的话Wisp2表现很稳定，一旦压力一般（这是大部分应用场景），Wisp2表现像是一会是协程状态，一会是没开携程状态，系统的CS也变化很大。</p>
-<p>比如同一测试过程中tps抖动明显，从15000到50000：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/1550cc74116a56220d25e1434a675d14.png" alt="image.png"></p>
-<p>100个并发的时候cs很小，40个并发的时候cs反而要大很多：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/3f79909f89889459d1f0dfe4fa0a2f53.png" alt="image.png"></p>
-<p>最终在 @梁希 同学的攻关下问题基本都解决了。不但tps提升明显，rt也有很大的下降。</p>
-<h2 id="致谢"><a href="#致谢" class="headerlink" title="致谢"></a>致谢</h2><p>感谢 @夷则 团队对这次内核版本升级的支持，感谢 @雏雁 @飞绪 @李靖轩(无牙) @齐江(窅默) @梁希 等大佬的支持。</p>
-<p>最终应用不需要任何改动可以得到 30%的性能提升，经过开启协程等优化后应用有将近80%的性能提升，同时平均rt下降了到原来的60%，rt 95线下降到原来的40%。</p>
-<p>快点升级你们的内核，用上协程吧。同时考虑下在你们的应用中用上DRDS。</p>
-<h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a href="https://www.atatech.org/articles/104696" target="_blank" rel="external">记一次不同OS间的网络性能差异的排查经历</a></p>
-<p><a href="https://www.atatech.org/articles/147345" target="_blank" rel="external">@梁希 的 Wisp2: 开箱即用的Java协程</a></p>
-<p><a href="https://help.aliyun.com/document_detail/25378.html" target="_blank" rel="external">https://help.aliyun.com/document_detail/25378.html</a></p>
-<p><a href="https://help.aliyun.com/document_detail/55263.html" target="_blank" rel="external">https://help.aliyun.com/document_detail/55263.html</a></p>
-<p><a href="https://help.aliyun.com/document_detail/52559.html" target="_blank" rel="external">https://help.aliyun.com/document_detail/52559.html</a> (网卡)</p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;Linux内核版本升级，性能到底提升多少？拿数据说话&quot;&gt;&lt;a href=&quot;#Linux内核版本升级，性能到底提升多少？拿数据说话&quot; class=&quot;headerlink&quot; title=&quot;Linux内核版本升级，性能到底提升多少？拿数据说话&quot;&gt;&lt;/a&gt;Linux内核版
-    
-    </summary>
-    
-      <category term="Linux" scheme="http://yoursite.com/categories/Linux/"/>
-    
-      <category term="performance" scheme="http://yoursite.com/categories/Linux/performance/"/>
-    
-    
-      <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
-    
-      <category term="performance" scheme="http://yoursite.com/tags/performance/"/>
-    
-      <category term="kernel" scheme="http://yoursite.com/tags/kernel/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Linux内核版本升级，性能到底提升多少？拿数据说话</title>
     <link href="http://yoursite.com/2019/12/24/Linux%E5%86%85%E6%A0%B8%E7%89%88%E6%9C%AC%E5%8D%87%E7%BA%A7%EF%BC%8C%E6%80%A7%E8%83%BD%E5%88%B0%E5%BA%95%E6%8F%90%E5%8D%87%E5%A4%9A%E5%B0%91%EF%BC%9F%E6%8B%BF%E6%95%B0%E6%8D%AE%E8%AF%B4%E8%AF%9D/"/>
     <id>http://yoursite.com/2019/12/24/Linux内核版本升级，性能到底提升多少？拿数据说话/</id>
     <published>2019-12-24T09:30:03.000Z</published>
@@ -3362,6 +3158,186 @@ avg: 0.005937
       <category term="wireshark" scheme="http://yoursite.com/tags/wireshark/"/>
     
       <category term="tshark" scheme="http://yoursite.com/tags/tshark/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>就是要你懂TCP--性能优化大全</title>
+    <link href="http://yoursite.com/2019/06/21/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82TCP--%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E5%A4%A7%E5%85%A8/"/>
+    <id>http://yoursite.com/2019/06/21/就是要你懂TCP--性能优化大全/</id>
+    <published>2019-06-21T04:30:03.000Z</published>
+    <updated>2019-06-21T10:18:29.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="TCP性能优化大全"><a href="#TCP性能优化大全" class="headerlink" title="TCP性能优化大全"></a>TCP性能优化大全</h1><blockquote>
+<p>先从一个问题看起，客户通过专线访问云上的DRDS，专线100M，时延20ms，一个SQL查询了22M数据，结果花了大概25秒，这慢得不太正常，如果通过云上client访问云上DRDS那么1-2秒就返回了。如果通过http或者scp传输这22M的数据大概两秒钟也传送完毕了，所以这里问题的原因基本上是DRDS在这种网络条件下有性能问题，需要找出为什么。</p>
+</blockquote>
+<h2 id="抓包-tcpdump-wireshark"><a href="#抓包-tcpdump-wireshark" class="headerlink" title="抓包 tcpdump+wireshark"></a>抓包 tcpdump+wireshark</h2><p>这个查询结果22M的需要25秒，如下图（wireshark 时序图），横轴是时间纵轴是sequence number：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d188530df31712e8341f5687a960743a.png" alt="image.png"></p>
+<p>粗一看没啥问题，把这个图形放大看看</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e177d59ecb886daef5905ed80a84dfd2.png" alt="image.png"></p>
+<p>换个角度，看看窗口尺寸图形：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/7ae26e844629258de173a05d5ad595f9.png" alt="image.png"></p>
+<p>从bytes in flight也大致能算出来总的传输时间 16K*1000/20=800Kb/秒</p>
+<p>DRDS会默认设置 socketSendBuffer 为16K:</p>
+<pre><code>socket.setSendBufferSize(16*1024) //16K send buffer
+</code></pre><p>来看一下tcp包发送流程：</p>
+<p><img src="http://img.blog.csdn.net/20130718162926640?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvcnVzc2VsbF90YW8=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast" alt=""></p>
+<p>（图片来自：<a href="https://www.atatech.org/articles/9032）" target="_blank" rel="external">https://www.atatech.org/articles/9032）</a></p>
+<p><img src="http://img.blog.csdn.net/20130718163121484?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvcnVzc2VsbF90YW8=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast" alt=""></p>
+<p>如果sendbuffer不够就会卡在上图中的第一步 sk_stream_wait_memory, 通过systemtap脚本可以验证：</p>
+<pre><code>#!/usr/bin/stap
+# Simple probe to detect when a process is waiting for more socket send
+# buffer memory. Usually means the process is doing writes larger than the
+# socket send buffer size or there is a slow receiver at the other side.
+# Increasing the socket&apos;s send buffer size might help decrease application
+# latencies, but it might also make it worse, so buyer beware.
+#
+# Typical output: timestamp in microseconds: procname(pid) event
+#
+# 1218230114875167: python(17631) blocked on full send buffer
+# 1218230114876196: python(17631) recovered from full send buffer
+# 1218230114876271: python(17631) blocked on full send buffer
+# 1218230114876479: python(17631) recovered from full send buffer
+
+probe kernel.function(&quot;sk_stream_wait_memory&quot;)
+{
+    printf(&quot;%u: %s(%d) blocked on full send buffer\n&quot;,
+        gettimeofday_us(), execname(), pid())
+}
+
+probe kernel.function(&quot;sk_stream_wait_memory&quot;).return
+{
+    printf(&quot;%u: %s(%d) recovered from full send buffer\n&quot;,
+        gettimeofday_us(), execname(), pid())
+}
+</code></pre><p>如果tcp发送buffer也就是SO_SNDBUF只有16K的话，这些包很快都发出去了，但是这16K不能立即释放出来填新的内容进去，因为tcp要保证可靠，万一中间丢包了呢。只有等到这16K中的某些ack了，才会填充一些进来然后继续发出去。由于这里rt基本是20ms，也就是16K发送完毕后，等了20ms才收到一些ack，这20ms应用、内核什么都不能做，所以就是如第二个图中的大概20ms的等待平台。这块请参考<a href="https://www.atatech.org/articles/79660" target="_blank" rel="external">这篇文章</a></p>
+<p><strong>sendbuffer相当于发送仓库的大小，仓库的货物都发走后，不能立马腾出来发新的货物，而是要等发走的获取对方确认收到了(ack)才能腾出来发新的货物, 仓库足够大了之后接下来的瓶颈就是高速公路了（带宽、拥塞窗口）</strong></p>
+<p>如果是UDP，就没有send buffer的概念，有数据统统发出去，根本不关心对方是否收到。</p>
+<h2 id="几个发送buf相关的内核参数"><a href="#几个发送buf相关的内核参数" class="headerlink" title="几个发送buf相关的内核参数"></a>几个发送buf相关的内核参数</h2><pre><code>vm.lowmem_reserve_ratio = 256   256     32
+net.core.wmem_max = 1048576
+net.core.wmem_default = 124928
+net.ipv4.tcp_wmem = 4096        16384   4194304
+net.ipv4.udp_wmem_min = 4096
+</code></pre><p>net.ipv4.tcp_wmem 默认就是16K，而且是能够动态调整的，只不过我们代码中这块的参数是很多年前从Corba中继承过来的，一直没有修改。代码中设置了这个参数后就关闭了内核的动态调整功能，所以能看到http或者scp都很快。</p>
+<p>接收buffer是有开关可以动态控制的，发送buffer没有开关默认就是开启，关闭只能在代码层面来控制</p>
+<pre><code>net.ipv4.tcp_moderate_rcvbuf
+</code></pre><h2 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h2><p>调整 socketSendBuffer 到256K，查询时间从25秒下降到了4秒多，但是比理论带宽所需要的时间略高</p>
+<p>继续查看系统 net.core.wmem_max 参数默认最大是130K，所以即使我们代码中设置256K实际使用的也是130K，调大这个系统参数后整个网络传输时间大概2秒(跟100M带宽匹配了，scp传输22M数据也要2秒），整体查询时间2.8秒。测试用的mysql client短连接，如果代码中的是长连接的话会块300-400ms（消掉了慢启动阶段），这基本上是理论上最快速度了</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/3dcfd469fe1e2f7e1d938a5289b83826.png" alt="image.png"></p>
+<p>如果指定了tcp_wmem，则net.core.wmem_default被tcp_wmem的覆盖。send Buffer在tcp_wmem的最小值和最大值之间自动调节。如果调用setsockopt()设置了socket选项SO_SNDBUF，将关闭发送端缓冲的自动调节机制，tcp_wmem将被忽略，SO_SNDBUF的最大值由net.core.wmem_max限制。</p>
+<h2 id="BDP-带宽时延积"><a href="#BDP-带宽时延积" class="headerlink" title="BDP 带宽时延积"></a>BDP 带宽时延积</h2><p>这个buf调到1M测试没有帮助，从理论计算BDP（带宽时延积） 0.02秒*(100MB/8)=250Kb  所以SO_SNDBUF为256Kb的时候基本能跑满带宽了，再大实际意义也不大了。</p>
+<p>因为BDP是250K，也就是拥塞窗口即将成为新的瓶颈，所以调大buffer没意义了。</p>
+<h2 id="用tc构造延时和带宽限制的模拟重现环境"><a href="#用tc构造延时和带宽限制的模拟重现环境" class="headerlink" title="用tc构造延时和带宽限制的模拟重现环境"></a>用tc构造延时和带宽限制的模拟重现环境</h2><pre><code>sudo tc qdisc del dev eth0 root netem delay 20ms
+sudo tc qdisc add dev eth0 root tbf rate 500kbit latency 50ms burst 15kb
+</code></pre><h2 id="这个案例的结论"><a href="#这个案例的结论" class="headerlink" title="这个案例的结论"></a>这个案例的结论</h2><p>默认情况下Linux系统会自动调整这个buf（net.ipv4.tcp_wmem）, 也就是不推荐程序中主动去设置SO_SNDBUF，除非明确知道设置的值是最优的。</p>
+<p>平时看到的一些理论在实践中用起来比较难，最开始看到抓包结果的时候比较怀疑发送、接收窗口之类的，没有直接想到send buffer上，理论跟实践的鸿沟</p>
+<p><strong>需要调整tcp_rmem 的<a href="https://blog.cloudflare.com/the-story-of-one-latency-spike/" target="_blank" rel="external">问题 Case</a></strong></p>
+<p>发送和接收Buffer对性能的完整影响参考<a href="https://plantegg.github.io/2019/05/28/TCP%E6%80%A7%E8%83%BD%E5%92%8C%E5%8F%91%E9%80%81%E6%8E%A5%E6%94%B6Buffer%E7%9A%84%E5%85%B3%E7%B3%BB/" target="_blank" rel="external">这篇</a></p>
+<h2 id="总结下TCP跟速度相关的几个概念"><a href="#总结下TCP跟速度相关的几个概念" class="headerlink" title="总结下TCP跟速度相关的几个概念"></a>总结下TCP跟速度相关的几个概念</h2><ul>
+<li>CWND：Congestion Window，拥塞窗口，负责控制单位时间内，数据发送端的报文发送量。TCP 协议规定，一个 RTT（Round-Trip Time，往返时延，大家常说的 ping 值）时间内，数据发送端只能发送 CWND 个数据包（注意不是字节数）。TCP 协议利用 CWND/RTT 来控制速度。这个值是根据丢包动态计算出来的</li>
+<li>SS：Slow Start，慢启动阶段。TCP 刚开始传输的时候，速度是慢慢涨起来的，除非遇到丢包，否则速度会一直指数性增长（标准 TCP 协议的拥塞控制算法，例如 cubic 就是如此。很多其它拥塞控制算法或其它厂商可能修改过慢启动增长特性，未必符合指数特性）。</li>
+<li>CA：Congestion Avoid，拥塞避免阶段。当 TCP 数据发送方感知到有丢包后，会降低 CWND，此时速度会下降，CWND 再次增长时，不再像 SS 那样指数增，而是线性增（同理，标准 TCP 协议的拥塞控制算法，例如 cubic 是这样，很多其它拥塞控制算法或其它厂商可能修改过慢启动增长特性，未必符合这个特性）。</li>
+<li>ssthresh：Slow Start Threshold，慢启动阈值。当数据发送方感知到丢包时，会记录此时的 CWND，并计算合理的 ssthresh 值（ssthresh &lt;= 丢包时的 CWND），当 CWND 重新由小至大增长，直到 sshtresh 时，不再 SS 而是 CA。但因为数据确认超时（数据发送端始终收不到对端的接收确认报文），发送端会骤降 CWND 到最初始的状态。</li>
+<li>SO_SNDBUF、SO_RCVBUF 发送、接收buffer</li>
+</ul>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/1a468a5a3060792647713d3cf307c986.png" alt="image.png"></p>
+<p>上图一旦发生丢包，cwnd降到1 ssthresh降到cwnd/2,一夜回到解放前，太保守了，实际大多情况下都是公网带宽还有空余但是链路过长，非带宽不够丢包概率增大，对此没必要这么保守（tcp诞生的背景主要针对局域网、双绞线来设计，偏保守）。RTT越大的网络环境（长肥管道）这个问题越是严重，表现就是传输速度抖动非常厉害。</p>
+<p>所以改进的拥塞算法一旦发现丢包，cwnd和ssthresh降到原来的cwnd的一半。</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/e24ad7655c10a82f35879503ecabc98f.png" alt="image.png"></p>
+<h2 id="TCP性能优化点"><a href="#TCP性能优化点" class="headerlink" title="TCP性能优化点"></a>TCP性能优化点</h2><ul>
+<li>建连优化：TCP 在建立连接时，如果丢包，会进入重试，重试时间是 1s、2s、4s、8s 的指数递增间隔，缩短定时器可以让 TCP 在丢包环境建连时间更快，非常适用于高并发短连接的业务场景。</li>
+<li>首包优化：此优化其实没什么实质意义，若要说一定会有意义的话，可能就是满足一些评测标准的需要吧，例如有些客户以首包时间作为性能评判的一个依据。所谓首包时间，简单解释就是从 HTTP Client 发出 GET 请求开始计时，到收到 HTTP 响应的时间。为此，Server 端可以通过 TCP_NODELAY 让服务器先吐出 HTTP 头，再吐出实际内容（分包发送，原本是粘到一起的），来进行提速和优化。据说更有甚者先让服务器无条件返回 “HTTP/“ 这几个字符，然后再去 upstream 拿数据。这种做法在真实场景中没有任何帮助，只能欺骗一下探测者罢了，因此还没见过有直接发 “HTTP/“ 的，其实是一种作弊行为。</li>
+</ul>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/28532cb2bc6aa674be3d7693595f6f2b.png" alt="image.png"></p>
+<ul>
+<li>平滑发包：如前文所述，在 RTT 内均匀发包，规避微分时间内的流量突发，尽量避免瞬间拥塞，此处不再赘述。</li>
+<li>丢包预判：有些网络的丢包是有规律性的，例如每隔一段时间出现一次丢包，例如每次丢包都连续丢几个等，如果程序能自动发现这个规律（有些不明显），就可以针对性提前多发数据，减少重传时间、提高有效发包率。</li>
+<li>RTO 探测：如前文讲 TCP 基础时说过的，若始终收不到 ACK 报文，则需要触发 RTO 定时器。RTO 定时器一般都时间非常长，会浪费很多等待时间，而且一旦 RTO，CWND 就会骤降（标准 TCP），因此利用 Probe 提前与 RTO 去试探，可以规避由于 ACK 报文丢失而导致的速度下降问题。</li>
+<li>带宽评估：通过单位时间内收到的 ACK 或 SACK 信息可以得知客户端有效接收速率，通过这个速率可以更合理的控制发包速度。</li>
+<li>带宽争抢：有些场景（例如合租）是大家互相挤占带宽的，假如你和室友各 1Mbps 的速度看电影，会把 2Mbps 出口占满，而如果一共有 3 个人看，则每人只能分到 1/3。若此时你的流量流量达到 2Mbps，而他俩还都是 1Mbps，则你至少仍可以分到 2/(2+1+1) * 2Mbps = 1Mbps 的 50% 的带宽，甚至更多，代价就是服务器侧的出口流量加大，增加成本。（TCP 优化的本质就是用带宽换用户体验感）</li>
+<li><strong>链路质量记忆</strong>(后面有反面案例)：如果一个 Client IP 或一个 C 段 Network，若已经得知了网络质量规律（例如 CWND 多大合适，丢包规律是怎样的等），就可以在下次连接时，优先使用历史经验值，取消慢启动环节直接进入告诉发包状态，以提升客户端接收数据速率。</li>
+</ul>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/68314efb651bcb3144d4243bf0c15820.png" alt="image.png"></p>
+<p>这些经验都来自CDN @辟拾 的 <a href="https://www.atatech.org/articles/109721" target="_blank" rel="external">网络优化 - TCP 是如何做到提速 20 倍的</a></p>
+<h2 id="重要参数"><a href="#重要参数" class="headerlink" title="重要参数"></a>重要参数</h2><h3 id="net-ipv4-tcp-slow-start-after-idle"><a href="#net-ipv4-tcp-slow-start-after-idle" class="headerlink" title="net.ipv4.tcp_slow_start_after_idle"></a>net.ipv4.tcp_slow_start_after_idle</h3><p>内核协议栈参数 net.ipv4.tcp_slow_start_after_idle 默认是开启的，这个参数的用途，是为了规避 CWND 无休止增长，因此在连接不断开，但一段时间不传输数据的话，就将 CWND 收敛到 initcwnd，kernel-2.6.32 是 10，kernel-2.6.18 是 2。因此在 HTTP Connection: keep-alive 的环境下，若连续两个 GET 请求之间存在一定时间间隔，则此时服务器端会降低 CWND 到初始值，当 Client 再次发起 GET 后，服务器会重新进入慢启动流程。</p>
+<p>这种友善的保护机制，但是对于目前的网络坏境没必要这么谨慎和彬彬有礼，建议将此功能关闭，以提高长连接环境下的用户体验感。</p>
+<pre><code>sysctl net.ipv4.tcp_slow_start_after_idle=0
+</code></pre><h3 id="确认运行中每个连接-CWND-ssthresh-slow-start-threshold"><a href="#确认运行中每个连接-CWND-ssthresh-slow-start-threshold" class="headerlink" title="确认运行中每个连接 CWND/ssthresh(slow start threshold)"></a>确认运行中每个连接 CWND/ssthresh(slow start threshold)</h3><pre><code>for i in {1..1000}; do ss -i | grep -A 1 100.118.58.7 | grep ssthresh ; done
+ reno wscale:9,9 rto:233 rtt:29.171/14.585 mss:1444 cwnd:40 ssthresh:361 send 15.8Mbps lastsnd:10 lastrcv:909498308 lastack:10 pacing_rate 7.9Mbps unacked:1 rcv_space:29200
+ reno wscale:9,9 rto:230 rtt:29.237/3.534 ato:40 mss:1444 cwnd:40 ssthresh:361 send 15.8Mbps lastsnd:8 lastrcv:38 lastack:8 pacing_rate 31.6Mbps unacked:40 rcv_space:29200
+ reno wscale:9,9 rto:230 rtt:29.201/0.111 ato:40 mss:1444 cwnd:155 ssthresh:361 send 61.3Mbps lastsnd:7 lastrcv:96 lastack:8 pacing_rate 122.6Mbps unacked:151 rcv_space:29200
+ reno wscale:9,9 rto:230 rtt:29.381/0.193 ato:40 mss:1444 cwnd:362 ssthresh:361 send 142.3Mbps lastsnd:6 lastrcv:153 lastack:6 pacing_rate 284.7Mbps unacked:360 rcv_space:29200
+ reno wscale:9,9 rto:230 rtt:29.351/0.081 ato:40 mss:1444 cwnd:364 ssthresh:361 send 143.3Mbps lastsnd:5 lastrcv:211 lastack:5 pacing_rate 286.5Mbps unacked:360 rcv_space:29200
+</code></pre><h3 id="从系统cache中查看-tcp-metrics-item"><a href="#从系统cache中查看-tcp-metrics-item" class="headerlink" title="从系统cache中查看 tcp_metrics item"></a>从系统cache中查看 tcp_metrics item</h3><pre><code>$sudo ip tcp_metrics show | grep  100.118.58.7
+100.118.58.7 age 1457674.290sec tw_ts 3195267888/5752641sec ago rtt 1000us rttvar 1000us ssthresh 361 cwnd 40 metric_5 8710 metric_6 4258
+</code></pre><p>如果因为之前的网络状况等其它原因导致tcp_metrics缓存了一个非常小的ssthresh（这个值默应该非常大），ssthresh太小的话tcp的CWND指数增长阶段很快就结束，然后进入CWND+1的慢增加阶段导致整个速度感觉很慢</p>
+<pre><code>清除 tcp_metrics 
+sudo ip tcp_metrics flush all 
+
+关闭 tcp_metrics 功能
+net.ipv4.tcp_no_metrics_save = 1
+sudo ip tcp_metrics delete 100.118.58.7
+</code></pre><blockquote>
+<p>tcp_metrics会记录下之前已关闭TCP连接的状态，包括发送端CWND和ssthresh，如果之前<strong>网络有一段时间比较差或者丢包比较严重，就会导致TCP的ssthresh降低到一个很低的值</strong>，这个值在连接结束后会被tcp_metrics cache 住，在新连接建立时，即使网络状况已经恢复，依然会继承 tcp_metrics 中cache 的一个很低的ssthresh 值，对于rt很高的网络环境，新连接经历短暂的“慢启动”后(ssthresh太小)，随即进入缓慢的拥塞控制阶段（rt太高，CWND增长太慢），导致连接速度很难在短时间内上去。而后面的连接，需要很特殊的场景之下(比如，传输一个很大的文件)才能将ssthresh 再次推到一个比较高的值更新掉之前的缓存值，因此很有很能在接下来的很长一段时间，连接的速度都会处于一个很低的水平。</p>
+</blockquote>
+<h3 id="ssthresh-是如何降低的"><a href="#ssthresh-是如何降低的" class="headerlink" title="ssthresh 是如何降低的"></a>ssthresh 是如何降低的</h3><p>在网络情况较差，并且出现连续dup ack情况下，ssthresh 会设置为 cwnd/2， cwnd 设置为当前值的一半，<br>如果网络持续比较差那么ssthresh 会持续降低到一个比较低的水平，并在此连接结束后被tcp_metrics 缓存下来。下次新建连接后会使用这些值，即使当前网络状况已经恢复，但是ssthresh 依然继承一个比较低的值。</p>
+<h3 id="ssthresh-降低后为何长时间不恢复正常"><a href="#ssthresh-降低后为何长时间不恢复正常" class="headerlink" title="ssthresh 降低后为何长时间不恢复正常"></a>ssthresh 降低后为何长时间不恢复正常</h3><p>ssthresh 降低之后需要在检测到有丢包的之后才会变动，因此就需要机缘巧合才会增长到一个比较大的值。<br>此时需要有一个持续时间比较长的请求，在长时间进行拥塞避免之后在cwnd 加到一个比较大的值，而到一个比较<br>大的值之后需要有因dup ack 检测出来的丢包行为将 ssthresh 设置为 cwnd/2, 当这个连接结束后，一个<br>较大的ssthresh 值会被缓存下来，供下次新建连接使用。</p>
+<p>也就是如果ssthresh 降低之后，需要传一个非常大的文件，并且网络状况超级好一直不丢包，这样能让CWND一直慢慢稳定增长，一直到CWND达到带宽的限制后出现丢包，这个时候CWND和ssthresh降到CWND的一半那么新的比较大的ssthresh值就能被缓存下来了。</p>
+<h3 id="tcp-windows-scale"><a href="#tcp-windows-scale" class="headerlink" title="tcp windows scale"></a>tcp windows scale</h3><p>网络传输速度：单位时间内（一个 RTT）发送量（再折算到每秒），不是 CWND(Congestion Window 拥塞窗口)，而是 min(CWND, RWND)。除了数据发送端有个 CWND 以外，数据接收端还有个 RWND（Receive Window，接收窗口）。在带宽不是瓶颈的情况下，单连接上的速度极限为 MIN(cwnd, slide_windows)*1000ms/rt</p>
+<p>tcp windows scale用来协商RWND的大小，它在tcp协议中占16个位，如果通讯双方有一方不支持tcp windows scale的话，TCP Windows size 最大只能到2^16 = 65535 也就是64k</p>
+<p>如果网络rt是35ms，滑动窗口&lt;CWND，那么单连接的传输速度最大是： 64K*1000/35=1792K(1.8M)</p>
+<p>如果网络rt是30ms，滑动窗口&gt;CWND的话，传输速度：CWND<em>1500(MTU)</em>1000(ms)/rt</p>
+<p>一般通讯双方都是支持tcp windows scale的，但是如果连接中间通过了lvs，并且lvs打开了 synproxy功能的话，就会导致 tcp windows scale 无法起作用，那么传输速度就被滑动窗口限制死了（<strong>rt小的话会没那么明显</strong>）。</p>
+<h3 id="RTT越大，传输速度越慢"><a href="#RTT越大，传输速度越慢" class="headerlink" title="RTT越大，传输速度越慢"></a>RTT越大，传输速度越慢</h3><p>RTT大的话导致拥塞窗口爬升缓慢，慢启动过程持续越久。RTT越大、物理带宽越大、要传输的文件越大这个问题越明显<br>带宽B越大，RTT越大，低带宽利用率持续的时间就越久，文件传输的总时间就会越长，这是TCP慢启动的本质决定的，这是探测的代价。<br>TCP的拥塞窗口变化完全受ACK时间驱动（RTT），长肥管道对丢包更敏感，RTT越大越敏感，一旦有一个丢包就会将CWND减半进入避免拥塞阶段</p>
+<p>RTT对性能的影响关键是RTT长了后丢包的概率大，一旦丢包进入拥塞阶段就很慢了。如果一直不丢包，只是RTT长，完全可以做大增加发送窗口和接收窗口来抵消RTT的增加</p>
+<p>以上经验来自 @俞青 同学的 <a href="https://www.atatech.org/articles/109967" target="_blank" rel="external">tcp metrics 在长肥网络下引发性能问题</a></p>
+<h2 id="经典的-nagle-和-dalay-ack对性能的影响"><a href="#经典的-nagle-和-dalay-ack对性能的影响" class="headerlink" title="经典的 nagle 和 dalay ack对性能的影响"></a>经典的 nagle 和 dalay ack对性能的影响</h2><p>请参考这篇文章：<a href="https://www.atatech.org/articles/80292" target="_blank" rel="external">就是要你懂 TCP– 最经典的TCP性能问题</a></p>
+<h2 id="最后的经验"><a href="#最后的经验" class="headerlink" title="最后的经验"></a>最后的经验</h2><p><strong>抓包解千愁</strong></p>
+<hr>
+<p>就是要你懂TCP相关文章：</p>
+<p> <a href="https://www.atatech.org/articles/78858" target="_blank" rel="external">关于TCP 半连接队列和全连接队列</a></p>
+<p> <a href="https://www.atatech.org/articles/60633" target="_blank" rel="external">MSS和MTU导致的悲剧</a> </p>
+<p> <a href="https://www.atatech.org/articles/73174" target="_blank" rel="external">双11通过网络优化提升10倍性能</a></p>
+<p> <a href="https://www.atatech.org/articles/79660" target="_blank" rel="external">就是要你懂TCP的握手和挥手</a></p>
+<h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章:"></a>参考文章:</h2><p><a href="https://access.redhat.com/solutions/407743" target="_blank" rel="external">https://access.redhat.com/solutions/407743</a></p>
+<p><a href="http://www.stuartcheshire.org/papers/nagledelayedack/" target="_blank" rel="external">http://www.stuartcheshire.org/papers/nagledelayedack/</a></p>
+<p><a href="https://en.wikipedia.org/wiki/Nagle%27s_algorithm" target="_blank" rel="external">https://en.wikipedia.org/wiki/Nagle%27s_algorithm</a></p>
+<p><a href="https://en.wikipedia.org/wiki/TCP_delayed_acknowledgment" target="_blank" rel="external">https://en.wikipedia.org/wiki/TCP_delayed_acknowledgment</a></p>
+<p><a href="https://www.kernel.org/doc/Documentation/networking/ip-sysctl.txt" target="_blank" rel="external">https://www.kernel.org/doc/Documentation/networking/ip-sysctl.txt</a></p>
+<p><a href="https://www.atatech.org/articles/109721" target="_blank" rel="external">https://www.atatech.org/articles/109721</a></p>
+<p><a href="https://www.atatech.org/articles/109967" target="_blank" rel="external">https://www.atatech.org/articles/109967</a></p>
+<p><a href="https://www.atatech.org/articles/27189" target="_blank" rel="external">https://www.atatech.org/articles/27189</a> </p>
+<p><a href="https://www.atatech.org/articles/45084" target="_blank" rel="external">https://www.atatech.org/articles/45084</a></p>
+<p><a href="https://www.atatech.org/articles/9032" target="_blank" rel="external">https://www.atatech.org/articles/9032</a></p>
+<p><a href="https://blog.cloudflare.com/the-story-of-one-latency-spike/" target="_blank" rel="external">tcp_rmem case</a></p>
+<p><a href="https://www.atatech.org/articles/13203" target="_blank" rel="external">高性能网络编程7–tcp连接的内存使用</a></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;TCP性能优化大全&quot;&gt;&lt;a href=&quot;#TCP性能优化大全&quot; class=&quot;headerlink&quot; title=&quot;TCP性能优化大全&quot;&gt;&lt;/a&gt;TCP性能优化大全&lt;/h1&gt;&lt;blockquote&gt;
+&lt;p&gt;先从一个问题看起，客户通过专线访问云上的DRDS，专线10
+    
+    </summary>
+    
+      <category term="Linux" scheme="http://yoursite.com/categories/Linux/"/>
+    
+      <category term="TCP" scheme="http://yoursite.com/categories/Linux/TCP/"/>
+    
+    
+      <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
+    
+      <category term="performance" scheme="http://yoursite.com/tags/performance/"/>
+    
+      <category term="TCP" scheme="http://yoursite.com/tags/TCP/"/>
+    
+      <category term="sendBuffer" scheme="http://yoursite.com/tags/sendBuffer/"/>
+    
+      <category term="receiveBuffer" scheme="http://yoursite.com/tags/receiveBuffer/"/>
+    
+      <category term="queue" scheme="http://yoursite.com/tags/queue/"/>
+    
+      <category term="bdp" scheme="http://yoursite.com/tags/bdp/"/>
     
   </entry>
   
