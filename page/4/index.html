@@ -938,11 +938,11 @@ manager_user1: &quot;{{ manager_user_name }}&quot;
 <tbody>
 <tr>
 <td>性能　</td>
-<td>　udp现在并发执行的任务好像还不够，执行批量传大文件的任务等的比较久</td>
+<td>　ansible现在并发执行的任务好像还不够，执行批量传大文件的任务等的比较久 — 用 synchronize  并将 fork 默认的5改大</td>
 </tr>
 <tr>
 <td>sudoers</td>
-<td>尝试解决udp不能执行的问题，搜索各种英文文档，有人说版本的原因，有人反馈是脚本错误，最终无解。 继续在本地进行测试，发现使用原始的udp命令可以执行ls，但是sudo ls时会提示 sudo need tty 之类的报错。 定位这个错误是因为在/etc/sudoers文件中设置了  Defaults requiretty，修改为 #Defaults requiretty，重试发现问题解决。 手工修改所有机器的配置文件，问题解决。{“msg”: “ssh connection closed waiting for a privilege escalation password prompt”}—实际在部分机器上执行udp命令时仍然有：sudo: no tty present and no askpass program specified  可以给ssh 增加-t/-tt参数来强制分配一个tty</td>
+<td>尝试解决ansible不能执行的问题，搜索各种英文文档，有人说版本的原因，有人反馈是脚本错误，最终无解。 继续在本地进行测试，发现使用原始的ansible命令可以执行ls，但是sudo ls时会提示 sudo need tty 之类的报错。 定位这个错误是因为在/etc/sudoers文件中设置了  Defaults requiretty，修改为 #Defaults requiretty，重试发现问题解决。 手工修改所有机器的配置文件，问题解决。{“msg”: “ssh connection closed waiting for a privilege escalation password prompt”}—实际在部分机器上执行ansible命令时仍然有：sudo: no tty present and no askpass program specified  可以给ssh 增加-t/-tt参数来强制分配一个tty</td>
 </tr>
 <tr>
 <td>failed to transfer file to  xxx</td>
@@ -950,7 +950,7 @@ manager_user1: &quot;{{ manager_user_name }}&quot;
 </tr>
 <tr>
 <td>requires a json module, none found</td>
-<td>问题已经通过nginx进行解决部署,安装UDP的时候，在目标机器上面安装 python-simplejson 通过如下命令：yum install python-simplejson -y</td>
+<td>问题已经通过nginx进行解决部署,安装ansible的时候，在目标机器上面安装 python-simplejson 通过如下命令：yum install python-simplejson -y</td>
 </tr>
 <tr>
 <td>openssh升级后无法登录报错</td>
@@ -1304,7 +1304,7 @@ script_url=&quot;hz_normal&quot;
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">146</span>
+                <span class="site-state-item-count">147</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>

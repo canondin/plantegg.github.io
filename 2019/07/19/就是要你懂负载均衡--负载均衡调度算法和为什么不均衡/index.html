@@ -95,17 +95,17 @@
 
 
 
-<meta name="description" content="LVS 20倍的负载不均衡，原来是内核的这个Bug问题由来最近用 sysbench 做压测的时候，每次创建100个长连接，lvs后面两台RS，发现每次都是其中一台差不多95个连接，另外一台大概5个连接，不均衡的太离谱了，并且稳定重现，所以想要搞清楚为什么会出现20倍不均衡。 前面是啰嗦的基础知识部分，bug直达文章末尾 几个术语和缩写vip：Virtual IP，LVS实例IP RS: Real">
+<meta name="description" content="LVS 20倍的负载不均衡，原来是内核的这个Bug问题由来最近用 sysbench 做压测的时候，sysbench每次创建100个长连接，lvs后面两台RS，发现每次都是其中一台差不多95个连接，另外一台大概5个连接，不均衡的太离谱了，并且稳定重现，所以想要搞清楚为什么会出现20倍不均衡。 前面是啰嗦的基础知识部分，bug直达文章末尾 几个术语和缩写vip：Virtual IP，LVS实例IP R">
 <meta name="keywords" content="network,LVS,LoadBalance,wrr,wlc">
 <meta property="og:type" content="article">
 <meta property="og:title" content="LVS 20倍的负载不均衡，原来是内核的这个Bug">
 <meta property="og:url" content="http://yoursite.com/2019/07/19/就是要你懂负载均衡--负载均衡调度算法和为什么不均衡/index.html">
 <meta property="og:site_name" content="plantegg">
-<meta property="og:description" content="LVS 20倍的负载不均衡，原来是内核的这个Bug问题由来最近用 sysbench 做压测的时候，每次创建100个长连接，lvs后面两台RS，发现每次都是其中一台差不多95个连接，另外一台大概5个连接，不均衡的太离谱了，并且稳定重现，所以想要搞清楚为什么会出现20倍不均衡。 前面是啰嗦的基础知识部分，bug直达文章末尾 几个术语和缩写vip：Virtual IP，LVS实例IP RS: Real">
-<meta property="og:updated_time" content="2019-10-25T05:11:30.000Z">
+<meta property="og:description" content="LVS 20倍的负载不均衡，原来是内核的这个Bug问题由来最近用 sysbench 做压测的时候，sysbench每次创建100个长连接，lvs后面两台RS，发现每次都是其中一台差不多95个连接，另外一台大概5个连接，不均衡的太离谱了，并且稳定重现，所以想要搞清楚为什么会出现20倍不均衡。 前面是啰嗦的基础知识部分，bug直达文章末尾 几个术语和缩写vip：Virtual IP，LVS实例IP R">
+<meta property="og:updated_time" content="2020-05-15T08:27:18.057Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="LVS 20倍的负载不均衡，原来是内核的这个Bug">
-<meta name="twitter:description" content="LVS 20倍的负载不均衡，原来是内核的这个Bug问题由来最近用 sysbench 做压测的时候，每次创建100个长连接，lvs后面两台RS，发现每次都是其中一台差不多95个连接，另外一台大概5个连接，不均衡的太离谱了，并且稳定重现，所以想要搞清楚为什么会出现20倍不均衡。 前面是啰嗦的基础知识部分，bug直达文章末尾 几个术语和缩写vip：Virtual IP，LVS实例IP RS: Real">
+<meta name="twitter:description" content="LVS 20倍的负载不均衡，原来是内核的这个Bug问题由来最近用 sysbench 做压测的时候，sysbench每次创建100个长连接，lvs后面两台RS，发现每次都是其中一台差不多95个连接，另外一台大概5个连接，不均衡的太离谱了，并且稳定重现，所以想要搞清楚为什么会出现20倍不均衡。 前面是啰嗦的基础知识部分，bug直达文章末尾 几个术语和缩写vip：Virtual IP，LVS实例IP R">
 
 
 
@@ -363,13 +363,13 @@
       
 
       
-        <h1 id="LVS-20倍的负载不均衡，原来是内核的这个Bug"><a href="#LVS-20倍的负载不均衡，原来是内核的这个Bug" class="headerlink" title="LVS 20倍的负载不均衡，原来是内核的这个Bug"></a>LVS 20倍的负载不均衡，原来是内核的这个Bug</h1><h2 id="问题由来"><a href="#问题由来" class="headerlink" title="问题由来"></a>问题由来</h2><p>最近用 sysbench 做压测的时候，每次创建100个长连接，lvs后面两台RS，发现每次都是其中一台差不多95个连接，另外一台大概5个连接，不均衡的太离谱了，并且稳定重现，所以想要搞清楚为什么会出现20倍不均衡。</p>
+        <h1 id="LVS-20倍的负载不均衡，原来是内核的这个Bug"><a href="#LVS-20倍的负载不均衡，原来是内核的这个Bug" class="headerlink" title="LVS 20倍的负载不均衡，原来是内核的这个Bug"></a>LVS 20倍的负载不均衡，原来是内核的这个Bug</h1><h2 id="问题由来"><a href="#问题由来" class="headerlink" title="问题由来"></a>问题由来</h2><p>最近用 sysbench 做压测的时候，sysbench每次创建100个长连接，lvs后面两台RS，发现每次都是其中一台差不多95个连接，另外一台大概5个连接，不均衡的太离谱了，并且稳定重现，所以想要搞清楚为什么会出现20倍不均衡。</p>
 <p>前面是啰嗦的基础知识部分，<a href="#bug">bug直达文章末尾</a></p>
 <h2 id="几个术语和缩写"><a href="#几个术语和缩写" class="headerlink" title="几个术语和缩写"></a>几个术语和缩写</h2><pre><code>vip：Virtual IP，LVS实例IP
 RS: Real Server 后端真正提供服务的机器
 LB： Load Balance 负载均衡器
 LVS： Linux Virtual Server
-</code></pre><h2 id="负载均衡调度算法"><a href="#负载均衡调度算法" class="headerlink" title="负载均衡调度算法"></a>负载均衡调度算法</h2><p>LVS的负载调度算法有10中，其它不常用的就不说了，凑数没有意义。基本常用的如下四种，这四种又可以分成两大种：rr轮询调度和lc最小连接调度。</p>
+</code></pre><h2 id="负载均衡调度算法"><a href="#负载均衡调度算法" class="headerlink" title="负载均衡调度算法"></a>负载均衡调度算法</h2><p>LVS的负载调度算法有10种，其它不常用的就不说了，凑数没有意义。基本常用的如下四种，这四种又可以分成两大种：rr轮询调度和lc最小连接调度。</p>
 <h3 id="rr轮询调度（Round-Robin-Scheduling）"><a href="#rr轮询调度（Round-Robin-Scheduling）" class="headerlink" title="rr轮询调度（Round-Robin Scheduling）"></a>rr轮询调度（Round-Robin Scheduling）</h3><p>轮询调度（Round Robin Scheduling）算法就是以轮询的方式依次将请求调度到不同的服务器，即每次调度执行i = (i + 1) mod n，并选出第i台服务器。算法的优点是其简洁性，它无需记录当前所有连接的状态，不管服务器上实际的连接数和系统负载，所以它是一种无状态调度。 </p>
 <h3 id="wrr加权轮询调度（Weighted-Round-Robin-Scheduling）"><a href="#wrr加权轮询调度（Weighted-Round-Robin-Scheduling）" class="headerlink" title="wrr加权轮询调度（Weighted Round-Robin Scheduling）"></a>wrr加权轮询调度（Weighted Round-Robin Scheduling）</h3><p>加权轮询调度（Weighted Round-Robin Scheduling）算法可以解决服务器间性能不一的情况，它用相应的权值表示服务器的处理性能，服务器的缺省权值为1。假设服务器A的权值为1，B的权值为2，则表示服务器B的处理性能是A的两倍。加权轮叫调度算法是按权值的高低和轮叫方式分配请求到各服务器。权值高的服务器先收到的连接，权值高的服务器比权值低的服务器处理更多的连接，相同权值的服务器处理相同数目的连接数。 </p>
 <h3 id="lc最小连接调度（Least-Connection-Scheduling）"><a href="#lc最小连接调度（Least-Connection-Scheduling）" class="headerlink" title="lc最小连接调度（Least-Connection Scheduling）"></a>lc最小连接调度（Least-Connection Scheduling）</h3><p>最小连接调度（Least-Connection Scheduling）算法是把新的连接请求分配到当前连接数最小的服务器。最小连接调度是一种动态调度算法，它通过服务器当前所活跃的连接数来估计服务器的负载情况。调度器需要记录各个服务器已建立连接的数目，当一个请求被调度到某台服务器，其连接数加1；当连接中止或超时，其连接数减一。</p>
@@ -398,10 +398,10 @@ ip_vs_dest_conn_overhead(struct ip_vs_dest *dest)
                 atomic_read(&amp;dest-&gt;inactconns);
 }
 </code></pre><p>也就是一个active状态的连接权重是256，一个inactive权重是1，然后将syn发给总连接负载最轻的RS。</p>
-<p>这里会导致不均衡的原因是，一旦短时间内有一批syn冲过来（同时并发创建一批连接），必然有一个RS（假如这里总共两个RS）先建立第一个active的连接，在第二个RS也建立第一个active连接之前，后面的syn都会发给第二个RS，那么最终会看到第二个RS的连接远大于第一个RS，这样就导致了最终连接数的负载不均衡。</p>
-<p>这个不均衡场景可以通过 sysbench 稳定重现，如果两个RS的rt差异大一点会更明显。</p>
-<p>这里对inactive 连接的判定比较糙，active连接的权重直接<em>256就更糙了（作者都说了是拍脑袋的）。实际握手阶段的连接直接都判定为active比较妥当，挥手阶段的连接判定为inactive是可以的，但是active的权重取</em>4或者8就够了，256有点夸张。</p>
-<p>另外RS到LVS之间的时延差异会放大这个不均衡，这个差异必然会存在，再就是vpc网络环境下首包延时很大，差异会更明显，因为这些都会影响第一个active连接的建立。</p>
+<p>这里会导致不均衡过程: 短时间内有一批syn冲过来（同时并发创建一批连接），必然有一个RS（假如这里总共两个RS）先建立第一个active的连接，在第二个RS也建立第一个active连接之前，后面的syn都会发给第二个RS，那么最终会看到第二个RS的连接远大于第一个RS，这样就导致了最终连接数的负载不均衡。</p>
+<p>主要是因为这里对inactive 连接的判定比较糙，active连接的权重直接<em>256就更糙了（作者都说了是拍脑袋的）。实际握手阶段的连接直接都判定为active比较妥当，挥手阶段的连接判定为inactive是可以的，但是active的权重取</em>4或者8就够了，256有点夸张。</p>
+<p>这个不均衡场景可以通过 sysbench 稳定重现，<strong>如果两个RS的rt差异大一点会更明显</strong>。</p>
+<p>RS到LVS之间的时延差异会放大这个不均衡，这个差异必然会存在，再就是vpc网络环境下首包延时很大（因为overlay之类的网络，连接的首包都会去网关拉取路由信息，所以首包都很慢），差异会更明显，因为这些都会影响第一个active连接的建立。</p>
 <h4 id="What-is-an-ActiveConn-InActConn-Active-Inactive-connnection"><a href="#What-is-an-ActiveConn-InActConn-Active-Inactive-connnection" class="headerlink" title="What is an ActiveConn/InActConn (Active/Inactive) connnection?"></a>What is an ActiveConn/InActConn (Active/Inactive) connnection?</h4><ul>
 <li>ActiveConn in ESTABLISHED state</li>
 <li>InActConn any other state</li>
@@ -593,7 +593,7 @@ ACK-FIN         ----&gt; *** ActiveConn=0 and 0 ESTABLISHED socket on realserver
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">146</span>
+                <span class="site-state-item-count">147</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>

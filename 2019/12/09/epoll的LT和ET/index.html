@@ -102,7 +102,7 @@
 <meta property="og:url" content="http://yoursite.com/2019/12/09/epoll的LT和ET/index.html">
 <meta property="og:site_name" content="plantegg">
 <meta property="og:description" content="epoll的LT和ET LT水平触发(翻译为 条件触发 更合适）      如果事件来了，不管来了几个，只要仍然有未处理的事件，epoll都会通知你。比如事件来了，打印一行通知，但是不去处理事件，那么会不停滴打印通知。水平触发模式的 epoll 的扩展性很差。   ET边沿触发&amp;gt;    如果事件来了，不管来了几个，你若不处理或者没有处理完，除非下一个事件到来，否则epoll将不会再通知你。">
-<meta property="og:updated_time" content="2019-12-09T04:51:53.000Z">
+<meta property="og:updated_time" content="2020-05-15T08:27:18.017Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="epoll的LT和ET">
 <meta name="twitter:description" content="epoll的LT和ET LT水平触发(翻译为 条件触发 更合适）      如果事件来了，不管来了几个，只要仍然有未处理的事件，epoll都会通知你。比如事件来了，打印一行通知，但是不去处理事件，那么会不停滴打印通知。水平触发模式的 epoll 的扩展性很差。   ET边沿触发&amp;gt;    如果事件来了，不管来了几个，你若不处理或者没有处理完，除非下一个事件到来，否则epoll将不会再通知你。">
@@ -371,7 +371,7 @@
 </li>
 <li><p>ET边沿触发<br>&gt;</p>
 <blockquote>
-<p>  如果事件来了，不管来了几个，你若不处理或者没有处理完，除非下一个事件到来，否则epoll将不会再通知你。 比如事件来了，打印一行通知，但是不去处理事件，那么打印一行通知</p>
+<p>  如果事件来了，不管来了几个，你若不处理或者没有处理完，除非下一个事件到来，否则epoll将不会再通知你。 比如事件来了，打印一行通知，但是不去处理事件，那么不再通知，除非下个事件来了</p>
 </blockquote>
 </li>
 </ul>
@@ -435,6 +435,7 @@ while (1) {
 <p>一个epi上pending多个事件，这个在LT模式下没有任何问题，因为获取事件的epi总是会被重新添加回“就绪链表”，那么如果还有事件，在下次check的时候总会取到。然而对于ET模式，仅仅将epi从“就绪链表”删除并将事件本身上报后就返回了，因此如果该epi里还有事件，则只能等待再次发生事件，进而调用ep_poll_callback时将该epi加入“就绪队列”。这意味着什么？</p>
 <p>这意味着，应用程序，即epoll_wait的调用进程必须自己在获取事件后将其处理干净后方可再次调用epoll_wait，否则epoll_wait不会返回，而是必须等到下次产生事件的时候方可返回。这会导致事件堆积，所以一般会死循环一直拉取事件，直到拉取不到了再返回。</p>
 <h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://www.atatech.org/articles/157349" target="_blank" rel="external">Epoll is fundamentally broken</a> </p>
+<p><a href="https://idea.popcount.org/2017-02-20-epoll-is-fundamentally-broken-12" target="_blank" rel="external">Epoll is fundamentally broken 1/2</a> </p>
 
       
     </div>
@@ -606,7 +607,7 @@ while (1) {
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">146</span>
+                <span class="site-state-item-count">147</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>

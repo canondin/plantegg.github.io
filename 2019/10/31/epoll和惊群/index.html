@@ -95,23 +95,23 @@
 
 
 
-<meta name="description" content="epoll和惊群本文尝试追踪不同的内核版本增加的方案来看内核是如何来尝试解决不同的惊群问题的。以及像 SO_REUSEPORT 和EPOLLEXCLUSIVE又带来了什么小问题。 先上总结非IO复用的惊群在2.6内核就通过增加WQ_FLAG_EXCLUSIVE在内核中就行排他解决惊群了；epoll的惊群在3.10内核加了SO_REUSEPORT来解决惊群，但同时带来了不同的worker有的饥饿有的">
+<meta name="description" content="epoll和惊群本文尝试追踪不同的内核版本增加的方案来看内核是如何来尝试解决惊群问题的。以及像 SO_REUSEPORT 和EPOLLEXCLUSIVE又带来了什么小问题。 先上总结非IO复用的惊群在2.6内核就通过增加WQ_FLAG_EXCLUSIVE在内核中就行排他解决惊群了；epoll的惊群在3.10内核加了SO_REUSEPORT来解决惊群，但同时带来了不同的worker有的饥饿有的排队假">
 <meta name="keywords" content="epoll,惊群,nginx,reuseport,EPOLLEXCLUSIVE">
 <meta property="og:type" content="article">
 <meta property="og:title" content="epoll和惊群">
 <meta property="og:url" content="http://yoursite.com/2019/10/31/epoll和惊群/index.html">
 <meta property="og:site_name" content="plantegg">
-<meta property="og:description" content="epoll和惊群本文尝试追踪不同的内核版本增加的方案来看内核是如何来尝试解决不同的惊群问题的。以及像 SO_REUSEPORT 和EPOLLEXCLUSIVE又带来了什么小问题。 先上总结非IO复用的惊群在2.6内核就通过增加WQ_FLAG_EXCLUSIVE在内核中就行排他解决惊群了；epoll的惊群在3.10内核加了SO_REUSEPORT来解决惊群，但同时带来了不同的worker有的饥饿有的">
+<meta property="og:description" content="epoll和惊群本文尝试追踪不同的内核版本增加的方案来看内核是如何来尝试解决惊群问题的。以及像 SO_REUSEPORT 和EPOLLEXCLUSIVE又带来了什么小问题。 先上总结非IO复用的惊群在2.6内核就通过增加WQ_FLAG_EXCLUSIVE在内核中就行排他解决惊群了；epoll的惊群在3.10内核加了SO_REUSEPORT来解决惊群，但同时带来了不同的worker有的饥饿有的排队假">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/64ae30f3d1937d913f2a440d5ae3c920.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/49d19ef1eaf13638b488ad126beb58ef.png">
 <meta property="og:image" content="https://blog.cloudflare.com/content/images/2017/10/worker2.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/9bbf15909be8d1bffd3ee1958463c041.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/6551777f24be3da9d2b41ceb20a2b040.png">
 <meta property="og:image" content="https://blog.cloudflare.com/content/images/2017/10/sharedqueue.png">
-<meta property="og:updated_time" content="2019-12-09T04:51:30.000Z">
+<meta property="og:updated_time" content="2020-05-15T08:27:18.009Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="epoll和惊群">
-<meta name="twitter:description" content="epoll和惊群本文尝试追踪不同的内核版本增加的方案来看内核是如何来尝试解决不同的惊群问题的。以及像 SO_REUSEPORT 和EPOLLEXCLUSIVE又带来了什么小问题。 先上总结非IO复用的惊群在2.6内核就通过增加WQ_FLAG_EXCLUSIVE在内核中就行排他解决惊群了；epoll的惊群在3.10内核加了SO_REUSEPORT来解决惊群，但同时带来了不同的worker有的饥饿有的">
+<meta name="twitter:description" content="epoll和惊群本文尝试追踪不同的内核版本增加的方案来看内核是如何来尝试解决惊群问题的。以及像 SO_REUSEPORT 和EPOLLEXCLUSIVE又带来了什么小问题。 先上总结非IO复用的惊群在2.6内核就通过增加WQ_FLAG_EXCLUSIVE在内核中就行排他解决惊群了；epoll的惊群在3.10内核加了SO_REUSEPORT来解决惊群，但同时带来了不同的worker有的饥饿有的排队假">
 <meta name="twitter:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/64ae30f3d1937d913f2a440d5ae3c920.png">
 
 
@@ -370,8 +370,8 @@
       
 
       
-        <h1 id="epoll和惊群"><a href="#epoll和惊群" class="headerlink" title="epoll和惊群"></a>epoll和惊群</h1><p>本文尝试追踪不同的内核版本增加的方案来看内核是如何来尝试解决不同的惊群问题的。以及像 SO_REUSEPORT 和EPOLLEXCLUSIVE又带来了什么小问题。</p>
-<h2 id="先上总结"><a href="#先上总结" class="headerlink" title="先上总结"></a>先上总结</h2><p>非IO复用的惊群在2.6内核就通过增加WQ_FLAG_EXCLUSIVE在内核中就行排他解决惊群了；epoll的惊群在3.10内核加了SO_REUSEPORT来解决惊群，但同时带来了不同的worker有的饥饿有的排队假死一样；4.5的内核增加EPOLLEXCLUSIVE在内核中直接一个大queue，同时感知worker状态来派发任务更好滴解决了惊群，但是因为LIFO的机制导致在压力不大的情况下，任务主要派发给少数几个worker（能接受，压力大就会正常了）。</p>
+        <h1 id="epoll和惊群"><a href="#epoll和惊群" class="headerlink" title="epoll和惊群"></a>epoll和惊群</h1><p>本文尝试追踪不同的内核版本增加的方案来看内核是如何来尝试解决惊群问题的。以及像 SO_REUSEPORT 和EPOLLEXCLUSIVE又带来了什么小问题。</p>
+<h2 id="先上总结"><a href="#先上总结" class="headerlink" title="先上总结"></a>先上总结</h2><p>非IO复用的惊群在2.6内核就通过增加WQ_FLAG_EXCLUSIVE在内核中就行排他解决惊群了；epoll的惊群在3.10内核加了SO_REUSEPORT来解决惊群，但同时带来了不同的worker有的饥饿有的排队假死一样；4.5的内核增加EPOLLEXCLUSIVE在内核中直接将worker放在一个大queue，同时感知worker状态来派发任务更好滴解决了惊群，但是因为LIFO的机制导致在压力不大的情况下，任务主要派发给少数几个worker（能接受，压力大就会正常了）。</p>
 <h2 id="什么是惊群"><a href="#什么是惊群" class="headerlink" title="什么是惊群"></a>什么是惊群</h2><p>惊群效应也有人叫做雷鸣群体效应，惊群就是多进程（多线程）在同时阻塞等待同一个事件的时候（休眠状态），如果等待的这个事件发生，那么他就会唤醒等待的所有进程（或者线程），但是最终却只可能有一个进程（线程）获得这个事件的“控制权”，对该事件进行处理，而其他进程（线程）获取“控制权”失败，只能重新进入休眠状态，这种现象和性能浪费就叫做惊群。</p>
 <p>为了更好的理解何为惊群，举一个很简单的例子，当你往一群鸽子中间扔一粒谷子，所有的鸽子都被惊动前来抢夺这粒食物，但是最终只有一只鸽子抢到食物。这里鸽子表示进程（线程），那粒谷子就是等待处理的事件。</p>
 <h2 id="无IO复用时Accept"><a href="#无IO复用时Accept" class="headerlink" title="无IO复用时Accept"></a>无IO复用时Accept</h2><blockquote>
@@ -673,7 +673,7 @@ ep_ptable_queue_proc
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">146</span>
+                <span class="site-state-item-count">147</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>
