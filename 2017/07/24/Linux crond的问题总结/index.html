@@ -95,17 +95,17 @@
 
 
 
-<meta name="description" content="Linux crond的问题总结文件权限crond第一次加载的时候（刚启动）会去检查文件属性，不是644的话以后都不会执行了，即使后面chmod改成了644.  手工随便修改一下该文件就能触发自动执行了，或者重启crond, 或者 sudo service crond reload， 或者 /etc/cron.d/下有任何修改都会触发crond reload配置(包含 touch )。 总之 cr">
+<meta name="description" content="Linux crond的问题总结文件权限的坑crond第一次加载的时候（刚启动）会去检查文件属性，不是644的话以后都不会执行了，即使后面chmod改成了644.  手工随便修改一下该文件的内容就能触发自动执行了，或者重启crond, 或者 sudo service crond reload， 或者 /etc/cron.d/下有任何修改都会触发crond reload配置(包含 touch )。">
 <meta name="keywords" content="Linux,crond,pam">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux crond的问题总结">
 <meta property="og:url" content="http://yoursite.com/2017/07/24/Linux crond的问题总结/index.html">
 <meta property="og:site_name" content="plantegg">
-<meta property="og:description" content="Linux crond的问题总结文件权限crond第一次加载的时候（刚启动）会去检查文件属性，不是644的话以后都不会执行了，即使后面chmod改成了644.  手工随便修改一下该文件就能触发自动执行了，或者重启crond, 或者 sudo service crond reload， 或者 /etc/cron.d/下有任何修改都会触发crond reload配置(包含 touch )。 总之 cr">
-<meta property="og:updated_time" content="2020-05-06T04:27:42.335Z">
+<meta property="og:description" content="Linux crond的问题总结文件权限的坑crond第一次加载的时候（刚启动）会去检查文件属性，不是644的话以后都不会执行了，即使后面chmod改成了644.  手工随便修改一下该文件的内容就能触发自动执行了，或者重启crond, 或者 sudo service crond reload， 或者 /etc/cron.d/下有任何修改都会触发crond reload配置(包含 touch )。">
+<meta property="og:updated_time" content="2020-05-18T08:01:59.243Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Linux crond的问题总结">
-<meta name="twitter:description" content="Linux crond的问题总结文件权限crond第一次加载的时候（刚启动）会去检查文件属性，不是644的话以后都不会执行了，即使后面chmod改成了644.  手工随便修改一下该文件就能触发自动执行了，或者重启crond, 或者 sudo service crond reload， 或者 /etc/cron.d/下有任何修改都会触发crond reload配置(包含 touch )。 总之 cr">
+<meta name="twitter:description" content="Linux crond的问题总结文件权限的坑crond第一次加载的时候（刚启动）会去检查文件属性，不是644的话以后都不会执行了，即使后面chmod改成了644.  手工随便修改一下该文件的内容就能触发自动执行了，或者重启crond, 或者 sudo service crond reload， 或者 /etc/cron.d/下有任何修改都会触发crond reload配置(包含 touch )。">
 
 
 
@@ -363,11 +363,11 @@
       
 
       
-        <h1 id="Linux-crond的问题总结"><a href="#Linux-crond的问题总结" class="headerlink" title="Linux crond的问题总结"></a>Linux crond的问题总结</h1><h2 id="文件权限"><a href="#文件权限" class="headerlink" title="文件权限"></a>文件权限</h2><p>crond第一次加载的时候（刚启动）会去检查文件属性，不是644的话以后都不会执行了，即使后面chmod改成了644. </p>
-<p>手工随便修改一下该文件就能触发自动执行了，或者重启crond, 或者 sudo service crond reload， 或者 /etc/cron.d/下有任何修改都会触发crond reload配置(包含 touch )。</p>
+        <h1 id="Linux-crond的问题总结"><a href="#Linux-crond的问题总结" class="headerlink" title="Linux crond的问题总结"></a>Linux crond的问题总结</h1><h2 id="文件权限的坑"><a href="#文件权限的坑" class="headerlink" title="文件权限的坑"></a>文件权限的坑</h2><p>crond第一次加载的时候（刚启动）会去检查文件属性，不是644的话以后都不会执行了，即使后面chmod改成了644. </p>
+<p>手工随便修改一下该文件的内容就能触发自动执行了，或者重启crond, 或者 sudo service crond reload， 或者 /etc/cron.d/下有任何修改都会触发crond reload配置(包含 touch )。</p>
 <p>总之 crond会每分钟去检查job有没有change，有的话才触发reload，这个change看的时候change time有没有变化，不看权限的变化，仅仅是权限的变化不会触发crond reload。</p>
-<p> crond会每分钟去检查一下job有没有修改，有修改的话会reload，但是这个修改不包含权限的修改。可以简单地理解这个修改是指文件的change time。</p>
-<h2 id="ulimit限制了crond的执行"><a href="#ulimit限制了crond的执行" class="headerlink" title="ulimit限制了crond的执行"></a>ulimit限制了crond的执行</h2><p>容器启动的时候默认nofile（可以通过 docker run –ulimit nofile=655360 来设置）为65535，如果容器中的 /etc/security/limits.conf 中设置的nofile大于 65535就会报错，因为容器的1号进程就是65535了，比如如下在容器中用root用户执行sudo ls报错：</p>
+<p> crond会每分钟去检查一下job有没有修改，有修改的话会reload，但是这个<strong>修改不包含权限的修改</strong>。可以简单地理解这个修改是指文件的change time。</p>
+<h2 id="容器中ulimit限制了crond的执行"><a href="#容器中ulimit限制了crond的执行" class="headerlink" title="容器中ulimit限制了crond的执行"></a>容器中ulimit限制了crond的执行</h2><p>容器启动的时候默认nofile为65535（可以通过 docker run –ulimit nofile=655360 来设置），如果容器中的 /etc/security/limits.conf 中设置的nofile大于 65535就会报错，因为容器的1号进程就是65535了，比如在容器中用root用户执行sudo ls报错：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">#sudo ls</div><div class="line">sudo: pam_open_session: Permission denied</div><div class="line">sudo: policy plugin failed session initialization</div></pre></td></tr></table></figure>
 <p>可以修改容器中的 ulimit 不要超过默认的65535或者修改容器的启动参数来解决。</p>
 <p>子进程都会继承父进程的一些环境变量，比如 limits.conf, sudo/su/crond/passwd等都会触发重新加载limits, </p>
@@ -595,7 +595,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Linux-crond的问题总结"><span class="nav-number">1.</span> <span class="nav-text">Linux crond的问题总结</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#文件权限"><span class="nav-number">1.1.</span> <span class="nav-text">文件权限</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ulimit限制了crond的执行"><span class="nav-number">1.2.</span> <span class="nav-text">ulimit限制了crond的执行</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#关于ulimit的一些知识点"><span class="nav-number">1.2.1.</span> <span class="nav-text">关于ulimit的一些知识点</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pam-权限报错"><span class="nav-number">1.3.</span> <span class="nav-text">pam 权限报错</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#debug-crond"><span class="nav-number">1.4.</span> <span class="nav-text">debug crond</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Linux-crond的问题总结"><span class="nav-number">1.</span> <span class="nav-text">Linux crond的问题总结</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#文件权限的坑"><span class="nav-number">1.1.</span> <span class="nav-text">文件权限的坑</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#容器中ulimit限制了crond的执行"><span class="nav-number">1.2.</span> <span class="nav-text">容器中ulimit限制了crond的执行</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#关于ulimit的一些知识点"><span class="nav-number">1.2.1.</span> <span class="nav-text">关于ulimit的一些知识点</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pam-权限报错"><span class="nav-number">1.3.</span> <span class="nav-text">pam 权限报错</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#debug-crond"><span class="nav-number">1.4.</span> <span class="nav-text">debug crond</span></a></li></ol></li></ol></div>
             
 
           </div>

@@ -707,7 +707,7 @@ sudo perf top
     <link href="http://yoursite.com/2019/12/16/Intel%20PAUSE%E6%8C%87%E4%BB%A4%E5%8F%98%E5%8C%96%E6%98%AF%E5%A6%82%E4%BD%95%E5%BD%B1%E5%93%8D%E8%87%AA%E6%97%8B%E9%94%81%E4%BB%A5%E5%8F%8AMySQL%E7%9A%84%E6%80%A7%E8%83%BD%E7%9A%84/"/>
     <id>http://yoursite.com/2019/12/16/Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的/</id>
     <published>2019-12-16T04:30:03.000Z</published>
-    <updated>2020-04-24T04:00:44.771Z</updated>
+    <updated>2020-05-18T08:01:59.227Z</updated>
     
     <content type="html"><![CDATA[<h1 id="Intel-PAUSE指令变化是如何影响自旋锁以及MySQL的性能的"><a href="#Intel-PAUSE指令变化是如何影响自旋锁以及MySQL的性能的" class="headerlink" title="Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的"></a>Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的</h1><p>专有云场景下DRDS+MySQL集群的一次全表扫描性能优化过程</p>
 <h2 id="业务结构"><a href="#业务结构" class="headerlink" title="业务结构"></a>业务结构</h2><p>client -&gt; DRDS -&gt; slb -&gt; MySQL（32实例，每个实例8Core）</p>
@@ -763,10 +763,12 @@ sudo perf top
 <p>再跟调整前比较一下，innodb_spin_wait_delay=30，并发40时，QPS 500+，物理rt：2.6ms 逻辑rt：72.1ms cpu：37%<br><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/fdb459972926cff371f5f5ab703790bb.png" alt="image.png"></p>
 <p>再看看调整前压测的时候的vmstat和tsar –cpu，可以看到process running抖动明显<br><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/4dbd9dff9deacec0e9911e3a7d025578.png" alt="image.png"></p>
 <p>对比修改delay后的process running就很稳定了，即使QPS大了3倍<br><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ed46d35161ea28352acd4289a3e9ddad.png" alt="image.png"></p>
-<h2 id="关于-innodb-spin-wait-delay"><a href="#关于-innodb-spin-wait-delay" class="headerlink" title="关于 innodb_spin_wait_delay"></a>关于 innodb_spin_wait_delay</h2><p>innodb通过大量的自旋锁来用高CPU消耗避免CS，这是自旋锁的正确使用方式，但是在多个核的情况下，多核一起自旋抢同一个锁，容易造成cache ping-pong，进而多个CPU核之间会互相使对方缓存部分无效。所以这里<a href="https://dev.mysql.com/doc/refman/5.7/en/innodb-performance-spin_lock_polling.html" target="_blank" rel="external">innodb通过增加innodb_spin_wait_delay来做一个折中</a>，也就是本来要不停地通过CPU自旋抢锁的，换成了抢锁失败后 delay一下（Pause）但是不释放CPU，delay时间到后继续抢锁，也就是把连续的自旋抢锁转换成了点状的抢锁（间隔的delay是个随机数–高速机关枪换成左轮手枪，避免卡壳），这样不但避免了CS也大大减少了cache ping-pong.</p>
+<h2 id="关于-innodb-spin-wait-delay"><a href="#关于-innodb-spin-wait-delay" class="headerlink" title="关于 innodb_spin_wait_delay"></a>关于 innodb_spin_wait_delay</h2><p>innodb通过大量的自旋锁来用高CPU消耗避免CS，这是自旋锁的正确使用方式，但是在多个核的情况下，多核一起自旋抢同一个锁，容易造成cache ping-pong，进而多个CPU核之间会互相使对方缓存部分无效。所以这里<a href="https://dev.mysql.com/doc/refman/5.7/en/innodb-performance-spin_lock_polling.html" target="_blank" rel="external">innodb通过增加innodb_spin_wait_delay和pause配合来缓解cache ping-pong</a>，也就是本来要高速通过CPU自旋抢锁的，换成了抢锁失败后 delay一下（Pause）但是不释放CPU，delay时间到后继续抢锁，也就是把连续的自旋抢锁转换成了更稀疏的点状的抢锁（间隔的delay是个随机数–机关枪换成左轮手枪，避免卡壳），这样不但避免了CS也大大减少了cache ping-pong. </p>
+<p>多线程竞争锁的时候，加锁失败的线程会“忙等待”，直到它拿到锁。什么叫“忙等待”呢？它并不意味着一直执行 CAS 函数，生产级的自旋锁在“忙等待”时，会与 CPU 紧密配合 ，它通过 CPU 提供的 PAUSE 指令，减少循环等待时的cache ping-pong和耗电量；对于单核 CPU，忙等待并没有意义，此时它会主动把线程休眠。</p>
+<p>CPU专为自旋锁设计了pause指令，一旦自旋抢锁失败先pause一下，只是这个pause对于innodb来说pause的还不够久，所以需要 innodb_spin_wait_delay 来将pause放大一些。</p>
 <p>在我们的这个场景下对每个SQL的rt抖动非常敏感（放大256倍），所以过高的delay会导致部分SQL rt变高。</p>
 <p>函数 ut_delay(ut_rnd_interval(0, srv_spin_wait_delay)) 用来执行这个delay：</p>
-<pre><code>/*************************************************************//**
+<pre><code>/***************************MySQL代码****************************//**
 Runs an idle loop on CPU. The argument gives the desired delay
 in microseconds on 100 MHz Pentium + Visual C++.
 @return dummy value */
@@ -789,9 +791,26 @@ ut_delay(ulint delay)  //delay 是[0,innodb_spin_wait_delay)之间的一个随�
 
         return(j);
 }
+
+// kernel 自旋锁部分代码
+while (true) {
+  //因为判断lock变量的值比CAS操作更快，所以先判断lock再调用CAS效率更高
+  if (lock == 0 &amp;&amp;  CAS(lock, 0, pid) == 1) return;
+
+  if (CPU_count &gt; 1 ) { //如果是多核CPU，“忙等待”才有意义
+      for (n = 1; n &lt; 2048; n &lt;&lt;= 1) {//pause的时间，应当越来越长
+        for (i = 0; i &lt; n; i++) pause();//CPU专为自旋锁设计了pause指令
+        if (lock == 0 &amp;&amp; CAS(lock, 0, pid)) return;//pause后再尝试获取锁
+      }
+  }
+  sched_yield();//单核CPU，或者长时间不能获取到锁，应主动休眠，让出CPU
+}
 </code></pre><p>innodb_spin_wait_delay的默认值为6. spin 等待延迟是一个动态全局参数，您可以在MySQL选项文件（my.cnf或my.ini）中指定该参数，或者在运行时使用SET GLOBAL 来修改。在我们的MySQL配置中默认改成了30，导致了这个问题。</p>
 <h3 id="Skylake架构的8163-和-Broadwell架构-E5-2682-CPU型号的不同"><a href="#Skylake架构的8163-和-Broadwell架构-E5-2682-CPU型号的不同" class="headerlink" title="Skylake架构的8163 和 Broadwell架构 E5-2682 CPU型号的不同"></a>Skylake架构的8163 和 Broadwell架构 E5-2682 CPU型号的不同</h3><p>UT_RELAX_CPU()的汇编指令为pause，在CPU指令同步数据时进行等待的空转，<strong>在pause期间，同一个core上的HT可以执行其他指令</strong>。</p>
 <p>在Intel 64-ia-32-architectures-optimization-manual手册中提到：<br>The latency of the PAUSE instruction in prior generation microarchitectures is about 10 cycles, whereas in Skylake microarchitecture it has been extended to as many as 140 cycles.</p>
+<blockquote>
+<p><a href="https://xem.github.io/minix86/manual/intel-x86-and-64-manual-vol3/o_fe12b1e2a880e0ce-302.html" target="_blank" rel="external">The PAUSE instruction can improves the performance</a> of processors supporting Intel Hyper-Threading Technology when executing “spin-wait loops” and other routines where one thread is accessing a shared lock or semaphore in a tight polling loop. When executing a spin-wait loop, the processor can suffer a severe performance penalty when exiting the loop because it detects a possible memory order violation and flushes the core processor’s pipeline. The PAUSE instruction provides a hint to the processor that the code sequence is a spin-wait loop. The processor uses this hint to avoid the memory order violation and prevent the pipeline flush. In addition, the PAUSE instruction de-<br>pipelines the spin-wait loop to prevent it from consuming execution resources excessively and consume power needlessly. (See<a href="https://xem.github.io/minix86/manual/intel-x86-and-64-manual-vol3/o_fe12b1e2a880e0ce-305.html" target="_blank" rel="external"> Section 8.10.6.1, “Use the PAUSE Instruction in Spin-Wait Loops,” for more </a>information about using the PAUSE instruction with IA-32 processors supporting Intel Hyper-Threading Technology.)</p>
+</blockquote>
 <p><strong>Skylake架构的CPU的PAUSE指令从之前的10 cycles提升到140 cycles。</strong></p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/f712640a787655ad1bcddec4c65215e5.png" alt="image.png"></p>
 <p>可以看到V52的CPU绝大部分时间消耗在ut_delay函数上。</p>
@@ -2773,7 +2792,7 @@ public BufferedOutputStream(OutputStream out) {
     <link href="http://yoursite.com/2019/07/31/NIO%E5%92%8CEpoll/"/>
     <id>http://yoursite.com/2019/07/31/NIO和Epoll/</id>
     <published>2019-07-31T04:30:03.000Z</published>
-    <updated>2020-05-15T08:27:18.029Z</updated>
+    <updated>2020-05-18T08:01:59.251Z</updated>
     
     <content type="html"><![CDATA[<h1 id="NIO、EPOLL和协程"><a href="#NIO、EPOLL和协程" class="headerlink" title="NIO、EPOLL和协程"></a>NIO、EPOLL和协程</h1><h2 id="从IO说起"><a href="#从IO说起" class="headerlink" title="从IO说起"></a>从IO说起</h2><p>用户线程发起IO操作后（比如读），网络数据读取过程分两步：</p>
 <ul>
@@ -2782,6 +2801,15 @@ public BufferedOutputStream(OutputStream out) {
 </ul>
 <h3 id="零拷贝"><a href="#零拷贝" class="headerlink" title="零拷贝"></a>零拷贝</h3><p>零拷贝可以做到用户空间和内核空间共用同一块内存（Java中的DirectBuffer），这样少做一次拷贝。普通Buffer是在JVM堆上分配的内存，而DirectBuffer是堆外分配的（内核和JVM可以同时读写），这样不需要再多一次内核到用户Buffer的拷贝</p>
 <p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/83e2dfbd25d703c58877b2faf71c4944.jpg" alt=""></p>
+<p>比如通过网络下载文件，普通拷贝的流程会复制4次并有4次上下文切换，上下文切换是因为读写慢导致了IO的阻塞，进而线程被内核挂起，所以发生了上下文切换。在极端情况下如果read/write没有导致阻塞是不会发生上下文切换的：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/b2d0ffb366ef78faca4b7924c2a66cc1.png" alt="image.png"></p>
+<p>改成零拷贝后，也就是将read和write合并成一次，直接在内核中完成磁盘到网卡的数据复制</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ccdc10037d35349293cba8a63ad72af5.png" alt="image.png"></p>
+<p>零拷贝就是操作系统提供的新函数，同时接收文件描述符和 TCP socket 作为输入参数，这样执行时就可以完全在内核态完成内存拷贝，既减少了内存拷贝次数，也降低了上下文切换次数。</p>
+<p>而且，零拷贝取消了用户缓冲区后，不只降低了用户内存的消耗，还通过最大化利用 socket 缓冲区中的内存，间接地再一次减少了系统调用的次数，从而带来了大幅减少上下文切换次数的机会！</p>
+<p>应用读取磁盘写入网络的时候还得考虑缓存的大小，一般会设置的比较小，这样一个大文件导致多次小批量的读取，每次读取伴随着多次上下文切换。</p>
+<p>零拷贝使我们不必关心 socket 缓冲区的大小（socket缓冲区大小本身默认就是动态调整、或者应用代码指定大小）。比如，调用零拷贝发送方法时，尽可以把发送字节数设为文件的所有未发送字节数，例如 320MB，也许此时 socket 缓冲区大小为 1.4MB，那么一次性就会发送 1.4MB 到客户端，而不是只有 32KB。这意味着对于 1.4MB 的 1 次零拷贝，仅带来 2 次上下文切换，而不使用零拷贝且用户缓冲区为 32KB 时，经历了 176 次（4 * 1.4MB/32KB）上下文切换。</p>
+<h3 id="直接IO"><a href="#直接IO" class="headerlink" title="直接IO"></a>直接IO</h3><p>默认读写文件都会走 PageCache，但是如果是高并发的大文件读写，走PageCache的话效率不高，推荐用直接IO。比如MySQL INNODB自身实现了cache(buffer)来合并写和预读提升性能</p>
 <h3 id="同步阻塞IO"><a href="#同步阻塞IO" class="headerlink" title="同步阻塞IO"></a>同步阻塞IO</h3><p>用户线程发起read后让出CPU一直阻塞直到内核把网卡数据读到内核空间，然后再拷贝到用户空间，然后唤醒用户线程</p>
 <h3 id="同步非阻塞IO"><a href="#同步非阻塞IO" class="headerlink" title="同步非阻塞IO"></a>同步非阻塞IO</h3><p>用户线程发起read后，不阻塞，反复尝试读取，直到内核把网卡数据读到内核空间，用户线程继续read，这时进入阻塞直到数据拷贝到用户空间</p>
 <p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1562207744743-e86e37bb-c8e4-40aa-b581-ac862011221a.png" alt="undefined"> </p>

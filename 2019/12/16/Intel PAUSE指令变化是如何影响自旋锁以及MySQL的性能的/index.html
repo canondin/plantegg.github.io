@@ -125,7 +125,7 @@
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e4a2fb522be7aa65158778b7ea825207.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/2a5245c81a37d166c7e0b2ace45b9e4b.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/c47d2bd0e4d9d0f005d0e1132b385eab.png">
-<meta property="og:updated_time" content="2020-04-24T04:00:44.771Z">
+<meta property="og:updated_time" content="2020-05-18T08:01:59.227Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的">
 <meta name="twitter:description" content="Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的专有云场景下DRDS+MySQL集群的一次全表扫描性能优化过程 业务结构client -&amp;gt; DRDS -&amp;gt; slb -&amp;gt; MySQL（32实例，每个实例8Core） 场景描述：通过client压 DRDS和MySQL，MySQL是32个实例，业务逻辑是不带拆分键的全表扫描，也就是一个client SQL经过DRD">
@@ -441,10 +441,12 @@
 <p>再跟调整前比较一下，innodb_spin_wait_delay=30，并发40时，QPS 500+，物理rt：2.6ms 逻辑rt：72.1ms cpu：37%<br><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/fdb459972926cff371f5f5ab703790bb.png" alt="image.png"></p>
 <p>再看看调整前压测的时候的vmstat和tsar –cpu，可以看到process running抖动明显<br><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/4dbd9dff9deacec0e9911e3a7d025578.png" alt="image.png"></p>
 <p>对比修改delay后的process running就很稳定了，即使QPS大了3倍<br><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ed46d35161ea28352acd4289a3e9ddad.png" alt="image.png"></p>
-<h2 id="关于-innodb-spin-wait-delay"><a href="#关于-innodb-spin-wait-delay" class="headerlink" title="关于 innodb_spin_wait_delay"></a>关于 innodb_spin_wait_delay</h2><p>innodb通过大量的自旋锁来用高CPU消耗避免CS，这是自旋锁的正确使用方式，但是在多个核的情况下，多核一起自旋抢同一个锁，容易造成cache ping-pong，进而多个CPU核之间会互相使对方缓存部分无效。所以这里<a href="https://dev.mysql.com/doc/refman/5.7/en/innodb-performance-spin_lock_polling.html" target="_blank" rel="external">innodb通过增加innodb_spin_wait_delay来做一个折中</a>，也就是本来要不停地通过CPU自旋抢锁的，换成了抢锁失败后 delay一下（Pause）但是不释放CPU，delay时间到后继续抢锁，也就是把连续的自旋抢锁转换成了点状的抢锁（间隔的delay是个随机数–高速机关枪换成左轮手枪，避免卡壳），这样不但避免了CS也大大减少了cache ping-pong.</p>
+<h2 id="关于-innodb-spin-wait-delay"><a href="#关于-innodb-spin-wait-delay" class="headerlink" title="关于 innodb_spin_wait_delay"></a>关于 innodb_spin_wait_delay</h2><p>innodb通过大量的自旋锁来用高CPU消耗避免CS，这是自旋锁的正确使用方式，但是在多个核的情况下，多核一起自旋抢同一个锁，容易造成cache ping-pong，进而多个CPU核之间会互相使对方缓存部分无效。所以这里<a href="https://dev.mysql.com/doc/refman/5.7/en/innodb-performance-spin_lock_polling.html" target="_blank" rel="external">innodb通过增加innodb_spin_wait_delay和pause配合来缓解cache ping-pong</a>，也就是本来要高速通过CPU自旋抢锁的，换成了抢锁失败后 delay一下（Pause）但是不释放CPU，delay时间到后继续抢锁，也就是把连续的自旋抢锁转换成了更稀疏的点状的抢锁（间隔的delay是个随机数–机关枪换成左轮手枪，避免卡壳），这样不但避免了CS也大大减少了cache ping-pong. </p>
+<p>多线程竞争锁的时候，加锁失败的线程会“忙等待”，直到它拿到锁。什么叫“忙等待”呢？它并不意味着一直执行 CAS 函数，生产级的自旋锁在“忙等待”时，会与 CPU 紧密配合 ，它通过 CPU 提供的 PAUSE 指令，减少循环等待时的cache ping-pong和耗电量；对于单核 CPU，忙等待并没有意义，此时它会主动把线程休眠。</p>
+<p>CPU专为自旋锁设计了pause指令，一旦自旋抢锁失败先pause一下，只是这个pause对于innodb来说pause的还不够久，所以需要 innodb_spin_wait_delay 来将pause放大一些。</p>
 <p>在我们的这个场景下对每个SQL的rt抖动非常敏感（放大256倍），所以过高的delay会导致部分SQL rt变高。</p>
 <p>函数 ut_delay(ut_rnd_interval(0, srv_spin_wait_delay)) 用来执行这个delay：</p>
-<pre><code>/*************************************************************//**
+<pre><code>/***************************MySQL代码****************************//**
 Runs an idle loop on CPU. The argument gives the desired delay
 in microseconds on 100 MHz Pentium + Visual C++.
 @return dummy value */
@@ -467,9 +469,26 @@ ut_delay(ulint delay)  //delay 是[0,innodb_spin_wait_delay)之间的一个随�
 
         return(j);
 }
+
+// kernel 自旋锁部分代码
+while (true) {
+  //因为判断lock变量的值比CAS操作更快，所以先判断lock再调用CAS效率更高
+  if (lock == 0 &amp;&amp;  CAS(lock, 0, pid) == 1) return;
+
+  if (CPU_count &gt; 1 ) { //如果是多核CPU，“忙等待”才有意义
+      for (n = 1; n &lt; 2048; n &lt;&lt;= 1) {//pause的时间，应当越来越长
+        for (i = 0; i &lt; n; i++) pause();//CPU专为自旋锁设计了pause指令
+        if (lock == 0 &amp;&amp; CAS(lock, 0, pid)) return;//pause后再尝试获取锁
+      }
+  }
+  sched_yield();//单核CPU，或者长时间不能获取到锁，应主动休眠，让出CPU
+}
 </code></pre><p>innodb_spin_wait_delay的默认值为6. spin 等待延迟是一个动态全局参数，您可以在MySQL选项文件（my.cnf或my.ini）中指定该参数，或者在运行时使用SET GLOBAL 来修改。在我们的MySQL配置中默认改成了30，导致了这个问题。</p>
 <h3 id="Skylake架构的8163-和-Broadwell架构-E5-2682-CPU型号的不同"><a href="#Skylake架构的8163-和-Broadwell架构-E5-2682-CPU型号的不同" class="headerlink" title="Skylake架构的8163 和 Broadwell架构 E5-2682 CPU型号的不同"></a>Skylake架构的8163 和 Broadwell架构 E5-2682 CPU型号的不同</h3><p>UT_RELAX_CPU()的汇编指令为pause，在CPU指令同步数据时进行等待的空转，<strong>在pause期间，同一个core上的HT可以执行其他指令</strong>。</p>
 <p>在Intel 64-ia-32-architectures-optimization-manual手册中提到：<br>The latency of the PAUSE instruction in prior generation microarchitectures is about 10 cycles, whereas in Skylake microarchitecture it has been extended to as many as 140 cycles.</p>
+<blockquote>
+<p><a href="https://xem.github.io/minix86/manual/intel-x86-and-64-manual-vol3/o_fe12b1e2a880e0ce-302.html" target="_blank" rel="external">The PAUSE instruction can improves the performance</a> of processors supporting Intel Hyper-Threading Technology when executing “spin-wait loops” and other routines where one thread is accessing a shared lock or semaphore in a tight polling loop. When executing a spin-wait loop, the processor can suffer a severe performance penalty when exiting the loop because it detects a possible memory order violation and flushes the core processor’s pipeline. The PAUSE instruction provides a hint to the processor that the code sequence is a spin-wait loop. The processor uses this hint to avoid the memory order violation and prevent the pipeline flush. In addition, the PAUSE instruction de-<br>pipelines the spin-wait loop to prevent it from consuming execution resources excessively and consume power needlessly. (See<a href="https://xem.github.io/minix86/manual/intel-x86-and-64-manual-vol3/o_fe12b1e2a880e0ce-305.html" target="_blank" rel="external"> Section 8.10.6.1, “Use the PAUSE Instruction in Spin-Wait Loops,” for more </a>information about using the PAUSE instruction with IA-32 processors supporting Intel Hyper-Threading Technology.)</p>
+</blockquote>
 <p><strong>Skylake架构的CPU的PAUSE指令从之前的10 cycles提升到140 cycles。</strong></p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/f712640a787655ad1bcddec4c65215e5.png" alt="image.png"></p>
 <p>可以看到V52的CPU绝大部分时间消耗在ut_delay函数上。</p>
