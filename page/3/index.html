@@ -261,323 +261,6 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/03/24/Linux环境变量/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/03/24/Linux环境变量/" itemprop="url">Linux环境变量问题汇总</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-03-24T17:30:03+08:00">
-                2018-03-24
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2018/03/24/Linux环境变量/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2018/03/24/Linux环境变量/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="Linux环境变量问题汇总"><a href="#Linux环境变量问题汇总" class="headerlink" title="Linux环境变量问题汇总"></a>Linux环境变量问题汇总</h1><h3 id="测试好的脚本放到-crontab-里就报错-找不到命令"><a href="#测试好的脚本放到-crontab-里就报错-找不到命令" class="headerlink" title="测试好的脚本放到 crontab 里就报错: 找不到命令"></a>测试好的脚本放到 crontab 里就报错: 找不到命令</h3><p>写好一个脚本，测试没有问题，然后放到crontab 想要定时执行，但是总是报错，去看日志的话显示某些命令找不到，这种一般都是因为PATH环境变量变了导致的</p>
-<p>自己在shell命令行下测试的时候当前环境变量就是这个用户的环境变量，可以通过命令：env 看到，脚本放到crontab 里面后一般都加了sudo 这个时候 env 变了。比如你可以在命令行下执行 env 和 sudo env 比较一下就发现他们很不一样</p>
-<p>sudo有一个参数 -E （–preserver-env）就是为了解决这个问题的。</p>
-<p>这个时候再比较一下 </p>
-<ul>
-<li>env</li>
-<li>sudo env</li>
-<li>sudo -E env</li>
-</ul>
-<p>大概就能理解这里的区别了。</p>
-<p>本文后面的回复中有同学提到了：</p>
-<blockquote>
-<p>第一个问题，sudo -E在阿里的容器中貌似是不行的，没有特别好的解，我们最后是通过在要执行的脚本中手动source “/etc/profile.d/dockerenv.sh”才行</p>
-</blockquote>
-<p>我也特意去测试了一下官方的Docker容器，也有同样的问题，/etc/profile.d/dockerenv.sh 中的脚本没有生效，然后debug看了看，主要是因为bashrc中的 . 和 source 不同导致的，不能说没有生效，而是加载 /etc/profile.d/dockerenv.sh 是在一个独立的bash 进程中，加载完毕进程结束，所有加载过的变量都完成了生命周期释放了，类似我文章中的export部分提到的。我尝试把 ~/.bashrc 中的 .  /etc/bashrc 改成 source /etc/bashrc , 同时也把 /etc/bashrc 中的 . 改成 source，就可以了，再次进到容器不需要任何操作就能看到所有：/etc/profile.d/dockerenv.sh 中的变量了，所以我们制作镜像的时候考虑改改这里</p>
-<h3 id="同样一个命令ssh执行不了，-报找不到命令"><a href="#同样一个命令ssh执行不了，-报找不到命令" class="headerlink" title="同样一个命令ssh执行不了， 报找不到命令"></a>同样一个命令ssh执行不了， 报找不到命令</h3><p>比如：</p>
-<p>ssh user@ip “ ip a “  报错： bash: ip: command not found</p>
-<p>但是你要是先执行 ssh user@ip 连上服务器后，再执行 ip a 就可以，这里是同一个命令通过两种不同的方式使用，但是环境变量也不一样了。</p>
-<p>同样想要解决这个问题的话可以先 ssh 连上服务器，再执行 which ip ; env | grep PATH  </p>
-<pre><code>$ which ip
-/usr/sbin/ip
-$ env | grep PATH
-PATH=/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
-</code></pre><p>很明显这里因为 ip在/usr/sbin下，而/usr/sbin又在PATH变量中，所以可以找到。</p>
-<p>那么接下来我们看看 </p>
-<pre><code>$ssh user@ip &quot;env | grep PATH&quot;
-PATH=/usr/local/bin:/usr/bin
-</code></pre><p>很明显这里的PATH比上面的PATH短了一截，/usr/sbin也没有在里面，所以/usr/sbin 下的ip命令自然也找不到了，这里虽然都是同一个用户，但是他们的环境变量还不一样，有点出乎我的意料之外。</p>
-<p>主要原因是我们的shell 分为login shell 和 no-login shell , 先ssh 登陆上去再执行命令就是一个login shell，Linux要为这个终端分配资源。</p>
-<p>而下面的直接在ssh 里面放执行命令实际上就不需要login，所以这是一个no-login shell.</p>
-<h4 id="login-shell-和-no-login-shell又有什么区别呢？"><a href="#login-shell-和-no-login-shell又有什么区别呢？" class="headerlink" title="login shell 和 no-login shell又有什么区别呢？"></a>login shell 和 no-login shell又有什么区别呢？</h4><ul>
-<li>login shell加载环境变量的顺序是：① /etc/profile ② ~/.bash_profile ③ ~/.bashrc ④ /etc/bashrc </li>
-<li>而non-login shell加载环境变量的顺序是： ① ~/.bashrc ② /etc/bashrc</li>
-</ul>
-<p>也就是nog-login少了前面两步，我们先看后面两步。</p>
-<p>下面是一个 .bashrc 的内容：</p>
-<pre><code>[ ~]$ cat .bashrc 
-# .bashrc
-
-# Source global definitions
-if [ -f /etc/bashrc ]; then
-    . /etc/bashrc
-fi
-</code></pre><p>基本没有什么内容，它主要是去加载 /etc/bashrc  而他里面也没有看到sbin相关的东西</p>
-<p>那我们再看non-login少的两步： ① /etc/profile ② ~/.bash_profile </p>
-<p>cat /etc/profile :</p>
-<pre><code>if [ &quot;$EUID&quot; = &quot;0&quot; ]; then
-    pathmunge /usr/sbin
-    pathmunge /usr/local/sbin
-else
-    pathmunge /usr/local/sbin after
-    pathmunge /usr/sbin after
-fi
-</code></pre><p>这几行代码就是把 /usr/sbin 添加到 PATH 变量中，正是他们的区别决定了这里的环境变量不一样。</p>
-<p><strong>用一张图来表述他们的结构，箭头代表加载顺序，红框代表不同的shell的初始入口</strong>：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/ae3095f063dede80a8c1ee79ec25685c.png" alt="image.png"></p>
-<p>像 ansible 这种自动化工具，或者我们自己写的自动化脚本，底层通过ssh这种non-login的方式来执行的话，那么都有可能碰到这个问题，如何修复呢？</p>
-<p>在 /etc/profile.d/ 下创建一个文件：/etc/profile.d/my_bashenv.sh 内容如下：</p>
-<pre><code>$cat /etc/profile.d/my_bashenv.sh 
-
-pathmunge () {
-if ! echo $PATH | /bin/egrep -q &quot;(^|:)$1($|:)&quot; ; then
-   if [ &quot;$2&quot; = &quot;after&quot; ] ; then
-  PATH=$PATH:$1
-   else
-  PATH=$1:$PATH
-   fi
-fi
-}
-
-pathmunge /sbin
-pathmunge /usr/sbin
-pathmunge /usr/local/sbin
-pathmunge /usr/local/bin
-pathmunge /usr/X11R6/bin after
-
-unset pathmunge
-
-complete -cf sudo
-
-    alias chgrp=&apos;chgrp --preserve-root&apos;
-    alias chown=&apos;chown --preserve-root&apos;
-    alias chmod=&apos;chmod --preserve-root&apos;
-    alias rm=&apos;rm -i --preserve-root&apos;
-
-
-
-    HISTTIMEFORMAT=&apos;[%F %T] &apos;
-    HISTSIZE=1000
-
-export EDITOR=vim   
-
-export PS1=&apos;\n\e[1;37m[\e[m\e[1;32m\u\e[m\e[1;33m@\e[m\e[1;35m\H\e[m \e[4m`pwd`\e[m\e[1;37m]\e[m\e[1;36m\e[m\n\$&apos;
-</code></pre><p>通过前面我们可以看到 /etc/bashrc 总是会去加载 /etc/profile.d/ 下的所有 *.sh 文件，同时我们还可以在这个文件中修改我们喜欢的 shell 配色方案和环境变量等等 </p>
-<h3 id="BASH"><a href="#BASH" class="headerlink" title="BASH"></a>BASH</h3><p>1、交互式的登录shell （bash –il xxx.sh）<br>载入的信息：<br>/etc/profile<br>~/.bash_profile（ -&gt;  ~/.bashrc  -&gt;  /etc/bashrc）<br>~/.bash_login<br>~/.profile</p>
-<p>2、非交互式的登录shell （bash –l xxx.sh）<br>载入的信息：<br>/etc/profile<br>~/.bash_profile （ -&gt;  ~/.bashrc  -&gt;  /etc/bashrc）<br>~/.bash_login<br>~/.profile<br>$BASH_ENV</p>
-<p>3、交互式的非登录shell （bash –i xxx.sh）<br>载入的信息：<br>~/.bashrc （ -&gt;  /etc/bashrc）</p>
-<p>4、非交互式的非登录shell （bash xxx.sh）<br>载入的信息：<br>$BASH_ENV</p>
-<h3 id="SH"><a href="#SH" class="headerlink" title="SH"></a>SH</h3><p>1、交互式的登录shell<br>载入的信息：<br>/etc/profile<br>~/.profile</p>
-<p>2、非交互式的登录shell<br>载入的信息：<br>/etc/profile<br>~/.profile</p>
-<p>3、交互式的非登录shell<br>载入的信息：<br>$ENV</p>
-<h4 id="练习验证一下bash、sh和login、non-login"><a href="#练习验证一下bash、sh和login、non-login" class="headerlink" title="练习验证一下bash、sh和login、non-login"></a>练习验证一下bash、sh和login、non-login</h4><ul>
-<li>sudo ll 或者 sudo cd 是不是都报找不到命令</li>
-<li>先sudo bash 然后执行 ll或者cd就可以了</li>
-<li>先sudo sh   然后执行 ll或者cd还是报找不到命令</li>
-<li>sudo env | grep PATH 然后 sudo bash 后再执行 env | grep PATH 看到的PATH环境变量不一样了</li>
-</ul>
-<p><strong>找不到ll、cd命令不是因为login/non-login而是因为这两个命令是bash内部定义的，所以sh找不到，通过type -a cd 可以看到一个命令到底是哪里来的</strong></p>
-<p>4、非交互式的非登录shell<br>载入的信息：<br>nothing</p>
-<h3 id="export命令的作用"><a href="#export命令的作用" class="headerlink" title="export命令的作用"></a>export命令的作用</h3><p>Linux 中export是一种命令工具通过export命令把shell变量中包含的用户变量导入给子程序.<strong>默认情况下子程序仅会继承父程序的环境变量</strong>，子程序不会继承父程序的自定义变量，所以需要export让父程序中的<strong>自定义变量</strong>变成环境变量，然后子程序就能继承过来了。</p>
-<p>我们来看一个例子， 有一个变量，名字 abc 内容123 如果没有export ，那么通过bash创建一个新的shell（新shell是之前bash的子程序），在新的shell里面就没有abc这个变量， export之后在新的 shell 里面才可以看到这个变量，但是退出重新login后（产生了一个新的bash，只会加载env）abc变量都不在了</p>
-<pre><code>$echo $abc
-</code></pre><p>​<br>​    $abc=”123”</p>
-<p>​<br>​    $echo $abc<br>​    123<br>​<br>    $bash</p>
-<pre><code>$echo $abc
-</code></pre><p>​    $exit<br>​    exit<br>​    </p>
-<pre><code>$export abc
-
-$echo $abc
-123
-
-$bash
-
-$echo $abc
-123
-</code></pre><h2 id="一些常见问题"><a href="#一些常见问题" class="headerlink" title="一些常见问题"></a>一些常见问题</h2><h3 id="执行好好地shell-脚本换台服务器就：source-not-found"><a href="#执行好好地shell-脚本换台服务器就：source-not-found" class="headerlink" title="执行好好地shell 脚本换台服务器就：source: not found"></a>执行好好地shell 脚本换台服务器就：source: not found</h3><p>source 是bash的一个内建命令（所以你找不到一个/bin/source 这样的可执行文件），也就是他是bash自带的，如果我们执行脚本是这样： sh shell.sh 而shell.sh中用到了source命令的话就会报 source: not found</p>
-<p>这是因为bash 和 sh是两个东西，sh是 POSIX shell，你可以把它看成是一个兼容某个规范的shell，而bash是 Bourne-Again shell script， bash是 POSIX shell的扩展，就是bash支持所有符合POSIX shell的规范，但是反过来就不一定了，而这里的 source 恰好就是 bash内建的，不符合 POSIX shell的规范（<strong>POSIX shell 中用 . 来代替source</strong>)</p>
-<h3 id="在centos执行好好的脚本放到Ubuntu上就不行了，报语法错误"><a href="#在centos执行好好的脚本放到Ubuntu上就不行了，报语法错误" class="headerlink" title="在centos执行好好的脚本放到Ubuntu上就不行了，报语法错误"></a>在centos执行好好的脚本放到Ubuntu上就不行了，报语法错误</h3><p>同上，如果到ubuntu上用 bash shell.sh是可以的，但是sh shell.sh就报语法错误，但是在centos上执行：sh或者bash shell.sh 都可以通过。 在centos上执行 ls -lh /usr/bin/sh 可以看到 /usr/bin/sh link到了 /usr/bin/bash 也就是sh等同于bash，所以都可以通过不足为奇。 </p>
-<p>但是在ubuntu上执行 ls -lh /usr/bin/sh 可以看到 /usr/bin/sh link到了 <strong>/usr/bin/dash</strong> ， 这就是为什么ubuntu上会报错</p>
-<h3 id="source-shell-sh-和-bash-shell-sh以及-shell-sh的区别"><a href="#source-shell-sh-和-bash-shell-sh以及-shell-sh的区别" class="headerlink" title="source shell.sh 和 bash shell.sh以及 ./shell.sh的区别"></a>source shell.sh 和 bash shell.sh以及 ./shell.sh的区别</h3><p>source shell.sh就在本shell中展开执行<br>bash shell.sh表示在本shell启动一个子程序（bash），在子程序中执行 shell.sh (shell.sh中产生的一些环境变量就没法带回父shell进程了)， 有读 shell.sh 权限就可以执行<br>./shell.sh 跟bash shell.sh类似，但是必须要求shell.sh有rx权限，然后根据shell.sh前面的 #! 后面的指示来确定用bash还是sh </p>
-<pre><code>$cat test.sh 
-echo $$
-
-$echo $$
-2299
-
-$source test.sh 
-2299
-
-$bash test.sh 
-4037
-
-$./test.sh 
-4040
-</code></pre><p>如上实例，只有source的时候进程ID和bash进程ID一样，其它方式都创建了一个新的bash进程，所以ID也变了</p>
-<h3 id="通过ssh-执行命令（命令前有sudo）的时候报错：sudo-sorry-you-must-have-a-tty-to-run-sudo"><a href="#通过ssh-执行命令（命令前有sudo）的时候报错：sudo-sorry-you-must-have-a-tty-to-run-sudo" class="headerlink" title="通过ssh 执行命令（命令前有sudo）的时候报错：sudo: sorry, you must have a tty to run sudo"></a>通过ssh 执行命令（命令前有sudo）的时候报错：sudo: sorry, you must have a tty to run sudo</h3><p>这是因为 /etc/sudoers (Linux控制sudo行为、权限的配置文件）中指定了 requiretty（<a href="https://www.shell-tips.com/2014/09/08/sudo-sorry-you-must-have-a-tty-to-run-sudo/" target="_blank" rel="external">Redhat、Fedora默认行为</a>），但是 通过ssh远程执行命令是没有tty的（不需要交互）。<br>解决办法可以试试 ssh -t or -tt (强制分配tty）或者先修改 /etc/sudoers把 requiretty 删掉或者改成 !requiretty</p>
-<h3 id="cp-命令即使使用了-f-force参数，overwrite的时候还是弹出交互信息，必须手工输入Y、yes等"><a href="#cp-命令即使使用了-f-force参数，overwrite的时候还是弹出交互信息，必须手工输入Y、yes等" class="headerlink" title="cp 命令即使使用了 -f force参数，overwrite的时候还是弹出交互信息，必须手工输入Y、yes等"></a>cp 命令即使使用了 -f force参数，overwrite的时候还是弹出交互信息，必须手工输入Y、yes等</h3><p>Google搜索一下别人给出的方案是这样 echo yes | cp -rf xxx yyy 算是笨办法，但是没有找到这里为什么-f 不管用。<br>type -a cp 先确认一下 cp到底是个什么鬼东西：</p>
-<pre><code>#type -a cp
-cp is aliased to `cp -i&apos;
-cp is /usr/bin/cp
-</code></pre><p>这下算是有点清楚了，原来默认cp 都是-i了（-i, –interactive prompt before overwrite (overrides a previous -n option)），看起来就是默认情况下为了保护我们的目录不经意间被修改了。所以真的确认要overwrite的话直接用 /usr/bin/cp -f 就不需要每次yes确认了</p>
-<h3 id="重定向"><a href="#重定向" class="headerlink" title="重定向"></a>重定向</h3><p>sudo docker logs swarm-agent-master &gt;master.log 2&gt;&amp;1 输出重定向<a href="http://www.kissyu.org/2016/12/25/shell%E4%B8%AD%3E%20:dev:null%202%20%3E%20&amp;1%E6%98%AF%E4%BB%80%E4%B9%88%E9%AC%BC%EF%BC%9F/" target="_blank" rel="external">http://www.kissyu.org/2016/12/25/shell%E4%B8%AD%3E%20:dev:null%202%20%3E%20&amp;1%E6%98%AF%E4%BB%80%E4%B9%88%E9%AC%BC%EF%BC%9F/</a></p>
-<pre><code>&gt;/dev/null 2&gt;&amp;1 标准输出丢弃 错误输出丢弃
-2&gt;&amp;1 &gt;/dev/null 标准输出丢弃 错误输出屏幕
-</code></pre><p><a href="http://kodango.com/bash-one-liners-explained-part-three" target="_blank" rel="external">http://kodango.com/bash-one-liners-explained-part-three</a></p>
-<h3 id="umask"><a href="#umask" class="headerlink" title="umask"></a>umask</h3><p>创建文件的默认权限是 666 文件夹是777 但是都要跟 umask做运算（按位减法） 一般umask是002<br>所以创建出来文件最终是664，文件夹是775，如果umask 是027的话最终文件是 640 文件夹是750<br>『尽量不要以数字相加减啦！』你应该要这样想(-rw-rw- rw-) – (——–wx)=-rw-rw-r–这样就对啦！不要用十进制的数字喔！够能力的话，用二进制来算，不晓得的话，用 rwx 来算喔！</p>
-<h3 id="其它"><a href="#其它" class="headerlink" title="其它"></a>其它</h3><pre><code>echo $-   // himBH 
-</code></pre><p>“$-” 中含有“i”代表“交互式shell”<br>“$0”的显示结果为“-bash”，bash前面多个“-”，代表“登录shell”.<br>没有“i“和“-”的，是“非交互式的非登录shell”</p>
-<p>set +o histexpand （！ 是history展开符号， histexpand 可以打开或者关闭这个展开符）<br>alias 之后，想要用原来的命令：+alias  （命令前加)</p>
-<p>bash程序执行，当“$0”是“sh”的时候，则要求下面的代码遵循一定的规范，当不符合规范的语法存在时，则会报错，所以可以这样理解，“sh”并不是一个程序，而是一种标准（POSIX），这种标准，在一定程度上（具体区别见下面的“Things bash has that sh does not”）保证了脚本的跨系统性（跨UNIX系统）</p>
-<p>Linux 分 shell变量(set)，用户变量(env)， shell变量包含用户变量，export是一种命令工具，是显式那些通过export命令把shell变量中包含的用户变量导入给用户变量的那些变量.</p>
-<h3 id="引号"><a href="#引号" class="headerlink" title="引号"></a>引号</h3><p>shell 中：单引号的处理是比较简单的，被单引号包括的所有字符都保留原有的意思，例如’$a’不会被展开, ‘<code>cmd</code>‘也不会执行命令；而双引号，则相对比较松，在双引号中，以下几个字符$, <code>, \依然有其特殊的含义，比如$可以用于变量展开, 反引号</code>可以执行命令，反斜杠\可以用于转义。但是，在双引号包围的字符串里，反斜杠的转义也是有限的，它只能转义$, `, “, \或者newline（回车）这几个字符，后面如果跟着的不是这几个字符，只不会被黑底，反斜杠会被保留  <a href="http://kodango.com/simple-bash-programming-skills-2" target="_blank" rel="external">http://kodango.com/simple-bash-programming-skills-2</a></p>
-<h3 id="su-和-su-的区别"><a href="#su-和-su-的区别" class="headerlink" title="su 和 su - 的区别"></a>su 和 su - 的区别</h3><p>su命令和su -命令最大的本质区别就是：前者只是切换了root身份，但Shell环境仍然是普通用户的Shell；而后者连用户和Shell环境一起切换成root身份了。只有切换了Shell环境才不会出现PATH环境变量错误。su切换成root用户以后，pwd一下，发现工作目录仍然是普通用户的工作目录；而用su -命令切换以后，工作目录变成root的工作目录了。用echo $PATH命令看一下su和su -以后的环境变量有何不同。以此类推，要从当前用户切换到其它用户也一样，应该使用su -命令。</p>
-<p>比如：<br>   su admin 会重新加载 ~/.bashrc ，但是不会切换到adminhome目录。<br>   但是 su - admin 不会重新加载 ~/.bashrc ，但是会切换admin的home目录。</p>
-<p>The su command is used to become another user during a login session. Invoked without a username, su defaults to becoming the superuser. The optional argument - may be used to provide an environment similar to what the user would expect had the user logged in directly.</p>
-<h3 id="后台任务执行"><a href="#后台任务执行" class="headerlink" title="后台任务执行"></a>后台任务执行</h3><p>将任务放到后台，断开ssh后还能运行：<br>“ctrl-Z”将当前任务挂起；<br>“disown -h”让该任务忽略SIGHUP信号（不会因为掉线而终止执行）；<br>“bg”让该任务在后台恢复运行。</p>
-<p>创建文件的默认权限是 666 文件夹是777 但是都要跟 umask做运算（按位减法） 一般umask是002<br>所以创建出来文件最终是664，文件夹是775，如果umask 是027的话最终文件是 640 文件夹是750<br>『尽量不要以数字相加减啦！』你应该要这样想(-rw-rw- rw-) – (——–wx)=-rw-rw-r–这样就对啦！不要用十进制的数字喔！够能力的话，用二进制来算，不晓得的话，用 rwx 来算喔！</p>
-<h3 id="参考文章："><a href="#参考文章：" class="headerlink" title="参考文章："></a>参考文章：</h3><p><a href="https://blog.csdn.net/u010871982/article/details/78525367" target="_blank" rel="external">关于ansible远程执行的环境变量问题</a></p>
-<p><a href="http://bbs.chinaunix.net/thread-1068678-1-1.html" target="_blank" rel="external">Bash和Sh的区别</a></p>
-<p><a href="http://kodango.com/what-is-interactive-and-login-shell" target="_blank" rel="external">什么是交互式登录 Shell what-is-interactive-and-login-shell</a></p>
-<p><a href="http://kodango.com/explain-shell-default-options" target="_blank" rel="external">Shell 默认选项 himBH 的解释</a></p>
-<p><a href="http://kodango.com/useful-documents-about-shell" target="_blank" rel="external">useful-documents-about-shell</a></p>
-<p><a href="http://coolnull.com/4432.html" target="_blank" rel="external">linux cp实现强制覆盖</a></p>
-<p><a href="https://wangdoc.com/bash/startup.html" target="_blank" rel="external">https://wangdoc.com/bash/startup.html</a></p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/03/14/就是要你懂git代理--如何设置git Proxy/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -708,6 +391,237 @@ ProxyCommand ssh -l root 2.2.2.2 exec /usr/bin/nc %h %p
 <p>写这些主要是从Google上搜索到的一些文章，http的倒还是靠谱，但是ssh的就有点乱，还要在本地安装东西，对nc版本有要求之类的，于是就折腾了一下，上面的方式都是靠谱的。</p>
 <p>整个原理还是穿墙术。</p>
 
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/01/23/10+倍性能提升全过程/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/01/23/10+倍性能提升全过程/" itemprop="url">10+倍性能提升全过程</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-01-23T17:30:03+08:00">
+                2018-01-23
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/performance/" itemprop="url" rel="index">
+                    <span itemprop="name">performance</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/01/23/10+倍性能提升全过程/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2018/01/23/10+倍性能提升全过程/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="10-倍性能提升全过程–优酷账号绑定淘宝账号的TPS从500到5400的优化历程"><a href="#10-倍性能提升全过程–优酷账号绑定淘宝账号的TPS从500到5400的优化历程" class="headerlink" title="10+倍性能提升全过程–优酷账号绑定淘宝账号的TPS从500到5400的优化历程"></a>10+倍性能提升全过程–优酷账号绑定淘宝账号的TPS从500到5400的优化历程</h1><h2 id="背景说明"><a href="#背景说明" class="headerlink" title="背景说明"></a>背景说明</h2><blockquote>
+<p>2016年的双11在淘宝上买买买的时候，天猫和优酷土豆一起做了联合促销，在天猫双11当天购物满XXX元就赠送优酷会员，这个过程需要用户在优酷侧绑定淘宝账号(登录优酷、提供淘宝账号，优酷调用淘宝API实现两个账号绑定）和赠送会员并让会员权益生效(看收费影片、免广告等等）</p>
+<p>这里涉及到优酷的两个部门：Passport(在上海，负责登录、绑定账号，下文中的优化过程主要是Passport部分）；会员(在北京，负责赠送会员，保证权益生效）</p>
+<p>在双11活动之前，Passport的绑定账号功能一直在运行，只是没有碰到过大促销带来的挑战</p>
+</blockquote>
+<hr>
+<p>整个过程分为两大块：</p>
+<ol>
+<li>整个系统级别，包括网络和依赖服务的性能等，多从整个系统视角分析问题；</li>
+<li>但服务器内部的优化过程，将CPU从si/sy围赶us，然后在us从代码级别一举全歼。</li>
+</ol>
+<p>系统级别都是最容易被忽视但是成效最明显的，代码层面都是很细致的力气活。</p>
+<p>整个过程都是在对业务和架构不是非常了解的情况下做出的。</p>
+<h2 id="会员部分的架构改造"><a href="#会员部分的架构改造" class="headerlink" title="会员部分的架构改造"></a>会员部分的架构改造</h2><ul>
+<li>接入中间件DRDS，让优酷的数据库支持拆分，分解MySQL压力</li>
+<li>接入中间件vipserver来支持负载均衡</li>
+<li>接入集团DRC来保障数据的高可用</li>
+<li>对业务进行改造支持Amazon的全链路压测</li>
+</ul>
+<h2 id="主要的压测过程"><a href="#主要的压测过程" class="headerlink" title="主要的压测过程"></a>主要的压测过程</h2><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/6b24a854d91aba4dcdbd4f0155683d93.png" alt="screenshot.png"></p>
+<p><strong>上图是压测过程中主要的阶段中问题和改进,主要的问题和优化过程如下：</strong></p>
+<pre><code>- docker bridge网络性能问题和网络中断si不均衡    (优化后：500-&gt;1000TPS)
+- 短连接导致的local port不够                   (优化后：1000-3000TPS)
+- 生产环境snat单核导致的网络延时增大             (优化后生产环境能达到测试环境的3000TPS)
+- Spring MVC Path带来的过高的CPU消耗           (优化后：3000-&gt;4200TPS)
+- 其他业务代码的优化(比如异常、agent等)          (优化后：4200-&gt;5400TPS)
+</code></pre><p><strong>优化过程中碰到的比如淘宝api调用次数限流等一些业务原因就不列出来了</strong></p>
+<hr>
+<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>由于用户进来后先要登录并且绑定账号，实际压力先到Passport部分，在这个过程中最开始单机TPS只能到500，经过N轮优化后基本能达到5400 TPS，下面主要是阐述这个优化过程</p>
+<h2 id="Passport部分的压力"><a href="#Passport部分的压力" class="headerlink" title="Passport部分的压力"></a>Passport部分的压力</h2><h3 id="Passport-核心服务分两个："><a href="#Passport-核心服务分两个：" class="headerlink" title="Passport 核心服务分两个："></a>Passport 核心服务分两个：</h3><ul>
+<li>Login              主要处理登录请求</li>
+<li>userservice    处理登录后的业务逻辑，比如将优酷账号和淘宝账号绑定</li>
+</ul>
+<p>为了更好地利用资源每台物理加上部署三个docker 容器，跑在不同的端口上(8081、8082、8083），通过bridge网络来互相通讯</p>
+<h3 id="Passport机器大致结构"><a href="#Passport机器大致结构" class="headerlink" title="Passport机器大致结构"></a>Passport机器大致结构</h3><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/b509b30218dd22e03149985cf5e15f8e.png" alt="screenshot.png"></p>
+<!--这里的500 TPS到5400 TPS是指登录和将优酷账号和淘宝账号绑定的TPS，也是促销活动主要的瓶颈-->
+<h3 id="userservice服务网络相关的各种问题"><a href="#userservice服务网络相关的各种问题" class="headerlink" title="userservice服务网络相关的各种问题"></a>userservice服务网络相关的各种问题</h3><hr>
+<h4 id="太多SocketConnect异常-如上图）"><a href="#太多SocketConnect异常-如上图）" class="headerlink" title="太多SocketConnect异常(如上图）"></a>太多SocketConnect异常(如上图）</h4><p>在userservice机器上通过netstat也能看到大量的SYN_SENT状态，如下图：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/99bf952b880f17243953da790ff0e710.png" alt="image.png"></p>
+<h4 id="因为docker-bridge通过nat来实现，尝试去掉docker，让tomcat直接跑在物理机上"><a href="#因为docker-bridge通过nat来实现，尝试去掉docker，让tomcat直接跑在物理机上" class="headerlink" title="因为docker bridge通过nat来实现，尝试去掉docker，让tomcat直接跑在物理机上"></a>因为docker bridge通过nat来实现，尝试去掉docker，让tomcat直接跑在物理机上</h4><p>这时SocketConnect异常不再出现<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/6ed62fd6b50ad2785e5b57687d95ad6e.png" alt="image.png"></p>
+<h4 id="从新梳理一下网络流程"><a href="#从新梳理一下网络流程" class="headerlink" title="从新梳理一下网络流程"></a>从新梳理一下网络流程</h4><p>docker(bridge)—-短连接—&gt;访问淘宝API(淘宝open api只能短连接访问），性能差，cpu都花在si上； </p>
+<p>如果 docker(bridge)—-长连接到宿主机的某个代理上(比如haproxy）—–短连接—&gt;访问淘宝API， 性能就能好一点。问题可能是短连接放大了Docker bridge网络的性能损耗</p>
+<h4 id="当时看到的cpu-si非常高，截图如下："><a href="#当时看到的cpu-si非常高，截图如下：" class="headerlink" title="当时看到的cpu si非常高，截图如下："></a>当时看到的cpu si非常高，截图如下：</h4><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/4c1eff0f925f59977e2557acff5cf03b.png" alt="image.png"></p>
+<p>去掉Docker后，性能有所提升，继续通过perf top看到内核态寻找可用的Local Port消耗了比较多的CPU，gif动态截图如下(可以点击看高清大图）：</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/fff502ca73e3112e585560ffe4a4dbf1.gif" alt="perf-top-netLocalPort-issue.gif"></p>
+<p><strong>注意图中ipv6_rcv_saddr_equal和inet_csk_get_port 总共占了30%的CPU</strong> (系统态的CPU使用率高意味着共享资源有竞争或者I/O设备之间有大量的交互。)</p>
+<p><strong>一般来说一台机器默认配置的可用 Local Port 3万多个，如果是短连接的话，一个连接释放后默认需要60秒回收，30000/60 =500 这是大概的理论TPS值【这里只考虑连同一个server IP:port 的时候】</strong></p>
+<p>这500的tps算是一个老中医的经验。不过有些系统调整过Local Port取值范围，比如从1024到65534，那么这个tps上限就是1000附近。</p>
+<p>同时观察这个时候CPU的主要花在sy上，最理想肯定是希望CPU主要用在us上，截图如下：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/05703c168e63e96821ea9f921d83712b.png" alt="image.png"></p>
+<p><strong>规则：性能优化要先把CPU从SI、SY上的消耗赶到US上去(通过架构、系统配置）；然后提升 US CPU的效率(代码级别的优化）</strong></p>
+<p>sy占用了30-50%的CPU，这太不科学了，同时通过 netstat 分析连接状态，确实看到很多TIME_WAIT：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2ae2cb8b0cb324b68ca22c48c019e029.png" alt="localportissue-time-wait.png"></p>
+<p><strong>cpu要花在us上，这部分才是我们代码吃掉的</strong></p>
+<p><strong><em>于是让PE修改了tcp相关参数：降低 tcp_max_tw_buckets和开启tcp_tw_reuse，这个时候TPS能从1000提升到3000</em></strong></p>
+<p>鼓掌，赶紧休息，迎接双11啊</p>
+<h2 id="测试环境优化到3000-TPS后上线继续压测"><a href="#测试环境优化到3000-TPS后上线继续压测" class="headerlink" title="测试环境优化到3000 TPS后上线继续压测"></a>测试环境优化到3000 TPS后上线继续压测</h2><p><strong>居然性能又回到了500，太沮丧了</strong>，其实最开始账号绑定慢，Passport这边就怀疑taobao api是不是在大压力下不稳定，一般都是认为自己没问题，有问题的一定是对方。我不觉得这有什么问题，要是知道自己有什么问题不早就优化掉了，但是这里缺乏证据支撑，也就是如果你觉得自己没有问题或者问题在对方，一定要拿出证据来(有证据那么大家可以就证据来讨论，而不是互相苍白地推诿）。</p>
+<p>这个时候Passport更加理直气壮啊，好不容易在测试环境优化到3000，怎么一调taobao api就掉到500呢，这么点压力你们就扛不住啊。 但是taobao api那边给出调用数据都是1ms以内就返回了(alimonitor监控图表–拿证据说话）。</p>
+<p>看到alimonitor给出的api响应时间图表后，我开始怀疑从优酷的机器到淘宝的机器中间链路上有瓶颈，但是需要设计方案来证明这个问题在链路上，要不各个环节都会认为自己没有问题的，问题就会卡死。但是当时Passport的开发也只能拿到Login和Userservice这两组机器的权限，中间的负载均衡、交换机都没有权限接触到。</p>
+<p>在没有证据的情况下，肯定机房、PE配合你排查的欲望基本是没有的(被坑过很多回啊，你说我的问题，结果几天配合排查下来发现还是你程序的问题，凭什么我要每次都陪你玩？），所以我要给出证明问题出现在网络链路上，然后拿着这个证据跟网络的同学一起排查。</p>
+<p>讲到这里我禁不住要插一句，在出现问题的时候，都认为自己没有问题这是正常反应，毕竟程序是看不见的，好多意料之外逻辑考虑不周全也是常见的，出现问题按照自己的逻辑自查的时候还是没有跳出之前的逻辑所以发现不了问题。但是好的程序员在问题的前面会尝试用各种手段去证明问题在哪里，而不是复读机一样我的逻辑是这样的，不可能出问题的。即使目的是证明问题在对方，只要能给出明确的证据都是负责任的，拿着证据才能理直气壮地说自己没有问题和干净地甩锅。</p>
+<p><strong>在尝试过tcpdump抓包、ping等各种手段分析后，设计了场景证明问题在中间链路上。</strong></p>
+<h3 id="设计如下三个场景证明问题在中间链路上："><a href="#设计如下三个场景证明问题在中间链路上：" class="headerlink" title="设计如下三个场景证明问题在中间链路上："></a>设计如下三个场景证明问题在中间链路上：</h3><ol>
+<li>压测的时候在userservice ping 淘宝的机器；</li>
+<li>将一台userservice机器从负载均衡上拿下来(没有压力），ping 淘宝的机器；</li>
+<li>从公网上非优酷的机器 ping 淘宝的机器；</li>
+</ol>
+<p>这个时候奇怪的事情发现了，压力一上来<strong>场景1、2</strong>的两台机器ping淘宝的rt都从30ms上升到100-150ms，<strong>场景1</strong> 的rt上升可以理解，但是<strong>场景2</strong>的rt上升不应该，同时<strong>场景3</strong>中ping淘宝在压力测试的情况下rt一直很稳定(说明压力下淘宝的机器没有问题），到此确认问题在优酷到淘宝机房的链路上有瓶颈，而且问题在优酷机房出口扛不住这么大的压力。于是从上海Passport的团队找到北京Passport的PE团队，确认在优酷调用taobao api的出口上使用了snat，PE到snat机器上看到snat只能使用单核，而且对应的核早就100%的CPU了，因为之前一直没有这么大的压力所以这个问题一直存在只是没有被发现。</p>
+<p><strong>于是PE去掉snat，再压的话 TPS稳定在3000左右</strong></p>
+<hr>
+<h2 id="到这里结束了吗？-从3000到5400TPS"><a href="#到这里结束了吗？-从3000到5400TPS" class="headerlink" title="到这里结束了吗？ 从3000到5400TPS"></a>到这里结束了吗？ 从3000到5400TPS</h2><p>优化到3000TPS的整个过程没有修改业务代码，只是通过修改系统配置、结构非常有效地把TPS提升了6倍，对于优化来说这个过程是最轻松，性价比也是非常高的。实际到这个时候也临近双11封网了，最终通过计算(机器数量*单机TPS）完全可以抗住双11的压力，所以最终双11运行的版本就是这样的。 但是有工匠精神的工程师是不会轻易放过这么好的优化场景和环境的(基线、机器、代码、工具都具备配套好了）</p>
+<p><strong>优化完环境问题后，3000TPS能把CPU US跑上去，于是再对业务代码进行优化也是可行的了</strong>。</p>
+<h3 id="进一步挖掘代码中的优化空间"><a href="#进一步挖掘代码中的优化空间" class="headerlink" title="进一步挖掘代码中的优化空间"></a>进一步挖掘代码中的优化空间</h3><p>双11前的这段封网其实是比较无聊的，于是和Passport的开发同学们一起挖掘代码中的可以优化的部分。这个过程中使用到的主要工具是这三个：火焰图、perf、perf-map-java。相关链接：<a href="http://www.brendangregg.com/perf.html" target="_blank" rel="external">http://www.brendangregg.com/perf.html</a> ; <a href="https://github.com/jrudolph/perf-map-agent" target="_blank" rel="external">https://github.com/jrudolph/perf-map-agent</a></p>
+<h3 id="通过Perf发现的一个SpringMVC-的性能问题"><a href="#通过Perf发现的一个SpringMVC-的性能问题" class="headerlink" title="通过Perf发现的一个SpringMVC 的性能问题"></a>通过Perf发现的一个SpringMVC 的性能问题</h3><p>这个问题具体参考我之前发表的优化文章<a href="http://www.atatech.org/articles/65232" title="spring mvc issue" target="_blank" rel="external">http://www.atatech.org/articles/65232</a> 。 主要是通过火焰图发现spring mapping path消耗了过多CPU的性能问题，CPU热点都在methodMapping相关部分，于是修改代码去掉spring中的methodMapping解析后性能提升了40%，TPS能从3000提升到4200.</p>
+<h3 id="著名的fillInStackTrace导致的性能问题"><a href="#著名的fillInStackTrace导致的性能问题" class="headerlink" title="著名的fillInStackTrace导致的性能问题"></a>著名的fillInStackTrace导致的性能问题</h3><p>代码中的第二个问题是我们程序中很多异常(fillInStackTrace），实际业务上没有这么多错误，应该是一些不重要的异常，不会影响结果，但是异常频率很高，对这种我们可以找到触发的地方，catch住，然后不要抛出去(也就是别触发fillInStackTrace)，打印一行error日志就行，这块也能省出10%的CPU，对应到TPS也有几百的提升。</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/36ef4b16c3c400abf6eb7e6b0fbb2f58.png" alt="screenshot.png"></p>
+<p>部分触发fillInStackTrace的场景和具体代码行(点击看高清大图）：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/7eb2cbb4afc2c7d7007c35304c95342a.png" alt="screenshot.png"></p>
+<p>对应的火焰图(点击看高清大图）：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/894bd736dd03060e89e3fa49cc98ae5e.png" alt="screenshot.png"></p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2bb7395a2cc6833c9c7587b38402a301.png" alt="screenshot.png"></p>
+<h3 id="解析useragent-代码部分的性能问题"><a href="#解析useragent-代码部分的性能问题" class="headerlink" title="解析useragent 代码部分的性能问题"></a>解析useragent 代码部分的性能问题</h3><p>整个useragent调用堆栈和cpu占用情况，做了个汇总(useragent不启用TPS能从4700提升到5400）<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/8a4a97cb74724b8baa3b90072a1914e0.png" alt="screenshot.png"></p>
+<p>实际火焰图中比较分散：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/afacc681a9550cd087838c2383be54c8.png" alt="screenshot.png"></p>
+<p><strong>最终通过对代码的优化勉勉强强将TPS从3000提升到了5400(太不容易了，改代码过程太辛苦，不如改配置来得快）</strong></p>
+<p>优化代码后压测tps可以跑到5400，截图：</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/38bb043c85c7b50007609484c7bf5698.png" alt="image.png"></p>
+<h2 id="最后再次总结整个压测过程的问题和优化历程"><a href="#最后再次总结整个压测过程的问题和优化历程" class="headerlink" title="最后再次总结整个压测过程的问题和优化历程"></a>最后再次总结整个压测过程的问题和优化历程</h2><pre><code>- docker bridge网络性能问题和网络中断si不均衡    (优化后：500-&gt;1000TPS)
+- 短连接导致的local port不够                   (优化后：1000-3000TPS）
+- 生产环境snat单核导致的网络延时增大             (优化后能达到测试环境的3000TPS）
+- Spring MVC Path带来的过高的CPU消耗           (优化后：3000-&gt;4200TPS)
+- 其他业务代码的优化(比如异常、agent等）         (优化后：4200-&gt;5400TPS)
+</code></pre><hr>
+<h5 id="整个过程得到了淘宝API、优酷会员、优酷Passport、网络、蚂蚁等众多同学的帮助，本来是计划去上海跟Passport的同学一起复盘然后再写这篇文章的，结果一直未能成行，请原谅我拖延到现在才把大家一起辛苦工作的结果整理出来，可能过程中的数据会有一些记忆上的小错误。"><a href="#整个过程得到了淘宝API、优酷会员、优酷Passport、网络、蚂蚁等众多同学的帮助，本来是计划去上海跟Passport的同学一起复盘然后再写这篇文章的，结果一直未能成行，请原谅我拖延到现在才把大家一起辛苦工作的结果整理出来，可能过程中的数据会有一些记忆上的小错误。" class="headerlink" title="整个过程得到了淘宝API、优酷会员、优酷Passport、网络、蚂蚁等众多同学的帮助，本来是计划去上海跟Passport的同学一起复盘然后再写这篇文章的，结果一直未能成行，请原谅我拖延到现在才把大家一起辛苦工作的结果整理出来，可能过程中的数据会有一些记忆上的小错误。"></a>整个过程得到了淘宝API、优酷会员、优酷Passport、网络、蚂蚁等众多同学的帮助，本来是计划去上海跟Passport的同学一起复盘然后再写这篇文章的，结果一直未能成行，请原谅我拖延到现在才把大家一起辛苦工作的结果整理出来，可能过程中的数据会有一些记忆上的小错误。</h5>
           
         
       
