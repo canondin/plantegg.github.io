@@ -77,7 +77,7 @@
 <link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="tcp queue,accept queue,syn queue,syn flood,netstat,ss,overflows,dropped," />
+  <meta name="keywords" content="netstat,ss,tcp queue,accept queue,syn queue,syn flood,overflows,dropped," />
 
 
 
@@ -96,7 +96,7 @@
 
 
 <meta name="description" content="关于TCP 半连接队列和全连接队列 最近碰到一个client端连接异常问题，然后定位分析并查阅各种资料文章，对TCP连接队列有个深入的理解 查资料过程中发现没有文章把这两个队列以及怎么观察他们的指标说清楚，希望通过这篇文章能把他们说清楚  问题描述场景：JAVA的client和server，使用socket通信。server使用NIO。  1.间歇性的出现client向server建立连接三次握手">
-<meta name="keywords" content="tcp queue,accept queue,syn queue,syn flood,netstat,ss,overflows,dropped">
+<meta name="keywords" content="netstat,ss,tcp queue,accept queue,syn queue,syn flood,overflows,dropped">
 <meta property="og:type" content="article">
 <meta property="og:title" content="就是要你懂TCP--半连接队列和全连接队列">
 <meta property="og:url" content="http://yoursite.com/2017/06/07/就是要你懂TCP--半连接队列和全连接队列/index.html">
@@ -111,7 +111,7 @@
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/3f5f1eeb0646a3af8afd6bbff2a9ea0b.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/a5616904df3a505572d99d557b534db2.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/0c6bbb5d4a10f40c8b3c4ba6cab82292.png">
-<meta property="og:updated_time" content="2019-09-27T05:45:10.000Z">
+<meta property="og:updated_time" content="2019-09-27T05:45:10.011Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="就是要你懂TCP--半连接队列和全连接队列">
 <meta name="twitter:description" content="关于TCP 半连接队列和全连接队列 最近碰到一个client端连接异常问题，然后定位分析并查阅各种资料文章，对TCP连接队列有个深入的理解 查资料过程中发现没有文章把这两个队列以及怎么观察他们的指标说清楚，希望通过这篇文章能把他们说清楚  问题描述场景：JAVA的client和server，使用socket通信。server使用NIO。  1.间歇性的出现client向server建立连接三次握手">
@@ -589,6 +589,10 @@ server5
       
         <div class="post-tags">
           
+            <a href="/tags/netstat/" rel="tag"># netstat</a>
+          
+            <a href="/tags/ss/" rel="tag"># ss</a>
+          
             <a href="/tags/tcp-queue/" rel="tag"># tcp queue</a>
           
             <a href="/tags/accept-queue/" rel="tag"># accept queue</a>
@@ -596,10 +600,6 @@ server5
             <a href="/tags/syn-queue/" rel="tag"># syn queue</a>
           
             <a href="/tags/syn-flood/" rel="tag"># syn flood</a>
-          
-            <a href="/tags/netstat/" rel="tag"># netstat</a>
-          
-            <a href="/tags/ss/" rel="tag"># ss</a>
           
             <a href="/tags/overflows/" rel="tag"># overflows</a>
           
@@ -616,8 +616,8 @@ server5
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2017/06/02/就是要你懂TCP--连接和握手/" rel="next" title="就是要你懂TCP--握手和挥手">
-                <i class="fa fa-chevron-left"></i> 就是要你懂TCP--握手和挥手
+              <a href="/2017/06/02/就是要你懂TCP--wireshark-dup-ack-issue/" rel="next" title="wireshark-dup-ack-issue and keepalive">
+                <i class="fa fa-chevron-left"></i> wireshark-dup-ack-issue and keepalive
               </a>
             
           </div>
@@ -707,7 +707,7 @@ server5
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">65</span>
+                <span class="site-state-item-count">71</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -718,7 +718,7 @@ server5
             
             <div class="site-state-item site-state-categories">
               
-                <span class="site-state-item-count">20</span>
+                <span class="site-state-item-count">19</span>
                 <span class="site-state-item-name">分类</span>
               
             </div>
@@ -729,7 +729,7 @@ server5
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">147</span>
+                <span class="site-state-item-count">150</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>

@@ -77,7 +77,7 @@
 <link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="performance,mysql,perf,innodb_spin_wait_delay,intel,pause," />
+  <meta name="keywords" content="performance,mysql,perf,intel,pause,innodb_spin_wait_delay," />
 
 
 
@@ -95,13 +95,13 @@
 
 
 
-<meta name="description" content="Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的专有云场景下DRDS+MySQL集群的一次全表扫描性能优化过程 业务结构client -&amp;gt; DRDS -&amp;gt; slb -&amp;gt; MySQL（32实例，每个实例8Core） 场景描述：通过client压 DRDS和MySQL，MySQL是32个实例，业务逻辑是不带拆分键的全表扫描，也就是一个client SQL经过DRD">
-<meta name="keywords" content="performance,mysql,perf,innodb_spin_wait_delay,intel,pause">
+<meta name="description" content="Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的专有云场景下DRDS+MySQL集群的一次全表扫描性能优化过程 长链路下性能瓶颈发现规则（最容易互相扯皮、协调难度大）：  从一个压测线程开始压，记录tps、rt；然后增加线程数量，到tps明显不再增加，分析此时各个环节的rt，看哪个环节rt增加最明显，瓶颈就在哪个环节 如果监控没法得到各个环节的rt数据(太现实和普遍了)，抓包分">
+<meta name="keywords" content="performance,mysql,perf,intel,pause,innodb_spin_wait_delay">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的">
 <meta property="og:url" content="http://yoursite.com/2019/12/16/Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的/index.html">
 <meta property="og:site_name" content="plantegg">
-<meta property="og:description" content="Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的专有云场景下DRDS+MySQL集群的一次全表扫描性能优化过程 业务结构client -&amp;gt; DRDS -&amp;gt; slb -&amp;gt; MySQL（32实例，每个实例8Core） 场景描述：通过client压 DRDS和MySQL，MySQL是32个实例，业务逻辑是不带拆分键的全表扫描，也就是一个client SQL经过DRD">
+<meta property="og:description" content="Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的专有云场景下DRDS+MySQL集群的一次全表扫描性能优化过程 长链路下性能瓶颈发现规则（最容易互相扯皮、协调难度大）：  从一个压测线程开始压，记录tps、rt；然后增加线程数量，到tps明显不再增加，分析此时各个环节的rt，看哪个环节rt增加最明显，瓶颈就在哪个环节 如果监控没法得到各个环节的rt数据(太现实和普遍了)，抓包分">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/28610e403282d493e2ce18fbecc69421.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/b84245c17e213de528f2ad8090d504f6.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/87a6b32986859828dc3b5f2de3d4f430.png">
@@ -125,10 +125,10 @@
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e4a2fb522be7aa65158778b7ea825207.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/2a5245c81a37d166c7e0b2ace45b9e4b.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/c47d2bd0e4d9d0f005d0e1132b385eab.png">
-<meta property="og:updated_time" content="2020-05-18T08:01:59.227Z">
+<meta property="og:updated_time" content="2020-05-28T06:49:12.481Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的">
-<meta name="twitter:description" content="Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的专有云场景下DRDS+MySQL集群的一次全表扫描性能优化过程 业务结构client -&amp;gt; DRDS -&amp;gt; slb -&amp;gt; MySQL（32实例，每个实例8Core） 场景描述：通过client压 DRDS和MySQL，MySQL是32个实例，业务逻辑是不带拆分键的全表扫描，也就是一个client SQL经过DRD">
+<meta name="twitter:description" content="Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的专有云场景下DRDS+MySQL集群的一次全表扫描性能优化过程 长链路下性能瓶颈发现规则（最容易互相扯皮、协调难度大）：  从一个压测线程开始压，记录tps、rt；然后增加线程数量，到tps明显不再增加，分析此时各个环节的rt，看哪个环节rt增加最明显，瓶颈就在哪个环节 如果监控没法得到各个环节的rt数据(太现实和普遍了)，抓包分">
 <meta name="twitter:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/28610e403282d493e2ce18fbecc69421.png">
 
 
@@ -388,6 +388,11 @@
 
       
         <h1 id="Intel-PAUSE指令变化是如何影响自旋锁以及MySQL的性能的"><a href="#Intel-PAUSE指令变化是如何影响自旋锁以及MySQL的性能的" class="headerlink" title="Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的"></a>Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的</h1><p>专有云场景下DRDS+MySQL集群的一次全表扫描性能优化过程</p>
+<p>长链路下性能瓶颈发现规则（最容易互相扯皮、协调难度大）：</p>
+<blockquote>
+<p>从一个压测线程开始压，记录tps、rt；然后增加线程数量，到tps明显不再增加，分析此时各个环节的rt，看哪个环节rt增加最明显，瓶颈就在哪个环节</p>
+<p>如果监控没法得到各个环节的rt数据(太现实和普遍了)，抓包分析请求相应的rt</p>
+</blockquote>
 <h2 id="业务结构"><a href="#业务结构" class="headerlink" title="业务结构"></a>业务结构</h2><p>client -&gt; DRDS -&gt; slb -&gt; MySQL（32实例，每个实例8Core）</p>
 <h2 id="场景描述："><a href="#场景描述：" class="headerlink" title="场景描述："></a>场景描述：</h2><p>通过client压 DRDS和MySQL，MySQL是32个实例，业务逻辑是不带拆分键的全表扫描，也就是一个client SQL经过DRDS后会拆分成256个SQL发送给32个MySQL（每个MySQL上有8个分库）</p>
 <p>业务SQL是一个简单的select sum求和，这个SQL在每个MySQL上都很快（有索引）</p>
@@ -635,11 +640,11 @@ btr_estimate_n_rows_in_range_on_level(
           
             <a href="/tags/perf/" rel="tag"># perf</a>
           
-            <a href="/tags/innodb-spin-wait-delay/" rel="tag"># innodb_spin_wait_delay</a>
-          
             <a href="/tags/intel/" rel="tag"># intel</a>
           
             <a href="/tags/pause/" rel="tag"># pause</a>
+          
+            <a href="/tags/innodb-spin-wait-delay/" rel="tag"># innodb_spin_wait_delay</a>
           
         </div>
       
@@ -652,8 +657,8 @@ btr_estimate_n_rows_in_range_on_level(
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2019/12/09/epoll的LT和ET/" rel="next" title="epoll的LT和ET">
-                <i class="fa fa-chevron-left"></i> epoll的LT和ET
+              <a href="/2019/12/09/如何在工作中学习-2019V2版/" rel="next" title="如何在工作中学习-2019V2版">
+                <i class="fa fa-chevron-left"></i> 如何在工作中学习-2019V2版
               </a>
             
           </div>
@@ -743,7 +748,7 @@ btr_estimate_n_rows_in_range_on_level(
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">65</span>
+                <span class="site-state-item-count">71</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -754,7 +759,7 @@ btr_estimate_n_rows_in_range_on_level(
             
             <div class="site-state-item site-state-categories">
               
-                <span class="site-state-item-count">20</span>
+                <span class="site-state-item-count">19</span>
                 <span class="site-state-item-name">分类</span>
               
             </div>
@@ -765,7 +770,7 @@ btr_estimate_n_rows_in_range_on_level(
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">147</span>
+                <span class="site-state-item-count">150</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>

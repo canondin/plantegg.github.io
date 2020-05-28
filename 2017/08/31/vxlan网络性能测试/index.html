@@ -77,7 +77,7 @@
 <link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="performance,network,docker,vxlan,overlay,netwrok,qperf,iperf," />
+  <meta name="keywords" content="performance,docker,vxlan,overlay,netwrok,qperf,iperf,network," />
 
 
 
@@ -96,13 +96,13 @@
 
 
 <meta name="description" content="vxlan网络性能测试 缘起 Docker集群中需要给每个容器分配一个独立的IP，同时在不同宿主机环境上的容器IP又要能够互相联通，所以需要一个overlay的网络（vlan也可以解决这个问题） overlay网络就是把容器之间的网络包重新打包在宿主机的IP包里面，传到目的容器所在的宿主机后，再把这个overlay的网络包还原成容器包交给容器 这里多了一次封包解包的过程，所以性能上必然有些损耗 封">
-<meta name="keywords" content="performance,network,docker,vxlan,overlay,netwrok,qperf,iperf">
+<meta name="keywords" content="performance,docker,vxlan,overlay,netwrok,qperf,iperf,network">
 <meta property="og:type" content="article">
 <meta property="og:title" content="vxlan网络性能测试">
 <meta property="og:url" content="http://yoursite.com/2017/08/31/vxlan网络性能测试/index.html">
 <meta property="og:site_name" content="plantegg">
 <meta property="og:description" content="vxlan网络性能测试 缘起 Docker集群中需要给每个容器分配一个独立的IP，同时在不同宿主机环境上的容器IP又要能够互相联通，所以需要一个overlay的网络（vlan也可以解决这个问题） overlay网络就是把容器之间的网络包重新打包在宿主机的IP包里面，传到目的容器所在的宿主机后，再把这个overlay的网络包还原成容器包交给容器 这里多了一次封包解包的过程，所以性能上必然有些损耗 封">
-<meta property="og:updated_time" content="2017-08-31T03:53:48.000Z">
+<meta property="og:updated_time" content="2017-08-31T03:53:48.751Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="vxlan网络性能测试">
 <meta name="twitter:description" content="vxlan网络性能测试 缘起 Docker集群中需要给每个容器分配一个独立的IP，同时在不同宿主机环境上的容器IP又要能够互相联通，所以需要一个overlay的网络（vlan也可以解决这个问题） overlay网络就是把容器之间的网络包重新打包在宿主机的IP包里面，传到目的容器所在的宿主机后，再把这个overlay的网络包还原成容器包交给容器 这里多了一次封包解包的过程，所以性能上必然有些损耗 封">
@@ -675,8 +675,6 @@ msg_size  =4 KiB (4,096)
           
             <a href="/tags/performance/" rel="tag"># performance</a>
           
-            <a href="/tags/network/" rel="tag"># network</a>
-          
             <a href="/tags/docker/" rel="tag"># docker</a>
           
             <a href="/tags/vxlan/" rel="tag"># vxlan</a>
@@ -688,6 +686,8 @@ msg_size  =4 KiB (4,096)
             <a href="/tags/qperf/" rel="tag"># qperf</a>
           
             <a href="/tags/iperf/" rel="tag"># iperf</a>
+          
+            <a href="/tags/network/" rel="tag"># network</a>
           
         </div>
       
@@ -791,7 +791,7 @@ msg_size  =4 KiB (4,096)
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">65</span>
+                <span class="site-state-item-count">71</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -802,7 +802,7 @@ msg_size  =4 KiB (4,096)
             
             <div class="site-state-item site-state-categories">
               
-                <span class="site-state-item-count">20</span>
+                <span class="site-state-item-count">19</span>
                 <span class="site-state-item-name">分类</span>
               
             </div>
@@ -813,7 +813,7 @@ msg_size  =4 KiB (4,096)
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">147</span>
+                <span class="site-state-item-count">150</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>

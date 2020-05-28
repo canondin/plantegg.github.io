@@ -77,7 +77,7 @@
 <link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="tcp,MTU,MSS,IP," />
+  <meta name="keywords" content="tcp,IP,MTU,MSS," />
 
 
 
@@ -96,14 +96,14 @@
 
 
 <meta name="description" content="就是要你懂TCP–通过案例来学习MSS、MTU问题的描述 最近要通过Docker的方式把产品部署到客户机房， 过程中需要部署一个hbase集群，hbase总是部署失败（在我们自己的环境没有问题） 发现hbase卡在同步文件，人工登上hbase 所在的容器中看到在hbase节点之间scp同步一些文件的时候，同样总是失败（稳定重现）  手工尝试scp那些文件，发现总是在传送某个文件的时候scp卡死了">
-<meta name="keywords" content="tcp,MTU,MSS,IP">
+<meta name="keywords" content="tcp,IP,MTU,MSS">
 <meta property="og:type" content="article">
 <meta property="og:title" content="通过案例来理解MSS、MTU等相关TCP概念">
 <meta property="og:url" content="http://yoursite.com/2018/05/07/就是要你懂TCP--通过案例来学习MSS、MTU/index.html">
 <meta property="og:site_name" content="plantegg">
 <meta property="og:description" content="就是要你懂TCP–通过案例来学习MSS、MTU问题的描述 最近要通过Docker的方式把产品部署到客户机房， 过程中需要部署一个hbase集群，hbase总是部署失败（在我们自己的环境没有问题） 发现hbase卡在同步文件，人工登上hbase 所在的容器中看到在hbase节点之间scp同步一些文件的时候，同样总是失败（稳定重现）  手工尝试scp那些文件，发现总是在传送某个文件的时候scp卡死了">
 <meta property="og:image" content="http://img4.tbcdn.cn/L1/461/1/1d010b9937198aee9e798bb02913603874f19ddc">
-<meta property="og:updated_time" content="2019-06-25T03:26:23.000Z">
+<meta property="og:updated_time" content="2019-06-25T03:26:23.545Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="通过案例来理解MSS、MTU等相关TCP概念">
 <meta name="twitter:description" content="就是要你懂TCP–通过案例来学习MSS、MTU问题的描述 最近要通过Docker的方式把产品部署到客户机房， 过程中需要部署一个hbase集群，hbase总是部署失败（在我们自己的环境没有问题） 发现hbase卡在同步文件，人工登上hbase 所在的容器中看到在hbase节点之间scp同步一些文件的时候，同样总是失败（稳定重现）  手工尝试scp那些文件，发现总是在传送某个文件的时候scp卡死了">
@@ -436,11 +436,11 @@
           
             <a href="/tags/tcp/" rel="tag"># tcp</a>
           
+            <a href="/tags/IP/" rel="tag"># IP</a>
+          
             <a href="/tags/MTU/" rel="tag"># MTU</a>
           
             <a href="/tags/MSS/" rel="tag"># MSS</a>
-          
-            <a href="/tags/IP/" rel="tag"># IP</a>
           
         </div>
       
@@ -544,7 +544,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">65</span>
+                <span class="site-state-item-count">71</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -555,7 +555,7 @@
             
             <div class="site-state-item site-state-categories">
               
-                <span class="site-state-item-count">20</span>
+                <span class="site-state-item-count">19</span>
                 <span class="site-state-item-name">分类</span>
               
             </div>
@@ -566,7 +566,7 @@
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">147</span>
+                <span class="site-state-item-count">150</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>

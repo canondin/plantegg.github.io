@@ -77,7 +77,7 @@
 <link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="Linux,bug,tcpdump,NIO,btrace," />
+  <meta name="keywords" content="Linux,NIO,bug,tcpdump,btrace," />
 
 
 
@@ -96,7 +96,7 @@
 
 
 <meta name="description" content="引文对于那种出现概率非常低，很难重现的bug有时候总是感觉有力使不上，比如这个问题 正好最近也碰到一个极低概率下的异常，我介入前一大帮人花了几个月，OS、ECS、网络等等各个环节都被怀疑一遍但是又都没有实锤，所以把过程记录下。 问题背景客户会调用我们的一个服务，正常都是client request -&amp;gt; server response 如此反复直到client主动完成，然后断开tcp连接。但">
-<meta name="keywords" content="Linux,bug,tcpdump,NIO,btrace">
+<meta name="keywords" content="Linux,NIO,bug,tcpdump,btrace">
 <meta property="og:type" content="article">
 <meta property="og:title" content="如何定位上亿次调用才出现一次的Bug">
 <meta property="og:url" content="http://yoursite.com/2018/04/26/如何定位上亿次调用才出现一次的Bug/index.html">
@@ -104,7 +104,7 @@
 <meta property="og:description" content="引文对于那种出现概率非常低，很难重现的bug有时候总是感觉有力使不上，比如这个问题 正好最近也碰到一个极低概率下的异常，我介入前一大帮人花了几个月，OS、ECS、网络等等各个环节都被怀疑一遍但是又都没有实锤，所以把过程记录下。 问题背景客户会调用我们的一个服务，正常都是client request -&amp;gt; server response 如此反复直到client主动完成，然后断开tcp连接。但">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/ed9b5b2d81bdc58b9cf41217763939e5.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/02bcccd66af82c929c4eee8c88875733.png">
-<meta property="og:updated_time" content="2020-01-14T07:05:24.000Z">
+<meta property="og:updated_time" content="2020-01-14T07:05:24.432Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="如何定位上亿次调用才出现一次的Bug">
 <meta name="twitter:description" content="引文对于那种出现概率非常低，很难重现的bug有时候总是感觉有力使不上，比如这个问题 正好最近也碰到一个极低概率下的异常，我介入前一大帮人花了几个月，OS、ECS、网络等等各个环节都被怀疑一遍但是又都没有实锤，所以把过程记录下。 问题背景客户会调用我们的一个服务，正常都是client request -&amp;gt; server response 如此反复直到client主动完成，然后断开tcp连接。但">
@@ -441,11 +441,11 @@
           
             <a href="/tags/Linux/" rel="tag"># Linux</a>
           
+            <a href="/tags/NIO/" rel="tag"># NIO</a>
+          
             <a href="/tags/bug/" rel="tag"># bug</a>
           
             <a href="/tags/tcpdump/" rel="tag"># tcpdump</a>
-          
-            <a href="/tags/NIO/" rel="tag"># NIO</a>
           
             <a href="/tags/btrace/" rel="tag"># btrace</a>
           
@@ -551,7 +551,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">65</span>
+                <span class="site-state-item-count">71</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -562,7 +562,7 @@
             
             <div class="site-state-item site-state-categories">
               
-                <span class="site-state-item-count">20</span>
+                <span class="site-state-item-count">19</span>
                 <span class="site-state-item-name">分类</span>
               
             </div>
@@ -573,7 +573,7 @@
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">147</span>
+                <span class="site-state-item-count">150</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>
