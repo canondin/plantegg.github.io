@@ -103,7 +103,7 @@
 <meta property="og:site_name" content="plantegg">
 <meta property="og:description" content="Linux cached内存问题内存使用观察# free -m          total       used       free     shared    buffers     cached Mem:          7515       1115       6400          0        189        492 -/+ buffers/cache:">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/f8d944e2c7a8611384acb820c4471007.png">
-<meta property="og:updated_time" content="2020-05-28T06:49:12.501Z">
+<meta property="og:updated_time" content="2020-06-30T10:21:30.119Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Linux cached内存问题">
 <meta name="twitter:description" content="Linux cached内存问题内存使用观察# free -m          total       used       free     shared    buffers     cached Mem:          7515       1115       6400          0        189        492 -/+ buffers/cache:">
@@ -371,7 +371,7 @@ Mem:          7515       1115       6400          0        189        492
 -/+ buffers/cache:        432       7082
 Swap:            0          0          0
 </code></pre><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/f8d944e2c7a8611384acb820c4471007.png" alt="image.png"></p>
-<p>上图中-/+ buffers/cache: -是指userd去掉buffers/cached后真正使用掉的内存; +是指free加上buffers和cached后真正free的内存大小。</p>
+<p><strong>上图中-/+ buffers/cache: -是指userd去掉buffers/cached后真正使用掉的内存; +是指free加上buffers和cached后真正free的内存大小。</strong></p>
 <h2 id="cached过高回收"><a href="#cached过高回收" class="headerlink" title="cached过高回收"></a>cached过高回收</h2><p>回收：</p>
 <pre><code>echo 1/2/3 &gt;/proc/sys/vm/drop_cached
 </code></pre><p>查看回收后：</p>
@@ -567,7 +567,7 @@ test.x86_64.rpm
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">153</span>
+                <span class="site-state-item-count">154</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>

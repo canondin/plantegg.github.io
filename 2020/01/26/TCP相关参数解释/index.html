@@ -105,7 +105,7 @@
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/7f4590cccf73fd672268dbf0e6a1b309.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b06d3148450fc24fa26b2a9cdfe07831.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/9fba9819e769494bc09a2a11245e4769.png">
-<meta property="og:updated_time" content="2020-05-28T11:00:23.128Z">
+<meta property="og:updated_time" content="2020-06-30T10:21:30.155Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="TCP相关参数解释">
 <meta name="twitter:description" content="TCP相关参数解释读懂TCP参数前得先搞清楚内核中出现的HZ、Tick、Jiffies三个值是什么意思 HZ它可以理解为1s，所以120*HZ就是120秒，HZ/5就是200ms。 HZ表示CPU一秒种发出多少次时间中断–IRQ-0，Linux中通常用HZ来做时间片的计算（参考）。 这个值在内核编译的时候可设定100、250、300或1000，一般设置的是1000 123#cat /boot/co">
@@ -423,7 +423,7 @@
 <p>Java中setNoDelay是指关掉nagle算法，但是delay ack还是存在的。</p>
 <p>C代码中关闭的话：At the application level with the <code>TCP_QUICKACK</code> socket option. See <code>man 7 tcp</code> for further details. This option needs to be set with <code>setsockopt()</code> after each operation of TCP on a given socket</p>
 <p>连接刚建立前16个包一定是quick ack的，目的是加快慢启动</p>
-<p>一旦后面进入延迟ACK模式后，如果接收的还没有回复ACK确认的报文总大小超过88bytes的时候就会立即回复ACK报文。</p>
+<p>一旦后面进入延迟ACK模式后，<a href="https://www.cnblogs.com/lshs/p/6038635.html" target="_blank" rel="external">如果接收的还没有回复ACK确认的报文总大小超过88bytes的时候就会立即回复ACK报文</a>。</p>
 <h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://access.redhat.com/solutions/407743" target="_blank" rel="external">https://access.redhat.com/solutions/407743</a></p>
 <p><a href="https://www.cnblogs.com/lshs/p/6038635.html" target="_blank" rel="external">https://www.cnblogs.com/lshs/p/6038635.html</a></p>
 
@@ -585,7 +585,7 @@
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">153</span>
+                <span class="site-state-item-count">154</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>
