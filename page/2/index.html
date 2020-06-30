@@ -1637,17 +1637,19 @@ dip： destination
 <h3 id="总结下full-NAT的结构"><a href="#总结下full-NAT的结构" class="headerlink" title="总结下full NAT的结构"></a>总结下full NAT的结构</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/94d55b926b5bb1573c4cab8353428712.png" alt="image.png"> </p>
 <p><strong>注意上图中绿色的进包和红色的出包他们的地址变化</strong></p>
 <p>那么到现在full NAT解决了NAT的同vlan的要求，<strong>基本上可以用于公有云了</strong>，但是还是没解决进出流量都走LVS的问题（LVS要修改进出的包）。</p>
-<h3 id="比较下NAT和Full-NAT"><a href="#比较下NAT和Full-NAT" class="headerlink" title="比较下NAT和Full NAT"></a>比较下NAT和Full NAT</h3><p>两者进出都要走LVS，NAT必须要求vip是RS的网关，这个限制在公有云这种应用场景下不能忍，于是Full NAT通过修改请求包的source ip，将原来的source ip从cip改成vip，这样RS回复的时候回复包的目标IP也是vip，所以LVS和RS之间不再要求是同一vlan的关系了。当然带来了新的问题，RS看不见cip了（这个可以通过自定义的toa模块来复原）</p>
+<h3 id="比较下NAT和Full-NAT"><a href="#比较下NAT和Full-NAT" class="headerlink" title="比较下NAT和Full NAT"></a>比较下NAT和Full NAT</h3><p>两者进出都要走LVS，NAT必须要求vip是RS的网关，这个限制在公有云这种应用场景下不能忍，于是Full NAT通过修改请求包的source ip，将原来的source ip从cip改成vip，这样RS回复的时候回复包的目标IP也是vip，所以LVS和RS之间不再要求是同一vlan的关系了。当然带来了新的问题，RS看不见cip了（这个可以通过自定义的vtoa模块来复原）</p>
 <p>那么有没有一个方案能够像full NAT一样不限制lvs和RS之间的网络关系，同时出去的流量跟DR模式一样也不走LVS呢？</p>
 <h3 id="比较下DR、NAT和Full-NAT"><a href="#比较下DR、NAT和Full-NAT" class="headerlink" title="比较下DR、NAT和Full NAT"></a>比较下DR、NAT和Full NAT</h3><p>DR只修改目标Mac地址；<br>NAT只修改目标IP，LVS做网关得到修改回包的机会，RS能看到client ip；<br>Full-NAT同时修改 源ip和 目标ip， LVS通过三层路由和RS相通，RS看到的源ip是LVS IP。</p>
-<h2 id="阿里云的ENAT模式-enhence-NAT"><a href="#阿里云的ENAT模式-enhence-NAT" class="headerlink" title="阿里云的ENAT模式(enhence NAT)"></a>阿里云的ENAT模式(enhence NAT)</h2><p>优点：</p>
+<h2 id="阿里云的ENAT模式-enhence-NAT-或者叫-三角模式"><a href="#阿里云的ENAT模式-enhence-NAT-或者叫-三角模式" class="headerlink" title="阿里云的ENAT模式(enhence NAT) 或者叫 三角模式"></a>阿里云的ENAT模式(enhence NAT) 或者叫 三角模式</h2><p>前后端都是经典类型，属于NAT模式的特例，LVS转发给RS报文的源地址是客户端的源地址。</p>
+<p>与NAT模式的差异在于 RS响应客户端的报文不再经过LVS机器，而是直接发送给客户端（源地址是VIP的地址, 后端RS需要加载一个ctk模块， lsmod | grep ctk 确认 ，主要是数据库产品使用）</p>
+<p>优点：</p>
 <ul>
 <li>不要求LVS和RS在同一个vlan</li>
 <li>出去的流量不需要走LVS，性能好</li>
 </ul>
 <p>缺点：</p>
 <ul>
-<li>阿里集团内部实现的自定义方案，需要在所有RS上安装ctk组件（类似full NAT中的toa）</li>
+<li>阿里集团内部实现的自定义方案，需要在所有RS上安装ctk组件（类似full NAT中的vtoa）</li>
 </ul>
 <p>基本流程：</p>
 <ol>
@@ -1689,13 +1691,9 @@ dip： destination
 <h2 id="阿里云slb的fnat"><a href="#阿里云slb的fnat" class="headerlink" title="阿里云slb的fnat"></a>阿里云slb的fnat</h2><p>本质就是前面所讲的fullnat模式，为了解决RS看不到真正的client ip问题，在阿里云公网上的物理机/宿主机默认都会帮你将source-ip（本来是lvs ip）替换成真正的client ip，这样当包进到ecs的时候source ip已经是client ip了，所以slb默认的fnat模式会让你直接能拿到client ip。回包依然会经过lvs（虽然理论上可以不需要了，但是要考虑rs和client不能直接通，以及管理方便等）</p>
 <p>这个进出的替换过程在物理机/宿主机上是avs来做，如果没有avs就得安装slb的toa模块来做了。</p>
 <p>这就是为什么slb比直接用lvs要方便些，也就是云服务商提供这种云产品的价值所在。</p>
-<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://www.atatech.org/articles/15279" target="_blank" rel="external">https://www.atatech.org/articles/15279</a></p>
-<p><a href="https://www.atatech.org/articles/48739" target="_blank" rel="external">https://www.atatech.org/articles/48739</a></p>
-<p><a href="https://www.atatech.org/articles/48571" target="_blank" rel="external">https://www.atatech.org/articles/48571</a></p>
-<p><a href="https://www.atatech.org/articles/106276" target="_blank" rel="external">云服务ALB接入，后端依赖内核模块及接口使用指南</a></p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://www.atatech.org/articles/106276" target="_blank" rel="external">云服务ALB接入，后端依赖内核模块及接口使用指南</a></p>
 <p><a href="https://www.atatech.org/articles/80573" target="_blank" rel="external">程序员的网络知识 – 一个网络包的旅程</a></p>
 <p><a href="https://yq.aliyun.com/articles/52752" target="_blank" rel="external">章文嵩（正明）博士和他背后的负载均衡(LOAD BANLANCER)帝国</a></p>
-<p>@长源 关于LVS的PPT</p>
 
           
         
@@ -2332,11 +2330,13 @@ debug1: Executing proxy command: exec ssh -l corp 139.*.*.* exec /usr/bin/nc 10.
           
             <h1 id="MySQL知识体系的三驾马车"><a href="#MySQL知识体系的三驾马车" class="headerlink" title="MySQL知识体系的三驾马车"></a>MySQL知识体系的三驾马车</h1><p>在我看来要掌握好MySQL的话要理解好这三个东西：</p>
 <ul>
-<li>索引（B+）</li>
+<li>索引（B+树）</li>
 <li>日志（WAL）</li>
 <li>事务(可见性)</li>
 </ul>
-<p>索引决定了查询的性能，也是用户感知到的数据库的关键所在，日常使用过程中抱怨最多的就是查询太慢了；而日志是一个数据库的灵魂，他决定了数据库为什么可靠，还要保证性能，核心原理就是将随机写转换成顺序写；事务则是数据库的皇冠。</p>
+<p>索引决定了查询的性能，也是用户感知到的数据库的关键所在，日常使用过程中抱怨最多的就是查询太慢了；</p>
+<p>而日志是一个数据库的灵魂，他决定了数据库为什么可靠，还要保证性能，核心原理就是将随机写转换成顺序写；</p>
+<p>事务则是数据库的皇冠。</p>
 <h2 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h2><p>索引主要是解决查询性能的问题，数据一般都是写少查多，而且要满足各种查，所以使用数据库过程中最常见的问题就是索引的优化。</p>
 <p>MySQL选择B+树来当索引的数据结构，是因为B+树的树干只有索引，能使得索引保持比较小，更容易加载到内存中；数据全部放在B+树的叶节点上，整个叶节点又是个有序双向链表，这样非常合适区间查找。</p>
 <p>如果用平衡二叉树当索引，想象一下一棵 100 万节点的平衡二叉树，树高 20。一次查询可能需要访问 20 个数据块。在机械硬盘时代，从磁盘随机读一个数据块需要 10 ms 左右的寻址时间。也就是说，对于一个 100 万行的表，如果使用二叉树来存储，单独访问一个行可能需要 20 个 10 ms 的时间，这个查询可真够慢的</p>
@@ -2361,6 +2361,7 @@ debug1: Executing proxy command: exec ssh -l corp 139.*.*.* exec /usr/bin/nc 10.
 <p>先查到这10个id(扫描行数还是150000+10， 这里的limit因为有deleted记录、每行大小不一样等因素影响，没法一次跳到150000处。但是这次扫描150000行的时候不需要回表，所以速度快多了)，然后再跟整个表做jion（join的时候只需要对这10个id行进行回表），来提升性能。</p>
 <h3 id="索引的一些其它知识点"><a href="#索引的一些其它知识点" class="headerlink" title="索引的一些其它知识点"></a>索引的一些其它知识点</h3><p>多用自增主键是因为自增主键保证的是主键一直是增加的，也就是不会在索引中间插入，这样的话避免的索引页的分裂(代价很高)</p>
 <p>写数据除了记录redo-log之外在内存中还会在内存（change buffer）中记录下修改后的数据，这样再次修改、读取的话不需要从磁盘读取数据，非唯一索引才能用上change buffer，因为唯一索引一定需要读磁盘验证唯一性，既然读过磁盘这个change buffer的意义就不大了。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">mysql&gt; insert into t(id,k) values(id1,k1),(id2,k2);//假设k1页在buffer中，k2不在</div></pre></td></tr></table></figure>
 <p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d1c817af83ba09c6ee6da2eca87af6d3.png" alt="image.png"></p>
 <h2 id="日志"><a href="#日志" class="headerlink" title="日志"></a>日志</h2><p>数据库的关键瓶颈在于写，因为每次更新都要落盘防止丢数据，而磁盘最怕的就是随机写。</p>
 <h3 id="Write-Ahead-logging（WAL）"><a href="#Write-Ahead-logging（WAL）" class="headerlink" title="Write-Ahead logging（WAL）"></a>Write-Ahead logging（WAL）</h3><p>写磁盘前先写日志，这样不用担心丢数据问题，写日志又是一个顺序写,性能比随机写好多了，这样将性能很差的随机写转换成了顺序写。然后每过一段时间将这些日志合并后真正写入到表空间，这次是随机写，但是有机会将多个写合并成一个，比如多个写在同一个Page上。</p>
@@ -5626,7 +5627,7 @@ debug1: Executing proxy command: exec ssh -l alibaba 139.*.*.* exec /usr/bin/nc 
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">152</span>
+                <span class="site-state-item-count">153</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>

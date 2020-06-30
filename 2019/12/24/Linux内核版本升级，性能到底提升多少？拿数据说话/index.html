@@ -113,7 +113,7 @@
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/bec4e8105091bc4b8a263aef245c0ce9.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/1550cc74116a56220d25e1434a675d14.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/3f79909f89889459d1f0dfe4fa0a2f53.png">
-<meta property="og:updated_time" content="2020-05-28T06:49:12.509Z">
+<meta property="og:updated_time" content="2020-06-30T07:39:53.385Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Linux内核版本升级，性能到底提升多少？拿数据说话">
 <meta name="twitter:description" content="Linux内核版本升级，性能到底提升多少？拿数据说话背景DRDS在公有云售卖一直使用的2.6.32的内核，有点老并且有些内核配套工具不能用，于是想升级一下内核版本。预期新内核的性能不能比2.6.32差 以下不作特殊说明的话都是在相同核数的Intel(R) Xeon(R) Platinum 8163 CPU @ 2.50GHz下得到的数据，最后还会比较相同内核下不同机型/CPU型号的性能差异。 场景">
@@ -441,6 +441,7 @@ always [madvise] never
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/081c08801adb36cdfd8ff62be54fce94.png" alt="image.png"></p>
 <p>这个过程中花了两个月的一些其他折腾就不多说了，主要是内核补丁和transparent_hugepage导致了性能差异。</p>
 <p>transparent_hugepage，在redis、mongodb、memcache等场景（很多小内存分配）是推荐关闭的，所以要根据不同的业务场景来选择开关。</p>
+<p><strong>透明大页打开后在内存紧张的时候会触发sys飙高对业务会导致不可预期的抖动，同时存在已知内存泄漏的问题，我们建议是关掉的，如果需要使用，建议使用madvise方式或者hugetlbpage</strong></p>
 <h2 id="一些内核版本、机型和CPU的总结"><a href="#一些内核版本、机型和CPU的总结" class="headerlink" title="一些内核版本、机型和CPU的总结"></a>一些内核版本、机型和CPU的总结</h2><p>到此终于看到不需要应用做什么改变，整体性能将近有30%的提升。 在这个测试过程中发现不同CPU对性能影响很明显，相同机型也有不同的CPU型号（性能差异在20%以上–这个太坑了）</p>
 <p>性能方面 4.19&gt;4.9&gt;2.6.32</p>
 <p>没有做3.10内核版本的比较</p>
@@ -501,6 +502,7 @@ sudo perf top
  [ 8] com.*****.logger.slf4j.Slf4jLogger.info
  [ 9] com.*****.utils.logger.support.FailsafeLogger.info
  [10] com.*****.util.LogUtils.recordSql
+
 
 
 
@@ -723,7 +725,7 @@ sudo perf top
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">152</span>
+                <span class="site-state-item-count">153</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>

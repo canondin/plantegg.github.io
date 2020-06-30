@@ -366,7 +366,7 @@
 <blockquote>
 <p>先说一件值得思考的事情：高考的时候大家都是一样的教科书，同一个教室，同样的老师辅导，时间精力基本差不多，可是最后别人考的是清华北大或者一本，而你的实力只能考个三本，为什么？ 当然这里主要是智商的影响，那么其他因素呢？智商解决的问题能不能后天用其他方式来补位一下？</p>
 </blockquote>
-<p>下文中描述的方式方法是不需要智商也能学会的，非常具体的。</p>
+<p>大家平时都看过很多方法论的文章，看的时候很爽觉得非常有用，但是一两周后基本还是老样子了。其中有很大一部分原因那些方法对脑力有要求、或者方法论比较空缺少落地的步骤。 下文中描述的方式方法是不需要智商也能学会的，非常具体的。</p>
 <h2 id="关键问题点"><a href="#关键问题点" class="headerlink" title="关键问题点"></a>关键问题点</h2><h3 id="为什么你的知识积累不了？"><a href="#为什么你的知识积累不了？" class="headerlink" title="为什么你的知识积累不了？"></a>为什么你的知识积累不了？</h3><p>有些知识看过就忘、忘了再看，实际碰到问题还是联系不上这个知识，这其实是知识的积累出了问题，没有深入的理解自然就不能灵活运用，也就谈不上解决问题了。这跟大家一起看相同的高考教科书但是高考结果不一样是一个原因。问题出在了理解上，每个人的理解能力不一样（智商），绝大多数人对知识的理解要靠不断地实践（做题）来巩固。</p>
 <h3 id="同样实践效果不一样？"><a href="#同样实践效果不一样？" class="headerlink" title="同样实践效果不一样？"></a>同样实践效果不一样？</h3><p>同样工作一年碰到了10个问题（或者说做了10套高考模拟试卷），但是结果不一样，那是因为在实践过程中方法不够好。或者说你对你为什么做对了、为什么做错了没有去复盘</p>
 <p>假如碰到一个问题，身边的同事解决了，而我解决不了。那么我就去想这个问题他是怎么解决的，他看到这个问题后的逻辑和思考是怎么样的，有哪些知识指导了他这么逻辑推理，这些知识哪些我也知道但是我没有想到这么去运用推理（说明我对这个知识理解的不到位导致灵活运用缺乏）；这些知识中又有哪些是我不知道的（知识缺乏，没什么好说的快去Google什么学习下–有场景案例和目的加持，学习理解起来更快）。</p>
@@ -3746,12 +3746,112 @@ nameserver 10.0.0.3
 <li>用户在 shell 中，可以通过 ulimit 命令，查看或者修改当前 shell 的 limits;</li>
 <li>当用户在 shell 中执行程序时，该程序进程会继承 shell 的 limits 值。于是，limits 在进程中生效了</li>
 </ol>
-<h2 id="pam-权限报错"><a href="#pam-权限报错" class="headerlink" title="pam 权限报错"></a>pam 权限报错</h2><p>从debug信息看如果是pam权限报错的话，需要将 required 改成 sufficient</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"># cat /etc/pam.d/crond </div><div class="line">#</div><div class="line"># The PAM configuration file for the cron daemon</div><div class="line">#</div><div class="line">#</div><div class="line"># No PAM authentication called, auth modules not needed</div><div class="line">account    required   pam_access.so</div><div class="line">account    include    system-auth</div><div class="line">session    required   pam_loginuid.so //required 改成 sufficient</div><div class="line">session    include    system-auth</div><div class="line">auth       include    system-auth</div></pre></td></tr></table></figure>
+<h2 id="pam-权限报错"><a href="#pam-权限报错" class="headerlink" title="pam 权限报错"></a>pam 权限报错</h2><p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b646979272e71e015de4a47c62b89747.png" alt="image.png"></p>
+<p>从debug信息看如果是pam权限报错的话，需要将 required 改成 sufficientS</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">$cat /etc/pam.d/crond </div><div class="line">#</div><div class="line"># The PAM configuration file for the cron daemon</div><div class="line">#</div><div class="line">#</div><div class="line"># No PAM authentication called, auth modules not needed</div><div class="line">account    required   pam_access.so</div><div class="line">account    include    system-auth</div><div class="line">session    required   pam_loginuid.so //required 改成 sufficient</div><div class="line">session    include    system-auth</div><div class="line">auth       include    system-auth</div></pre></td></tr></table></figure>
+<p>PAM 提供四个安全领域的特性，但是应用程序不太可能同时需要所有这些方面。例如，<code>passwd</code> 命令只需要下面列表中的第三组：</p>
+<ul>
+<li><code>account</code> 处理账户限制。对于有效的用户，允许他做什么？</li>
+<li><code>auth</code> 处理用户识别 — 例如，通过输入用户名和密码。</li>
+<li><code>password</code> 只处理与密码相关的问题，比如设置新密码。</li>
+<li><code>session</code> 处理连接管理，包括日志记录。</li>
+</ul>
+<p>在 /etc/pam.d 目录中为将使用 PAM 的每个应用程序创建一个配置文件，文件名与应用程序名相同。例如，<code>login</code> 命令的配置文件是 /etc/pam.d/login。</p>
+<p>必须定义将应用哪些模块，创建一个动作 “堆”。PAM 运行堆中的所有模块，根据它们的结果允许或拒绝用户的请求。还必须定义检查是否是必需的。最后，<em>other</em> 文件为没有特殊规则的所有应用程序提供默认规则。</p>
+<ul>
+<li><code>optional</code> 模块可以成功，也可以失败；PAM 根据模块是否最终成功返回 <code>success</code> 或 <code>failure</code>。</li>
+<li><code>required</code> 模块必须成功。如果失败，PAM 返回 <code>failure</code>，但是会在运行堆中的其他模块之后返回。</li>
+<li><code>requisite</code> 模块也必须成功。但是，如果失败，PAM 立即返回 <code>failure</code>，不再运行其他模块。</li>
+<li><code>sufficient</code> 模块在成功时导致 PAM 立即返回 <code>success</code>，不再运行其他模块。</li>
+</ul>
+<p>当pam安装之后有两大部分：在/lib64/security目录下的各种pam模块以及/etc/pam.d和/etc/pam.d目录下的针对各种服务和应用已经定义好的pam配置文件。当某一个有认证需求的应用程序需要验证的时候，一般在应用程序中就会定义负责对其认证的PAM配置文件。以vsftpd为例，在它的配置文件/etc/vsftpd/vsftpd.conf中就有这样一行定义：</p>
+<blockquote>
+<p>pam_service_name=vsftpd</p>
+</blockquote>
+<p>表示登录FTP服务器的时候进行认证是根据/etc/pam.d/vsftpd文件定义的内容进行。</p>
+<h3 id="PAM-认证过程"><a href="#PAM-认证过程" class="headerlink" title="PAM 认证过程"></a>PAM 认证过程</h3><p>当程序需要认证的时候已经找到相关的pam配置文件，认证过程是如何进行的？下面我们将通过解读/etc/pam.d/system-auth文件予以说明。</p>
+<p>首先要声明一点的是：system-auth是一个非常重要的pam配置文件，主要负责用户登录系统的认证工作。而且该文件不仅仅只是负责用户登录系统认证，其它的程序和服务通过include接口也可以调用到它，从而节省了很多重新自定义配置的工作。所以应该说该文件是系统安全的总开关和核心的pam配置文件。</p>
+<p>下面是/etc/pam.d/system-auth文件的全部内容：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line">$cat /etc/pam.d/system-auth</div><div class="line">#%PAM-1.0</div><div class="line"># This file is auto-generated.</div><div class="line"># User changes will be destroyed the next time authconfig is run.</div><div class="line">auth        required      pam_env.so</div><div class="line">auth        required      pam_faildelay.so delay=2000000</div><div class="line">auth        sufficient    pam_unix.so nullok try_first_pass</div><div class="line">auth        requisite     pam_succeed_if.so uid &gt;= 1000 quiet_success</div><div class="line">auth        required      pam_deny.so</div><div class="line"></div><div class="line">account     required      pam_unix.so</div><div class="line">account     sufficient    pam_localuser.so</div><div class="line">account     sufficient    pam_succeed_if.so uid &lt; 1000 quiet</div><div class="line">account     required      pam_permit.so</div><div class="line"></div><div class="line">password    requisite     pam_pwquality.so try_first_pass local_users_only retry=3 authtok_type=</div><div class="line">password    sufficient    pam_unix.so sha512 shadow nullok try_first_pass use_authtok</div><div class="line">password    required      pam_deny.so</div><div class="line"></div><div class="line">session     optional      pam_keyinit.so revoke</div><div class="line">session     required      pam_limits.so</div><div class="line">-session     optional      pam_systemd.so</div><div class="line">session     [success=1 default=ignore] pam_succeed_if.so service in crond quiet use_uid</div><div class="line">session     required      pam_unix.so</div></pre></td></tr></table></figure>
+<h4 id="第一部分"><a href="#第一部分" class="headerlink" title="第一部分"></a>第一部分</h4><p>当用户登录的时候，首先会通过auth类接口对用户身份进行识别和密码认证。所以在该过程中验证会经过几个带auth的配置项。</p>
+<p>其中的第一步是通过pam_env.so模块来定义用户登录之后的环境变量， pam_env.so允许设置和更改用户登录时候的环境变量，默认情况下，若没有特别指定配置文件，将依据/etc/security/pam_env.conf进行用户登录之后环境变量的设置。</p>
+<p>然后通过pam_unix.so模块来提示用户输入密码，并将用户密码与/etc/shadow中记录的密码信息进行对比，如果密码比对结果正确则允许用户登录，而且<strong>该配置项的使用的是“sufficient”控制位，即表示只要该配置项的验证通过，用户即可完全通过认证而不用再去走下面的认证项</strong>。不过在特殊情况下，用户允许使用空密码登录系统，例如当将某个用户在/etc/shadow中的密码字段删除之后，该用户可以只输入用户名直接登录系统。</p>
+<p>下面的配置项中，通过pam_succeed_if.so对用户的登录条件做一些限制，表示允许uid大于500的用户在通过密码验证的情况下登录，在Linux系统中，一般系统用户的uid都在500之内，所以该项即表示允许使用useradd命令以及默认选项建立的普通用户直接由本地控制台登录系统。</p>
+<p>最后通过pam_deny.so模块对所有不满足上述任意条件的登录请求直接拒绝，pam_deny.so是一个特殊的模块，该模块返回值永远为否，类似于大多数安全机制的配置准则，在所有认证规则走完之后，对不匹配任何规则的请求直接拒绝。</p>
+<h4 id="第二部分"><a href="#第二部分" class="headerlink" title="第二部分"></a>第二部分</h4><p>三个配置项主要表示通过account账户类接口来识别账户的合法性以及登录权限。</p>
+<p>第一行仍然使用pam_unix.so模块来声明用户需要通过密码认证。第二行承认了系统中uid小于500的系统用户的合法性。之后对所有类型的用户登录请求都开放控制台。</p>
+<h4 id="第三部分"><a href="#第三部分" class="headerlink" title="第三部分"></a>第三部分</h4><p>会通过password口令类接口来确认用户使用的密码或者口令的合法性。第一行配置项表示需要的情况下将调用pam_cracklib来验证用户密码复杂度。如果用户输入密码不满足复杂度要求或者密码错，最多将在三次这种错误之后直接返回密码错误的提示，否则期间任何一次正确的密码验证都允许登录。需要指出的是，pam_cracklib.so是一个常用的控制密码复杂度的pam模块，关于其用法举例我们会在之后详细介绍。之后带pam_unix.so和pam_deny.so的两行配置项的意思与之前类似。都表示需要通过密码认证并对不符合上述任何配置项要求的登录请求直接予以拒绝。不过用户如果执行的操作是单纯的登录，则这部分配置是不起作用的。</p>
+<h4 id="第四部分"><a href="#第四部分" class="headerlink" title="第四部分"></a>第四部分</h4><p>主要将通过session会话类接口为用户初始化会话连接。其中几个比较重要的地方包括，使用pam_keyinit.so表示当用户登录的时候为其建立相应的密钥环，并在用户登出的时候予以撤销。不过该行配置的控制位使用的是optional，表示这并非必要条件。之后通过pam_limits.so限制用户登录时的会话连接资源，相关pam_limit.so配置文件是/etc/security/limits.conf，默认情况下对每个登录用户都没有限制。关于该模块的配置方法在后面也会详细介绍。</p>
+<h3 id="常用的PAM模块介绍"><a href="#常用的PAM模块介绍" class="headerlink" title="常用的PAM模块介绍"></a>常用的PAM模块介绍</h3><table>
+<thead>
+<tr>
+<th>PAM模块</th>
+<th>结合管理类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>pam_unix.so</td>
+<td>auth</td>
+<td>提示用户输入密码,并与/etc/shadow文件相比对.匹配返回0</td>
+</tr>
+<tr>
+<td>pam_unix.so</td>
+<td>account</td>
+<td>检查用户的账号信息(包括是否过期等).帐号可用时,返回0.</td>
+</tr>
+<tr>
+<td>pam_unix.so</td>
+<td>password</td>
+<td>修改用户的密码. 将用户输入的密码,作为用户的新密码更新shadow文件</td>
+</tr>
+<tr>
+<td>pam_shells.so</td>
+<td>auth、account</td>
+<td>如果用户想登录系统，那么它的shell必须是在/etc/shells文件中之一的shell</td>
+</tr>
+<tr>
+<td>pam_deny.so</td>
+<td>account、auth、password、session</td>
+<td>该模块可用于拒绝访问</td>
+</tr>
+<tr>
+<td>pam_permit.so</td>
+<td>account、auth、password、session</td>
+<td>模块任何时候都返回成功.</td>
+</tr>
+<tr>
+<td>pam_securetty.so</td>
+<td>auth</td>
+<td>如果用户要以root登录时,则登录的tty必须在/etc/securetty之中.</td>
+</tr>
+<tr>
+<td>pam_listfile.so</td>
+<td>account、auth、password、session</td>
+<td>访问应用程的控制开关</td>
+</tr>
+<tr>
+<td>pam_cracklib.so</td>
+<td>password</td>
+<td>这个模块可以插入到一个程序的密码栈中,用于检查密码的强度.</td>
+</tr>
+<tr>
+<td>pam_limits.so</td>
+<td>session</td>
+<td>定义使用系统资源的上限，root用户也会受此限制，可以通过/etc/security/limits.conf或/etc/security/limits.d/*.conf来设定</td>
+</tr>
+</tbody>
+</table>
 <h2 id="debug-crond"><a href="#debug-crond" class="headerlink" title="debug crond"></a>debug crond</h2><p>先停掉 crond service，然后开启debug参数</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">systemctl stop crond</div><div class="line">crond -x test</div></pre></td></tr></table></figure>
 <p>或者增加更多的debug信息， debug sudo/sudoers , 在 /etc/sudo.conf 中增加了：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">Debug sudo /var/log/sudo_debug all@warn</div><div class="line">Debug sudoers.so /var/log/sudoers_debug all@debug</div></pre></td></tr></table></figure>
+<h2 id="systemd-limits"><a href="#systemd-limits" class="headerlink" title="systemd limits"></a>systemd limits</h2><p>/etc/security/limits.conf 的配置，只适用于通过PAM 认证登录用户的资源限制，它对systemd 的service 的资源限制不生效。</p>
+<p>因此登录用户的限制，通过/etc/security/limits.conf 与/etc/security/limits.d 下的文件设置即可。</p>
+<p>对于systemd service 的资源设置，则需修改全局配置，全局配置文件放在/etc/systemd/system.conf 和/etc/systemd/user.conf，同时也会加载两个对应目录中的所有.conf 文件/etc/systemd/system.conf.d/.conf<br>和/etc/systemd/user.conf.d/.conf。</p>
+<h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a href="https://www.cnblogs.com/kevingrace/p/8671964.html" target="_blank" rel="external">https://www.cnblogs.com/kevingrace/p/8671964.html</a></p>
+<p><a href="https://www.jianshu.com/p/ac3e7009a764" target="_blank" rel="external">https://www.jianshu.com/p/ac3e7009a764</a></p>
 
           
         
@@ -4501,7 +4601,7 @@ net.ipv4.tcp_keepalive_intvl = 3
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">152</span>
+                <span class="site-state-item-count">153</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>
