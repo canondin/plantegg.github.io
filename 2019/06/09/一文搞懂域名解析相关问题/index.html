@@ -95,20 +95,20 @@
 
 
 
-<meta name="description" content="一文搞懂域名解析DNS相关问题 本文希望通过一篇文章解决所有域名解析中相关的问题  最后会通过不同场景下碰到的四哥DNS问题的分析过程来理解DNS  这几个Case描述如下：  一批ECS nslookup 域名结果正确，但是 ping 域名 返回 unknown host 在公司网下，我的windows7笔记本的wifi总是报dns域名异常无法上网（通过IP地址可以上网） Docker容器中的域">
+<meta name="description" content="一文搞懂域名解析DNS相关问题 本文希望通过一篇文章解决所有域名解析中相关的问题  最后会通过实际工作中碰到的不同场景下几个DNS问题的分析过程来理解DNS  这几个Case描述如下：  一批ECS nslookup 域名结果正确，但是 ping 域名 返回 unknown host Docker容器中的域名解析过程和原理 中间件的VipClient服务在centos7上域名解析失败 在公司网下，">
 <meta name="keywords" content="ping,nslookup,dns,glibc,&#x2F;etc&#x2F;nsswitch,&#x2F;etc&#x2F;hosts">
 <meta property="og:type" content="article">
 <meta property="og:title" content="就是要你懂DNS--一文搞懂域名解析相关问题">
 <meta property="og:url" content="http://yoursite.com/2019/06/09/一文搞懂域名解析相关问题/index.html">
 <meta property="og:site_name" content="plantegg">
-<meta property="og:description" content="一文搞懂域名解析DNS相关问题 本文希望通过一篇文章解决所有域名解析中相关的问题  最后会通过不同场景下碰到的四哥DNS问题的分析过程来理解DNS  这几个Case描述如下：  一批ECS nslookup 域名结果正确，但是 ping 域名 返回 unknown host 在公司网下，我的windows7笔记本的wifi总是报dns域名异常无法上网（通过IP地址可以上网） Docker容器中的域">
+<meta property="og:description" content="一文搞懂域名解析DNS相关问题 本文希望通过一篇文章解决所有域名解析中相关的问题  最后会通过实际工作中碰到的不同场景下几个DNS问题的分析过程来理解DNS  这几个Case描述如下：  一批ECS nslookup 域名结果正确，但是 ping 域名 返回 unknown host Docker容器中的域名解析过程和原理 中间件的VipClient服务在centos7上域名解析失败 在公司网下，">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/b7458f344de1d1b10c2a6f6ee7f1c501.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/82489e801d8f7bd455053315d760614b.png">
 <meta property="og:image" content="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1560992498945-66445687-3184-4c7d-9fbd-764552025041.png">
-<meta property="og:updated_time" content="2020-07-01T03:10:07.422Z">
+<meta property="og:updated_time" content="2020-07-01T03:32:42.704Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="就是要你懂DNS--一文搞懂域名解析相关问题">
-<meta name="twitter:description" content="一文搞懂域名解析DNS相关问题 本文希望通过一篇文章解决所有域名解析中相关的问题  最后会通过不同场景下碰到的四哥DNS问题的分析过程来理解DNS  这几个Case描述如下：  一批ECS nslookup 域名结果正确，但是 ping 域名 返回 unknown host 在公司网下，我的windows7笔记本的wifi总是报dns域名异常无法上网（通过IP地址可以上网） Docker容器中的域">
+<meta name="twitter:description" content="一文搞懂域名解析DNS相关问题 本文希望通过一篇文章解决所有域名解析中相关的问题  最后会通过实际工作中碰到的不同场景下几个DNS问题的分析过程来理解DNS  这几个Case描述如下：  一批ECS nslookup 域名结果正确，但是 ping 域名 返回 unknown host Docker容器中的域名解析过程和原理 中间件的VipClient服务在centos7上域名解析失败 在公司网下，">
 <meta name="twitter:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/b7458f344de1d1b10c2a6f6ee7f1c501.png">
 
 
@@ -369,16 +369,17 @@
       
         <h1 id="一文搞懂域名解析DNS相关问题"><a href="#一文搞懂域名解析DNS相关问题" class="headerlink" title="一文搞懂域名解析DNS相关问题"></a>一文搞懂域名解析DNS相关问题</h1><blockquote>
 <p>本文希望通过一篇文章解决所有域名解析中相关的问题 </p>
-<p>最后会通过不同场景下碰到的四哥DNS问题的分析过程来理解DNS</p>
+<p>最后会通过实际工作中碰到的不同场景下几个DNS问题的分析过程来理解DNS</p>
 </blockquote>
 <p>这几个Case描述如下：</p>
 <ol>
 <li><a href="https://plantegg.github.io/2019/01/09/nslookup-OK-but-ping-fail/" target="_blank" rel="external">一批ECS nslookup 域名结果正确，但是 ping 域名 返回 unknown host</a></li>
-<li><a href="https://www.atatech.org/articles/98900" target="_blank" rel="external">在公司网下，我的windows7笔记本的wifi总是报dns域名异常无法上网（通过IP地址可以上网）</a></li>
-<li>Docker容器中的域名解析过程和原理</li>
-<li>中间件的VipClient服务在centos7上域名解析失败</li>
+<li><a href="https://plantegg.github.io/2019/01/12/Docker%E4%B8%AD%E7%9A%84DNS%E8%A7%A3%E6%9E%90%E8%BF%87%E7%A8%8B/" target="_blank" rel="external">Docker容器中的域名解析过程和原理</a></li>
+<li><a href="https://plantegg.github.io/2019/01/13/%E4%B8%AD%E9%97%B4%E4%BB%B6%E7%9A%84%E8%87%AA%E5%B7%B1%E7%9A%84DNS%E6%9C%8D%E5%8A%A1%E5%9C%A8alios7%E4%B8%8A%E5%9F%9F%E5%90%8D%E8%A7%A3%E6%9E%90%E5%A4%B1%E8%B4%A5/" target="_blank" rel="external">中间件的VipClient服务在centos7上域名解析失败</a></li>
+<li><a href="https://plantegg.github.io/2019/01/10/windows7%E7%9A%84wifi%E6%80%BB%E6%98%AF%E6%8A%A5DNS%E5%9F%9F%E5%90%8D%E5%BC%82%E5%B8%B8%E6%97%A0%E6%B3%95%E4%B8%8A%E7%BD%91/" target="_blank" rel="external">在公司网下，我的windows7笔记本的wifi总是报dns域名异常无法上网（通过IP地址可以上网）</a></li>
 </ol>
-<p>因为这些问题都不一样，但是都跟DNS服务相关所以打算分四篇文章挨个介绍，希望看完后DNS这块的问题应该是基本可以解决了。</p>
+<p>因为这些问题都不一样，但是都跟DNS服务相关所以打算分四篇文章挨个介绍，希望看完后能加深对DNS原理的理解并独立解决任何DNS问题。</p>
+<p>下面我们就先开始介绍下DNS解析原理和流程。</p>
 <h2 id="Linux下域名解析流程"><a href="#Linux下域名解析流程" class="headerlink" title="Linux下域名解析流程"></a>Linux下域名解析流程</h2><ul>
 <li>DNS域名解析的时候先根据 /etc/host.conf、/etc/nsswitch.conf 配置的顺序进行dns解析（name service switch），一般是这样配置：hosts: files dns 【files代表 /etc/hosts ； dns 代表 /etc/resolv.conf】(<strong>ping是这个流程，但是nslookup和dig不是</strong>)</li>
 <li>如果本地有DNS Client Cache，先走Cache查询，所以有时候看不到DNS网络包。Linux下nscd可以做这个cache，Windows下有 ipconfig /displaydns ipconfig /flushdns </li>
@@ -390,6 +391,7 @@
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/82489e801d8f7bd455053315d760614b.png" alt="image.png"></p>
 <p>以下是一个 /etc/nsswitch.conf</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line"># cat /etc/nsswitch.conf |grep -v &quot;^#&quot; |grep -v &quot;^$&quot;</div><div class="line">passwd:     files sss</div><div class="line">shadow:     files sss</div><div class="line">group:      files sss</div><div class="line">hosts:      files dns myhostname  &lt;&lt;&lt;&lt;&lt; 重点是这一行三个值的顺序</div><div class="line">bootparams: nisplus [NOTFOUND=return] files</div><div class="line">ethers:     files</div><div class="line">netmasks:   files</div><div class="line">networks:   files</div><div class="line">protocols:  files</div><div class="line">rpc:        files</div><div class="line">services:   files sss</div><div class="line">netgroup:   nisplus sss</div><div class="line">publickey:  nisplus</div><div class="line">automount:  files nisplus sss</div><div class="line">aliases:    files nisplus</div></pre></td></tr></table></figure>
+<p>这个配置中的解析顺序是：files-&gt;dns-&gt;myhostname, 这个顺序可以调整和配置。</p>
 <h2 id="Linux下域名解析流程需要注意的地方"><a href="#Linux下域名解析流程需要注意的地方" class="headerlink" title="Linux下域名解析流程需要注意的地方"></a>Linux下域名解析流程需要注意的地方</h2><ul>
 <li>如果 /etc/resolv.conf 中配置了rotate，那么多个nameserver轮流使用. <a href="https://access.redhat.com/solutions/1426263" target="_blank" rel="external">但是因为底层库的原因用了rotate 会触发nameserver排序的时候第二个总是排在第一位</a></li>
 <li>如果被解析的域名不是以 “.” 结尾,那么解释失败后还会尝试resolv.conf中search追加到后面，<a href="https://access.redhat.com/solutions/58028" target="_blank" rel="external">resolv.conf最多支持6个search域</a></li>
@@ -420,9 +422,6 @@ PING test.localhost (127.0.0.1) 56(84) bytes of data.
 --- test.localhost ping statistics ---
 1 packets transmitted, 1 received, 0% packet loss, time 0ms
 rtt min/avg/max/mdev = 0.016/0.016/0.016/0.000 ms
-
-[ren@vb 08:50 /home/ren]
-$
 </code></pre><p>为什么 test.unknow.host 没法解析到？<br>可能有哪些因素导致这种现象？</p>
 <p>尝试 ping -c 1 test.localhost 的目的是做什么？</p>
 <p>看完前面的理论我的猜测是两种可能导致这种情况：</p>
@@ -431,7 +430,7 @@ $
 <li>有本地缓存记录了一个unknow host记录</li>
 </ul>
 <h4 id="验证"><a href="#验证" class="headerlink" title="验证"></a>验证</h4><pre><code>strace -e trace=open -f ping -c 1 test.localhost
-</code></pre><p>可以通，说明 /etc/hosts 是在起作用的，毕竟如果别人求助你，你不能给他讲一堆理论，让他挨个去检查，所以最好验证 /etc/hosts 在起作用的方法是往其中添加一条新纪录，然后验证一下</p>
+</code></pre><p>可以通，说明 /etc/hosts 是在起作用的，所以最好验证 /etc/hosts 在起作用的方法是往其中添加一条新纪录，然后验证一下</p>
 <p>那接下来只能看本地有没有启动 nscd 这样的缓存了，见后发现也没有，这个时候就可以上 strace 追踪ping的流程了</p>
 <p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1560992498945-66445687-3184-4c7d-9fbd-764552025041.png" alt="undefined"> </p>
 <p>从上图可以清晰地看到读取了 /etc/host.conf, 然后读了 /etc/hosts, 再然后读取到我们添加的那条记录，似乎没问题，仔细看这应该是 ip地址后面带的是一个中文字符的空格，这就是问题所在。</p>
@@ -449,7 +448,13 @@ $
 <h2 id="kubernetes-和-docker中的域名解析"><a href="#kubernetes-和-docker中的域名解析" class="headerlink" title="kubernetes 和 docker中的域名解析"></a>kubernetes 和 docker中的域名解析</h2><p>一般是通过iptables配置转发规则来实现，这种用iptables和tcpdump基本都可以看清楚。如果是集群内部的话可以通过CoreDNS来实现，通过K8S动态向CoreDNS增删域名，增删ip，所以这种域名肯定只能在k8s集群内部使用</p>
 <h2 id="nginx-中的域名解析"><a href="#nginx-中的域名解析" class="headerlink" title="nginx 中的域名解析"></a>nginx 中的域名解析</h2><p>nginx可以自定义resolver，也可以通过读取 /etc/resolv.conf转换而来，要注意对 /etc/resolv.conf中 注释的<a href="https://serverfault.com/questions/638822/nginx-resolver-address-from-etc-resolv-conf" target="_blank" rel="external">兼容</a></p>
 <p><a href="https://github.com/blacklabelops-legacy/nginx/issues/36" target="_blank" rel="external">https://github.com/blacklabelops-legacy/nginx/issues/36</a>  可能是nginx读取 /etc/resolv.conf没有处理好 # 注释的问题</p>
-<h3 id="参考文章："><a href="#参考文章：" class="headerlink" title="参考文章："></a>参考文章：</h3><p><a href="http://blog.bruceding.com/516.html" target="_blank" rel="external">GO DNS 原理解析</a></p>
+<h2 id="进一步的Case学习："><a href="#进一步的Case学习：" class="headerlink" title="进一步的Case学习："></a>进一步的Case学习：</h2><ol>
+<li><a href="https://plantegg.github.io/2019/01/09/nslookup-OK-but-ping-fail/" target="_blank" rel="external">一批ECS nslookup 域名结果正确，但是 ping 域名 返回 unknown host</a></li>
+<li><a href="https://plantegg.github.io/2019/01/12/Docker%E4%B8%AD%E7%9A%84DNS%E8%A7%A3%E6%9E%90%E8%BF%87%E7%A8%8B/" target="_blank" rel="external">Docker容器中的域名解析过程和原理</a></li>
+<li><a href="https://plantegg.github.io/2019/01/13/%E4%B8%AD%E9%97%B4%E4%BB%B6%E7%9A%84%E8%87%AA%E5%B7%B1%E7%9A%84DNS%E6%9C%8D%E5%8A%A1%E5%9C%A8alios7%E4%B8%8A%E5%9F%9F%E5%90%8D%E8%A7%A3%E6%9E%90%E5%A4%B1%E8%B4%A5/" target="_blank" rel="external">中间件的VipClient服务在centos7上域名解析失败</a></li>
+<li><a href="https://plantegg.github.io/2019/01/10/windows7%E7%9A%84wifi%E6%80%BB%E6%98%AF%E6%8A%A5DNS%E5%9F%9F%E5%90%8D%E5%BC%82%E5%B8%B8%E6%97%A0%E6%B3%95%E4%B8%8A%E7%BD%91/" target="_blank" rel="external">在公司网下，我的windows7笔记本的wifi总是报dns域名异常无法上网（通过IP地址可以上网）</a></li>
+</ol>
+<h2 id="参考文章："><a href="#参考文章：" class="headerlink" title="参考文章："></a>参考文章：</h2><p><a href="http://blog.bruceding.com/516.html" target="_blank" rel="external">GO DNS 原理解析</a></p>
 <p><a href="https://blog.arstercz.com/linux-系统如何处理名称解析" target="_blank" rel="external">Linux 系统如何处理名称解析</a></p>
 <p><a href="https://zwischenzugs.com/2018/06/08/anatomy-of-a-linux-dns-lookup-part-i/" target="_blank" rel="external">Anatomy of a Linux DNS Lookup – Part I</a></p>
 
@@ -659,7 +664,7 @@ $
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#一文搞懂域名解析DNS相关问题"><span class="nav-number">1.</span> <span class="nav-text">一文搞懂域名解析DNS相关问题</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Linux下域名解析流程"><span class="nav-number">1.1.</span> <span class="nav-text">Linux下域名解析流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Linux下域名解析流程需要注意的地方"><span class="nav-number">1.2.</span> <span class="nav-text">Linux下域名解析流程需要注意的地方</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Linux下域名解析诊断工具"><span class="nav-number">1.3.</span> <span class="nav-text">Linux下域名解析诊断工具</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#案例"><span class="nav-number">1.3.1.</span> <span class="nav-text">案例</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#验证"><span class="nav-number">1.3.1.1.</span> <span class="nav-text">验证</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#dhcp"><span class="nav-number">1.3.2.</span> <span class="nav-text">dhcp</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#dnsmasq"><span class="nav-number">1.3.3.</span> <span class="nav-text">dnsmasq</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#微服务下的域名解析、负载均衡"><span class="nav-number">1.4.</span> <span class="nav-text">微服务下的域名解析、负载均衡</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#域名解析通过jar、lib包"><span class="nav-number">1.4.1.</span> <span class="nav-text">域名解析通过jar、lib包</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#域名解析通过dns-server"><span class="nav-number">1.4.2.</span> <span class="nav-text">域名解析通过dns server</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#kubernetes-和-docker中的域名解析"><span class="nav-number">1.5.</span> <span class="nav-text">kubernetes 和 docker中的域名解析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#nginx-中的域名解析"><span class="nav-number">1.6.</span> <span class="nav-text">nginx 中的域名解析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#参考文章："><span class="nav-number">1.6.1.</span> <span class="nav-text">参考文章：</span></a></li></ol></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#一文搞懂域名解析DNS相关问题"><span class="nav-number">1.</span> <span class="nav-text">一文搞懂域名解析DNS相关问题</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Linux下域名解析流程"><span class="nav-number">1.1.</span> <span class="nav-text">Linux下域名解析流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Linux下域名解析流程需要注意的地方"><span class="nav-number">1.2.</span> <span class="nav-text">Linux下域名解析流程需要注意的地方</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Linux下域名解析诊断工具"><span class="nav-number">1.3.</span> <span class="nav-text">Linux下域名解析诊断工具</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#案例"><span class="nav-number">1.3.1.</span> <span class="nav-text">案例</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#验证"><span class="nav-number">1.3.1.1.</span> <span class="nav-text">验证</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#dhcp"><span class="nav-number">1.3.2.</span> <span class="nav-text">dhcp</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#dnsmasq"><span class="nav-number">1.3.3.</span> <span class="nav-text">dnsmasq</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#微服务下的域名解析、负载均衡"><span class="nav-number">1.4.</span> <span class="nav-text">微服务下的域名解析、负载均衡</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#域名解析通过jar、lib包"><span class="nav-number">1.4.1.</span> <span class="nav-text">域名解析通过jar、lib包</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#域名解析通过dns-server"><span class="nav-number">1.4.2.</span> <span class="nav-text">域名解析通过dns server</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#kubernetes-和-docker中的域名解析"><span class="nav-number">1.5.</span> <span class="nav-text">kubernetes 和 docker中的域名解析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#nginx-中的域名解析"><span class="nav-number">1.6.</span> <span class="nav-text">nginx 中的域名解析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#进一步的Case学习："><span class="nav-number">1.7.</span> <span class="nav-text">进一步的Case学习：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文章："><span class="nav-number">1.8.</span> <span class="nav-text">参考文章：</span></a></li></ol></li></ol></div>
             
 
           </div>
