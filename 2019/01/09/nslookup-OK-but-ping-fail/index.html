@@ -95,21 +95,21 @@
 
 
 
-<meta name="description" content="nslookup 域名结果正确，但是 ping 域名 返回 unknown host 最近两周碰到了不同场景下四个DNS问题，所以记录一下  这几个Case描述如下：  一批ECS nslookup 域名结果正确，但是 ping 域名 返回 unknown host 在公司网下，我的windows7笔记本的wifi总是报dns域名异常无法上网（通过IP地址可以上网） Docker容器中的域名解析过">
+<meta name="description" content="nslookup 域名结果正确，但是 ping 域名 返回 unknown host  nslookup 域名结果正确，但是 ping 域名 返回 unknown host 2018-02 update : 最根本的原因 https://access.redhat.com/solutions/1426263  下面让我们来看看这个问题的定位过程先Google一下: nslookup ok but">
 <meta name="keywords" content="ping,nslookup,dns,glibc,rotate">
 <meta property="og:type" content="article">
 <meta property="og:title" content="nslookup-OK-but-ping-fail">
 <meta property="og:url" content="http://yoursite.com/2019/01/09/nslookup-OK-but-ping-fail/index.html">
 <meta property="og:site_name" content="plantegg">
-<meta property="og:description" content="nslookup 域名结果正确，但是 ping 域名 返回 unknown host 最近两周碰到了不同场景下四个DNS问题，所以记录一下  这几个Case描述如下：  一批ECS nslookup 域名结果正确，但是 ping 域名 返回 unknown host 在公司网下，我的windows7笔记本的wifi总是报dns域名异常无法上网（通过IP地址可以上网） Docker容器中的域名解析过">
+<meta property="og:description" content="nslookup 域名结果正确，但是 ping 域名 返回 unknown host  nslookup 域名结果正确，但是 ping 域名 返回 unknown host 2018-02 update : 最根本的原因 https://access.redhat.com/solutions/1426263  下面让我们来看看这个问题的定位过程先Google一下: nslookup ok but">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/ca466bb6430f1149958ceb41b9ffe591.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2a8116a867726e3fea20e0f45e9ed9fa.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/b0d3f9bb8cc2a4bdcd2378e173ba8cf1.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/245e70b53aee4bfcdc9a921993ddad6f.png">
-<meta property="og:updated_time" content="2020-05-06T04:27:42.363Z">
+<meta property="og:updated_time" content="2020-07-01T03:10:07.390Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="nslookup-OK-but-ping-fail">
-<meta name="twitter:description" content="nslookup 域名结果正确，但是 ping 域名 返回 unknown host 最近两周碰到了不同场景下四个DNS问题，所以记录一下  这几个Case描述如下：  一批ECS nslookup 域名结果正确，但是 ping 域名 返回 unknown host 在公司网下，我的windows7笔记本的wifi总是报dns域名异常无法上网（通过IP地址可以上网） Docker容器中的域名解析过">
+<meta name="twitter:description" content="nslookup 域名结果正确，但是 ping 域名 返回 unknown host  nslookup 域名结果正确，但是 ping 域名 返回 unknown host 2018-02 update : 最根本的原因 https://access.redhat.com/solutions/1426263  下面让我们来看看这个问题的定位过程先Google一下: nslookup ok but">
 <meta name="twitter:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/ca466bb6430f1149958ceb41b9ffe591.png">
 
 
@@ -369,16 +369,7 @@
 
       
         <h1 id="nslookup-域名结果正确，但是-ping-域名-返回-unknown-host"><a href="#nslookup-域名结果正确，但是-ping-域名-返回-unknown-host" class="headerlink" title="nslookup 域名结果正确，但是 ping 域名 返回 unknown host"></a>nslookup 域名结果正确，但是 ping 域名 返回 unknown host</h1><blockquote>
-<p>最近两周碰到了不同场景下四个DNS问题，所以记录一下</p>
 </blockquote>
-<p>这几个Case描述如下：</p>
-<ol>
-<li><a href="https://www.atatech.org/articles/93688" target="_blank" rel="external">一批ECS nslookup 域名结果正确，但是 ping 域名 返回 unknown host</a></li>
-<li><a href="https://www.atatech.org/articles/98900" target="_blank" rel="external">在公司网下，我的windows7笔记本的wifi总是报dns域名异常无法上网（通过IP地址可以上网）</a></li>
-<li>Docker容器中的域名解析过程和原理</li>
-<li>中间件的VipClient服务在centos7上域名解析失败</li>
-</ol>
-<p>因为这些问题都不一样，但是都跟DNS服务相关所以打算分四篇文章挨个介绍，希望看完后DNS这块的问题应该是基本可以解决了。</p>
 <h2 id="nslookup-域名结果正确，但是-ping-域名-返回-unknown-host-1"><a href="#nslookup-域名结果正确，但是-ping-域名-返回-unknown-host-1" class="headerlink" title="nslookup 域名结果正确，但是 ping 域名 返回 unknown host"></a>nslookup 域名结果正确，但是 ping 域名 返回 unknown host</h2><blockquote>
 <p>2018-02 update : 最根本的原因 <a href="https://access.redhat.com/solutions/1426263" target="_blank" rel="external">https://access.redhat.com/solutions/1426263</a></p>
 </blockquote>
@@ -432,7 +423,7 @@
 <p><a href="https://www.byvoid.com/zhs/blog/linux-kernel-and-glibc" target="_blank" rel="external">Linux内核与glibc</a></p>
 <h2 id="还有一种情况，开了easyconnect这样的vpn软件，同时又配置了自己的dns-server"><a href="#还有一种情况，开了easyconnect这样的vpn软件，同时又配置了自己的dns-server" class="headerlink" title="还有一种情况，开了easyconnect这样的vpn软件，同时又配置了自己的dns server"></a>还有一种情况，开了easyconnect这样的vpn软件，同时又配置了自己的dns server</h2><p>这个时候ping 某个自己的dns server中才有的域名是没法解析到的，即使你配置了自己的dns server，如果这个时候你通过 nslookup 自己的域名, 自己的dns-server-ip 确实是能够解析到的。但是你只是 nslookup 自己的域名 就不行，明显可以看到这个时候nslookup把域名发给了127.0.0.1:53来解析，而这个端口正是easyconnect这个软件在监听，你也可以理解easyconnect这样的软件的工作方式就是必须要挟持你的dns解析，可以理解的是这个时候nslookup肯定解析不到你的域名(只把dns解析丢给第一个nameserver–127.0.0.1)，但是不能理解的是还是ping不通域名，正常ping的逻辑丢给第一个127.0.0.1解析不到域名的话，会丢给第二个dns-server继续尝试解析，但是这里的easyconnect没有进行第二次尝试，这也许是它实现上没有考虑到或者故意这样实现的。</p>
 <h2 id="其他情况"><a href="#其他情况" class="headerlink" title="其他情况"></a>其他情况</h2><p><a href="https://access.redhat.com/solutions/58028" target="_blank" rel="external">resolv.conf中search只能支持最多6个后缀（代码中写死了）</a>: This cannot be modified for RHEL 6.x and below and is resolved in RHEL7 glibc package versions at or exceeding glibc-2.17-222.el7.</p>
-<p>nameserver：<br>指定nameserver，必须配置，每行指定一个nameserver，最多只能生效3行</p>
+<p>nameserver：指定nameserver，必须配置，每行指定一个nameserver，最多只能生效3行</p>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
 <li>/etc/resolv.conf rotate参数的关键作用</li>
 <li>nscd对域名解析的cache</li>
@@ -506,8 +497,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/2019/01/24/Linux Module/" rel="prev" title="Linux Module and make debug">
-                Linux Module and make debug <i class="fa fa-chevron-right"></i>
+              <a href="/2019/01/10/windows7的wifi总是报DNS域名异常无法上网/" rel="prev" title="windows7的wifi总是报DNS域名异常无法上网">
+                windows7的wifi总是报DNS域名异常无法上网 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -587,7 +578,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">71</span>
+                <span class="site-state-item-count">76</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -609,7 +600,7 @@
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">154</span>
+                <span class="site-state-item-count">159</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>
