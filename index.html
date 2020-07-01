@@ -413,197 +413,6 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/01/通过tcpdump对Unix Socket 进行抓包解析/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2020/07/01/通过tcpdump对Unix Socket 进行抓包解析/" itemprop="url">未命名</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-07-01T11:10:07+08:00">
-                2020-07-01
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2020/07/01/通过tcpdump对Unix Socket 进行抓包解析/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2020/07/01/通过tcpdump对Unix Socket 进行抓包解析/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="通过tcpdump对Unix-Socket-进行抓包解析"><a href="#通过tcpdump对Unix-Socket-进行抓包解析" class="headerlink" title="通过tcpdump对Unix Socket 进行抓包解析"></a>通过tcpdump对Unix Socket 进行抓包解析</h1><h2 id="背景介绍"><a href="#背景介绍" class="headerlink" title="背景介绍"></a>背景介绍</h2><p>大多时候我们可以通过tcpdump对网络抓包分析请求、响应数据来排查问题。但是如果程序是通过Unix Socket方式来访问的那么tcpdump就看不到Unix Socket里面具体流淌的内容了，本文希望找到一种方法达到如同抓包查看网卡内容一样来抓包查看Unix Socket上具体的请求、响应数据。</p>
-<h2 id="socat工具"><a href="#socat工具" class="headerlink" title="socat工具"></a>socat工具</h2><p>类似nc，但是是个超级增强版的nc，<a href="https://payloads.online/tools/socat" target="_blank" rel="external">主要用作两个独立数据通道之间的双向数据传输的继电器（或者说代理）</a></p>
-<p>基本原理，通过socat在Unix-Socket和TCP/UDP port之间建立一个代理，然后对代理上的端口进行抓包。</p>
-<p>以下案例通过对 docker.sock 抓包来分析方案。大多时候我们都可以通过curl 来将http post请求发送到docker deamon所监听的端口，这些请求和响应都可以通过tcpdump抓包分析得到。但是我们通过 docker ps / docker run 将命令发给本地 docker-deamon的时候就是将请求翻译成 http请求发给了 docker.sock, 这个时候如果需要排查问题就没法用tcpdump来分析http内容了。</p>
-<h2 id="通过socat-启动一个tcp端口来代理unix-socket"><a href="#通过socat-启动一个tcp端口来代理unix-socket" class="headerlink" title="通过socat 启动一个tcp端口来代理unix socket"></a>通过socat 启动一个tcp端口来代理unix socket</h2><p>启动本地8080端口，将docker.sock映射到8080端口,8080收到的东西都会转给docker.sock，docker.sock收到的东西都通过抓8080的包看到,但是要求应用访问8080而不是docker.sock。</p>
-<pre><code>socat -d -d TCP-LISTEN:8080,fork,bind=127.0.0.1 UNIX:/var/run/docker.sock
-</code></pre><p><strong>缺点：需要修改客户端的访问方式</strong></p>
-<pre><code>sudo curl --unix-socket /var/run/docker.sock http://localhost/images/json
-</code></pre><p>上面的访问方式对8080抓包还是抓不到，因为绕过了我们的代理。</p>
-<p>只能通过如下方式访问8080端口，然后请求通过socat代理转发给docker.sock，整个结果跟访问–unix-socket是一样的，这个时候通过8080端口抓包能看到–unix-socket的工作数据</p>
-<pre><code>sudo curl http://localhost:8080/images/json
-</code></pre><h2 id="通过socat启动另外一个unix-socket代理，但是不是tcpdump抓包"><a href="#通过socat启动另外一个unix-socket代理，但是不是tcpdump抓包" class="headerlink" title="通过socat启动另外一个unix socket代理，但是不是tcpdump抓包"></a>通过socat启动另外一个unix socket代理，但是不是tcpdump抓包</h2><pre><code>sudo mv /var/run/docker.sock /var/run/docker.sock.original
-sudo socat -t100 -d -x -v UNIX-LISTEN:/var/run/docker.sock,mode=777,reuseaddr,fork UNIX-CONNECT:/var/run/docker.sock.original
-</code></pre><p>优点：客户端访问方式不变，还是直接访问–unix-socket<br>缺点：输出的数据不如tcpdump方便，也就不能用wireshark来分析了</p>
-<p>本质也还是socat代理，只是不是用的一个tcp端口来代理了，而是通过一个unix-socet代理了另外一个unix-socket，直接在代理上输出所有收发的数据</p>
-<h2 id="完美的办法，客户端不用改访问方式，tcpdump也能抓到数据"><a href="#完美的办法，客户端不用改访问方式，tcpdump也能抓到数据" class="headerlink" title="完美的办法，客户端不用改访问方式，tcpdump也能抓到数据"></a>完美的办法，客户端不用改访问方式，tcpdump也能抓到数据</h2><pre><code>sudo mv /var/run/docker.sock /var/run/docker.sock.original
-sudo socat TCP-LISTEN:8089,reuseaddr,fork UNIX-CONNECT:/var/run/docker.sock.original
-sudo socat UNIX-LISTEN:/var/run/docker.sock,fork TCP-CONNECT:127.0.0.1:8089
-</code></pre><p>然后客户端还是直接访问–unix-socket<br>    sudo curl –unix-socket /var/run/docker.sock <a href="http://localhost/images/json" target="_blank" rel="external">http://localhost/images/json</a></p>
-<p>这个时候通过tcpdump在8089端口上就能抓到数据了</p>
-<pre><code>sudo tcpdump -i lo -netvv port 8089
-</code></pre><p>实际是结合前面两种方法，做了两次代理，先将socket映射到8089端口上，然后再将8089端口映射到一个新的socket上，最后client访问这个新的socket。</p>
-<p>实际流程如下： client -&gt; 新socket -&gt; 8089 -&gt; 原来的socket  这个时候对8089可以任意抓包了</p>
-<p>参考来源：<a href="https://mivehind.net/2018/04/20/sniffing-unix-domain-sockets/" target="_blank" rel="external">https://mivehind.net/2018/04/20/sniffing-unix-domain-sockets/</a>    </p>
-<h2 id="一些socat的其它用法"><a href="#一些socat的其它用法" class="headerlink" title="一些socat的其它用法"></a>一些socat的其它用法</h2><p> 把监听在远程主机12.34.56.78上的mysql服务unix socket映射到本地的/var/run/mysqld.temp.sock, 这样就可以用mysql -S /var/run/mysqld/mysqld.sock来访问远程主机的mysql服务了。</p>
-<pre><code>socat &quot;UNIX-LISTEN:/var/run/mysqld.temp.sock,reuseaddr,fork&quot; EXEC:&quot;ssh root@12.34.56.78 socat STDIO UNIX-CONNECT:/var/run/mysqld/mysqld.sock&quot;
-</code></pre><p> 还可以用下面的命令把12.34.56.78上的mysql映射到本地的5500端口，然后使用mysql -p 5500命令访问。</p>
-<pre><code>socat TCP-LISTEN:5500 EXEC:&apos;ssh root@12.34.56.78 &quot;socat STDIO UNIX-CONNECT:/var/run/mysqld/mysqld.sock&quot;&apos;
-</code></pre><p> 把12.34.56.78的udp 161端口映射到本地的1611端口</p>
-<pre><code>socat udp-listen:1611 system:&apos;ssh root@12.34.56.78 &quot;socat stdio udp-connect:remotetarget:161&quot;&apos;    
-</code></pre><p> 通过socat启动server，带有各种参数，比nc更灵活</p>
-<pre><code>Server: socat -dd tcp-listen:2000,keepalive,keepidle=10,keepcnt=2,reuseaddr,keepintvl=1 -
-Client: socat -dd - tcp:localhost:2000,keepalive,keepidle=10,keepcnt=2,keepintvl=1
-
-Drop Connection (Unplug Cable, Shut down Link(WiFi/Interface)): sudo iptables -A INPUT -p tcp --dport 2000 -j DROP
-</code></pre><p>启动本地8080端口，将docker.sock映射到8080端口(docker.sock收到的东西都通过抓8080的包看到)。 8080收到的东西都会转给docker.sock</p>
-<pre><code>socat -d -d TCP-LISTEN:8080,fork,bind=99.13.252.208 UNIX:/var/run/docker.sock
-</code></pre><h3 id="用socat远程Unix-Socket映射"><a href="#用socat远程Unix-Socket映射" class="headerlink" title="用socat远程Unix Socket映射"></a>用socat远程Unix Socket映射</h3><p>除了将我们本地服务通过端口映射提供给其它人访问，我们还可以通过端口转发玩一些更high的。比如下面这条命令，它把监听在远程主机12.34.56.78上的mysql服务unix socket映射到本地的/var/run/mysqld.temp.sock，这样，小明就可以用mysql -S /var/run/mysqld/mysqld.temp.sock来访问远程主机的mysql服务了。</p>
-<pre><code>socat &quot;UNIX-LISTEN:/var/run/mysqld.temp.sock,reuseaddr,fork&quot; EXEC:&quot;ssh root@12.34.56.78 socat STDIO UNIX-CONNECT\:/var/run/mysqld/mysqld.sock&quot;
-</code></pre><p>当然，小明如果不喜欢本地unix socket，他还可以用下面的命令把12.34.56.78上的mysql映射到本地的5500端口，然后使用mysql -p 5500命令访问。</p>
-<pre><code>socat TCP-LISTEN:5500 EXEC:&apos;ssh root@12.34.56.78 &quot;socat STDIO UNIX-CONNECT:/var/run/mysqld/mysqld.sock&quot;&apos;
-
-# 把监听在远程主机12.34.56.78上的mysql服务unix socket映射到本地的/var/run/mysqld.temp.sock, 这样就可以用mysql -S /var/run/mysqld/mysqld.sock来访问远程主机的mysql服务了。
-socat &quot;UNIX-LISTEN:/var/run/mysqld.temp.sock,reuseaddr,fork&quot; EXEC:&quot;ssh root@12.34.56.78 socat STDIO UNIX-CONNECT:/var/run/mysqld/mysqld.sock&quot;
-# 还可以用下面的命令把12.34.56.78上的mysql映射到本地
-# 的5500端口，然后使用mysql -p 5500命令访问。
-socat TCP-LISTEN:5500 EXEC:&apos;ssh root@12.34.56.78 &quot;socat STDIO UNIX-CONNECT:/var/run/mysqld/mysqld.sock&quot;&apos;
-# 把12.34.56.78的udp 161端口映射到本地的1611端口：
-socat udp-listen:1611 system:&apos;ssh root@12.34.56.78 &quot;socat stdio udp-connect:remotetarget:161&quot;&apos;
-</code></pre><h2 id="curl-7-57版本可以直接访问-–unix-socket"><a href="#curl-7-57版本可以直接访问-–unix-socket" class="headerlink" title="curl 7.57版本可以直接访问 –unix-socket"></a>curl 7.57版本可以直接访问 –unix-socket</h2><p>7.57之后的版本才支持curl –unix-socket，大大方便了我们的测试</p>
-<pre><code>//Leave 测试断开一个网络
-curl -H &quot;Content-Type: application/json&quot; -X POST -d &apos;{&quot;NetworkID&quot;:&quot;47866b0071e3df7e8053b9c8e499986dfe5c9c4947012db2d963c66ca971ed4b&quot;,&quot;EndpointID&quot;:&quot;3d716436e629701d3ce8650e7a85c133b0ff536aed173c624e4f62a381656862&quot;}&apos; --unix-socket /run/docker/plugins/vlan.sock http://localhost/NetworkDriver.Leave
-
-//取镜像列表
-sudo curl --unix-socket /var/run/docker.sock http://localhost/images/json
-
-curl 11.239.155.97:2376/debug/pprof/goroutine?debug=2
-echo -e &quot;GET /debug/pprof/goroutine?debug=2 HTTP/1.1\r\n&quot; | sudo nc -U /run/docker/plugins/vlan.sock
-echo -e &quot;GET /debug/pprof/goroutine?debug=2 HTTP/1.1\r\n&quot; | sudo nc -U /var/run/docker.sock
-//升级curl到7.57后支持 --unix-socket
-sudo curl --unix-socket /var/run/docker.sock http://localh卡路里ost/images/json
-sudo curl --unix-socket /run/docker/plugins/vlan.sock http://localhost/NetworkDriver.GetCapabilities
-//Leave
-curl -H &quot;Content-Type: application/json&quot; -X POST -d &apos;{&quot;NetworkID&quot;:&quot;47866b0071e3df7e8053b9c8e499986dfe5c9c4947012db2d963c66ca971ed4b&quot;,&quot;EndpointID&quot;:&quot;3d716436e629701d3ce8650e7a85c133b0ff536aed173c624e4f62a381656862&quot;}&apos; --unix-socket /run/docker/plugins/vlan.sock http://localhost/NetworkDriver.Leave
-
-sudo curl --no-buffer -XGET --unix-socket /var/run/docker.sock http://localhost/events
-</code></pre><h2 id="参考资料："><a href="#参考资料：" class="headerlink" title="参考资料："></a>参考资料：</h2><p><a href="https://mivehind.net/2018/04/20/sniffing-unix-domain-sockets/" target="_blank" rel="external">https://mivehind.net/2018/04/20/sniffing-unix-domain-sockets/</a>    </p>
-<p><a href="https://superuser.com/questions/484671/can-i-monitor-a-local-unix-domain-socket-like-tcpdump" target="_blank" rel="external">https://superuser.com/questions/484671/can-i-monitor-a-local-unix-domain-socket-like-tcpdump</a></p>
-<p><a href="https://payloads.online/tools/socat" target="_blank" rel="external">https://payloads.online/tools/socat</a></p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/05/MySQL线程池导致的延时卡顿排查/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -5589,6 +5398,189 @@ public BufferedOutputStream(OutputStream out) {
 
 
     
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/08/31/就是要你懂TCP队列--通过实战案例来展示问题/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/08/31/就是要你懂TCP队列--通过实战案例来展示问题/" itemprop="url">就是要你懂TCP队列--通过实战案例来展示问题</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-08-31T17:30:03+08:00">
+                2019-08-31
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/tcp/" itemprop="url" rel="index">
+                    <span itemprop="name">tcp</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/08/31/就是要你懂TCP队列--通过实战案例来展示问题/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2019/08/31/就是要你懂TCP队列--通过实战案例来展示问题/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="就是要你懂TCP队列–通过实战案例来展示问题"><a href="#就是要你懂TCP队列–通过实战案例来展示问题" class="headerlink" title="就是要你懂TCP队列–通过实战案例来展示问题"></a>就是要你懂TCP队列–通过实战案例来展示问题</h1><p>详细理论和实践部分可以看<a href="https://plantegg.github.io/2117/06/07/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82TCP--%E5%8D%8A%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97%E5%92%8C%E5%85%A8%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/" target="_blank" rel="external">这篇</a></p>
+<p>再写这篇原因是，即使我在上篇文章里将这个问题阐述的相当清晰，但是当我再次碰到这个问题居然还是费了一些周折，所以想再次总结下。</p>
+<h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><blockquote>
+<p>使用其他团队的WEBShell 调试问题的时候非常卡，最开始怀疑是定时任务导致压力大，然后重启Server端的Tomcat就恢复了，当时该应用的开发同学看到机器磁盘、cpu、内存、gc等都正常，实在不知道为什么会这么卡</p>
+</blockquote>
+<h2 id="分析问题"><a href="#分析问题" class="headerlink" title="分析问题"></a>分析问题</h2><p>因为每天都是上午出现问题，拿到权限后，也跟着先检查一遍定时任务，没发现什么异常。</p>
+<p>既然在客户端表现出来卡顿，那么tsar先看看网络吧，果然大致是卡顿的时候网络重传率有点高，不过整个问题不是一直出现，只是间歇性的。</p>
+<p>抓包、netstat -s 看重传、reset等都还好、ss -lnt 看也没有溢出，我看了很多次当前队列都是0</p>
+<h3 id="重启Tomcat"><a href="#重启Tomcat" class="headerlink" title="重启Tomcat"></a>重启Tomcat</h3><p>问题恢复，所以基本觉得问题还是跟Tomcat非常相关，抓包看到的重传率非常低（不到0.01%—被这里坑了一下），因为中间链路还有nginx等，一度怀疑是不是抓包没抓到本地回环网卡导致的，要不不会tsar看到的重传率高，而tcpdump抓下来的非常低。</p>
+<p>重启后 jstack 看看tomcat状态，同时跟正常的server对比了一下，发现明显有一个线程不太对，一直在增加</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/c6a60ee1c4e93e2d4912b7c5ef26a95e.png" alt="image.png"></p>
+<p>所以到这里大概知道问题的原因了，只是还不能完全确认。</p>
+<p>应该是Tomcat里面的线程越来越多导致Tomcat越来越慢，这个慢不是表现在gc、cpu等上，所以开发同学发现卡顿上去也没看出端倪来。</p>
+<p>那么对于网络很熟悉的同学，上去看到网络重传很高也没找到原因有点不太应该，主要是问题出现的时候间歇性非常低，通过ss -lnt去看溢出队列和netstat -s |grep -i listen 的时候基本都没什么问题，就忽视了，再说在tcpdump抓包只看到很少的几个重传，反倒是几百个reset包干扰了问题（几百个reset肯定不对，但是没有影响我所说的应用）。</p>
+<h3 id="调整参数，加速问题重现"><a href="#调整参数，加速问题重现" class="headerlink" title="调整参数，加速问题重现"></a>调整参数，加速问题重现</h3><p>因为总是每天上午一卡顿、有人抱怨、然后重启恢复，第二天仍是这个循环，也就是问题轻微出现后就通过重启解决了</p>
+<p>故意将全连接队列从当前的128改成16，重启后运行正常，实际并发不是很高的时候16也够了，改成16是为了让问题出现的时候如果是全连接队列不够导致的，那么会影响更明显一些，经过一天的运行后，可以清晰地观察到：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/91a12c64e360ffd5a7ab7231da6d8430.png" alt="image.png"></p>
+<p>tsar的重传率稳定的很高，ss -lnt也能明显地看到全连接队列完全满了，这个满不是因为压力大了，压力一直还是差不多的，所以只能理解是Tomcat处理非常慢了，同时netstat -s 看到 overflowed也稳定增加</p>
+<p>这个时候客户端不只是卡顿了，是完全连不上。</p>
+<p>Tomcat jstack也能看到这几个线程创建了2万多个：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/adca65f70c19929d78f63d8e5f70ed5a.png" alt="image.png"></p>
+<p>抓包(第二次抓包的机会，所以这次抓了所有网卡而不只是eth0)看到 Tomcat的8080端口上基本是这样的：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d12cd194822280906353d9961897ad19.png" alt="image.png"></p>
+<p>而看所有网卡的所有重传的话，这次终于可以看到重传率和tsar看到的一致，同时也清晰的看到主要127.0.0.1的本地流量，也就是Nginx过来的，而之前的抓包只抓了eth0，只能零星看到几个eth0上的重传包，跟tsar对不上，也导致问题跑偏了（重点去关注reset了）</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/1e7a22621908e7b6f790ebcb6970ae39.png" alt="image.png"></p>
+<h3 id="或者这个异常状态的截图"><a href="#或者这个异常状态的截图" class="headerlink" title="或者这个异常状态的截图"></a>或者这个异常状态的截图</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e3870d58dd88ccd7b2977748dffe5496.png" alt="image.png"></p>
+<h2 id="一些疑问"><a href="#一些疑问" class="headerlink" title="一些疑问"></a>一些疑问</h2><h3 id="为什么之前抓包看不到这些重传"><a href="#为什么之前抓包看不到这些重传" class="headerlink" title="为什么之前抓包看不到这些重传"></a>为什么之前抓包看不到这些重传</h3><p>因为对业务部署的不了解只抓了eth0, 导致没抓到真正跟客户端表现出来的卡顿相关的重传。比如这是只抓eth0上的包，看到的重传：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ffb525eb443e0656712f6d8c6357adc2.png" alt="image.png"></p>
+<p>可以看到明显非常少，这完全不是问题。</p>
+<h3 id="为什么-ss-lnt-netstat-s-都没发现问题"><a href="#为什么-ss-lnt-netstat-s-都没发现问题" class="headerlink" title="为什么 ss -lnt / netstat -s 都没发现问题"></a>为什么 ss -lnt / netstat -s 都没发现问题</h3><p>当时抱怨的时候都是间歇性的，所以 ss -lnt看了10多次都是当前连接0， netstat -s 倒是比较疏忽没仔细比较</p>
+<h3 id="为什么线程暴涨没有监控到"><a href="#为什么线程暴涨没有监控到" class="headerlink" title="为什么线程暴涨没有监控到"></a>为什么线程暴涨没有监控到</h3><p>边缘业务，本身就是监控管理其它服务的，本身监控不健全。</p>
+<h2 id="网络重传和业务的关系"><a href="#网络重传和业务的关系" class="headerlink" title="网络重传和业务的关系"></a>网络重传和业务的关系</h2><p>一般我们通过tsar等看到的是整个机器的重传率，而实际影响我们业务的（比如这里的8080端口）只是我这个端口上的重传率，有时候tsar看到重传率很高，那可能是因为机器上其他无关应用拉高的，所以这里需要一个查看具体业务（或者说具体端口上的重传率的工具）</p>
+<h3 id="如何快速定位网络重传发生的端口"><a href="#如何快速定位网络重传发生的端口" class="headerlink" title="如何快速定位网络重传发生的端口"></a>如何快速定位网络重传发生的端口</h3><p>bcc、bpftrace或者systemtap等工具都提供了观察网络重传包发生的时候的网络四元组以及发生重传的阶段（握手、建立连接后……），这样对我们定位问题就很容易了</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/be6ac944fb72b089dc0357298a47dc37.png" alt="image.png"></p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e9efaffe357a2d1ac72806ce36066532.png" alt="image.png"></p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/9340023fac65d9c1d0aeda8e73557792.png" alt="image.png"></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>问题的根本原因不是因为TCP连接队列不够，而是 Tomcat中线程泄露，导致Tomcat反应越来越慢，进而导致TCP连接队列溢出，然后网络重传率升高，最终导致了client端操作卡顿。</p>
+<p>这种问题最快的是 jstack 发现，但是因为这只是一个后台Manager，所以基本没有监控，当时也漏看了jstack，所以导致问题定位花的时间长一些。当然通过tcpdump(漏抓了 lo 网卡，主要重传都是本地nginx和本地tomcat的，所以没有发现问题），通过 ss -lnt 和 netstat -s 本来也应该可以发现的，但是因为干扰因素太多而导致也没有发现，这个时候tcp_retrans等工具可以帮我们看的更清楚。</p>
+<p>当然从发现连接队列不够到Tomcat处理太慢这个是紧密联系的，一般应用重启的时候也会短暂连接队列不够，那是因为重启的时候Tomcat前累积了太多连接，这个时候Tomcat重启中，需要热身，本身处理也慢，所以短暂会出现连接队列不够，等Tomcat启动几分钟后就正常了。</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
   </section>
 
   
@@ -5660,7 +5652,7 @@ public BufferedOutputStream(OutputStream out) {
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">159</span>
+                <span class="site-state-item-count">160</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>
