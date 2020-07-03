@@ -95,17 +95,17 @@
 
 
 
-<meta name="description" content="通过tcpdump对Unix Socket 进行抓包解析背景介绍大多时候我们可以通过tcpdump对网络抓包分析请求、响应数据来排查问题。但是如果程序是通过Unix Socket方式来访问的那么tcpdump就看不到Unix Socket里面具体流淌的内容了，本文希望找到一种方法达到如同抓包查看网卡内容一样来抓包查看Unix Socket上具体的请求、响应数据。 socat工具类似nc，但是是个超">
+<meta name="description" content="通过tcpdump对Unix domain Socket 进行抓包解析背景介绍大多时候我们可以通过tcpdump对网络抓包分析请求、响应数据来排查问题。但是如果程序是通过Unix Domain Socket方式来访问的那么tcpdump就看不到Unix Domain Socket里面具体流淌的内容了，本文希望找到一种方法达到如同抓包查看网卡内容一样来抓包查看Unix Domain Socket上具">
 <meta name="keywords" content="Linux,tcpdump,socat,Unix-Socket">
 <meta property="og:type" content="article">
-<meta property="og:title" content="通过tcpdump对Unix Socket 进行抓包解析">
+<meta property="og:title" content="通过tcpdump对Unix Domain Socket 进行抓包解析">
 <meta property="og:url" content="http://yoursite.com/2018/01/01/通过tcpdump对Unix Socket 进行抓包解析/index.html">
 <meta property="og:site_name" content="plantegg">
-<meta property="og:description" content="通过tcpdump对Unix Socket 进行抓包解析背景介绍大多时候我们可以通过tcpdump对网络抓包分析请求、响应数据来排查问题。但是如果程序是通过Unix Socket方式来访问的那么tcpdump就看不到Unix Socket里面具体流淌的内容了，本文希望找到一种方法达到如同抓包查看网卡内容一样来抓包查看Unix Socket上具体的请求、响应数据。 socat工具类似nc，但是是个超">
-<meta property="og:updated_time" content="2020-07-01T03:36:09.207Z">
+<meta property="og:description" content="通过tcpdump对Unix domain Socket 进行抓包解析背景介绍大多时候我们可以通过tcpdump对网络抓包分析请求、响应数据来排查问题。但是如果程序是通过Unix Domain Socket方式来访问的那么tcpdump就看不到Unix Domain Socket里面具体流淌的内容了，本文希望找到一种方法达到如同抓包查看网卡内容一样来抓包查看Unix Domain Socket上具">
+<meta property="og:updated_time" content="2020-07-02T03:36:02.438Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="通过tcpdump对Unix Socket 进行抓包解析">
-<meta name="twitter:description" content="通过tcpdump对Unix Socket 进行抓包解析背景介绍大多时候我们可以通过tcpdump对网络抓包分析请求、响应数据来排查问题。但是如果程序是通过Unix Socket方式来访问的那么tcpdump就看不到Unix Socket里面具体流淌的内容了，本文希望找到一种方法达到如同抓包查看网卡内容一样来抓包查看Unix Socket上具体的请求、响应数据。 socat工具类似nc，但是是个超">
+<meta name="twitter:title" content="通过tcpdump对Unix Domain Socket 进行抓包解析">
+<meta name="twitter:description" content="通过tcpdump对Unix domain Socket 进行抓包解析背景介绍大多时候我们可以通过tcpdump对网络抓包分析请求、响应数据来排查问题。但是如果程序是通过Unix Domain Socket方式来访问的那么tcpdump就看不到Unix Domain Socket里面具体流淌的内容了，本文希望找到一种方法达到如同抓包查看网卡内容一样来抓包查看Unix Domain Socket上具">
 
 
 
@@ -139,7 +139,7 @@
 
 
 
-  <title>通过tcpdump对Unix Socket 进行抓包解析 | plantegg</title>
+  <title>通过tcpdump对Unix Domain Socket 进行抓包解析 | plantegg</title>
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
@@ -278,7 +278,7 @@
 
         
         
-          <h2 class="post-title" itemprop="name headline">通过tcpdump对Unix Socket 进行抓包解析</h2>
+          <h2 class="post-title" itemprop="name headline">通过tcpdump对Unix Domain Socket 进行抓包解析</h2>
         
 
         <div class="post-meta">
@@ -363,18 +363,18 @@
       
 
       
-        <h1 id="通过tcpdump对Unix-Socket-进行抓包解析"><a href="#通过tcpdump对Unix-Socket-进行抓包解析" class="headerlink" title="通过tcpdump对Unix Socket 进行抓包解析"></a>通过tcpdump对Unix Socket 进行抓包解析</h1><h2 id="背景介绍"><a href="#背景介绍" class="headerlink" title="背景介绍"></a>背景介绍</h2><p>大多时候我们可以通过tcpdump对网络抓包分析请求、响应数据来排查问题。但是如果程序是通过Unix Socket方式来访问的那么tcpdump就看不到Unix Socket里面具体流淌的内容了，本文希望找到一种方法达到如同抓包查看网卡内容一样来抓包查看Unix Socket上具体的请求、响应数据。</p>
+        <h1 id="通过tcpdump对Unix-domain-Socket-进行抓包解析"><a href="#通过tcpdump对Unix-domain-Socket-进行抓包解析" class="headerlink" title="通过tcpdump对Unix domain Socket 进行抓包解析"></a>通过tcpdump对Unix domain Socket 进行抓包解析</h1><h2 id="背景介绍"><a href="#背景介绍" class="headerlink" title="背景介绍"></a>背景介绍</h2><p>大多时候我们可以通过tcpdump对网络抓包分析请求、响应数据来排查问题。但是如果程序是通过Unix Domain Socket方式来访问的那么tcpdump就看不到Unix Domain Socket里面具体流淌的内容了，本文希望找到一种方法达到如同抓包查看网卡内容一样来抓包查看Unix Domain Socket上具体的请求、响应数据。</p>
 <h2 id="socat工具"><a href="#socat工具" class="headerlink" title="socat工具"></a>socat工具</h2><p>类似nc，但是是个超级增强版的nc，<a href="https://payloads.online/tools/socat" target="_blank" rel="external">主要用作两个独立数据通道之间的双向数据传输的继电器（或者说代理）</a></p>
 <p>基本原理，通过socat在Unix-Socket和TCP/UDP port之间建立一个代理，然后对代理上的端口进行抓包。</p>
 <p>以下案例通过对 docker.sock 抓包来分析方案。大多时候我们都可以通过curl 来将http post请求发送到docker deamon所监听的端口，这些请求和响应都可以通过tcpdump抓包分析得到。但是我们通过 docker ps / docker run 将命令发给本地 docker-deamon的时候就是将请求翻译成 http请求发给了 docker.sock, 这个时候如果需要排查问题就没法用tcpdump来分析http内容了。</p>
-<h2 id="通过socat-启动一个tcp端口来代理unix-socket"><a href="#通过socat-启动一个tcp端口来代理unix-socket" class="headerlink" title="通过socat 启动一个tcp端口来代理unix socket"></a>通过socat 启动一个tcp端口来代理unix socket</h2><p>启动本地8080端口，将docker.sock映射到8080端口,8080收到的东西都会转给docker.sock，docker.sock收到的东西都通过抓8080的包看到,但是要求应用访问8080而不是docker.sock。</p>
+<h2 id="通过socat-启动一个tcp端口来代理Unix-Domain-Socket"><a href="#通过socat-启动一个tcp端口来代理Unix-Domain-Socket" class="headerlink" title="通过socat 启动一个tcp端口来代理Unix Domain Socket"></a>通过socat 启动一个tcp端口来代理Unix Domain Socket</h2><p>启动本地8080端口，将docker.sock映射到8080端口,8080收到的东西都会转给docker.sock，docker.sock收到的东西都通过抓8080的包看到,但是要求应用访问8080而不是docker.sock。</p>
 <pre><code>socat -d -d TCP-LISTEN:8080,fork,bind=127.0.0.1 UNIX:/var/run/docker.sock
 </code></pre><p><strong>缺点：需要修改客户端的访问方式</strong></p>
 <pre><code>sudo curl --unix-socket /var/run/docker.sock http://localhost/images/json
 </code></pre><p>上面的访问方式对8080抓包还是抓不到，因为绕过了我们的代理。</p>
 <p>只能通过如下方式访问8080端口，然后请求通过socat代理转发给docker.sock，整个结果跟访问–unix-socket是一样的，这个时候通过8080端口抓包能看到–unix-socket的工作数据</p>
 <pre><code>sudo curl http://localhost:8080/images/json
-</code></pre><h2 id="通过socat启动另外一个unix-socket代理，但是不是tcpdump抓包"><a href="#通过socat启动另外一个unix-socket代理，但是不是tcpdump抓包" class="headerlink" title="通过socat启动另外一个unix socket代理，但是不是tcpdump抓包"></a>通过socat启动另外一个unix socket代理，但是不是tcpdump抓包</h2><pre><code>sudo mv /var/run/docker.sock /var/run/docker.sock.original
+</code></pre><h2 id="通过socat启动另外一个Unix-Domain-Socket代理，但是不是tcpdump抓包"><a href="#通过socat启动另外一个Unix-Domain-Socket代理，但是不是tcpdump抓包" class="headerlink" title="通过socat启动另外一个Unix Domain Socket代理，但是不是tcpdump抓包"></a>通过socat启动另外一个Unix Domain Socket代理，但是不是tcpdump抓包</h2><pre><code>sudo mv /var/run/docker.sock /var/run/docker.sock.original
 sudo socat -t100 -d -x -v UNIX-LISTEN:/var/run/docker.sock,mode=777,reuseaddr,fork UNIX-CONNECT:/var/run/docker.sock.original
 </code></pre><p>优点：客户端访问方式不变，还是直接访问–unix-socket<br>缺点：输出的数据不如tcpdump方便，也就不能用wireshark来分析了</p>
 <p>本质也还是socat代理，只是不是用的一个tcp端口来代理了，而是通过一个unix-socet代理了另外一个unix-socket，直接在代理上输出所有收发的数据</p>
@@ -387,7 +387,7 @@ sudo socat UNIX-LISTEN:/var/run/docker.sock,fork TCP-CONNECT:127.0.0.1:8089
 </code></pre><p>实际是结合前面两种方法，做了两次代理，先将socket映射到8089端口上，然后再将8089端口映射到一个新的socket上，最后client访问这个新的socket。</p>
 <p>实际流程如下： client -&gt; 新socket -&gt; 8089 -&gt; 原来的socket  这个时候对8089可以任意抓包了</p>
 <p>参考来源：<a href="https://mivehind.net/2018/04/20/sniffing-unix-domain-sockets/" target="_blank" rel="external">https://mivehind.net/2018/04/20/sniffing-unix-domain-sockets/</a>    </p>
-<h2 id="一些socat的其它用法"><a href="#一些socat的其它用法" class="headerlink" title="一些socat的其它用法"></a>一些socat的其它用法</h2><p> 把监听在远程主机12.34.56.78上的mysql服务unix socket映射到本地的/var/run/mysqld.temp.sock, 这样就可以用mysql -S /var/run/mysqld/mysqld.sock来访问远程主机的mysql服务了。</p>
+<h2 id="一些socat的其它用法"><a href="#一些socat的其它用法" class="headerlink" title="一些socat的其它用法"></a>一些socat的其它用法</h2><p> 把监听在远程主机12.34.56.78上的mysql服务Unix Domain Socket映射到本地的/var/run/mysqld.temp.sock, 这样就可以用mysql -S /var/run/mysqld/mysqld.sock来访问远程主机的mysql服务了。</p>
 <pre><code>socat &quot;UNIX-LISTEN:/var/run/mysqld.temp.sock,reuseaddr,fork&quot; EXEC:&quot;ssh root@12.34.56.78 socat STDIO UNIX-CONNECT:/var/run/mysqld/mysqld.sock&quot;
 </code></pre><p> 还可以用下面的命令把12.34.56.78上的mysql映射到本地的5500端口，然后使用mysql -p 5500命令访问。</p>
 <pre><code>socat TCP-LISTEN:5500 EXEC:&apos;ssh root@12.34.56.78 &quot;socat STDIO UNIX-CONNECT:/var/run/mysqld/mysqld.sock&quot;&apos;
@@ -400,12 +400,12 @@ Client: socat -dd - tcp:localhost:2000,keepalive,keepidle=10,keepcnt=2,keepintvl
 Drop Connection (Unplug Cable, Shut down Link(WiFi/Interface)): sudo iptables -A INPUT -p tcp --dport 2000 -j DROP
 </code></pre><p>启动本地8080端口，将docker.sock映射到8080端口(docker.sock收到的东西都通过抓8080的包看到)。 8080收到的东西都会转给docker.sock</p>
 <pre><code>socat -d -d TCP-LISTEN:8080,fork,bind=99.13.252.208 UNIX:/var/run/docker.sock
-</code></pre><h3 id="用socat远程Unix-Socket映射"><a href="#用socat远程Unix-Socket映射" class="headerlink" title="用socat远程Unix Socket映射"></a>用socat远程Unix Socket映射</h3><p>除了将我们本地服务通过端口映射提供给其它人访问，我们还可以通过端口转发玩一些更high的。比如下面这条命令，它把监听在远程主机12.34.56.78上的mysql服务unix socket映射到本地的/var/run/mysqld.temp.sock，这样，小明就可以用mysql -S /var/run/mysqld/mysqld.temp.sock来访问远程主机的mysql服务了。</p>
+</code></pre><h3 id="用socat远程Unix-Domain-Socket映射"><a href="#用socat远程Unix-Domain-Socket映射" class="headerlink" title="用socat远程Unix Domain Socket映射"></a>用socat远程Unix Domain Socket映射</h3><p>除了将我们本地服务通过端口映射提供给其它人访问，我们还可以通过端口转发玩一些更high的。比如下面这条命令，它把监听在远程主机12.34.56.78上的mysql服务Unix Domain Socket映射到本地的/var/run/mysqld.temp.sock，这样，小明就可以用mysql -S /var/run/mysqld/mysqld.temp.sock来访问远程主机的mysql服务了。</p>
 <pre><code>socat &quot;UNIX-LISTEN:/var/run/mysqld.temp.sock,reuseaddr,fork&quot; EXEC:&quot;ssh root@12.34.56.78 socat STDIO UNIX-CONNECT\:/var/run/mysqld/mysqld.sock&quot;
-</code></pre><p>当然，小明如果不喜欢本地unix socket，他还可以用下面的命令把12.34.56.78上的mysql映射到本地的5500端口，然后使用mysql -p 5500命令访问。</p>
+</code></pre><p>当然，小明如果不喜欢本地Unix Domain Socket，他还可以用下面的命令把12.34.56.78上的mysql映射到本地的5500端口，然后使用mysql -p 5500命令访问。</p>
 <pre><code>socat TCP-LISTEN:5500 EXEC:&apos;ssh root@12.34.56.78 &quot;socat STDIO UNIX-CONNECT:/var/run/mysqld/mysqld.sock&quot;&apos;
 
-# 把监听在远程主机12.34.56.78上的mysql服务unix socket映射到本地的/var/run/mysqld.temp.sock, 这样就可以用mysql -S /var/run/mysqld/mysqld.sock来访问远程主机的mysql服务了。
+# 把监听在远程主机12.34.56.78上的mysql服务Unix Domain Socket映射到本地的/var/run/mysqld.temp.sock, 这样就可以用mysql -S /var/run/mysqld/mysqld.sock来访问远程主机的mysql服务了。
 socat &quot;UNIX-LISTEN:/var/run/mysqld.temp.sock,reuseaddr,fork&quot; EXEC:&quot;ssh root@12.34.56.78 socat STDIO UNIX-CONNECT:/var/run/mysqld/mysqld.sock&quot;
 # 还可以用下面的命令把12.34.56.78上的mysql映射到本地
 # 的5500端口，然后使用mysql -p 5500命令访问。
@@ -571,7 +571,7 @@ sudo curl --no-buffer -XGET --unix-socket /var/run/docker.sock http://localhost/
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">76</span>
+                <span class="site-state-item-count">79</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -582,7 +582,7 @@ sudo curl --no-buffer -XGET --unix-socket /var/run/docker.sock http://localhost/
             
             <div class="site-state-item site-state-categories">
               
-                <span class="site-state-item-count">20</span>
+                <span class="site-state-item-count">21</span>
                 <span class="site-state-item-name">分类</span>
               
             </div>
@@ -593,7 +593,7 @@ sudo curl --no-buffer -XGET --unix-socket /var/run/docker.sock http://localhost/
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">160</span>
+                <span class="site-state-item-count">162</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>
@@ -635,7 +635,7 @@ sudo curl --no-buffer -XGET --unix-socket /var/run/docker.sock http://localhost/
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#通过tcpdump对Unix-Socket-进行抓包解析"><span class="nav-number">1.</span> <span class="nav-text">通过tcpdump对Unix Socket 进行抓包解析</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景介绍"><span class="nav-number">1.1.</span> <span class="nav-text">背景介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#socat工具"><span class="nav-number">1.2.</span> <span class="nav-text">socat工具</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#通过socat-启动一个tcp端口来代理unix-socket"><span class="nav-number">1.3.</span> <span class="nav-text">通过socat 启动一个tcp端口来代理unix socket</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#通过socat启动另外一个unix-socket代理，但是不是tcpdump抓包"><span class="nav-number">1.4.</span> <span class="nav-text">通过socat启动另外一个unix socket代理，但是不是tcpdump抓包</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#完美的办法，客户端不用改访问方式，tcpdump也能抓到数据"><span class="nav-number">1.5.</span> <span class="nav-text">完美的办法，客户端不用改访问方式，tcpdump也能抓到数据</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#一些socat的其它用法"><span class="nav-number">1.6.</span> <span class="nav-text">一些socat的其它用法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#用socat远程Unix-Socket映射"><span class="nav-number">1.6.1.</span> <span class="nav-text">用socat远程Unix Socket映射</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#curl-7-57版本可以直接访问-–unix-socket"><span class="nav-number">1.7.</span> <span class="nav-text">curl 7.57版本可以直接访问 –unix-socket</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料："><span class="nav-number">1.8.</span> <span class="nav-text">参考资料：</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#通过tcpdump对Unix-domain-Socket-进行抓包解析"><span class="nav-number">1.</span> <span class="nav-text">通过tcpdump对Unix domain Socket 进行抓包解析</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景介绍"><span class="nav-number">1.1.</span> <span class="nav-text">背景介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#socat工具"><span class="nav-number">1.2.</span> <span class="nav-text">socat工具</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#通过socat-启动一个tcp端口来代理Unix-Domain-Socket"><span class="nav-number">1.3.</span> <span class="nav-text">通过socat 启动一个tcp端口来代理Unix Domain Socket</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#通过socat启动另外一个Unix-Domain-Socket代理，但是不是tcpdump抓包"><span class="nav-number">1.4.</span> <span class="nav-text">通过socat启动另外一个Unix Domain Socket代理，但是不是tcpdump抓包</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#完美的办法，客户端不用改访问方式，tcpdump也能抓到数据"><span class="nav-number">1.5.</span> <span class="nav-text">完美的办法，客户端不用改访问方式，tcpdump也能抓到数据</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#一些socat的其它用法"><span class="nav-number">1.6.</span> <span class="nav-text">一些socat的其它用法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#用socat远程Unix-Domain-Socket映射"><span class="nav-number">1.6.1.</span> <span class="nav-text">用socat远程Unix Domain Socket映射</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#curl-7-57版本可以直接访问-–unix-socket"><span class="nav-number">1.7.</span> <span class="nav-text">curl 7.57版本可以直接访问 –unix-socket</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料："><span class="nav-number">1.8.</span> <span class="nav-text">参考资料：</span></a></li></ol></li></ol></div>
             
 
           </div>
@@ -810,7 +810,7 @@ sudo curl --no-buffer -XGET --unix-socket /var/run/docker.sock http://localhost/
         var disqus_config = function () {
           this.page.url = 'http://yoursite.com/2018/01/01/通过tcpdump对Unix Socket 进行抓包解析/';
           this.page.identifier = '2018/01/01/通过tcpdump对Unix Socket 进行抓包解析/';
-          this.page.title = '通过tcpdump对Unix Socket 进行抓包解析';
+          this.page.title = '通过tcpdump对Unix Domain Socket 进行抓包解析';
         };
         var d = document, s = d.createElement('script');
         s.src = 'https://.disqus.com/embed.js';

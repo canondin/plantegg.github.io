@@ -261,6 +261,1044 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/09/16/SystemStap/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/09/16/SystemStap/" itemprop="url">SystemStap、BCC、bpftrace</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-09-16T12:30:03+08:00">
+                2019-09-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Performanc/" itemprop="url" rel="index">
+                    <span itemprop="name">Performanc</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/09/16/SystemStap/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2019/09/16/SystemStap/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="SystemStap、BCC、bpftrace"><a href="#SystemStap、BCC、bpftrace" class="headerlink" title="SystemStap、BCC、bpftrace"></a>SystemStap、BCC、bpftrace</h1><h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><p>sudo stap-prep //安装好systemtap所有依赖的（debugfs等等）</p>
+<p>执行安装内核debug等等需要的一些包，然后才能运行systemtap</p>
+<pre><code># 简单的脚本，打印4s内所有进程打开了哪些文件
+#!/usr/bin/stap
+probe begin
+{
+    log(&quot;begin to probe&quot;)
+}
+
+probe syscall.open
+{
+    printf (&quot;%s(%d) open (%s)\n&quot;, execname(), pid(), argstr)
+}
+
+probe timer.ms(4000) # after 4 seconds
+{
+    exit ()
+}
+
+probe end
+{
+    log(&quot;end to probe&quot;)
+}
+</code></pre><p>主要需要两个包[“kernel-debuginfo”, “kernel-debuginfo-common”]<br>建议不要从yum装，可能会和内核小版本不同导致无法使用</p>
+<p>1 获取内核的参数<br>uname -r</p>
+<p>2 从下面的链接中取找对应内核的包</p>
+<p><a href="http://rpm.alibaba-inc.com/find.php?t=&amp;os=&amp;q=kernel-debuginfo&amp;d=1&amp;rid=1807" target="_blank" rel="external">http://rpm.alibaba-inc.com/find.php?t=&amp;os=&amp;q=kernel-debuginfo&amp;d=1&amp;rid=1807</a><br><a href="http://rpm.alibaba-inc.com/find.php?t=&amp;os=&amp;q=kernel-debuginfo-common-x86_64&amp;d=1&amp;rid=1805" target="_blank" rel="external">http://rpm.alibaba-inc.com/find.php?t=&amp;os=&amp;q=kernel-debuginfo-common-x86_64&amp;d=1&amp;rid=1805</a></p>
+<p>如果小版本不对导致装不上的话，加上–nodeps 参数<br>rpm -ivh kernel-debuginfo-2.6.32-220.23.2.ali878.el6.x86_64.rpm –nodeps</p>
+<pre><code>#验证安装是否成功
+sudo stap -v -e &apos;probe begin{printf(&quot;Hello, World&quot;); exit();}&apos;
+</code></pre><h2 id="案例"><a href="#案例" class="headerlink" title="案例"></a>案例</h2><p>写好的默认脚本都在：/usr/share/doc/systemtap-client-2.8/examples/<br>stap 部分源代码：  /usr/share/systemtap/tapset/linux/</p>
+<ul>
+<li>sudo ./socktop -N 20  //每个进程的流量，取最多的20个</li>
+<li>sudo stap netfilter_summary.stp -c “sleep 1” //每对IP之间的流量信息</li>
+<li>stap tcp_connections.stp -c “sleep 1” //每个进来的新连接</li>
+<li>sudo stap latencytap.stp –all-modules -w -t -x 38730 //监控进程38730最慢的内核操作</li>
+</ul>
+<pre><code>
+#! /usr/bin/env stap
+
+#################################################################
+# tcp_retransmit.stp
+# Author: Yang Bingwu (detailyang) &lt;detailyang@gmail.com&gt;
+# This systemtap script will prints the tcp retransmission packet
+#################################################################
+
+global record%
+global cwnd_record%
+
+probe begin {
+log(&quot;Printing tcp retransmission&quot;)
+}
+
+#probe kernel.function(&quot;tcp_retransmit_skb&quot;) {
+#probe kernel.function(&quot;tcp_xmit_retransmit_queue&quot;) {
+probe kernel.function(&quot;tcp_may_send_now&quot;) {
+    #print_usyms(ubacktrace())
+
+    print_backtrace()
+
+    #sudo stap tcp_retransmission.stp -x 19317  19317 is pid
+    if (pid() == target()) {
+
+        rto = tcp_get_info_rto($sk)
+        snd_cwnd = tcp_get_info_snd_cwnd($sk)
+        saddr   = format_ipaddr(__ip_sock_saddr($sk), __ip_sock_family($sk))
+        daddr   = format_ipaddr(__ip_sock_daddr($sk), __ip_sock_family($sk))
+        sport   = __tcp_sock_sport($sk)
+        dport   = __tcp_sock_dport($sk)
+        lastrto = record[saddr, sport, daddr, dport]
+        lastcwnd = cwnd_record[saddr, sport, daddr, dport]
+        state = tcp_ts_get_info_state($sk)
+
+        if (lastrto != rto) {
+            if (lastrto) {
+                printf(&quot;%s:%d =&gt; %s:%d STATE:%s RTO:%d -&gt; %d (ms)\n&quot;, saddr, sport,
+                daddr, dport, tcp_sockstate_str(state), lastrto/1000, rto/1000)
+            } else {
+                printf(&quot;%s:%d =&gt; %s:%d STATE:%s RTO:%d (ms)\n&quot;, saddr, sport,
+                daddr, dport, tcp_sockstate_str(state), rto/1000)
+            }
+
+            printf(&quot;%s:%d =&gt; %s:%d STATE:%s snd_cwnd: %d -&gt; %d\n&quot;, saddr, sport, daddr, dport, tcp_sockstate_str(state), snd_cwnd, lastcwnd);
+        }
+
+        record[saddr, sport, daddr, dport] = rto
+        cwnd_record[saddr, sport, daddr, dport] = snd_cwnd
+
+    }
+}
+</code></pre><p><a href="https://sourceware.org/systemtap/examples/network/tcp_retransmission.stp" target="_blank" rel="external">https://sourceware.org/systemtap/examples/network/tcp_retransmission.stp</a></p>
+<h2 id="案例2-需要模拟磁盘hang导致的io延迟，可以用systemtab来搞"><a href="#案例2-需要模拟磁盘hang导致的io延迟，可以用systemtab来搞" class="headerlink" title="案例2:需要模拟磁盘hang导致的io延迟，可以用systemtab来搞"></a>案例2:需要模拟磁盘hang导致的io延迟，可以用systemtab来搞</h2><pre><code>#!/usr/bin/env stap
+# 使用方式： stap delay.stp -g  --all-modules -x 7222   只对7222进程进行延迟hack
+
+# 延迟多少ms
+global DELAY = 100;
+global quit = 0;
+global found;
+
+probe begin {
+    warn(sprintf(&quot;Tracing pid %d ...\\n&quot;, target()))
+}
+
+# 如果想要针对mysql的写入，可以将下面换成
+#probe process(&quot;/u01/mysql/bin/mysqld&quot;).function(&quot;sync_binlog_file&quot;).call
+probe syscall.write.return {
+      if (pid() == target() &amp;&amp; !quit ) {
+          mdelay( DELAY );
+          printf(&quot;write delay detail: tid: %d func:%s  sleep: %d \n&quot;,tid(),probefunc(),DELAY);
+    }
+}
+
+
+probe syscall.fsync.return {
+   if (pid() == target() &amp;&amp; !quit ) {
+        mdelay( DELAY );
+        printf(&quot;fsync delay detail: tid: %d func:%s  sleep: %d \n&quot;,tid(),probefunc(),DELAY);
+    }
+
+}
+
+# 任务持续时间
+probe timer.s(20) {
+    if (!found) {
+        warn(&quot;No backtraces found. Quitting now...\n&quot;)
+        exit()
+    } else {
+        warn(&quot;Time&apos;s up. Quitting now...(it may take a while)\n&quot;)
+        quit = 1
+    }
+}
+</code></pre><p>7U的系统自动封装了mtime函数 /usr/share/systemtap/tapset/linux/guru-delay.stp<br>如果是6U的系统，需要在上面的脚本中自己加上mdelay的函数</p>
+<pre><code>%{
+#undef STP_OVERLOAD
+#include &lt;linux/delay.h&gt;
+%}
+
+function mdelay(ms:long) %{
+  mdelay(THIS-&gt;ms);
+%}
+</code></pre><p><a href="http://blog.csdn.net/justlinux2010/article/details/11171291" target="_blank" rel="external">使用Systemtap生成Flame Graph(火焰图) </a></p>
+<h2 id="网络重传"><a href="#网络重传" class="headerlink" title="网络重传"></a>网络重传</h2><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/be6ac944fb72b089dc0357298a47dc37.png" alt="image.png"></p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e9efaffe357a2d1ac72806ce36066532.png" alt="image.png"></p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/9340023fac65d9c1d0aeda8e73557792.png" alt="image.png"></p>
+<h2 id="网络包大小分布"><a href="#网络包大小分布" class="headerlink" title="网络包大小分布"></a>网络包大小分布</h2><pre><code>bpftrace -e &apos;tracepoint:net:net_dev_queue{
+@txsize=hist(args-&gt;len);
+@txstat=stats(args-&gt;len);
+}
+
+tracepoint:net:netif_receive_skb
+{
+    @rxsize=hist(args-&gt;len);
+    @rxstat=stats(args-&gt;len);
+}&apos;
+</code></pre><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/297eb625b1e157d85a29754108871c08.png" alt="image.png"></p>
+<h2 id="产看网络流量由哪个进程发出，或者说哪个进程在发包"><a href="#产看网络流量由哪个进程发出，或者说哪个进程在发包" class="headerlink" title="产看网络流量由哪个进程发出，或者说哪个进程在发包"></a>产看网络流量由哪个进程发出，或者说哪个进程在发包</h2><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/74b0a393a6334421957a032f1f141a9c.png" alt="image.png"></p>
+<h2 id="网络连接创建rt？"><a href="#网络连接创建rt？" class="headerlink" title="网络连接创建rt？"></a>网络连接创建rt？</h2><pre><code># ./tools/bcc/tcpconnlat
+PID    COMM         IP SADDR            DADDR            DPORT LAT(ms)
+1935   java         4  10.81.177.14     100.100.110.2    80    0.21
+6844   java         4  127.0.0.1        127.0.0.1        3406  0.05
+6844   java         4  127.0.0.1        127.0.0.1        3406  0.02
+1930   java         4  10.81.177.14     100.100.110.2    80    0.23
+1914   java         4  10.81.177.14     100.100.110.2    80    0.26
+6844   java         4  127.0.0.1        127.0.0.1        3406  0.04
+6844   java         4  127.0.0.1        127.0.0.1        3406  0.02
+1778   java         4  10.81.177.14     100.100.17.97    8000  1.62
+1915   java         4  10.81.177.14     100.100.110.2    80    0.20
+1944   java         4  10.81.177.14     100.100.110.2    80    0.23
+6844   java         4  127.0.0.1        127.0.0.1        3406  0.05
+6844   java         4  127.0.0.1        127.0.0.1        3406  0.03
+1823   java         4  10.81.177.14     100.100.110.2    80    9.58
+1928   java         4  10.81.177.14     100.100.110.2    80    9.61
+6844   java         4  127.0.0.1        127.0.0.1        3406  0.05
+6844   java         4  127.0.0.1        127.0.0.1        3406  0.03
+1796   java         4  10.81.177.14     100.100.110.2    80    0.27
+1949   java         4  10.81.177.14     100.100.110.2    80    0.22
+1795   java         4  10.81.177.14     100.100.110.2    80    0.26
+6844   java         4  127.0.0.1        127.0.0.1        3406  0.05
+6844   java         4  127.0.0.1        127.0.0.1        3406  0.02
+1916   java         4  10.81.177.14     100.100.110.2    80    3.70
+1929   java         4  10.81.177.14     100.100.110.2    80    3.73
+7059   java         4  127.0.0.1        127.0.0.1        3406  0.05
+7059   java         4  127.0.0.1        127.0.0.1        3406  0.02
+948    java         4  10.81.177.14     100.100.110.2    80    0.27
+1917   java         4  10.81.177.14     100.100.110.2    80    0.20
+1934   java         4  10.81.177.14     100.100.110.2    80    0.22
+6844   java         4  127.0.0.1        127.0.0.1        3406  0.05
+6844   java         4  127.0.0.1        127.0.0.1        3406  0.03
+</code></pre><h2 id="TCP队列实时查看"><a href="#TCP队列实时查看" class="headerlink" title="TCP队列实时查看"></a>TCP队列实时查看</h2><p>bpftrace工具包</p>
+<pre><code>cat tcpsynbl_example.txt
+Demonstrations of tcpsynbl, the Linux bpftrace/eBPF version.
+
+
+This tool shows the TCP SYN backlog size during SYN arrival as a histogram.
+This lets you see how close your applications are to hitting the backlog limit
+and dropping SYNs (causing performance issues with SYN retransmits). For
+example:
+
+# ./tcpsynbl.bt 
+Attaching 4 probes...
+Tracing SYN backlog size. Ctrl-C to end.
+^C
+@backlog[backlog limit]: histogram of backlog size
+
+
+@backlog[500]: 
+[0]                 2266 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+[1]                    3 |                                                    |
+[2, 4)                 1 |                                                    |
+
+
+$sudo bpftrace ./tcpsynbl.bt
+Attaching 4 probes...
+Tracing SYN backlog size. Ctrl-C to end.
+
+^C
+@backlog[backlog limit]: histogram of backlog size
+
+
+@backlog[10]:
+[0]                    3 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+
+@backlog[256]:
+[0]                   59 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
+</code></pre><p>或者 bpftrace tcpaccept.bt</p>
+<pre><code>cat tcpaccept_example.txt 
+Demonstrations of tcpaccept, the Linux bpftrace/eBPF version.
+
+
+This tool traces the kernel function accepting TCP socket connections (eg, a
+passive connection via accept(); not connect()). Some example output (IP
+addresses changed to protect the innocent):
+
+# ./tcpaccept
+Tracing tcp accepts. Hit Ctrl-C to end.
+TIME     PID     COMM           RADDR          RPORT LADDR          LPORT BL
+00:34:19 3949061 nginx          10.228.22.228  44226 10.229.20.169  8080  0/128
+00:34:19 3951399 ruby           127.0.0.1      52422 127.0.0.1      8000  0/128
+00:34:19 3949062 nginx          10.228.23.128  35408 10.229.20.169  8080  0/128
+
+
+This output shows three connections, an IPv4 connections to PID 1463622, a &quot;redis-server&quot;
+process listening on port 6379, and one IPv6 connection to a &quot;thread.rb&quot; process
+listening on port 8000. The remote address and port are also printed, and the accept queue
+current size as well as maximum size are shown.
+
+The overhead of this tool should be negligible, since it is only tracing the
+kernel function performing accept. It is not tracing every packet and then
+filtering.
+
+This tool only traces successful TCP accept()s. Connection attempts to closed
+ports will not be shown (those can be traced via other functions).
+
+There is another version of this tool in bcc: https://github.com/iovisor/bcc
+</code></pre><p>最后一列就是backlog最大大小和已经多少</p>
+<h2 id="DNS-域名解析时间"><a href="#DNS-域名解析时间" class="headerlink" title="DNS 域名解析时间"></a>DNS 域名解析时间</h2><pre><code>$sudo ./gethostlatency 
+TIME      PID    COMM                  LATms HOST
+15:40:01  10549  sendmail               0.19 localhost
+15:40:03  1782   java                   0.11 iZbp143cmod4v59cgon4zwZ
+15:40:13  10580  ping                   0.98 abck.akksda
+15:40:18  1823   java                   0.12 iZbp143cmod4v59cgon4zwZ
+</code></pre><p>可以明显抓到ping但是nslookup抓不到（因为nslookup 不调用 getaddrinfo/gethostbyname)</p>
+<h2 id="统计线程执行时间排名"><a href="#统计线程执行时间排名" class="headerlink" title="统计线程执行时间排名"></a>统计线程执行时间排名</h2><pre><code>$sudo stap thread-times.stp -T 5
+        comm   tid   %user %kernel (of 19997 ticks)
+        java 30474  20.06%   0.75%
+   swapper/0     0   0.00%   2.55%
+   swapper/2     0   0.00%   2.00%
+   swapper/3     0   0.00%   1.49%
+        java 19500   0.38%   0.72%
+        java 19501   0.35%   0.64%
+        java 19503   0.34%   0.65%
+        java 19496   0.28%   0.69%
+        java 19497   0.28%   0.67%
+        java 19502   0.31%   0.61%
+        java 19498   0.30%   0.58%
+        java 19499   0.26%   0.52%
+   swapper/1     0   0.00%   0.75%
+        java 20004   0.45%   0.18%
+        java 19995   0.40%   0.19%
+        java 20061   0.43%   0.16%
+        java 20066   0.41%   0.17%
+        java 20083   0.44%   0.13%
+        java 20027   0.41%   0.16%
+        java 20195   0.43%   0.13%
+</code></pre><p>如上java线程执行消耗在用户态和内核态的CPU占比，根据tid可以到jstack中对应，相当于是将top命令中的线程消耗CPU做了累积，分清了用户态和内核态</p>
+<h2 id="内核函数执行时间"><a href="#内核函数执行时间" class="headerlink" title="内核函数执行时间"></a>内核函数执行时间</h2><pre><code>$sudo ./funclatency &apos;c:connect&apos;
+Tracing 1 functions for &quot;c:connect&quot;... Hit Ctrl-C to end.
+^C
+
+Function = [unknown] [10997] 
+     nsecs               : count     distribution
+         0 -&gt; 1          : 0        |                                        |
+         2 -&gt; 3          : 0        |                                        |
+         4 -&gt; 7          : 0        |                                        |
+         8 -&gt; 15         : 0        |                                        |
+        16 -&gt; 31         : 0        |                                        |
+        32 -&gt; 63         : 0        |                                        |
+        64 -&gt; 127        : 0        |                                        |
+       128 -&gt; 255        : 0        |                                        |
+       256 -&gt; 511        : 0        |                                        |
+       512 -&gt; 1023       : 0        |                                        |
+      1024 -&gt; 2047       : 0        |                                        |
+      2048 -&gt; 4095       : 0        |                                        |
+      4096 -&gt; 8191       : 4        |****************************************|
+      8192 -&gt; 16383      : 2        |********************                    |
+     16384 -&gt; 32767      : 1        |**********                              |
+
+Function = connect [10999]  //telnet 连不上 tcp retry 
+     nsecs               : count     distribution
+         0 -&gt; 1          : 0        |                                        |
+         2 -&gt; 3          : 0        |                                        |
+         4 -&gt; 7          : 0        |                                        |
+         8 -&gt; 15         : 0        |                                        |
+        16 -&gt; 31         : 0        |                                        |
+        32 -&gt; 63         : 0        |                                        |
+        64 -&gt; 127        : 0        |                                        |
+       128 -&gt; 255        : 0        |                                        |
+       256 -&gt; 511        : 0        |                                        |
+       512 -&gt; 1023       : 0        |                                        |
+      1024 -&gt; 2047       : 0        |                                        |
+      2048 -&gt; 4095       : 0        |                                        |
+      4096 -&gt; 8191       : 3        |****************************************|
+      8192 -&gt; 16383      : 2        |**************************              |
+     16384 -&gt; 32767      : 1        |*************                           |
+</code></pre><h2 id="磁盘"><a href="#磁盘" class="headerlink" title="磁盘"></a>磁盘</h2><pre><code>15:49:40 loadavg: 0.07 0.04 0.05 1/1008 11533
+
+PID    COMM             D MAJ MIN DISK       I/O  Kbytes  AVGms
+10784  kworker/u8:0     W 254 0   vda         31     140   2.41
+416    jbd2/vda1-8      W 254 0   vda          2     100   0.93
+Detaching...
+
+[admin@iZbp143cmod4v59cgon4zwZ 15:49 /home/admin/tools/bcc]
+$df -lh
+Filesystem      Size  Used Avail Use% Mounted on
+devtmpfs        3.8G     0  3.8G   0% /dev
+tmpfs           3.9G     0  3.9G   0% /dev/shm
+tmpfs           3.9G  620K  3.9G   1% /run
+tmpfs           3.9G     0  3.9G   0% /sys/fs/cgroup
+/dev/vda1        99G  5.1G   89G   6% /
+tmpfs           779M     0  779M   0% /run/user/0
+tmpfs           779M     0  779M   0% /run/user/1000
+
+[admin@iZbp143cmod4v59cgon4zwZ 15:49 /home/admin/tools/bcc]
+$sudo ./biotop 5 1
+</code></pre><p> 或者</p>
+<pre><code>$sudo stap iostats.stp -T 5
+starting probe
+
+                                       read     read             write    write
+            name     open     read   KB tot    B avg    write   KB tot    B avg
+            java        8   125797     5406       44   251673    44337      180
+              ps      754      784      319      417        6       29     5105
+            grep       39       27       73     2781        9       42     4891
+              wc       10        6       17     2979        1        0        2
+       AliYunDun       43       53        9      175        0        0        0
+              sh        8        4        3      880        0        0        0
+             fio       20       20        2      136        5        0       81
+            sshd        0        6        0       70        6        0      121
+ AliYunDunUpdate        2        4        0       75        0        0        0
+   systemd-udevd        1        4        0       65        0        0        0
+    DragoonAgent        0        0        0        0        1        0      100
+          stapio        0       27        0        1        1        0       15
+  aliyun-service        0       25        0        0        0        0        0
+</code></pre><h2 id="fs-latency"><a href="#fs-latency" class="headerlink" title="fs latency"></a>fs latency</h2><pre><code>[root@iZbp1d1tuijx3yqz46meimZ lwtools]# stap fslatency-nd.stp 1 1
+Tracing FS sync reads and writes... Output every 1 secs.
+
+Thu Sep 19 07:48:54 2019 FS latency (ns):
+
+FS call: __vfs_read()
+ value |-------------------------------------------------- count
+   128 |                                                       0
+   256 |                                                       0
+   512 |                                                       2
+  1024 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  12423
+  2048 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@          10330
+  4096 |@@                                                   514
+  8192 |@@@@@@                                              1624
+ 16384 |@                                                    273
+ 32768 |                                                      48
+ 65536 |                                                       1
+131072 |                                                       0
+262144 |                                                       0
+
+FS call: __vfs_write()
+ value |-------------------------------------------------- count
+    64 |                                                       0
+   128 |                                                       0
+   256 |                                                     169
+   512 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  32549
+  1024 |@@@@@@@@@@@@@@@@@@@@@@@@@                          16276
+  2048 |                                                     469
+  4096 |                                                     385
+  8192 |                                                     439
+ 16384 |                                                     100
+ 32768 |                                                       5
+ 65536 |                                                       1
+131072 |                                                       0
+262144 |                                                       0
+</code></pre><p>读写时间分布：<br>    [root@iZbp1d1tuijx3yqz46meimZ lwtools]# ./rwtime-nd.stp java<br>    Tracing read/write syscalls for processes named “java”… Hit Ctrl-C to end.<br>    ^C<br>    syscall read latency (ns):<br>     value |————————————————– count<br>       128 |                                                       0<br>       256 |                                                       0<br>       512 |@                                                   3129<br>      1024 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  85897<br>      2048 |@@@@@@@@@@@@@@@                                    26032<br>      4096 |                                                     386<br>      8192 |                                                    1142<br>     16384 |                                                      63<br>     32768 |                                                       3<br>     65536 |                                                       1<br>    131072 |                                                       1<br>    262144 |                                                       0<br>    524288 |                                                       0</p>
+<pre><code>syscall write latency (ns):
+  value |-------------------------------------------------- count
+    256 |                                                        0
+    512 |                                                        0
+   1024 |                                                     1720
+   2048 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  104247
+   4096 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  105507
+   8192 |@@@@@@@@                                            17768
+  16384 |@                                                    3715
+  32768 |                                                      353
+  65536 |                                                       44
+ 131072 |                                                        0
+ 262144 |                                                        3
+ 524288 |                                                        0
+1048576 |                                                        0
+</code></pre><p>SLOW FS READ AND WRITE</p>
+<pre><code>[root@iZbp1d1tuijx3yqz46meimZ lwtools]# ./fsslower-nd.stp 5
+Tracing FS sync reads and writes slower than 5 ms... Hit Ctrl-C to end.
+TIME     PID    COMM             FUNC           SIZE     LAT(ms)
+07:55:13 30941  grep             __vfs_read     32768         18
+07:55:13 30942  grep             __vfs_read     32768          5
+07:55:13 30943  grep             __vfs_read     32768         23
+07:55:13 30944  wc               __vfs_read     16384         24
+07:55:13 1102   java             __vfs_read     8192          39
+07:55:13 1102   java             __vfs_read     8192          40
+</code></pre><h2 id="cache"><a href="#cache" class="headerlink" title="cache"></a>cache</h2><pre><code>$sudo ./cachestat -T 5 1
+TIME         HITS   MISSES  DIRTIES HITRATIO   BUFFERS_MB  CACHED_MB
+16:01:10     6297        0       52  100.00%           31        652
+</code></pre><h2 id="中断发生，主要是网卡"><a href="#中断发生，主要是网卡" class="headerlink" title="中断发生，主要是网卡"></a>中断发生，主要是网卡</h2><pre><code># sudo stap interrupts-by-dev.stp -c &apos;sleep 1&apos;
+  DEVICE      NUMBER OF INTERRUPTS 
+    virtio2-req.0 :      1
+ virtio0-output.0 :      2
+  virtio0-input.0 :      1
+ virtio0-output.0 :      1
+  virtio0-input.0 :      2
+ virtio0-output.0 :      1
+ virtio0-output.0 :      1
+  virtio0-input.0 :      1
+ virtio0-output.0 :      1
+  virtio0-input.0 :      1
+ virtio0-output.0 :      1
+  virtio0-input.0 :      1
+</code></pre><h2 id="futex"><a href="#futex" class="headerlink" title="futex"></a>futex</h2><pre><code>$sudo stap futexes.stp  -T 1
+java[4457] lock 0x7f5da0bbd548 contended 1 times, 1 avg us
+java[4457] lock 0x7f5d23c46188 contended 1 times, 27 avg us
+java[4457] lock 0x7f5d52f3f154 contended 1 times, 1945 avg us
+java[4457] lock 0x7f5da06a03f0 contended 1 times, 20 avg us
+java[4457] lock 0x7f5da2baad54 contended 1 times, 267 avg us
+java[4457] lock 0x7f5d23a8d574 contended 1 times, 60130 avg us
+java[4457] lock 0x7f5d23c30154 contended 1 times, 664 avg us
+java[4457] lock 0x7f5d23c5e1b4 contended 3 times, 70979 avg us
+java[4457] lock 0x7f5d23bc3154 contended 1 times, 4342 avg us
+java[4457] lock 0x7f5da2b897b4 contended 1 times, 70190 avg us
+java[4457] lock 0x7f5d533a0d54 contended 1 times, 2202 avg us
+</code></pre><p>参考：<a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/systemtap_beginners_guide/futexcontentionsect" target="_blank" rel="external">https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/systemtap_beginners_guide/futexcontentionsect</a></p>
+<p>Demo集锦：<br><a href="https://github.com/openresty/openresty-systemtap-toolkit/blob/master/README-CN.markdown" target="_blank" rel="external">openresty systemtap demo</a></p>
+<p><a href="https://yq.aliyun.com/articles/174916" target="_blank" rel="external">SystemTap原理、安装、入门、脚本语言及技巧</a></p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/09/12/logback日志异步化输出对性能的影响/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/09/12/logback日志异步化输出对性能的影响/" itemprop="url">logback 日志异步化输出对性能的影响</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-09-12T12:30:03+08:00">
+                2019-09-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index">
+                    <span itemprop="name">Java</span>
+                  </a>
+                </span>
+
+                
+                
+                  ， 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/Performance/" itemprop="url" rel="index">
+                    <span itemprop="name">Performance</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/09/12/logback日志异步化输出对性能的影响/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2019/09/12/logback日志异步化输出对性能的影响/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="logback-日志异步化输出对性能的影响"><a href="#logback-日志异步化输出对性能的影响" class="headerlink" title="logback 日志异步化输出对性能的影响"></a>logback 日志异步化输出对性能的影响</h1><p>异步化基本百利而无一害，特定的场景、机器下可以数倍提升效率</p>
+<h2 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h2><ul>
+<li>异步化对性能的影响取决于日志的多少和机器CPU的核数</li>
+<li>如果一秒钟日志输出达到6M（主要取决于条数），那么异步化能提升一倍的性能（日志太多的时候同步下CPU跑不满）</li>
+<li>异步输出条件下，日志多少对性能的影响有，但是不明显（15%以内）</li>
+<li>immediateFlush 对同步影响比较明显（一倍），主要是因为每次刷盘慢导致别的线程等锁时间长，在异步场景下基本不明显</li>
+<li>同步日志输出场景下瓶颈主要在同步锁而不是磁盘写日志（顺序写磁盘）</li>
+<li>从Profiler堆栈来看异步后锁和日志输出部分占比明显降低</li>
+<li>CPU核数越多意味着并发越多，那么同步异步和immediateFlush的影响越明显</li>
+<li>异步对avg rt 和 rt 95%线下降影响非常明显</li>
+<li>immediateFlush为false有丢日志的风险，异步后没有必要再设immediateFlush为false</li>
+<li>延迟Flush的cache取决于JDK的BufferedOutputStream缓冲大小，默认8K，不可更改</li>
+<li>异步后日志输出的瓶颈在于单核能力，Intel(R) Xeon(R) Platinum 8163 CPU @ 2.50GHz 输出能力大概是每秒20万条日志</li>
+</ul>
+<h2 id="测试数据"><a href="#测试数据" class="headerlink" title="测试数据"></a>测试数据</h2><h3 id="同步和异步以及immediateFlush的影响"><a href="#同步和异步以及immediateFlush的影响" class="headerlink" title="同步和异步以及immediateFlush的影响"></a>同步和异步以及immediateFlush的影响</h3><p>16core的机器</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/f0e39a66b63fe00877b6663f8857a739.png" alt="image.png"></p>
+<p>结论：同步输出的情况下immediateFlush 为false性能有一倍的提升（但是异常退出的情况下有丢日志风险）<br>异步输出是同步的4倍（这个差异依赖于cpu核数、业务逻辑的特点等），在异步的情况下immediateFlush无所谓，所以王者还是异步输出，同时异步输出对rt 95%线下降非常明显</p>
+<h3 id="一个业务逻辑稍微慢点的场景"><a href="#一个业务逻辑稍微慢点的场景" class="headerlink" title="一个业务逻辑稍微慢点的场景"></a>一个业务逻辑稍微慢点的场景</h3><p>异步输出日志点查场景tps11万+，同步输出日志后点查tps4万+，同时jstack堆栈也能看到333个BLOCKED堆栈：</p>
+<pre><code>#[ 210s] threads: 400, tps: 0.00, reads/s: 115845.43, writes/s: 0.00, response time: 7.57ms (95%)
+#[ 220s] threads: 400, tps: 0.00, reads/s: 116453.12, writes/s: 0.00, response time: 7.28ms (95%)
+#[ 230s] threads: 400, tps: 0.00, reads/s: 116400.31, writes/s: 0.00, response time: 7.33ms (95%)
+#[ 240s] threads: 400, tps: 0.00, reads/s: 116025.35, writes/s: 0.00, response time: 7.48ms (95%)
+#[ 250s] threads: 400, tps: 0.00, reads/s: 45260.97, writes/s: 0.00, response time: 29.57ms (95%)
+#[ 260s] threads: 400, tps: 0.00, reads/s: 41598.41, writes/s: 0.00, response time: 29.07ms (95%)
+#[ 270s] threads: 400, tps: 0.00, reads/s: 41939.98, writes/s: 0.00, response time: 28.96ms (95%)
+#[ 280s] threads: 400, tps: 0.00, reads/s: 40875.48, writes/s: 0.00, response time: 29.16ms (95%)
+#[ 290s] threads: 400, tps: 0.00, reads/s: 41053.73, writes/s: 0.00, response time: 29.07ms (95%)
+
+--- 1687260767618 ns (100.00%), 91083 samples
+ [ 0] ch.qos.logback.classic.sift.SiftingAppender
+ [ 1] ch.qos.logback.core.AppenderBase.doAppend
+ [ 2] ch.qos.logback.core.spi.AppenderAttachableImpl.appendLoopOnAppenders
+ [ 3] ch.qos.logback.classic.Logger.appendLoopOnAppenders
+ [ 4] ch.qos.logback.classic.Logger.callAppenders
+ [ 5] ch.qos.logback.classic.Logger.buildLoggingEventAndAppend
+ [ 6] ch.qos.logback.classic.Logger.filterAndLog_0_Or3Plus
+ [ 7] ch.qos.logback.classic.Logger.info
+ [ 8] com.*****.logger.slf4j.Slf4jLogger.info
+ [ 9] com.*****.utils.logger.support.FailsafeLogger.info
+ [10] com.*****.util.LogUtils.recordSql
+
+
+&quot;ServerExecutor-3-thread-480&quot; #753 daemon prio=5 os_prio=0 tid=0x00007f8265842000 nid=0x26f1 waiting for monitor entry [0x00007f82270bf000]
+  java.lang.Thread.State: BLOCKED (on object monitor)
+    at ch.qos.logback.core.AppenderBase.doAppend(AppenderBase.java:64)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    at ch.qos.logback.core.spi.AppenderAttachableImpl.appendLoopOnAppenders(AppenderAttachableImpl.java:48)
+    at ch.qos.logback.classic.Logger.appendLoopOnAppenders(Logger.java:282)
+    at ch.qos.logback.classic.Logger.callAppenders(Logger.java:269)
+    at ch.qos.logback.classic.Logger.buildLoggingEventAndAppend(Logger.java:470)
+    at ch.qos.logback.classic.Logger.filterAndLog_0_Or3Plus(Logger.java:424)
+    at ch.qos.logback.classic.Logger.info(Logger.java:628)
+    at com.****.utils.logger.slf4j.Slf4jLogger.info(Slf4jLogger.java:42)
+    at com.****.utils.logger.support.FailsafeLogger.info(FailsafeLogger.java:102)
+    at com.****.util.LogUtils.recordSql(LogUtils.java:115)
+
+
+  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - locked &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+</code></pre><h3 id="4核的机器下性能提升没这么明显，因为锁争抢没这么激烈"><a href="#4核的机器下性能提升没这么明显，因为锁争抢没这么激烈" class="headerlink" title="4核的机器下性能提升没这么明显，因为锁争抢没这么激烈"></a>4核的机器下性能提升没这么明显，因为锁争抢没这么激烈</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d38fecd4932266209c6a1ca0265f98aa.png" alt="image.png"></p>
+<h3 id="同步情况下的profiler"><a href="#同步情况下的profiler" class="headerlink" title="同步情况下的profiler"></a>同步情况下的profiler</h3><p>recordSQL: 12.9%<br>logback.doAppend: 10%</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/4e0595c173522e37edf87b568eab6e7f.png" alt="image.png"></p>
+<h3 id="异步情况下的profiler"><a href="#异步情况下的profiler" class="headerlink" title="异步情况下的profiler:"></a>异步情况下的profiler:</h3><p>recordSQL:  3.7%<br><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/a88a3595d386be2ffeb0652ba2fdeea1.png" alt="image.png"></p>
+<p>logback.doAppend: 2.63%</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e3d0200c0edf97540d422252fb23a4c2.png" alt="image.png"></p>
+<h3 id="在16个core的机器上锁争抢更明显"><a href="#在16个core的机器上锁争抢更明显" class="headerlink" title="在16个core的机器上锁争抢更明显"></a>在16个core的机器上锁争抢更明显</h3><p><a href="https://yuque.antfin-inc.com/preview/lark/0/2019/svg/33359/1568184395734-ff64a8ee-8b24-45ec-8fc3-024e14b8e7f0.svg" target="_blank" rel="external">99.8%的锁都是doApend</a> </p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/15879d15dbe876b5ee3bed02dfa18894.png" alt="image.png"></p>
+<h2 id="异步配置"><a href="#异步配置" class="headerlink" title="异步配置"></a>异步配置</h2><pre><code>&lt;appender name=&quot;asyncROOT&quot; class=&quot;ch.qos.logback.classic.AsyncAppender&quot;&gt;
+    &lt;queueSize&gt;1000&lt;/queueSize&gt;
+    &lt;maxFlushTime&gt;3000&lt;/maxFlushTime&gt;
+    &lt;discardingThreshold&gt;0&lt;/discardingThreshold&gt;
+    &lt;neverBlock&gt;true&lt;/neverBlock&gt;
+    &lt;appender-ref ref=&quot;ROOT&quot;/&gt;
+&lt;/appender&gt;
+</code></pre><h2 id="JDK中BufferedOutputStream-Buffer大小"><a href="#JDK中BufferedOutputStream-Buffer大小" class="headerlink" title="JDK中BufferedOutputStream Buffer大小"></a>JDK中BufferedOutputStream Buffer大小</h2><pre><code>/** 
+ * Creates a new buffered output stream to write data to the 
+ * specified underlying output stream. 
+ * 
+ * @param   out   the underlying output stream. 
+ */  
+public BufferedOutputStream(OutputStream out) {  
+    this(out, 8192);  
+}  
+</code></pre><h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>关键结论见最前面，但是要结合自己场景输出日志的速度，日志输出越少影响越不明显，机器核数越多会越明显，总的原因就是logback的 AppenderBase的doAppend()函数需要同步</p>
+<pre><code>public synchronized void doAppend(E eventObject)
+</code></pre><h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://www.iteye.com/blog/k1280000-2265177" target="_blank" rel="external">flush cache 大小8K </a></p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/08/31/就是要你懂TCP队列--通过实战案例来展示问题/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/08/31/就是要你懂TCP队列--通过实战案例来展示问题/" itemprop="url">就是要你懂TCP队列--通过实战案例来展示问题</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-08-31T17:30:03+08:00">
+                2019-08-31
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/tcp/" itemprop="url" rel="index">
+                    <span itemprop="name">tcp</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/08/31/就是要你懂TCP队列--通过实战案例来展示问题/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2019/08/31/就是要你懂TCP队列--通过实战案例来展示问题/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="就是要你懂TCP队列–通过实战案例来展示问题"><a href="#就是要你懂TCP队列–通过实战案例来展示问题" class="headerlink" title="就是要你懂TCP队列–通过实战案例来展示问题"></a>就是要你懂TCP队列–通过实战案例来展示问题</h1><p>详细理论和实践部分可以看<a href="https://plantegg.github.io/2117/06/07/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82TCP--%E5%8D%8A%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97%E5%92%8C%E5%85%A8%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/" target="_blank" rel="external">这篇</a></p>
+<p>再写这篇原因是，即使我在上篇文章里将这个问题阐述的相当清晰，但是当我再次碰到这个问题居然还是费了一些周折，所以想再次总结下。</p>
+<h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><blockquote>
+<p>使用其他团队的WEBShell 调试问题的时候非常卡，最开始怀疑是定时任务导致压力大，然后重启Server端的Tomcat就恢复了，当时该应用的开发同学看到机器磁盘、cpu、内存、gc等都正常，实在不知道为什么会这么卡</p>
+</blockquote>
+<h2 id="分析问题"><a href="#分析问题" class="headerlink" title="分析问题"></a>分析问题</h2><p>因为每天都是上午出现问题，拿到权限后，也跟着先检查一遍定时任务，没发现什么异常。</p>
+<p>既然在客户端表现出来卡顿，那么tsar先看看网络吧，果然大致是卡顿的时候网络重传率有点高，不过整个问题不是一直出现，只是间歇性的。</p>
+<p>抓包、netstat -s 看重传、reset等都还好、ss -lnt 看也没有溢出，我看了很多次当前队列都是0</p>
+<h3 id="重启Tomcat"><a href="#重启Tomcat" class="headerlink" title="重启Tomcat"></a>重启Tomcat</h3><p>问题恢复，所以基本觉得问题还是跟Tomcat非常相关，抓包看到的重传率非常低（不到0.01%—被这里坑了一下），因为中间链路还有nginx等，一度怀疑是不是抓包没抓到本地回环网卡导致的，要不不会tsar看到的重传率高，而tcpdump抓下来的非常低。</p>
+<p>重启后 jstack 看看tomcat状态，同时跟正常的server对比了一下，发现明显有一个线程不太对，一直在增加</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/c6a60ee1c4e93e2d4912b7c5ef26a95e.png" alt="image.png"></p>
+<p>所以到这里大概知道问题的原因了，只是还不能完全确认。</p>
+<p>应该是Tomcat里面的线程越来越多导致Tomcat越来越慢，这个慢不是表现在gc、cpu等上，所以开发同学发现卡顿上去也没看出端倪来。</p>
+<p>那么对于网络很熟悉的同学，上去看到网络重传很高也没找到原因有点不太应该，主要是问题出现的时候间歇性非常低，通过ss -lnt去看溢出队列和netstat -s |grep -i listen 的时候基本都没什么问题，就忽视了，再说在tcpdump抓包只看到很少的几个重传，反倒是几百个reset包干扰了问题（几百个reset肯定不对，但是没有影响我所说的应用）。</p>
+<h3 id="调整参数，加速问题重现"><a href="#调整参数，加速问题重现" class="headerlink" title="调整参数，加速问题重现"></a>调整参数，加速问题重现</h3><p>因为总是每天上午一卡顿、有人抱怨、然后重启恢复，第二天仍是这个循环，也就是问题轻微出现后就通过重启解决了</p>
+<p>故意将全连接队列从当前的128改成16，重启后运行正常，实际并发不是很高的时候16也够了，改成16是为了让问题出现的时候如果是全连接队列不够导致的，那么会影响更明显一些，经过一天的运行后，可以清晰地观察到：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/91a12c64e360ffd5a7ab7231da6d8430.png" alt="image.png"></p>
+<p>tsar的重传率稳定的很高，ss -lnt也能明显地看到全连接队列完全满了，这个满不是因为压力大了，压力一直还是差不多的，所以只能理解是Tomcat处理非常慢了，同时netstat -s 看到 overflowed也稳定增加</p>
+<p>这个时候客户端不只是卡顿了，是完全连不上。</p>
+<p>Tomcat jstack也能看到这几个线程创建了2万多个：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/adca65f70c19929d78f63d8e5f70ed5a.png" alt="image.png"></p>
+<p>抓包(第二次抓包的机会，所以这次抓了所有网卡而不只是eth0)看到 Tomcat的8080端口上基本是这样的：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d12cd194822280906353d9961897ad19.png" alt="image.png"></p>
+<p>而看所有网卡的所有重传的话，这次终于可以看到重传率和tsar看到的一致，同时也清晰的看到主要127.0.0.1的本地流量，也就是Nginx过来的，而之前的抓包只抓了eth0，只能零星看到几个eth0上的重传包，跟tsar对不上，也导致问题跑偏了（重点去关注reset了）</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/1e7a22621908e7b6f790ebcb6970ae39.png" alt="image.png"></p>
+<h3 id="或者这个异常状态的截图"><a href="#或者这个异常状态的截图" class="headerlink" title="或者这个异常状态的截图"></a>或者这个异常状态的截图</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e3870d58dd88ccd7b2977748dffe5496.png" alt="image.png"></p>
+<h2 id="一些疑问"><a href="#一些疑问" class="headerlink" title="一些疑问"></a>一些疑问</h2><h3 id="为什么之前抓包看不到这些重传"><a href="#为什么之前抓包看不到这些重传" class="headerlink" title="为什么之前抓包看不到这些重传"></a>为什么之前抓包看不到这些重传</h3><p>因为对业务部署的不了解只抓了eth0, 导致没抓到真正跟客户端表现出来的卡顿相关的重传。比如这是只抓eth0上的包，看到的重传：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ffb525eb443e0656712f6d8c6357adc2.png" alt="image.png"></p>
+<p>可以看到明显非常少，这完全不是问题。</p>
+<h3 id="为什么-ss-lnt-netstat-s-都没发现问题"><a href="#为什么-ss-lnt-netstat-s-都没发现问题" class="headerlink" title="为什么 ss -lnt / netstat -s 都没发现问题"></a>为什么 ss -lnt / netstat -s 都没发现问题</h3><p>当时抱怨的时候都是间歇性的，所以 ss -lnt看了10多次都是当前连接0， netstat -s 倒是比较疏忽没仔细比较</p>
+<h3 id="为什么线程暴涨没有监控到"><a href="#为什么线程暴涨没有监控到" class="headerlink" title="为什么线程暴涨没有监控到"></a>为什么线程暴涨没有监控到</h3><p>边缘业务，本身就是监控管理其它服务的，本身监控不健全。</p>
+<h2 id="网络重传和业务的关系"><a href="#网络重传和业务的关系" class="headerlink" title="网络重传和业务的关系"></a>网络重传和业务的关系</h2><p>一般我们通过tsar等看到的是整个机器的重传率，而实际影响我们业务的（比如这里的8080端口）只是我这个端口上的重传率，有时候tsar看到重传率很高，那可能是因为机器上其他无关应用拉高的，所以这里需要一个查看具体业务（或者说具体端口上的重传率的工具）</p>
+<h3 id="如何快速定位网络重传发生的端口"><a href="#如何快速定位网络重传发生的端口" class="headerlink" title="如何快速定位网络重传发生的端口"></a>如何快速定位网络重传发生的端口</h3><p>bcc、bpftrace或者systemtap等工具都提供了观察网络重传包发生的时候的网络四元组以及发生重传的阶段（握手、建立连接后……），这样对我们定位问题就很容易了</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/be6ac944fb72b089dc0357298a47dc37.png" alt="image.png"></p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e9efaffe357a2d1ac72806ce36066532.png" alt="image.png"></p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/9340023fac65d9c1d0aeda8e73557792.png" alt="image.png"></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>问题的根本原因不是因为TCP连接队列不够，而是 Tomcat中线程泄露，导致Tomcat反应越来越慢，进而导致TCP连接队列溢出，然后网络重传率升高，最终导致了client端操作卡顿。</p>
+<p>这种问题最快的是 jstack 发现，但是因为这只是一个后台Manager，所以基本没有监控，当时也漏看了jstack，所以导致问题定位花的时间长一些。当然通过tcpdump(漏抓了 lo 网卡，主要重传都是本地nginx和本地tomcat的，所以没有发现问题），通过 ss -lnt 和 netstat -s 本来也应该可以发现的，但是因为干扰因素太多而导致也没有发现，这个时候tcp_retrans等工具可以帮我们看的更清楚。</p>
+<p>当然从发现连接队列不够到Tomcat处理太慢这个是紧密联系的，一般应用重启的时候也会短暂连接队列不够，那是因为重启的时候Tomcat前累积了太多连接，这个时候Tomcat重启中，需要热身，本身处理也慢，所以短暂会出现连接队列不够，等Tomcat启动几分钟后就正常了。</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/07/31/NIO和Epoll/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -990,9 +2028,9 @@ ACK-FIN         ----&gt; *** ActiveConn=0 and 0 ESTABLISHED socket on realserver
       
         
           
-            <h1 id="玩转TShark（Wireshark的命令行版）"><a href="#玩转TShark（Wireshark的命令行版）" class="headerlink" title="玩转TShark（Wireshark的命令行版）"></a>玩转TShark（Wireshark的命令行版）</h1><p>在我感叹Wireshark图形界面的强大时候，有时候也抱怨下有点慢，或者感叹下要是有命令行界面版该多好啊，实际上TShark就是WireShark的命令行版，WireShark的功能基本都有，还能组合grep/awk等编程处理分析抓包文件。</p>
+            <h1 id="玩转TShark（Wireshark的命令行版）"><a href="#玩转TShark（Wireshark的命令行版）" class="headerlink" title="玩转TShark（Wireshark的命令行版）"></a>玩转TShark（Wireshark的命令行版）</h1><p>在我感叹Wireshark图形界面的强大时候，有时候也抱怨有点慢，或者感叹下要是有命令行界面版该多好啊，实际上TShark就是WireShark的命令行版，WireShark的功能基本都有，还能组合grep/awk等编程处理分析抓包文件。</p>
 <p>下面让我们通过一些例子来学习TShark的常用功能，所有用到的<em>.cap/</em>.pcap等都是通过tcpdump抓到的包。请收藏好，下次碰到类似问题直接用文章中的命令跑一下。</p>
-<h2 id="分析mysql的每个SQL响应时间"><a href="#分析mysql的每个SQL响应时间" class="headerlink" title="分析mysql的每个SQL响应时间"></a>分析mysql的每个SQL响应时间</h2><p>应用有时间输出的日志显示DB慢，DB监控到的日志显示自己很快，经常扯皮，如果直接在应用机器的网卡抓包，然后分析到每个SQL的响应时间，那么DB、网络都可以甩锅了（有时候应用统计的时间包含了应用自身的时间、取连接的时间等）</p>
+<h2 id="分析mysql的每个SQL响应时间"><a href="#分析mysql的每个SQL响应时间" class="headerlink" title="分析mysql的每个SQL响应时间"></a>分析mysql的每个SQL响应时间</h2><p>应用有输出的日志显示DB慢，DB监控到的日志显示自己很快，经常扯皮，如果直接在应用机器的网卡抓包，然后分析到每个SQL的响应时间，那么DB、网络都可以甩锅了（有时候应用统计的时间包含了应用自身的时间、取连接的时间等）</p>
 <pre><code>tshark -r 213_php.cap -Y &quot;mysql.query or (  tcp.srcport==3306)&quot; -o tcp.calculate_timestamps:true -T fields -e frame.number -e frame.time_epoch  -e frame.time_delta_displayed  -e ip.src -e tcp.srcport -e tcp.dstport -e ip.dst -e tcp.time_delta -e tcp.stream -e tcp.len -e mysql.query |sort -nk9 -nk1
 </code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div></pre></td><td class="code"><pre><div class="line">34143	1475902394.645073000	0.000342000	10.100.53.17	3306	40383	10.100.10.213	0.000153000	2273	0	</div><div class="line">34145	1475902394.645333000	0.000260000	10.100.53.17	3306	40383	10.100.10.213	0.000253000	2273	77	</div><div class="line">34150	1475902394.645537000	0.000204000	10.100.53.17	3306	40383	10.100.10.213	0.000146000	2273	0	</div><div class="line">34151	1475902394.645706000	0.000169000	10.100.53.17	3306	40383	10.100.10.213	0.000169000	2273	11	</div><div class="line">34153	1475902394.645737000	0.000031000	10.100.10.213	40383	3306	10.100.53.17	0.000031000	2273	21	SET NAMES &apos;utf8&apos;</div><div class="line">34161	1475902394.646390000	0.000158000	10.100.53.17	3306	40383	10.100.10.213	0.000653000	2273	11	</div><div class="line">34162	1475902394.646418000	0.000028000	10.100.10.213	40383	3306	10.100.53.17	0.000028000	2273	22	START TRANSACTION</div><div class="line">34164	1475902394.646713000	0.000295000	10.100.53.17	3306	40383	10.100.10.213	0.000295000	2273	11	</div><div class="line">34166	1475902394.646776000	0.000063000	10.100.10.213	40383	3306	10.100.53.17	0.000063000	2273	46	select AUTO_SEQ_t_order.nextval from dual</div><div class="line">34194	1475902394.651468000	0.000909000	10.100.53.17	3306	40383	10.100.10.213	0.004692000	2273	100	</div><div class="line">34195	1475902394.651782000	0.000314000	10.100.10.213	40383	3306	10.100.53.17	0.000314000	2273	576	insert into t_order (`out_order_no`,`pk_order`,`uid`,`ytid`,`platform`,`origin_price`,`price`,`partner_id`,`ip`,`sources`,`pay_state`,`type`,`product_type`,`device`,`extension`,`spm`,`ext2`,`createtime`,`pay_channel`,`use_ytid`,`updatetime`) values (&apos;2016100822003361672230261573284&apos;,&apos;261573284&apos;,&apos;336167223&apos;,&apos;336167223&apos;,&apos;1&apos;,&apos;500&apos;,&apos;500&apos;,&apos;100000&apos;,&apos;42.49.141.142&apos;,&apos;2&apos;,&apos;1&apos;,&apos;1&apos;,&apos;2&apos;,&apos;3&apos;,&apos;&#123;\&quot;showid\&quot;:\&quot;286083\&quot;,\&quot;play_url\&quot;:\&quot;http:\\/\\/v.youku.com\\/v_show\\/id_XMTczOTM5NjU1Mg==.html\&quot;,\&quot;permit_duration\&quot;:172800&#125;&apos;,&apos;&apos;,&apos;&apos;,&apos;2016-10-08 12:53:14&apos;,&apos;201&apos;,&apos;0&apos;,&apos;2016-10-08 12:53:14&apos;)</div><div class="line">34196	1475902394.653275000	0.001493000	10.100.53.17	3306	40383	10.100.10.213	0.001493000	2273	19	</div><div class="line">34197	1475902394.653410000	0.000135000	10.100.10.213	40383	3306	10.100.53.17	0.000135000	2273	370	insert into t_order_product (`fk_order`,`product_id`,`origin_price`,`price`,`discount`,`deliver_state`,`product_url`,`product_name`,`amount`,`ytid`,`sub_product_id`,`createtime`) values (&apos;2016100822003361672230261573284&apos;,&apos;4000010000&apos;,&apos;500&apos;,&apos;500&apos;,&apos;0&apos;,&apos;1&apos;,&apos;http://vip.youku.com&apos;,&apos;���������������������2:���������������&apos;,&apos;1&apos;,&apos;336167223&apos;,&apos;286083&apos;,&apos;2016-10-08 12:53:14&apos;)</div><div class="line">34198	1475902394.658326000	0.004916000	10.100.53.17	3306	40383	10.100.10.213	0.004916000	2273	19	</div><div class="line">34199	1475902394.658407000	0.000081000	10.100.10.213	40383	3306	10.100.53.17	0.000081000	2273	11	commit</div><div class="line">34200	1475902394.659626000	0.001219000	10.100.53.17	3306	40383	10.100.10.213	0.001219000	2273	11	</div><div class="line">34201	1475902394.659811000	0.000185000	10.100.10.213	40383	3306	10.100.53.17	0.000185000	2273	22	START TRANSACTION</div><div class="line">34202	1475902394.660054000	0.000243000	10.100.53.17	3306	40383	10.100.10.213	0.000243000	2273	11	</div><div class="line">34203	1475902394.660126000	0.000072000	10.100.10.213	40383	3306	10.100.53.17	0.000072000	2273	125	SELECT *  FROM  t_order where ( out_order_no = &apos;2016100822003361672230261573284&apos; ) AND ( ytid = &apos;336167223&apos; ) FOR UPDATE</div><div class="line">34209	1475902394.661970000	0.001844000	10.100.53.17	3306	40383	10.100.10.213	0.001844000	2273	2214	</div><div class="line">34211	1475902394.662069000	0.000099000	10.100.10.213	40383	3306	10.100.53.17	0.000089000	2273	122	update t_order set `pay_state`=&apos;2&apos;,`updatetime`=&apos;2016-10-08 12:53:14&apos; where pk_order=&apos;261573284&apos; and ytid=&apos;336167223&apos;</div><div class="line">34213	1475902394.662917000	0.000848000	10.100.53.17	3306	40383	10.100.10.213	0.000848000	2273	19	</div><div class="line">34216	1475902394.663049000	0.000088000	10.100.10.213	40383	3306	10.100.53.17	0.000132000	2273	11	commit</div><div class="line">34225	1475902394.664204000	0.000264000	10.100.53.17	3306	40383	10.100.10.213	0.001155000	2273	11	</div><div class="line">34226	1475902394.664269000	0.000065000	10.100.10.213	40383	3306	10.100.53.17	0.000065000	2273	115	SELECT *  FROM  t_order where ( out_order_no = &apos;2016100822003361672230261573284&apos; ) AND ( ytid = &apos;336167223&apos; ) </div><div class="line">34235	1475902394.665694000	0.000061000	10.100.53.17	3306	40383	10.100.10.213	0.001425000	2273	2214	</div><div class="line">34354	1475902394.681464000	0.000157000	10.100.53.17	3306	40383	10.100.10.213	0.000187000	2273	0	</div><div class="line">34174	1475902394.648046000	0.001123000	10.100.53.19	3306	33471	10.100.10.213	0.000151000	2275	0	</div><div class="line">34176	1475902394.648331000	0.000285000	10.100.53.19	3306	33471	10.100.10.213	0.000278000	2275	77	</div><div class="line">34179	1475902394.648482000	0.000151000	10.100.53.19	3306	33471	10.100.10.213	0.000127000	2275	0	</div><div class="line">34180	1475902394.648598000	0.000116000	10.100.53.19	3306	33471	10.100.10.213	0.000116000	2275	11	</div><div class="line">34181	1475902394.648606000	0.000008000	10.100.10.213	33471	3306	10.100.53.19	0.000008000	2275	21	SET NAMES &apos;utf8&apos;</div><div class="line">34182	1475902394.648846000	0.000240000	10.100.53.19	3306	33471	10.100.10.213	0.000240000	2275	11	</div><div class="line">34183	1475902394.648885000	0.000039000	10.100.10.213	33471	3306	10.100.53.19	0.000039000	2275	380	select pk_auto_renew_account as account_id,fk_user as uid,platform,ytid,fk_member_conf_id as member_id,fk_product_id as product_id,price,fk_pay_channel as pay_channel,renew_type,fk_order,fk_auto_renew_subscribe_log as fk_subscribe_log,state,memo,nexttime,createtime,updatetime from t_auto_renew_account where ( ytid = &apos;354295193&apos; ) AND ( platform = &apos;1&apos; ) AND ( state &lt;&gt; &apos;3&apos; )</div><div class="line">34184	1475902394.650040000	0.001155000	10.100.53.19	3306	33471	10.100.10.213	0.001155000	2275	1727	</div><div class="line">34189	1475902394.650559000	0.000519000	10.100.53.19	3306	33471	10.100.10.213	0.000198000	2275	0</div></pre></td></tr></table></figure>
 <p>或者：<br>    tshark -r gege_drds.pcap -Y “ ((tcp.srcport eq 3306 ) and tcp.len&gt;0 )” -o tcp.calculate_timestamps:true -T fields -e frame.number -e frame.time_epoch  -e frame.time_delta_displayed  -e ip.src -e tcp.srcport -e tcp.dstport -e ip.dst -e tcp.time_delta -e tcp.stream -e tcp.len -e tcp.analysis.ack_rtt   </p>
@@ -1051,7 +2089,7 @@ avg: 0.005937
 <h2 id="分析每个包的response-time"><a href="#分析每个包的response-time" class="headerlink" title="分析每个包的response time"></a>分析每个包的response time</h2><blockquote>
 <p>$ tshark -r rsb2.cap  -o tcp.calculate_timestamps:true -T fields  -e frame.number -e frame.time_epoch -e ip.src -e ip.dst  -e tcp.stream  -e tcp.len   -e tcp.analysis.initial_rtt  -e tcp.time_delta </p>
 </blockquote>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div></pre></td><td class="code"><pre><div class="line">1481	1465269331.308138000	100.98.199.36	10.25.92.13	302	0		0.002276000</div><div class="line">1482	1465269331.308186000	10.25.92.13	100.98.199.36	361	11		0.000063000</div><div class="line">1483	1465269331.308209000	100.98.199.36	10.25.92.13	496	0		0.004950000</div><div class="line">1484	1465269331.308223000	100.98.199.36	10.25.92.13	513	0		0.000000000</div><div class="line">1485	1465269331.308238000	100.98.199.36	10.25.92.13	326	0		0.055424000</div><div class="line">1486	1465269331.308246000	100.98.199.36	10.25.92.13	514	0		0.000000000</div><div class="line">1487	1465269331.308261000	10.25.92.71	10.25.92.13	48	0		0.000229000</div><div class="line">1488	1465269331.308277000	100.98.199.36	10.25.92.13	254	0		0.055514000</div><div class="line">1489	1465269331.308307000	100.98.199.36	10.25.92.13	292	0		0.002096000</div><div class="line">1490	1465269331.308383000	100.98.199.36	10.25.92.13	308	0		0.055406000</div><div class="line">1491	1465269331.308403000	100.98.199.36	10.25.92.13	75	0		0.041664000</div><div class="line">1492	1465269331.308421000	100.98.199.36	10.25.92.13	291	0		0.001973000</div><div class="line">1493	1465269331.308532000	100.98.199.36	10.25.92.13	509	0		0.002100000</div><div class="line">1494	1465269331.308567000	100.98.199.36	10.25.92.13	123	0		0.041560000</div><div class="line">1495	1465269331.308576000	100.98.199.36	10.25.92.13	232	11		0.063317000</div><div class="line">1496	1465269331.308584000	100.98.199.36	10.25.92.13	465	655		0.018121000</div><div class="line">1497	1465269331.308626000	100.98.199.36	10.25.92.13	61	655		0.042409000</div><div class="line">1498	1465269331.308637000	100.98.199.36	10.25.92.13	146	0		0.001520000</div><div class="line">1499	1465269331.308639000	100.98.199.36	10.25.92.13	510	0		0.001460000</div><div class="line">1500	1465269331.308645000	100.98.199.36	10.25.92.13	237	11		0.063273000</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div></pre></td><td class="code"><pre><div class="line">1481	1465269331.308138000	100.98.199.36	10.25.92.13	302	0		0.002276000</div><div class="line">1482	1465269331.308186000	10.25.92.13	    100.98.199.36	361	11	0.000063000</div><div class="line">1483	1465269331.308209000	100.98.199.36	10.25.92.13	496	0		0.004950000</div><div class="line">1484	1465269331.308223000	100.98.199.36	10.25.92.13	513	0		0.000000000</div><div class="line">1485	1465269331.308238000	100.98.199.36	10.25.92.13	326	0		0.055424000</div><div class="line">1486	1465269331.308246000	100.98.199.36	10.25.92.13	514	0		0.000000000</div><div class="line">1487	1465269331.308261000	10.25.92.71	    10.25.92.13	48	0		0.000229000</div><div class="line">1488	1465269331.308277000	100.98.199.36	10.25.92.13	254	0		0.055514000</div><div class="line">1489	1465269331.308307000	100.98.199.36	10.25.92.13	292	0		0.002096000</div><div class="line">1490	1465269331.308383000	100.98.199.36	10.25.92.13	308	0		0.055406000</div><div class="line">1491	1465269331.308403000	100.98.199.36	10.25.92.13	75	0		0.041664000</div><div class="line">1492	1465269331.308421000	100.98.199.36	10.25.92.13	291	0		0.001973000</div><div class="line">1493	1465269331.308532000	100.98.199.36	10.25.92.13	509	0		0.002100000</div><div class="line">1494	1465269331.308567000	100.98.199.36	10.25.92.13	123	0		0.041560000</div><div class="line">1495	1465269331.308576000	100.98.199.36	10.25.92.13	232	11		0.063317000</div><div class="line">1496	1465269331.308584000	100.98.199.36	10.25.92.13	465	655		0.018121000</div><div class="line">1497	1465269331.308626000	100.98.199.36	10.25.92.13	61	655		0.042409000</div><div class="line">1498	1465269331.308637000	100.98.199.36	10.25.92.13	146	0		0.001520000</div><div class="line">1499	1465269331.308639000	100.98.199.36	10.25.92.13	510	0		0.001460000</div><div class="line">1500	1465269331.308645000	100.98.199.36	10.25.92.13	237	11		0.063273000</div></pre></td></tr></table></figure>
 <h2 id="分析有问题的包、概览"><a href="#分析有问题的包、概览" class="headerlink" title="分析有问题的包、概览"></a>分析有问题的包、概览</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div></pre></td><td class="code"><pre><div class="line">$ tshark -r retrans.cap -q -z &apos;expert,note&apos;</div><div class="line"></div><div class="line">Errors (22)</div><div class="line">=============</div><div class="line">   Frequency      Group           Protocol  Summary</div><div class="line">          22  Malformed              MySQL  Malformed Packet (Exception occurred)</div><div class="line"></div><div class="line">Warns (749)</div><div class="line">=============</div><div class="line">   Frequency      Group           Protocol  Summary</div><div class="line">         538   Sequence                TCP  ACKed segment that wasn&apos;t captured (common at capture start)</div><div class="line">         192   Sequence                TCP  Connection reset (RST)</div><div class="line">          19   Sequence                TCP  Previous segment not captured (common at capture start)</div><div class="line"></div><div class="line">Notes (1162)</div><div class="line">=============</div><div class="line">   Frequency      Group           Protocol  Summary</div><div class="line">          84   Sequence                TCP  TCP keep-alive segment</div><div class="line">         274   Sequence                TCP  Duplicate ACK (#1)</div><div class="line">          37   Sequence                TCP  ACK to a TCP keep-alive segment</div><div class="line">          23   Sequence                TCP  This frame is a (suspected) retransmission</div><div class="line">         262   Sequence                TCP  Duplicate ACK (#2)</div><div class="line">         259   Sequence                TCP  Duplicate ACK (#3)</div><div class="line">         141   Sequence                TCP  Duplicate ACK (#4)</div><div class="line">          69   Sequence                TCP  Duplicate ACK (#5)</div><div class="line">           7   Sequence                TCP  Duplicate ACK (#6)</div><div class="line">           5   Sequence                TCP  This frame is a (suspected) spurious retransmission</div><div class="line">           1   Sequence                TCP  Duplicate ACK (#7)</div></pre></td></tr></table></figure>
 <h2 id="分析rtt、丢包、deplicate等等"><a href="#分析rtt、丢包、deplicate等等" class="headerlink" title="分析rtt、丢包、deplicate等等"></a>分析rtt、丢包、deplicate等等</h2><blockquote>
 <p>$ tshark -r retrans.cap -q -z io,stat,1,”AVG(tcp.analysis.ack_rtt)tcp.analysis.ack_rtt”,”COUNT(tcp.analysis.retransmission)  tcp.analysis.retransmission”,”COUNT(tcp.analysis.fast_retransmission) tcp.analysis.fast_retransmission”,”COUNT(tcp.analysis.duplicate_ack) tcp.analysis.duplicate_ack”,”COUNT(tcp.analysis.lost_segment) tcp.analysis.lost_segment”,”MIN(tcp.window_size)tcp.window_size”</p>
@@ -1084,6 +2122,7 @@ avg: 0.005937
 <li>tcp.analysis.bytes_in_flight：某一时间点网络上未确认字节数。未确认字节数不能超过你的TCP窗口大小（定义于最初3此TCP握手），为了最大化吞吐量你想要获得尽可能接近TCP窗口大小。如果看到连续低于TCP窗口大小，可能意味着报文丢失或路径上其他影响吞吐量的问题。</li>
 <li>tcp.analysis.ack_rtt：衡量抓取的TCP报文与相应的ACK。如果这一时间间隔比较长那可能表示某种类型的网络延时（报文丢失，拥塞，等等）。</li>
 </ul>
+<h2 id="抓包常用命令"><a href="#抓包常用命令" class="headerlink" title="抓包常用命令"></a>抓包常用命令</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div></pre></td><td class="code"><pre><div class="line">#tshark 解析MySQL协议</div><div class="line">tshark -r ./mysql-compress.cap -o tcp.calculate_timestamps:true -T fields -e mysql.caps.cp -e frame.number -e frame.time_epoch  -e frame.time_delta_displayed  -e ip.src -e tcp.srcport -e tcp.dstport -e ip.dst -e tcp.time_delta -e frame.time_delta_displayed  -e tcp.stream -e tcp.len -e mysql.query</div><div class="line"></div><div class="line">#用tcpdump抓取并保存包：</div><div class="line">sudo tcpdump -i eth0 port 3306 -w drds.cap</div><div class="line"></div><div class="line">#每隔3秒钟生成一个新文件，总共生成5个文件后（15秒后）终止抓包，然后包名也按时间规范好了</div><div class="line">sudo  tcpdump -t -s 0 tcp port 3306  -w &apos;dump_%Y-%m-%d_%H:%M:%S.pcap&apos;   -G 3 -W 5 -Z root</div><div class="line"></div><div class="line">#每隔30分钟��成一个包并压缩</div><div class="line">nohup sudo tcpdump -i eth0 -t -s 0 tcp and port 3306 -w &apos;dump_%Y-%m-%d_%H:%M:%S.pcap&apos; -G 1800 -W 48 -Zroot -z gzip &amp;</div><div class="line"></div><div class="line">#file size 1000M</div><div class="line">nohup sudo tcpdump -i eth0 -t -s 0 tcp and port 3306 -w &apos;dump_&apos; -C 1000 -W 300 -Z root -z gzip &amp;</div><div class="line"></div><div class="line">#抓取详细SQL语句, 快速确认client发过来的具体SQL内容：</div><div class="line">sudo tshark -i any -f &apos;port 8527&apos; -s 0 -l -w - |strings</div><div class="line">sudo tshark -i eth0 -d tcp.port==3306,mysql -T fields -e mysql.query &apos;port 3306&apos;</div><div class="line">sudo tshark -i eth0 -R &quot;ip.addr==11.163.182.137&quot; -d tcp.port==3306,mysql -T fields -e mysql.query &apos;port 3306&apos;</div><div class="line">sudo tshark -i eth0 -R &quot;tcp.srcport==62877&quot; -d tcp.port==3001,mysql -T fields -e tcp.srcport -e mysql.query &apos;port 3001&apos;</div><div class="line"></div><div class="line">#如果RDS开启了SSL，那么抓包后的内容tshark/wireshark分析不到MySQL的具体内容，可以强制关闭：connectionProperties里加上useSSL=false</div><div class="line"></div><div class="line">tshark -r ./manager.cap -o tcp.calculate_timestamps:true -Y &quot; tcp.analysis.retransmission &quot;  -T fields-e tcp.stream -e frame.number -e frame.time -e ip.src -e tcp.srcport -e tcp.dstport -e ip.dst | sort</div><div class="line"></div><div class="line">#分析MySQL rt，倒数第四列基本就是rt</div><div class="line">tshark -r gege_drds.pcap -Y &quot; ((tcp.srcport eq 3306 ) and tcp.len&gt;0 )&quot; -o tcp.calculate_timestamps:true -T fields -e frame.number -e frame.time_epoch  -e frame.time_delta_displayed  -e ip.src -e tcp.srcport -e tcp.dstport -e ip.dst -e tcp.time_delta -e tcp.stream -e tcp.len -e tcp.analysis.ack_rtt</div><div class="line"></div><div class="line">#或者排序一下</div><div class="line">tshark -r 213_php.cap -Y &quot;mysql.query or (  tcp.srcport==3306)&quot; -o tcp.calculate_timestamps:true -T fields -e frame.number -e frame.time_epoch  -e frame.time_delta_displayed  -e ip.src -e tcp.srcport -e tcp.dstport -e ip.dst -e tcp.time_delta -e tcp.stream -e tcp.len -e mysql.query |sort -nk9 -nk1</div></pre></td></tr></table></figure>
 <h2 id="一个案例"><a href="#一个案例" class="headerlink" title="一个案例"></a>一个案例</h2><blockquote>
 <p>问题：客户现场不管怎么样增加应用机器，tps就是上不去，同时增加机器后，增加的机器CPU还都能被用完，但是tps没有变化（这点比较奇怪） 整体服务调用慢，数据库没有慢查询，不知道到具体时间花在哪里，各个环节都尝试过增加服务器（或提升配置），但是问题一直得不到解决    </p>
 </blockquote>
@@ -2136,7 +3175,7 @@ rtt min/avg/max/mdev = 0.016/0.016/0.016/0.000 ms
 <li><a href="https://plantegg.github.io/2019/01/13/%E4%B8%AD%E9%97%B4%E4%BB%B6%E7%9A%84%E8%87%AA%E5%B7%B1%E7%9A%84DNS%E6%9C%8D%E5%8A%A1%E5%9C%A8alios7%E4%B8%8A%E5%9F%9F%E5%90%8D%E8%A7%A3%E6%9E%90%E5%A4%B1%E8%B4%A5/" target="_blank" rel="external">中间件的VipClient服务在centos7上域名解析失败</a></li>
 <li><a href="https://plantegg.github.io/2019/01/10/windows7%E7%9A%84wifi%E6%80%BB%E6%98%AF%E6%8A%A5DNS%E5%9F%9F%E5%90%8D%E5%BC%82%E5%B8%B8%E6%97%A0%E6%B3%95%E4%B8%8A%E7%BD%91/" target="_blank" rel="external">在公司网下，我的windows7笔记本的wifi总是报dns域名异常无法上网（通过IP地址可以上网）</a></li>
 </ol>
-<h2 id="参考文章："><a href="#参考文章：" class="headerlink" title="参考文章："></a>参考文章：</h2><p><a href="http://blog.bruceding.com/516.html" target="_blank" rel="external">GO DNS 原理解析</a></p>
+<h2 id="参考文章："><a href="#参考文章：" class="headerlink" title="参考文章："></a>参考文章：</h2><p><a href="https://blog.bruceding.me/516.html" target="_blank" rel="external">GO DNS 原理解析</a></p>
 <p><a href="https://blog.arstercz.com/linux-系统如何处理名称解析" target="_blank" rel="external">Linux 系统如何处理名称解析</a></p>
 <p><a href="https://zwischenzugs.com/2018/06/08/anatomy-of-a-linux-dns-lookup-part-i/" target="_blank" rel="external">Anatomy of a Linux DNS Lookup – Part I</a></p>
 
@@ -4732,583 +5771,6 @@ void test_stub1(void)
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/01/13/中间件的自己的DNS服务在alios7上域名解析失败/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/01/13/中间件的自己的DNS服务在alios7上域名解析失败/" itemprop="url">中间件的vipclient服务在centos7上域名解析失败</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-13T10:30:03+08:00">
-                2019-01-13
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/dns/" itemprop="url" rel="index">
-                    <span itemprop="name">dns</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/01/13/中间件的自己的DNS服务在alios7上域名解析失败/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2019/01/13/中间件的自己的DNS服务在alios7上域名解析失败/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="中间件的vipclient服务在centos7上域名解析失败"><a href="#中间件的vipclient服务在centos7上域名解析失败" class="headerlink" title="中间件的vipclient服务在centos7上域名解析失败"></a>中间件的vipclient服务在centos7上域名解析失败</h1><blockquote>
-<p>我们申请了一批ECS，操作系统是centos7，这些ECS部署了中间件的DNS服务（vipclient），但是发现这个时候域名解析失败，而同样的配置在centos6上就运行正确</p>
-</blockquote>
-<h2 id="抓包分析"><a href="#抓包分析" class="headerlink" title="抓包分析"></a>抓包分析</h2><p>分别在centos6、centos7上nslookup通过同一个DNS Server解析同一个域名，并抓包比较得到如下截图（为了方便我将centos6、7抓包做到了一张图上）：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/1d5295ccb1fab715f246b54faf94eaaf.png" alt="image.png"></p>
-<p>绿色部分是正常的解析（centos6），<strong>红色部分是解析，多了一个OPT（centos7）</strong></p>
-<p>赶紧Google一下OPT，原来DNS协议还有一个extention，参考<a href="https://tools.ietf.org/html/rfc6891#page-15" title="EDNS OPT" target="_blank" rel="external">这里</a>： </p>
-<p>而centos7默认启用edns，但是vipclient实现的时候没有支持edns，所以 centos7 解析域名就出了问题</p>
-<h2 id="通过-dig-命令来查看dns解析过程"><a href="#通过-dig-命令来查看dns解析过程" class="headerlink" title="通过 dig 命令来查看dns解析过程"></a>通过 dig 命令来查看dns解析过程</h2><p>在centos7上，通过命令 dig edas.console.cztest.com 解析失败，但是改用这个命令禁用edns后就解析正常了：dig +noedns edas.console.cztest.com </p>
-<p>vipclient会启动一个53端口，在上面监听dns query，也就是自己就是一个DNS Service</p>
-<h2 id="分析vipclient域名解析返回的包内容"><a href="#分析vipclient域名解析返回的包内容" class="headerlink" title="分析vipclient域名解析返回的包内容"></a>分析vipclient域名解析返回的包内容</h2><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/0882e4815fb1acfa80f813db4bb7265b.png" alt="image.png"></p>
-<p>把上图中最后4个16进制翻译成10进制IP地址，这个IP地址正是域名所对应的IP，可见vipclient收到域名解析后，因为看不懂edns协议，就按照自己的理解返回了结果，客户端收到这个结果后按照edns协议解析不出来IP，也就是两个的协议不对等导致了问题</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>centos7之前默认都不启用edns，centos7后默认启用edns，但是vipclient目前不支持edns<br>通过命令：dig +noedns edas.console.cztest.com 能解析到域名所对应的IP<br>但是命令：dig edas.console.cztest.com  解析不到IP，因为vipclient（相当于这里的dns server）没有兼容edns，实际返回的结果带了IP但是客户端不支持edns协议所以解析不到（vipclient返回的格式、规范不对）</p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/01/12/Docker中的DNS解析过程/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/01/12/Docker中的DNS解析过程/" itemprop="url">Docker中的DNS解析过程</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-12T10:30:03+08:00">
-                2019-01-12
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/dns/" itemprop="url" rel="index">
-                    <span itemprop="name">dns</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/01/12/Docker中的DNS解析过程/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2019/01/12/Docker中的DNS解析过程/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="Docker中的DNS解析过程"><a href="#Docker中的DNS解析过程" class="headerlink" title="Docker中的DNS解析过程"></a>Docker中的DNS解析过程</h1><h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><blockquote>
-<p>同一个Docker集群中两个容器中通过 nslookup 同一个域名，这个域名是容器启动的时候通过net alias指定的，但是返回来的IP不一样</p>
-</blockquote>
-<p>如图所示：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/892a98b53c7f9e65da79d1d6d890c3b0.png" alt="image.png"></p>
-<p>图中上面的容器中 nslookup 返回来了两个IP，但是只有146是正确的，155是多出来，不对的。</p>
-<p>要想解决这个问题抓包就没用了，因为Docker 中的net alias 域名是 Docker Daemon自己来解析的，也就是在容器中做域名解析（nslookup、ping）的时候，Docker Daemon先看这个域名是不是net alias的，是的话返回对应的ip，如果不是（比如 www.baidu.com) ，那么Docker Daemon再把这个域名丢到宿主机上去解析，在宿主机上的解析过程就是标准的DNS，可以抓包分析。但是Docker Daemon内部的解析过程没有走DNS协议，不好分析，所以得先了解一下 Docker Daemon的域名解析原理</p>
-<p>具体参考文章： <a href="http://www.jianshu.com/p/4433f4c70cf0" target="_blank" rel="external">http://www.jianshu.com/p/4433f4c70cf0</a> <a href="http://www.bijishequ.com/detail/261401?p=70-67" target="_blank" rel="external">http://www.bijishequ.com/detail/261401?p=70-67</a></p>
-<h2 id="继续分析所有容器对这个域名的解析"><a href="#继续分析所有容器对这个域名的解析" class="headerlink" title="继续分析所有容器对这个域名的解析"></a>继续分析所有容器对这个域名的解析</h2><p>继续分析所有容器对这个域名的解析发现只有某一台宿主机上的有这个问题，而且这台宿主机上所有容器都有着问题，结合上面的文章，那么这个问题比较明朗了，这台有问题的宿主机的Docker Daemon中残留了一个net alias，你可以理解成cache中有脏数据没有清理。</p>
-<p>进而跟业务的同学们沟通，确实155这个IP的容器做过升级，改动过配置，可能升级前这个155也绑定过这个域名，但是升级后绑到146这个容器上去了，但是Docker Daemon中还残留这条记录。</p>
-<h2 id="重启Docker-Daemon后问题解决（容器不需要重启）"><a href="#重启Docker-Daemon后问题解决（容器不需要重启）" class="headerlink" title="重启Docker Daemon后问题解决（容器不需要重启）"></a>重启Docker Daemon后问题解决（容器不需要重启）</h2><p>重启Docker Daemon的时候容器还在正常运行，只是这段时间的域名解析会不正常，其它业务长连接都能正常运行，在Docker Daemon重启的时候它会去检查所有容器的endpoint、重建sandbox、清理network等等各种事情，所以就把这个脏数据修复掉了。</p>
-<p>在Docker Daemon重启过程中，会给每个容器构建DNS Resovler（setup-resolver），如果构建DNS Resovler这个过程中容器发送了大量域名查询过来同时这些域名又查询不到的话Docker Daemon在重启过程中需要等待这个查询超时，然后才能继续往下走重启流程，所以导致启动流程拉长<a href="https://www.atatech.org/articles/87339" target="_blank" rel="external">问题严重的时候导致Docker Daemon长时间无法启动</a></p>
-<p>Docker的域名解析为什么要这么做，是因为容器中有两种域名解析需求：</p>
-<ol>
-<li>容器启动时通过 net alias 命名的域名</li>
-<li>容器中正常对外网各种域名的解析（比如 baidu.com/api.taobao.com)</li>
-</ol>
-<p>对于第一种只能由docker daemon来解析了，所以容器中碰到的任何域名解析都会丢给 docker daemon(127.0.0.11), 如果 docker daemon 发现这个域名不认识，也就是不是net alias命名的域名，那么docker就会把这个域名解析丢给宿主机配置的 nameserver 来解析【非常非常像 dns-f/vipclient 的解析原理】</p>
-<h2 id="容器中的域名解析"><a href="#容器中的域名解析" class="headerlink" title="容器中的域名解析"></a>容器中的域名解析</h2><p>容器启动的时候读取宿主机的 /etc/resolv.conf (去掉127.0.0.1/16 的nameserver）然后当成容器的 /etc/resolv.conf, 但是实际在容器中看到的 /etc/resolve.conf 中的nameserver只有一个：127.0.0.11，因为如上描述nameserver都被代理掉了</p>
-<p>容器 -&gt; docker daemon(127.0.0.11) -&gt; 宿主机中的/etc/resolv.conf 中的nameserver</p>
-<p>如果宿主机中的/etc/resolv.conf 中的nameserver没有，那么daemon默认会用8.8.8.8/8.8.4.4来做下一级dns server，如果在一些隔离网络中（跟外部不通），那么域名解析就会超时，因为一直无法连接到 8.8.8.8/8.8.4.4 ，进而导致故障。</p>
-<p>比如 vipserver 中需要解析 armory的域名，如果这个时候在私有云环境，宿主机又没有配置 nameserver, 那么这个域名解析会发送给 8.8.8.8/8.8.4.4 ，长时间没有响应，超时后 vipserver 会关闭自己的探活功能，从而导致 vipserver 基本不可用一样。</p>
-<p>修改 宿主机的/etc/resolv.conf后 重新启动、创建的容器才会load新的nameserver</p>
-<h2 id="如果容器中需要解析vipserver中的域名"><a href="#如果容器中需要解析vipserver中的域名" class="headerlink" title="如果容器中需要解析vipserver中的域名"></a>如果容器中需要解析vipserver中的域名</h2><ol>
-<li>容器中安装vipclient，同时容器的 /etc/resolv.conf 配置 nameserver 127.0.0.1 </li>
-<li>要保证vipclient起来之后才能启动业务</li>
-</ol>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/01/10/windows7的wifi总是报DNS域名异常无法上网/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/01/10/windows7的wifi总是报DNS域名异常无法上网/" itemprop="url">windows7的wifi总是报DNS域名异常无法上网</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-10T10:30:03+08:00">
-                2019-01-10
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/dns/" itemprop="url" rel="index">
-                    <span itemprop="name">dns</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/01/10/windows7的wifi总是报DNS域名异常无法上网/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2019/01/10/windows7的wifi总是报DNS域名异常无法上网/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="windows7的wifi总是报DNS域名异常无法上网"><a href="#windows7的wifi总是报DNS域名异常无法上网" class="headerlink" title="windows7的wifi总是报DNS域名异常无法上网"></a>windows7的wifi总是报DNS域名异常无法上网</h1><p>Windows7笔记本+公司wifi（dhcp）环境下，用着用着dns服务不可用（无法通过域名上网，通过IP地址可以访问），这里有个一模一样的Case了：<a href="https://superuser.com/questions/629559/why-is-my-computer-suddenly-using-nbns-instead-of-dns" target="_blank" rel="external">https://superuser.com/questions/629559/why-is-my-computer-suddenly-using-nbns-instead-of-dns</a> 一样的环境，看来这个问题也不只是我一个人碰到了。</p>
-<p>其实之前一直有，一个月偶尔出来一两次，以为是其他原因就没管，这次换了新电脑还是这个毛病有点不能忍，于是决定彻底解决一下。</p>
-<p>这个问题出现后，通过下面三个办法都可以让DNS恢复正常：</p>
-<ol>
-<li>重启系统大法，恢复正常</li>
-<li>禁用wifi驱动再启用，恢复正常</li>
-<li>不用DHCP，而是手工填入一个DNS服务器，比如114.114.114.114【公司域名就无法解析了】</li>
-</ol>
-<p>如果只是停用一下wifi再启用问题还在。</p>
-<h2 id="找IT升级了网卡驱动不管用"><a href="#找IT升级了网卡驱动不管用" class="headerlink" title="找IT升级了网卡驱动不管用"></a>找IT升级了网卡驱动不管用</h2><h2 id="重现的时候抓包看看"><a href="#重现的时候抓包看看" class="headerlink" title="重现的时候抓包看看"></a>重现的时候抓包看看</h2><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/c110f232829cbea9d5503166531d7f1d.png" alt="image.png"></p>
-<p>这肯定不对了，254上根本就没有跑DNS服务，可是当时没有检查 ipconfig，看看是否将网关IP动态配置到dns server里面去了，等下次重现后再确认吧。</p>
-<p>第二次重现后抓包，发现不一样了：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/295797df3c311d6902d68fb16f6212d8.png" alt="image.png"></p>
-<p>出来一个 NBNS 的鬼东西，赶紧查了一下，把它禁掉，如下图所示：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/9f06b680ae1f8b4cb781360f7c0ac2eb.png" alt="image.png"></p>
-<p>把NBNS服务关了就能上网了，同时也能抓到各种DNS Query包</p>
-<h2 id="事情没有这么简单"><a href="#事情没有这么简单" class="headerlink" title="事情没有这么简单"></a>事情没有这么简单</h2><p>过一段时间后还是会出现上面的症状，但是因为NBNS关闭了，所以这次 ping www.baidu.com 的时候没有任何包了，没有DNS Query包，也没有NBNS包，这下好尴尬。</p>
-<p>尝试Enable NBNS，又恢复了正常，看来<strong>开关 NBNS 仍然只是一个workaround，他不是导致问题的根因</strong>，开关一下没有真正解决问题，只是临时相当于重启了dns修复了问题而已。</p>
-<p>继续在网络不通的时候尝试直接ping dns server ip，发现一个奇怪的现象，丢包很多，丢包的时候还总是从 192.168.0.11返回来的，这就奇怪了，我的笔记本基本IP是30开头的，dns server ip也是30开头的，route 路由表也是对的，怎么就走到 192.168.0.11 上了啊（<a href="https://www.atatech.org/articles/80573" target="_blank" rel="external">参考我的另外一篇文章，网络到底通不通</a>），赶紧 ipconfig /all | grep 192 </p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/5212ee5e7496dafb122ce144293184e1.png" alt="image.png"></p>
-<p>发现这个IP是VirtualBox虚拟机在笔记本上虚拟出来的网卡IP，这下我倒是能理解为啥总是我碰到这个问题了，因为我的工作笔记本一拿到后第一件事情就是装VirtualBox 跑虚拟机。</p>
-<p>VirtualBox为啥导致了这个问题就是一个很偏的方向，我实在无能为力了，尝试找到了一个和VirtualBox的DNS相关的开关命令，只能死马当活马医了（像极了算命大师和老中医）</p>
-<pre><code>./VBoxManage.exe  modifyvm &quot;ubuntu&quot; --natdnshostresolver1 on
-</code></pre><p>执行完上面的命令观察了3个月了，暂时没有再出现这个问题，相对于以前轻则一个月2、3次，重则一天出现5、6次，应该算是解决了，同时升级 VirtualBox 也无法解决这个问题。</p>
-<p>route 信息：</p>
-<pre><code>$route PRINT -4
-===========================================================================
-接口列表
- 23...00 ff c1 57 7f 12 ......Sangfor SSL VPN CS Support System VNIC
- 18...f6 96 34 38 76 06 ......Microsoft Virtual WiFi Miniport Adapter #2
- 17...f6 96 34 38 76 07 ......Microsoft Virtual WiFi Miniport Adapter
- 15...00 ff 1f 24 e6 6c ......Sophos SSL VPN Adapter
- 12...f4 96 34 38 76 06 ......Intel(R) Dual Band Wireless-AC 8260
- 11...54 ee 75 d4 99 ae ......Intel(R) Ethernet Connection I219-V
- 14...0a 00 27 00 00 0e ......VirtualBox Host-Only Ethernet Adapter
-  1...........................Software Loopback Interface 1
- 25...00 00 00 00 00 00 00 e0 Microsoft ISATAP Adapter
- 19...00 00 00 00 00 00 00 e0 Microsoft ISATAP Adapter #9
- 26...00 00 00 00 00 00 00 e0 Microsoft ISATAP Adapter #2
- 27...00 00 00 00 00 00 00 e0 Microsoft ISATAP Adapter #3
- 22...00 00 00 00 00 00 00 e0 Microsoft ISATAP Adapter #7
- 21...00 00 00 00 00 00 00 e0 Microsoft ISATAP Adapter #5
- 20...00 00 00 00 00 00 00 e0 Microsoft 6to4 Adapter #2
- 16...00 00 00 00 00 00 00 e0 Teredo Tunneling Pseudo-Interface
- 24...00 00 00 00 00 00 00 e0 Microsoft ISATAP Adapter #8
-===========================================================================
-
-IPv4 路由表
-===========================================================================
-活动路由:
-网络目标网络掩码  网关   接口   跃点数
-  0.0.0.0  0.0.0.0192.168.0.250169.254.24.89266
-  0.0.0.0  0.0.0.030.27.115.254 30.27.112.21 20
-  30.27.112.0255.255.252.0在链路上  30.27.112.21276
- 30.27.112.21  255.255.255.255在链路上  30.27.112.21276
-30.27.115.255  255.255.255.255在链路上  30.27.112.21276
-127.0.0.0255.0.0.0在链路上 127.0.0.1306
-127.0.0.1  255.255.255.255在链路上 127.0.0.1306
-  127.255.255.255  255.255.255.255在链路上 127.0.0.1306
-  169.254.0.0  255.255.0.0在链路上 169.254.24.89266
-169.254.24.89  255.255.255.255在链路上 169.254.24.89266
-  169.254.255.255  255.255.255.255在链路上 169.254.24.89266
-224.0.0.0240.0.0.0在链路上 127.0.0.1306
-224.0.0.0240.0.0.0在链路上 169.254.24.89266
-224.0.0.0240.0.0.0在链路上  30.27.112.21276
-  255.255.255.255  255.255.255.255在链路上 127.0.0.1306
-  255.255.255.255  255.255.255.255在链路上 169.254.24.89266
-  255.255.255.255  255.255.255.255在链路上  30.27.112.21276
-===========================================================================
-永久路由:
-  网络地址  网络掩码  网关地址  跃点数
-  0.0.0.0  0.0.0.0192.168.0.250 默认
-  0.0.0.0  0.0.0.0192.168.0.250 默认
-===========================================================================
-</code></pre><h2 id="另外DHCP也许可以做一些事情，至少同样的用法在以前的公司网络环境没有出过问题"><a href="#另外DHCP也许可以做一些事情，至少同样的用法在以前的公司网络环境没有出过问题" class="headerlink" title="另外DHCP也许可以做一些事情，至少同样的用法在以前的公司网络环境没有出过问题"></a>另外DHCP也许可以做一些事情，至少同样的用法在以前的公司网络环境没有出过问题</h2><p>下面是来自微软官方的建议：</p>
-<blockquote>
-<p> One big advise – do not disable the DHCP Client service on any server, whether the machine is a DHCP client or statically configured. Somewhat of a misnomer, this service performs Dynamic DNS registration and is tied in with the client resolver service. If disabled on a DC, you’ll get a slew of errors, and no DNS queries will get resolved.</p>
-<p>No DNS Name Resolution If DHCP Client Service Is Not Running. When you try to resolve a host name using Domain Name Service (DNS), the attempt is unsuccessful. Communication by Internet Protocol (IP) address (even to …</p>
-<p><a href="http://support.microsoft.com/kb/268674" target="_blank" rel="external">http://support.microsoft.com/kb/268674</a></p>
-</blockquote>
-<p>from： <a href="https://blogs.msmvps.com/acefekay/2009/11/29/dns-wins-netbios-amp-the-client-side-resolver-browser-service-disabling-netbios-direct-hosted-smb-directsmb-if-one-dc-is-down-does-a-client-logon-to-another-dc-and-dns-forwarders-algorithm/#section4" target="_blank" rel="external">https://blogs.msmvps.com/acefekay/2009/11/29/dns-wins-netbios-amp-the-client-side-resolver-browser-service-disabling-netbios-direct-hosted-smb-directsmb-if-one-dc-is-down-does-a-client-logon-to-another-dc-and-dns-forwarders-algorithm/#section4</a></p>
-<h2 id="NBNS也许会导致nslookup-OK-but-ping-fail的问题"><a href="#NBNS也许会导致nslookup-OK-but-ping-fail的问题" class="headerlink" title="NBNS也许会导致nslookup OK but ping fail的问题"></a>NBNS也许会导致nslookup OK but ping fail的问题</h2><p><a href="https://www.experts-exchange.com/questions/28894006/NetBios-name-resolution-instead-of-DNS.html" target="_blank" rel="external">https://www.experts-exchange.com/questions/28894006/NetBios-name-resolution-instead-of-DNS.html</a></p>
-<p>The Windows Client Resolver（ping dns流程）</p>
-<ol>
-<li>Windows checks whether the host name is the same as the local host name.</li>
-<li>If the host name and local host name are not the same, Windows searches the DNS client resolver cache.</li>
-<li>If the host name cannot be resolved using the DNS client resolver cache, Windows sends DNS Name Query Request messages to its configured DNS servers.</li>
-<li>If the host name is a single-label name (such as server1) and cannot be resolved using the configured DNS servers, Windows converts the host name to a NetBIOS name and checks its local NetBIOS name cache.</li>
-<li>If Windows cannot find the NetBIOS name in the NetBIOS name cache, Windows contacts its configured WINS servers.</li>
-<li>If Windows cannot resolve the NetBIOS name by querying its configured WINS servers, Windows broadcasts as many as three NetBIOS Name Query Request messages on the directly attached subnet.</li>
-<li>If there is no reply to the NetBIOS Name Query Request messages, Windows searches the local Lmhosts file.<br>Ping</li>
-</ol>
-<p>windows下nslookup 流程</p>
-<ol>
-<li>Check the DNS resolver cache. This is true for records that were cached via a previous name query or records that are cached as part of a pre-load operation from updating the hosts file.</li>
-<li>Attempt NetBIOS name resolution.</li>
-<li>Append all suffixes from the suffix search list.</li>
-<li>When a Primary Domain Suffix is used, nslookup will only take devolution 3 levels.</li>
-</ol>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>碰到问题绕过去也不是长久之计，还是要从根本上了解问题的本质，这个问题在其它公司没有碰到过，我觉得跟公司的DNS、DHCP的配置也有点关系吧，但是这个我不好确认，应该还有好多用Windows本本的同学同样会碰到这个问题的，希望对你们有些帮助</p>
-<p><a href="https://support.microsoft.com/en-us/help/172218/microsoft-tcp-ip-host-name-resolution-order" target="_blank" rel="external">https://support.microsoft.com/en-us/help/172218/microsoft-tcp-ip-host-name-resolution-order</a></p>
-<p><a href="http://www.man7.org/linux/man-pages/man5/resolv.conf.5.html" target="_blank" rel="external">http://www.man7.org/linux/man-pages/man5/resolv.conf.5.html</a></p>
-<hr>
-<h2 id="本文附带鸡汤："><a href="#本文附带鸡汤：" class="headerlink" title="本文附带鸡汤："></a>本文附带鸡汤：</h2><p><strong>有些技能初学很难，大家水平都差不多，但是日积月累就会形成极强的优势，而且一旦突破某个临界点，它就会突飞猛进，这种技能叫指数型技能，是值得长期投资的，比如物理学就是一种指数型技能。</strong></p>
-<p>那么抓包算不算呢？​​</p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
@@ -5358,7 +5820,7 @@ IPv4 路由表
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">76</span>
+                <span class="site-state-item-count">79</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -5369,7 +5831,7 @@ IPv4 路由表
             
             <div class="site-state-item site-state-categories">
               
-                <span class="site-state-item-count">20</span>
+                <span class="site-state-item-count">21</span>
                 <span class="site-state-item-name">分类</span>
               
             </div>
@@ -5380,7 +5842,7 @@ IPv4 路由表
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">160</span>
+                <span class="site-state-item-count">162</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>

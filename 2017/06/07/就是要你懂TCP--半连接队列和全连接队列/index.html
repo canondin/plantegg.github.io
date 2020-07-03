@@ -95,26 +95,28 @@
 
 
 
-<meta name="description" content="关于TCP 半连接队列和全连接队列 最近碰到一个client端连接异常问题，然后定位分析并查阅各种资料文章，对TCP连接队列有个深入的理解 查资料过程中发现没有文章把这两个队列以及怎么观察他们的指标说清楚，希望通过这篇文章能把他们说清楚  问题描述场景：JAVA的client和server，使用socket通信。server使用NIO。  1.间歇性的出现client向server建立连接三次握手">
+<meta name="description" content="关于TCP 半连接队列和全连接队列 最近碰到一个client端连接异常问题，然后定位分析发现是因为全连接队列满了导致的。查阅各种资料文章和通过一系列的实验对TCP连接队列有了更深入的理解 查资料过程中发现没有文章把这两个队列以及怎么观察他们的指标说清楚，希望通过这篇文章能说清楚: 1) 这两个队列是干什么用的； 2）怎么设置和观察他们的最大值； 3）怎么查看这两个队列当前使用到了多少； 4）一旦溢">
 <meta name="keywords" content="netstat,ss,tcp queue,accept queue,syn queue,syn flood,overflows,dropped">
 <meta property="og:type" content="article">
 <meta property="og:title" content="就是要你懂TCP--半连接队列和全连接队列">
 <meta property="og:url" content="http://yoursite.com/2017/06/07/就是要你懂TCP--半连接队列和全连接队列/index.html">
 <meta property="og:site_name" content="plantegg">
-<meta property="og:description" content="关于TCP 半连接队列和全连接队列 最近碰到一个client端连接异常问题，然后定位分析并查阅各种资料文章，对TCP连接队列有个深入的理解 查资料过程中发现没有文章把这两个队列以及怎么观察他们的指标说清楚，希望通过这篇文章能把他们说清楚  问题描述场景：JAVA的client和server，使用socket通信。server使用NIO。  1.间歇性的出现client向server建立连接三次握手">
+<meta property="og:description" content="关于TCP 半连接队列和全连接队列 最近碰到一个client端连接异常问题，然后定位分析发现是因为全连接队列满了导致的。查阅各种资料文章和通过一系列的实验对TCP连接队列有了更深入的理解 查资料过程中发现没有文章把这两个队列以及怎么观察他们的指标说清楚，希望通过这篇文章能说清楚: 1) 这两个队列是干什么用的； 2）怎么设置和观察他们的最大值； 3）怎么查看这两个队列当前使用到了多少； 4）一旦溢">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/159a331ff8cdd4b8994dfe6a209d035f.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2703fc07dfc4dd5b6e1bb4c2ce620e59.png">
+<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d5947bd339c58c631217100f80ee7078.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/77ed9ba81f70f7940546f0a22dabf010.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/c0849615ae52531887ce6b0313d7d2d1.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/ec25ccb6cce8f554b7ef6927f05bd530.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2fbdd05162e9fd51e803682b8a18cc51.png">
+<meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/01dc036aca4b445ed86e3e295bf245b8.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/3f5f1eeb0646a3af8afd6bbff2a9ea0b.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/a5616904df3a505572d99d557b534db2.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/0c6bbb5d4a10f40c8b3c4ba6cab82292.png">
-<meta property="og:updated_time" content="2019-09-27T05:45:10.011Z">
+<meta property="og:updated_time" content="2020-07-03T04:35:09.956Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="就是要你懂TCP--半连接队列和全连接队列">
-<meta name="twitter:description" content="关于TCP 半连接队列和全连接队列 最近碰到一个client端连接异常问题，然后定位分析并查阅各种资料文章，对TCP连接队列有个深入的理解 查资料过程中发现没有文章把这两个队列以及怎么观察他们的指标说清楚，希望通过这篇文章能把他们说清楚  问题描述场景：JAVA的client和server，使用socket通信。server使用NIO。  1.间歇性的出现client向server建立连接三次握手">
+<meta name="twitter:description" content="关于TCP 半连接队列和全连接队列 最近碰到一个client端连接异常问题，然后定位分析发现是因为全连接队列满了导致的。查阅各种资料文章和通过一系列的实验对TCP连接队列有了更深入的理解 查资料过程中发现没有文章把这两个队列以及怎么观察他们的指标说清楚，希望通过这篇文章能说清楚: 1) 这两个队列是干什么用的； 2）怎么设置和观察他们的最大值； 3）怎么查看这两个队列当前使用到了多少； 4）一旦溢">
 <meta name="twitter:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/159a331ff8cdd4b8994dfe6a209d035f.png">
 
 
@@ -374,8 +376,12 @@
 
       
         <h1 id="关于TCP-半连接队列和全连接队列"><a href="#关于TCP-半连接队列和全连接队列" class="headerlink" title="关于TCP 半连接队列和全连接队列"></a>关于TCP 半连接队列和全连接队列</h1><blockquote>
-<p>最近碰到一个client端连接异常问题，然后定位分析并查阅各种资料文章，对TCP连接队列有个深入的理解</p>
-<p>查资料过程中发现没有文章把这两个队列以及怎么观察他们的指标说清楚，希望通过这篇文章能把他们说清楚</p>
+<p>最近碰到一个client端连接异常问题，然后定位分析发现是因为全连接队列满了导致的。查阅各种资料文章和通过一系列的实验对TCP连接队列有了更深入的理解</p>
+<p>查资料过程中发现没有文章把这两个队列以及怎么观察他们的指标说清楚，希望通过这篇文章能说清楚:</p>
+<p>1) 这两个队列是干什么用的；</p>
+<p>2）怎么设置和观察他们的最大值；</p>
+<p>3）怎么查看这两个队列当前使用到了多少；</p>
+<p>4）一旦溢出的后果和现象是什么</p>
 </blockquote>
 <h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><pre><code>场景：JAVA的client和server，使用socket通信。server使用NIO。
 
@@ -403,7 +409,8 @@
 <blockquote>
 <p>但是不能只是满足问题的解决，而是要去复盘解决过程，中间涉及到了哪些知识点是我所缺失或者理解不到位的；这个问题除了上面的异常信息表现出来之外，还有没有更明确地指征来查看和确认这个问题。</p>
 </blockquote>
-<h3 id="深入理解TCP握手过程中建连接的流程和队列"><a href="#深入理解TCP握手过程中建连接的流程和队列" class="headerlink" title="深入理解TCP握手过程中建连接的流程和队列"></a>深入理解TCP握手过程中建连接的流程和队列</h3><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2703fc07dfc4dd5b6e1bb4c2ce620e59.png" alt="image.png"><br>（图片来源：<a href="http://www.cnxct.com/something-about-phpfpm-s-backlog/）" target="_blank" rel="external">http://www.cnxct.com/something-about-phpfpm-s-backlog/）</a></p>
+<h3 id="深入理解TCP握手过程中建连接的流程和队列"><a href="#深入理解TCP握手过程中建连接的流程和队列" class="headerlink" title="深入理解TCP握手过程中建连接的流程和队列"></a>深入理解TCP握手过程中建连接的流程和队列</h3><p>[^_^]:<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2703fc07dfc4dd5b6e1bb4c2ce620e59.png" alt="image.png"><br><a href="!--（图片来源：http://www.cnxct.com/something-about-phpfpm-s-backlog/）--">!--（图片来源：http://www.cnxct.com/something-about-phpfpm-s-backlog/）--</a></p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d5947bd339c58c631217100f80ee7078.png" alt="image.png"></p>
 <p>如上图所示，这里有两个队列：syns queue(半连接队列）；accept queue（全连接队列）</p>
 <p>三次握手中，在第一步server收到client的syn后，把这个连接信息放到半连接队列中，同时回复syn+ack给client（第二步）；</p>
 <pre><code>题外话，比如syn floods 攻击就是针对半连接队列的，攻击方不停地建连接，但是建连接的时候只做第一步，第二步中攻击方收到server的syn+ack后故意扔掉什么也不做，导致server上这个队列满其它正常请求无法进来
@@ -422,6 +429,11 @@ Recv-Q Send-Q Local Address:Port  Peer Address:Port
 0        50               *:3306             *:* 
 </code></pre><p><strong>上面看到的第二列Send-Q 值是50，表示第三列的listen端口上的全连接队列最大为50，第一列Recv-Q为全连接队列当前使用了多少</strong></p>
 <p><strong>全连接队列的大小取决于：min(backlog, somaxconn) . backlog是在socket创建的时候传入的，somaxconn是一个os级别的系统参数</strong></p>
+<p>《Unix Network Programming》中关于backlog的描述</p>
+<blockquote>
+<p>The backlog argument to the listen function has historically specified the maximum value for the sum of both queues.</p>
+<p>There has never been a formal definition of what the backlog means. The 4.2BSD man page says that it “defines the maximum length the queue of pending connections may grow to.” Many man pages and even the POSIX specification copy this definition verbatim, but this definition does not say whether a pending connection is one in the SYN_RCVD state, one in the ESTABLISHED state that has not yet been accepted, or either. The historical definition in this bullet is the Berkeley implementation, dating back to 4.2BSD, and copied by many others.</p>
+</blockquote>
 <p>这个时候可以跟我们的代码建立联系了，比如Java创建ServerSocket的时候会让你传入backlog的值：</p>
 <pre><code>ServerSocket()
     Creates an unbound server socket.
@@ -496,6 +508,7 @@ State  Recv-Q Send-Q Local Address:PortPeer Address:Port
 LISTEN    0     511              *:8085           *:*
 LISTEN    0     511              *:8085           *:*
 </code></pre><p>因为Nginx是多进程模式，所以看到了多个8085，也就是多个进程都监听同一个端口以尽量避免上下文切换来提升性能   </p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/01dc036aca4b445ed86e3e295bf245b8.png" alt="image.png"></p>
 <h3 id="进一步思考"><a href="#进一步思考" class="headerlink" title="进一步思考"></a>进一步思考</h3><p>如果client走完第三步在client看来连接已经建立好了，但是server上的对应连接实际没有准备好，这个时候如果client发数据给server，server会怎么处理呢？（有同学说会reset，还是实践看看）</p>
 <p>先来看一个例子：</p>
 <p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/3f5f1eeb0646a3af8afd6bbff2a9ea0b.png" alt="image.png"><br>（图片来自：<a href="http://blog.chinaunix.net/uid-20662820-id-4154399.html）" target="_blank" rel="external">http://blog.chinaunix.net/uid-20662820-id-4154399.html）</a></p>
@@ -545,12 +558,6 @@ server5
 <p>另外就是jdk、netty等一些框架默认backlog比较小，可能有些情况下导致性能上不去，比如 @毕玄 碰到的这个 <a href="https://www.atatech.org/articles/12919" target="_blank" rel="external">《netty新建连接并发数很小的case》 </a><br>都是类似原因</p>
 <p>希望通过本文能够帮大家理解TCP连接过程中的半连接队列和全连接队列的概念、原理和作用，更关键的是有哪些指标可以明确看到这些问题。</p>
 <p>另外每个具体问题都是最好学习的机会，光看书理解肯定是不够深刻的，请珍惜每个具体问题，碰到后能够把来龙去脉弄清楚。</p>
-<p>我的其他几篇跟网络问题相关的文章，也很有趣，借着案例来理解好概念和原理，希望对大家也有点帮助</p>
-<p><a href="https://www.atatech.org/articles/60633" target="_blank" rel="external">https://www.atatech.org/articles/60633</a></p>
-<p><a href="https://www.atatech.org/articles/73174" target="_blank" rel="external">https://www.atatech.org/articles/73174</a></p>
-<p><a href="https://www.atatech.org/articles/73289" target="_blank" rel="external">https://www.atatech.org/articles/73289</a></p>
-<p><a href="https://www.atatech.org/articles/76138" target="_blank" rel="external">https://www.atatech.org/articles/76138</a></p>
-<p>最后感谢 @梦实 在这个过程中提供的帮助</p>
 <hr>
 <p>参考文章：</p>
 <p><a href="http://veithen.github.io/2014/01/01/how-tcp-backlog-works-in-linux.html" target="_blank" rel="external">http://veithen.github.io/2014/01/01/how-tcp-backlog-works-in-linux.html</a></p>
@@ -560,6 +567,8 @@ server5
 <p><a href="http://jin-yang.github.io/blog/network-synack-queue.html#" target="_blank" rel="external">http://jin-yang.github.io/blog/network-synack-queue.html#</a></p>
 <p><a href="http://blog.chinaunix.net/uid-20662820-id-4154399.html" target="_blank" rel="external">http://blog.chinaunix.net/uid-20662820-id-4154399.html</a></p>
 <p><a href="https://www.atatech.org/articles/12919" target="_blank" rel="external">https://www.atatech.org/articles/12919</a></p>
+<p><a href="https://blog.cloudflare.com/syn-packet-handling-in-the-wild/" target="_blank" rel="external">https://blog.cloudflare.com/syn-packet-handling-in-the-wild/</a></p>
+<p><a href="https://ops.tips/blog/how-linux-tcp-introspection/" target="_blank" rel="external">How Linux allows TCP introspection The inner workings of bind and listen on Linux.</a></p>
 
       
     </div>
@@ -707,7 +716,7 @@ server5
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">76</span>
+                <span class="site-state-item-count">79</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -718,7 +727,7 @@ server5
             
             <div class="site-state-item site-state-categories">
               
-                <span class="site-state-item-count">20</span>
+                <span class="site-state-item-count">21</span>
                 <span class="site-state-item-name">分类</span>
               
             </div>
@@ -729,7 +738,7 @@ server5
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">160</span>
+                <span class="site-state-item-count">162</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>

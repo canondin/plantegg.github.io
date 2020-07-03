@@ -54,6 +54,175 @@
   </entry>
   
   <entry>
+    <title></title>
+    <link href="http://yoursite.com/2020/07/02/Perf%20IPC%E4%BB%A5%E5%8F%8ACPU%E5%88%A9%E7%94%A8%E7%8E%87/"/>
+    <id>http://yoursite.com/2020/07/02/Perf IPC以及CPU利用率/</id>
+    <published>2020-07-02T03:36:02.386Z</published>
+    <updated>2020-07-02T03:36:02.386Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="Perf-IPC以及CPU利用率"><a href="#Perf-IPC以及CPU利用率" class="headerlink" title="Perf IPC以及CPU利用率"></a>Perf IPC以及CPU利用率</h1><h2 id="perf-使用"><a href="#perf-使用" class="headerlink" title="perf 使用"></a>perf 使用</h2><p>可以通过perf看到cpu的使用情况：</p>
+<pre><code>$sudo perf stat -a -- sleep 10
+
+ Performance counter stats for &apos;system wide&apos;:
+
+ 239866.330098      task-clock (msec)         #   23.985 CPUs utilized    /10*1000        (100.00%)
+        45,709      context-switches          #    0.191 K/sec                    (100.00%)
+         1,715      cpu-migrations            #    0.007 K/sec                    (100.00%)
+        79,586      page-faults               #    0.332 K/sec
+ 3,488,525,170      cycles                    #    0.015 GHz                      (83.34%)
+ 9,708,140,897      stalled-cycles-frontend   #  278.29% /cycles frontend cycles idle     (83.34%)
+ 9,314,891,615      stalled-cycles-backend    #  267.02% /cycles backend  cycles idle     (66.68%)
+ 2,292,955,367      instructions              #    0.66  insns per cycle  insn/cycles
+                                             #    4.23  stalled cycles per insn stalled-cycles-frontend/insn (83.34%)
+   447,584,805      branches                  #    1.866 M/sec                    (83.33%)
+     8,470,791      branch-misses             #    1.89% of all branches          (83.33%)
+</code></pre><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/f96e50b5f3d0825b68be5b654624f839.png" alt="image.png"></p>
+<p>cycles：CPU时钟周期。CPU从它的指令集(instruction set)中选择指令执行。一个指令包含以下的步骤，每个步骤由CPU的一个叫做功能单元(functional unit)的组件来进行处理，每个步骤的执行都至少需要花费一个时钟周期。</p>
+<ul>
+<li>指令读取(instruction fetch)</li>
+<li>指令解码(instruction decode)</li>
+<li>执行(execute)</li>
+<li>内存访问(memory access)</li>
+<li>寄存器回写(register write-back)</li>
+</ul>
+<p>五个步骤只能串行，但是可以做成pipeline提升效率，也就是第一个指令做第二步的时候，指令读取单元可以去读取下一个指令了，如果有一个指令慢就会造成stall，也就是pipeline有地方卡壳了。<br>另外cpu可以同时有多条pipeline，这也就是理论上最大的ipc.<br>stalled-cycles，则是指令管道未能按理想状态发挥并行作用，发生停滞的时钟周期。stalled-cycles-frontend指指令读取或解码的指令步骤，而stalled-cycles-backend则是指令执行步骤。第二列中的cycles idle其实意思跟stalled是一样的，由于指令执行停滞了，所以指令管道也就空闲了，千万不要误解为CPU的空闲率。这个数值是由stalled-cycles-frontend或stalled-cycles-backend除以上面的cycles得出的</p>
+<p>流水线：</p>
+<p><img src="http://static.oschina.net/uploads/space/2018/0330/195701_ce0y_2896894.png" alt=""></p>
+<p>超标量流水线：</p>
+<p><img src="http://static.oschina.net/uploads/space/2018/0330/200055_5w6G_2896894.png" alt=""></p>
+<h2 id="ECS和perf"><a href="#ECS和perf" class="headerlink" title="ECS和perf"></a>ECS和perf</h2><p>在ECS会采集不到 cycles等，cpu-clock、page-faults都是内核中的软事件，cycles/instructions得采集cpu的PMU数据，ECS采集不到这些。</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/a120388ff72d712a4fd176e7cea005cf.png" alt="image.png"></p>
+<h2 id="调度"><a href="#调度" class="headerlink" title="调度"></a>调度</h2><p>NMI(non-maskable interrupt)，就是不可屏蔽的中断. NMI通常用于通知操作系统发生了无法恢复的硬件错误，也可以用于系统调试与采样，大多数服务器还提供了人工触发NMI的接口，比如NMI按钮或者iLO命令等。</p>
+<p><a href="http://cenalulu.github.io/linux/numa/" target="_blank" rel="external">http://cenalulu.github.io/linux/numa/</a> numa原理和优缺点案例讲解</p>
+<p>正在运行中的用户程序被中断之后，必须等到中断处理例程完成之后才能恢复运行，在此期间即使其它CPU是空闲的也不能换个CPU继续运行，就像被中断牢牢钉在了当前的CPU上，动弹不得，中断处理需要多长时间，用户进程就被冻结多长时间。</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/1d20b6172d4effb7e27feedc06a820f9.png" alt="image.png"></p>
+<p>Linux kernel把中断分为两部分：hard IRQ和soft IRQ，hard IRQ只处理中断最基本的部分，保证迅速响应，尽量在最短的时间里完成，把相对耗时的工作量留给soft IRQ；soft IRQ可以被hard IRQ中断，如果soft IRQ运行时间过长，也可能会被交给内核线程ksoftirqd去继续完成。<br><a href="https://mp.weixin.qq.com/s/AzcB1DwqRCoiofOOI88T9Q" target="_blank" rel="external">https://mp.weixin.qq.com/s/AzcB1DwqRCoiofOOI88T9Q</a> softirq导致一路CPU使用过高，其它CPU还是闲置，整个系统比较慢</p>
+<p>Linux的进程调度有一个不太为人熟知的特性，叫做wakeup affinity，它的初衷是这样的：如果两个进程频繁互动，那么它们很有可能共享同样的数据，把它们放到亲缘性更近的scheduling domain有助于提高缓存和内存的访问性能，所以当一个进程唤醒另一个的时候，被唤醒的进程可能会被放到相同的CPU core或者相同的NUMA节点上。这个特性缺省是打开的，它有时候很有用，但有时候却对性能有伤害作用。设想这样一个应用场景：一个主进程给成百上千个辅进程派发任务，这成百上千个辅进程被唤醒后被安排到与主进程相同的CPU core或者NUMA节点上，就会导致负载严重失衡，CPU忙的忙死、闲的闲死，造成性能下降。<a href="https://mp.weixin.qq.com/s/DG1v8cUjcXpa0x2uvrRytA" target="_blank" rel="external">https://mp.weixin.qq.com/s/DG1v8cUjcXpa0x2uvrRytA</a></p>
+<p><a href="http://linuxperf.com/?p=197" target="_blank" rel="external">http://linuxperf.com/?p=197</a><br>Linux kernel支持两种实时(real-time)调度策略(scheduling policy)：SCHED_FIFO和SCHED_RR<br>/proc/sys/kernel/sched_rt_period_us<br>缺省值是1,000,000 μs (1秒)，表示实时进程的运行粒度为1秒。（注：修改这个参数请谨慎，太大或太小都可能带来问题）。<br>/proc/sys/kernel/sched_rt_runtime_us<br>缺省值是 950,000 μs (0.95秒)，表示在1秒的运行周期里所有的实时进程一起最多可以占用0.95秒的CPU时间。<br>如果sched_rt_runtime_us=-1，表示取消限制，意味着实时进程可以占用100%的CPU时间（慎用，有可能使系统失去控制）。<br>所以，Linux kernel默认情况下保证了普通进程无论如何都可以得到5%的CPU时间，尽管系统可能会慢如蜗牛，但管理员仍然可以利用这5%的时间设法恢复系统，比如停掉失控的实时进程，或者给自己的shell进程赋予更高的实时优先级以便执行管理任务，等等。</p>
+<p>进程自愿切换(Voluntary)和强制切换(Involuntary)的次数被统计在 /proc/<pid>/status 中，其中voluntary_ctxt_switches表示自愿切换的次数，nonvoluntary_ctxt_switches表示强制切换的次数，两者都是自进程启动以来的累计值。 或pidstat -w 1 来统计  <a href="http://linuxperf.com/?cat=10" target="_blank" rel="external">http://linuxperf.com/?cat=10</a><br>自愿切换发生的时候，进程不再处于运行状态，比如由于等待IO而阻塞(TASK_UNINTERRUPTIBLE)，或者因等待资源和特定事件而休眠(TASK_INTERRUPTIBLE)，又或者被debug/trace设置为TASK_STOPPED/TASK_TRACED状态；<br>强制切换发生的时候，进程仍然处于运行状态(TASK_RUNNING)，通常是由于被优先级更高的进程抢占(preempt)，或者进程的时间片用完了<br>如果一个进程的自愿切换占多数，意味着它对CPU资源的需求不高。如果一个进程的强制切换占多数，意味着对它来说CPU资源可能是个瓶颈，这里需要排除进程频繁调用sched_yield()导致强制切换的情况</pid></p>
+<p>spinlock(自旋锁)是内核中最常见的锁，它的特点是：等待锁的过程中不休眠，而是占着CPU空转，优点是避免了上下文切换的开销，缺点是该CPU空转属于浪费, 同时还有可能导致cache ping-pong，spinlock适合用来保护快进快出的临界区。持有spinlock的CPU不能被抢占，持有spinlock的代码不能休眠 <a href="http://linuxperf.com/?p=138" target="_blank" rel="external">http://linuxperf.com/?p=138</a></p>
+<p>每个逻辑 CPU 都维护着一个可运行队列，用来存放可运行的线程来调度。</p>
+<h2 id="CPU-cache"><a href="#CPU-cache" class="headerlink" title="CPU cache"></a>CPU cache</h2><p><img src="https://images.gitbook.cn/227f3af0-5075-11e9-aece-c5816949b340" alt=""></p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/f5728a2afb29c653a3e1bf21f4d56056.png" alt="image.png"></p>
+<pre><code>cat /proc/cpuinfo |grep -i cache
+</code></pre><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ad19b92ccc97763aa7f78d8d1d514c84.png" alt="image.png"></p>
+<p>如下 Linux getconf 命令的输出，除了 <em>_LINESIZE 指示了系统的 Cache Line 的大小是 64 字节外，还给出了 Cache 类别，大小。 其中 </em>_ASSOC 则指示了该 Cache 是几路关联 (Way Associative) 的。</p>
+<pre><code>$sudo getconf -a |grep CACHE
+LEVEL1_ICACHE_SIZE                 32768
+LEVEL1_ICACHE_ASSOC                8
+LEVEL1_ICACHE_LINESIZE             64
+LEVEL1_DCACHE_SIZE                 32768
+LEVEL1_DCACHE_ASSOC                8
+LEVEL1_DCACHE_LINESIZE             64
+LEVEL2_CACHE_SIZE                  262144
+LEVEL2_CACHE_ASSOC                 4
+LEVEL2_CACHE_LINESIZE              64
+LEVEL3_CACHE_SIZE                  3145728
+LEVEL3_CACHE_ASSOC                 12
+LEVEL3_CACHE_LINESIZE              64
+LEVEL4_CACHE_SIZE                  0
+LEVEL4_CACHE_ASSOC                 0
+LEVEL4_CACHE_LINESIZE              0
+</code></pre><h2 id="Socket、核"><a href="#Socket、核" class="headerlink" title="Socket、核"></a>Socket、核</h2><p>一个Socket理解一个CPU，一个CPU又可以是多核的</p>
+<h2 id="超线程（Hyperthreading，HT）"><a href="#超线程（Hyperthreading，HT）" class="headerlink" title="超线程（Hyperthreading，HT）"></a>超线程（Hyperthreading，HT）</h2><p>一个核还可以进一步分成几个逻辑核，来执行多个控制流程，这样可以进一步提高并行程度，这一技术就叫超线程，有时叫做 simultaneous multi-threading（SMT）。</p>
+<p>超线程技术主要的出发点是，当处理器在运行一个线程，执行指令代码时，很多时候处理器并不会使用到全部的计算能力，部分计算能力就会处于空闲状态。而超线程技术就是通过多线程来进一步“压榨”处理器。pipeline进入stalled状态就可以切到其它超线程上</p>
+<p>举个例子，如果一个线程运行过程中，必须要等到一些数据加载到缓存中以后才能继续执行，此时 CPU 就可以切换到另一个线程，去执行其他指令，而不用去处于空闲状态，等待当前线程的数据加载完毕。通常，一个传统的处理器在线程之间切换，可能需要几万个时钟周期。而一个具有 HT 超线程技术的处理器只需要 1 个时钟周期。因此就大大减小了线程之间切换的成本，从而最大限度地让处理器满负荷运转。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://zhengheng.me/2015/11/12/perf-stat/" target="_blank" rel="external">perf详解</a></p>
+<p><a href="https://www.atatech.org/articles/109158" target="_blank" rel="external">CPU体系结构</a></p>
+<p><a href="https://mp.weixin.qq.com/s/KaDJ1EF5Y-ndjRv2iUO3cA" target="_blank" rel="external">震惊，用了这么多年的 CPU 利用率，其实是错的</a><br>cpu占用不代表在做事情，可能是stalled，也就是流水线卡顿，但是cpu占用了，实际没事情做。</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;Perf-IPC以及CPU利用率&quot;&gt;&lt;a href=&quot;#Perf-IPC以及CPU利用率&quot; class=&quot;headerlink&quot; title=&quot;Perf IPC以及CPU利用率&quot;&gt;&lt;/a&gt;Perf IPC以及CPU利用率&lt;/h1&gt;&lt;h2 id=&quot;perf-使用&quot;&gt;
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title>如何创建一个自己连自己的TCP连接</title>
+    <link href="http://yoursite.com/2020/07/01/%E5%A6%82%E4%BD%95%E5%88%9B%E5%BB%BA%E4%B8%80%E4%B8%AA%E8%87%AA%E5%B7%B1%E8%BF%9E%E8%87%AA%E5%B7%B1%E7%9A%84TCP%E8%BF%9E%E6%8E%A5/"/>
+    <id>http://yoursite.com/2020/07/01/如何创建一个自己连自己的TCP连接/</id>
+    <published>2020-07-01T09:30:03.000Z</published>
+    <updated>2020-07-03T04:35:09.932Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="如何创建一个自己连自己的TCP连接"><a href="#如何创建一个自己连自己的TCP连接" class="headerlink" title="如何创建一个自己连自己的TCP连接"></a>如何创建一个自己连自己的TCP连接</h1><blockquote>
+<p>能不能建立一个tcp连接， src-ip:src-port 等于dest-ip:dest-port 呢？</p>
+</blockquote>
+<p>执行</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># nc 192.168.0.79 18082 -p 18082</div></pre></td></tr></table></figure>
+<p>然后就能看到</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># netstat -ant |grep 18082</div><div class="line">tcp        0      0 192.168.0.79:18082      192.168.0.79:18082      ESTABLISHED</div></pre></td></tr></table></figure>
+<p>这个连接完全可以工作，也能收发数据。这有点颠覆大家的理解，端口能重复使用？</p>
+<h2 id="port-range"><a href="#port-range" class="headerlink" title="port range"></a>port range</h2><p>我们都知道linux下本地端口范围由参数控制</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># cat /proc/sys/net/ipv4/ip_local_port_range </div><div class="line">10000	65535</div></pre></td></tr></table></figure>
+<p>所以也经常看到一个误解：一台机器上最多能创建65535个TCP连接</p>
+<h2 id="一台机器上最多能创建多少个TCP连接"><a href="#一台机器上最多能创建多少个TCP连接" class="headerlink" title="一台机器上最多能创建多少个TCP连接"></a>一台机器上最多能创建多少个TCP连接</h2><p>在内存、文件句柄足够的话可以创建的连接是没有限制的，那么/proc/sys/net/ipv4/ip_local_port_range指定的端口范围到底是什么意思呢？</p>
+<p>一个TCP连接只要保证四元组(src-ip src-port dest-ip dest-port)唯一就可以了，而不是要求src port唯一，比如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"># netstat -ant |grep 18089</div><div class="line">tcp        0      0 192.168.1.79:18089      192.168.1.79:22         ESTABLISHED</div><div class="line">tcp        0      0 192.168.1.79:18089      192.168.1.79:18080      ESTABLISHED</div><div class="line">tcp        0      0 192.168.0.79:18089      192.168.0.79:22         TIME_WAIT </div><div class="line">tcp        0      0 192.168.1.79:22         192.168.1.79:18089      ESTABLISHED</div><div class="line">tcp        0      0 192.168.1.79:18080      192.168.1.79:18089      ESTABLISHED</div></pre></td></tr></table></figure>
+<p>从前三行可以清楚地看到18089被用了三次，第一第二行src-ip、dest-ip也是重复的，但是dest port不一样，第三行的src-port还是18089，这是因为src-ip变了。</p>
+<p>所以一台机器能创建的TCP连接是没有限制的，而ip_local_port_range限制的是连同一个目标（dest-ip和dest-port一样）的port的数量（请忽略本地多网卡的情况，因为dest-ip为以后route只会选用一个本地ip）。</p>
+<h2 id="自己连自己的连接"><a href="#自己连自己的连接" class="headerlink" title="自己连自己的连接"></a>自己连自己的连接</h2><p>我们来看自己连自己发生了什么</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line"><span class="comment"># strace nc 192.168.0.79 18084 -p 18084</span></div><div class="line">execve(<span class="string">"/usr/bin/nc"</span>, [<span class="string">"nc"</span>, <span class="string">"192.168.0.79"</span>, <span class="string">"18084"</span>, <span class="string">"-p"</span>, <span class="string">"18084"</span>], [/* 31 vars */]) = 0</div><div class="line">brk(NULL)                               = 0x23d4000</div><div class="line">mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f213f394000</div><div class="line">access(<span class="string">"/etc/ld.so.preload"</span>, R_OK)      = -1 ENOENT (No such file or directory)</div><div class="line">open(<span class="string">"/etc/ld.so.cache"</span>, O_RDONLY|O_CLOEXEC) = 3</div><div class="line">fstat(3, &#123;st_mode=S_IFREG|0644, st_size=23295, ...&#125;) = 0</div><div class="line">mmap(NULL, 23295, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7f213f38e000</div><div class="line">close(3)                                = 0</div><div class="line">open(<span class="string">"/lib64/libssl.so.10"</span>, O_RDONLY|O_CLOEXEC) = 3</div><div class="line">………………</div><div class="line">munmap(0x7f213f393000, 4096)            = 0</div><div class="line">open(<span class="string">"/usr/share/ncat/ca-bundle.crt"</span>, O_RDONLY) = -1 ENOENT (No such file or directory)</div><div class="line">socket(AF_INET, SOCK_STREAM, IPPROTO_TCP) = 3</div><div class="line">fcntl(3, F_GETFL)                       = 0x2 (flags O_RDWR)</div><div class="line">fcntl(3, F_SETFL, O_RDWR|O_NONBLOCK)    = 0</div><div class="line">setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0</div><div class="line"><span class="built_in">bind</span>(3, &#123;sa_family=AF_INET, sin_port=htons(18084), sin_addr=inet_addr(<span class="string">"0.0.0.0"</span>)&#125;, 16) = 0</div><div class="line">//注意这里<span class="built_in">bind</span>后直接就是connect，没有listen</div><div class="line">connect(3, &#123;sa_family=AF_INET, sin_port=htons(18084), sin_addr=inet_addr(<span class="string">"192.168.0.79"</span>)&#125;, 16) = -1 EINPROGRESS (Operation now <span class="keyword">in</span> progress)</div><div class="line">select(4, [3], [3], [3], &#123;10, 0&#125;)       = 1 (out [3], left &#123;9, 999998&#125;)</div><div class="line">getsockopt(3, SOL_SOCKET, SO_ERROR, [0], [4]) = 0</div><div class="line">select(4, [0 3], [], [], NULL</div></pre></td></tr></table></figure>
+<p>抓包看看，正常三次握手，但是syn的seq和syn+ack的seq是一样的</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/341f2891253baa4eebdaeaf34aa60c4b.png" alt="image.png"></p>
+<p>这里不是常说的TCP simultaneous open，simultaneous open指的是两个不同port同时发syn建连接。而这里是先创建了一个socket，然后socket bind到18084端口上（作为local port，因为nc指定了local port），然后执行 connect, 连接到的目标也是192.168.0.79:18084，而这个目标正好是刚刚创建的socket，也就是自己连自己（连接双方总共只有一个socket）。</p>
+<p>正常一个连接一定需要两个socket参与（这两个socket不一定要在两台机器上），而这个连接只用了一个socket就创建了，还能正常传输数据。但是仔细观察发数据的时候发放的seq增加（注意tcp_len 11那里的seq），收方的seq也增加了11，这是因为本来这就是用的同一个socket。正常两个socket通讯不是这样的。</p>
+<p>那么这种情况为什么没有当做bug被处理呢？</p>
+<h2 id="TCP-simultanous-open"><a href="#TCP-simultanous-open" class="headerlink" title="TCP simultanous open"></a>TCP simultanous open</h2><p>在tcp连接的定义中，通常都是一方先发起连接，假如两边同时发起连接，也就是两个socket同时给对方发 syn 呢？ 这在内核中是支持的，就叫同时打开（simultaneous open）。</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b9a0144a3835759c844f697bc45103fa.png" alt="image.png"></p>
+<p>​                                                                       摘自《tcp/ip卷1》</p>
+<p>可以清楚地看到这个连接建立用了四次握手，然后连接建立了，当然也有 simultanous close(3次挥手成功关闭连接)。如下 net/ipv4/tcp_input.c 的5924行中就说明了允许这种自己连自己的连接（当然也允许simultanous open). 也就是允许一个socket本来应该收到 syn+ack,结果收到了syn的情况，而一个socket自己连自己又是这种情况的特例。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div></pre></td><td class="code"><pre><div class="line">	static int tcp_rcv_synsent_state_process(struct sock *sk, struct sk_buff *skb,</div><div class="line">                     const struct tcphdr *th)</div><div class="line">	&#123;</div><div class="line">5916         /* PAWS check. */</div><div class="line">5917         if (tp-&gt;rx_opt.ts_recent_stamp &amp;&amp; tp-&gt;rx_opt.saw_tstamp &amp;&amp;</div><div class="line">5918             tcp_paws_reject(&amp;tp-&gt;rx_opt, 0))</div><div class="line">5919                 goto discard_and_undo;</div><div class="line">5920         //在socket发送syn后收到了一个syn(正常应该收到syn+ack),这里是允许的。</div><div class="line">5921         if (th-&gt;syn) &#123;</div><div class="line">5922                 /* We see SYN without ACK. It is attempt of</div><div class="line">5923                  * simultaneous connect with crossed SYNs.</div><div class="line">5924                  * Particularly, it can be connect to self.  //自己连自己</div><div class="line">5925                  */</div><div class="line">5926                 tcp_set_state(sk, TCP_SYN_RECV);</div><div class="line">5927 </div><div class="line">5928                 if (tp-&gt;rx_opt.saw_tstamp) &#123;</div><div class="line">5929                         tp-&gt;rx_opt.tstamp_ok = 1;</div><div class="line">5930                         tcp_store_ts_recent(tp);</div><div class="line">5931                         tp-&gt;tcp_header_len =</div><div class="line">5932                                 sizeof(struct tcphdr) + TCPOLEN_TSTAMP_ALIGNED;</div><div class="line">5933                 &#125; else &#123;</div><div class="line">5934                         tp-&gt;tcp_header_len = sizeof(struct tcphdr);</div><div class="line">5935                 &#125;</div><div class="line">5936 </div><div class="line">5937                 tp-&gt;rcv_nxt = TCP_SKB_CB(skb)-&gt;seq + 1;</div><div class="line">5938                 tp-&gt;copied_seq = tp-&gt;rcv_nxt;</div><div class="line">5939                 tp-&gt;rcv_wup = TCP_SKB_CB(skb)-&gt;seq + 1;</div><div class="line">5940 </div><div class="line">5941                 /* RFC1323: The window in SYN &amp; SYN/ACK segments is</div><div class="line">5942                  * never scaled.</div><div class="line">5943                  */</div></pre></td></tr></table></figure>
+<p>也就是在发送syn进入SYN_SENT状态之后，收到对端发来的syn包后不会RST，而是处理流程如下，调用tcp_set_state(sk, TCP_SYN_RECV)进入SYN_RECV状态，以及调用tcp_send_synack(sk)向对端发送syn+ack。</p>
+<h2 id="自己连自己的原理解释"><a href="#自己连自己的原理解释" class="headerlink" title="自己连自己的原理解释"></a>自己连自己的原理解释</h2><p>第一我们要理解Kernel是支持simultaneous open的，也就是说socket发走syn后，本来应该收到一个syn+ack的，但是实际收到了一个syn（没有ack），这是允许的。这叫TCP连接同时打开（同时给对方发syn），四次握手然后建立连接成功。</p>
+<p>自己连自己又是simultaneous open的一个特例，特别在这个连接只有一个socket参与，发送、接收都是同一个socket，自然也会是发syn后收到了自己的syn（自己发给自己），然后依照simultaneous open连接也能创建成功。</p>
+<h2 id="bind-和-connect、listen"><a href="#bind-和-connect、listen" class="headerlink" title="bind 和 connect、listen"></a>bind 和 connect、listen</h2><p>当对一个TCP socket调用connect函数时，如果这个socket没有bind指定的端口号，操作系统会为它选择一个当前未被使用的端口号，这个端口号被称为ephemeral port, 范围可以在/proc/sys/net/ipv4/ip_local_port_range里查看。假设30000这个端口被选为ephemeral port。</p>
+<p>如果这个socket指定了local port那么socket创建后会执行bind将这个socket bind到这个port。比如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">socket(AF_INET, SOCK_STREAM, IPPROTO_TCP) = 3</div><div class="line">fcntl(3, F_GETFL)                       = 0x2 (flags O_RDWR)</div><div class="line">fcntl(3, F_SETFL, O_RDWR|O_NONBLOCK)    = 0</div><div class="line">setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0</div><div class="line">bind(3, &#123;sa_family=AF_INET, sin_port=htons(18084), sin_addr=inet_addr(&quot;0.0.0.0&quot;)&#125;, 16) = 0</div></pre></td></tr></table></figure>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/5373ecfe0d4496d106c64d3f370c893c.png" alt="image.png"></p>
+<p>然后这个bind到18084 local port的socket又要连接到 18084 port上，而这个18084socket已经bind到了socket（也就是自己），就形成了两个socket 的simultaneous open一样，内核又允许这种simultaneous open，所以就形成了自己连自己，也就是一个socket在自己给自己收发数据，所以看到收方和发放的seq是一样的。</p>
+<p>可以用python来重现这个连接连自己的过程：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div></pre></td><td class="code"><pre><div class="line">import socket</div><div class="line">import time</div><div class="line"></div><div class="line">connected=False</div><div class="line">while (not connected):</div><div class="line">        try:</div><div class="line">                sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)</div><div class="line">                sock.setsockopt(socket.IPPROTO_TCP,socket.TCP_NODELAY,1)</div><div class="line">				sock.bind((&apos;&apos;, 18084))               //sock 先bind到18084</div><div class="line">                sock.connect((&apos;127.0.0.1&apos;,18084))    //然后同一个socket连自己</div><div class="line">                connected=True</div><div class="line">        except socket.error,(value,message):</div><div class="line">                print message</div><div class="line"></div><div class="line">        if not connected:</div><div class="line">                print &quot;reconnect&quot;</div><div class="line">               </div><div class="line">print &quot;tcp self connection occurs!&quot;</div><div class="line">print &quot;netstat -an|grep 18084&quot;</div><div class="line">time.sleep(1800)</div></pre></td></tr></table></figure>
+<p>这里connect前如果没有bind那么系统就会从 local port range 分配一个可用port。</p>
+<p>bind成功后会将ip+port放入hash表来判重，这就是我们常看到的 Bind to <em>*</em> failed (IOD #1): Address already in use 异常。所以一台机器上，如果有多个ip，是可以将同一个port bind多次的，但是bind的时候如果不指定ip，也就是bind(‘0’, port) 还是会冲突。</p>
+<p>connect成功后会将四元组放入ehash来判定连接的重复性。如果connect四元组冲突了就会报如下错误</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># nc 192.168.0.82 8080 -p 29798 -s 192.168.0.79</div><div class="line">Ncat: Cannot assign requested address.</div></pre></td></tr></table></figure>
+<h3 id="listen"><a href="#listen" class="headerlink" title="listen"></a>listen</h3><p><img src="D:%5Cali%5Ccase%5Cimage%5Cimage-20200702131215819.png" alt="image-20200702131215819"></p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://segmentfault.com/a/1190000002396411" target="_blank" rel="external">https://segmentfault.com/a/1190000002396411</a></p>
+<p><a href="https://blog.csdn.net/a364572/article/details/40628171" target="_blank" rel="external">linux中TCP的socket、bind、listen、connect和accept的实现</a></p>
+<p><a href="https://ops.tips/blog/how-linux-tcp-introspection/" target="_blank" rel="external">How Linux allows TCP introspection The inner workings of bind and listen on Linux.</a></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;如何创建一个自己连自己的TCP连接&quot;&gt;&lt;a href=&quot;#如何创建一个自己连自己的TCP连接&quot; class=&quot;headerlink&quot; title=&quot;如何创建一个自己连自己的TCP连接&quot;&gt;&lt;/a&gt;如何创建一个自己连自己的TCP连接&lt;/h1&gt;&lt;blockquote&gt;
+
+    
+    </summary>
+    
+      <category term="Linux" scheme="http://yoursite.com/categories/Linux/"/>
+    
+      <category term="TCP" scheme="http://yoursite.com/categories/Linux/TCP/"/>
+    
+      <category term="network" scheme="http://yoursite.com/categories/Linux/TCP/network/"/>
+    
+    
+      <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
+    
+      <category term="TCP" scheme="http://yoursite.com/tags/TCP/"/>
+    
+      <category term="network" scheme="http://yoursite.com/tags/network/"/>
+    
+      <category term="simultaneous" scheme="http://yoursite.com/tags/simultaneous/"/>
+    
+      <category term="自连接" scheme="http://yoursite.com/tags/%E8%87%AA%E8%BF%9E%E6%8E%A5/"/>
+    
+  </entry>
+  
+  <entry>
     <title>MySQL线程池导致的延时卡顿排查</title>
     <link href="http://yoursite.com/2020/06/05/MySQL%E7%BA%BF%E7%A8%8B%E6%B1%A0%E5%AF%BC%E8%87%B4%E7%9A%84%E5%BB%B6%E6%97%B6%E5%8D%A1%E9%A1%BF%E6%8E%92%E6%9F%A5/"/>
     <id>http://yoursite.com/2020/06/05/MySQL线程池导致的延时卡顿排查/</id>
@@ -199,6 +368,73 @@
       <category term="TCP" scheme="http://yoursite.com/tags/TCP/"/>
     
       <category term="network" scheme="http://yoursite.com/tags/network/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>TCPRT 案例</title>
+    <link href="http://yoursite.com/2020/05/24/TCPRT%20%E6%A1%88%E4%BE%8B/"/>
+    <id>http://yoursite.com/2020/05/24/TCPRT 案例/</id>
+    <published>2020-05-24T09:30:03.000Z</published>
+    <updated>2020-07-03T04:35:09.924Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="TCPRT-案例"><a href="#TCPRT-案例" class="headerlink" title="TCPRT 案例"></a>TCPRT 案例</h1><p>在微服务场景下如果rt出现问题一般都有pinpoint、Dapper、鹰眼之类的工具能帮忙分析是哪个服务慢了，但是如果是网络慢了这些工具就没有办法了。</p>
+<p>TCPRT是从网络层面把整个服务的响应时间分成：网络传输时间+服务处理时间，这样一旦响应时间慢了很容易看到是网络慢了、丢包、抖动了，还是就是服务处理慢了。</p>
+<p>如下案例都有tcpdump抓包来证明TCPRT的正确性，实际上在没有TCPRT之前处理类似问题只能抓包+等待重现，来排查问题。开启TCPRT之后会实时记录每一个请求响应的网络传输时间、服务处理时间、网络丢包率等各种数据，而对性能的影响非常非常小，控制在1%以内。</p>
+<p>总的来说TCPRT区分了网络传输时间和服务处理时间，并记录了丢包、重传等各种数据，从此天下无包可抓。</p>
+<h2 id="delay-ack-client卡顿导致server-rt偏高"><a href="#delay-ack-client卡顿导致server-rt偏高" class="headerlink" title="delay ack + client卡顿导致server rt偏高"></a>delay ack + client卡顿导致server rt偏高</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">1592470141 257855 10.0.186.79:31910 10.0.186.97:3306 142 6026 98 0 5361893 5718 </div><div class="line">1592470141 263882 10.0.186.79:31910 10.0.186.97:3306 142 32811 98 0 5361894 14357 &lt;&lt; ?</div><div class="line">1592470141 296695 10.0.186.79:31910 10.0.186.97:3306 142 13530 98 0 5361895 13389</div><div class="line">1592470141 310226 10.0.186.79:31910 10.0.186.97:3306 142 13419 98 0 5361896 13253</div><div class="line"></div><div class="line">1592470141 266860 10.0.186.79:32078 10.0.186.97:3306 142 5163 100 0 5470897 4953</div><div class="line">1592470141 272024 10.0.186.79:32078 10.0.186.97:3306 142 24644 100 0 5470898 6024 &lt;&lt; ?</div><div class="line">1592470141 296669 10.0.186.79:32078 10.0.186.97:3306 142 10371 100 0 5470899 10249</div><div class="line">1592470141 307041 10.0.186.79:32078 10.0.186.97:3306 142 11951 100 0 5470900 11766</div></pre></td></tr></table></figure>
+<p>问题行显示执行SQL花了14357微秒（最后一列），到结果发送给client并收到client ack花了32811微秒（第6列）</p>
+<h3 id="Delay-ACK-原理解析"><a href="#Delay-ACK-原理解析" class="headerlink" title="Delay ACK 原理解析"></a>Delay ACK 原理解析</h3><p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/5265f9caf013baf662e400cd99ef2663.png" alt="image.png"></p>
+<h3 id="从tcpdump抓包来分析原因"><a href="#从tcpdump抓包来分析原因" class="headerlink" title="从tcpdump抓包来分析原因"></a>从tcpdump抓包来分析原因</h3><p>从实际抓包来看，32811等于：14358+18454 （红框+绿框），因为server只有收到ack后才会认为这个SQL执行完毕，但是可能由于delay ack导致client发下一个请求才将ack带回server，而client明显此时卡住了，发请求慢</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/aec0d182702772384748a4d31cc6e795.png" alt="image.png"></p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/3d8c092cfee6686708973760b710cd1a.png" alt="image.png"></p>
+<p>同一时间点一批SQL都是ack慢了，跑了几个小时才抓到这么一点点ack慢导致SQL总rt偏高，统计曲线被平均掉了：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line">$grep &quot; R &quot; tcp-rt/rt-network-log | awk &apos;&#123; if(($8-$12)&gt;10000) print $0 &#125;&apos; | sort -k3n,4n</div><div class="line">1592470141 263882 10.0.186.79:31910 10.0.186.97:3306 142 32811 98 0 5361894 14357 0 45 </div><div class="line">1592470141 270617 10.0.186.79:32144 10.0.186.97:3306 142 25933 98 0 5339208 6317 0 45</div><div class="line">1592470141 270675 10.0.186.79:32056 10.0.186.97:3306 142 26154 103 0 5511828 15901 0 45</div><div class="line">1592470141 270687 10.0.186.79:31828 10.0.186.97:3306 142 25939 98 0 5399141 6850 0 45</div><div class="line">1592470141 270701 10.0.186.79:32106 10.0.186.97:3306 142 25990 95 0 5432836 7551 0 45</div><div class="line">1592470141 270728 10.0.186.79:32080 10.0.186.97:3306 142 25888 98 0 5303145 6811 0 45</div><div class="line">1592470141 270732 10.0.186.79:31966 10.0.186.97:3306 142 26101 98 0 5529183 15906 0 45 </div><div class="line">1592470141 270781 10.0.186.79:31942 10.0.186.97:3306 142 26039 98 0 5478295 15603 0 45 </div><div class="line">1592470141 270786 10.0.186.79:32136 10.0.186.97:3306 142 25826 94 0 5375531 6743 0 45</div><div class="line">1592470141 270803 10.0.186.79:32008 10.0.186.97:3306 142 25884 102 0 5411914 7446 0 45 </div><div class="line">1592470141 270815 10.0.186.79:31868 10.0.186.97:3306 142 25793 98 0 5378825 6711 0 45</div><div class="line">1592470141 270856 10.0.186.79:31836 10.0.186.97:3306 142 25762 97 0 5324126 6677 0 45</div><div class="line">1592470141 270889 10.0.186.79:32048 10.0.186.97:3306 142 25934 102 0 5462899 15559 0 45</div><div class="line">1592470141 270911 10.0.186.79:32024 10.0.186.97:3306 142 25901 96 0 5441077 15340 0 45 </div><div class="line">1592470141 270915 10.0.186.79:32036 10.0.186.97:3306 142 25901 98 0 5455513 15399 0 45 </div><div class="line">1592470141 270918 10.0.186.79:31892 10.0.186.97:3306 142 25713 96 0 5312555 6624 0 45</div><div class="line">1592470141 270921 10.0.186.79:32058 10.0.186.97:3306 142 25905 98 0 5499044 15596 0 45 </div><div class="line">1592470141 270927 10.0.186.79:31962 10.0.186.97:3306 142 25758 97 0 5417673 7319 0 45</div><div class="line">1592470141 271894 10.0.186.79:31922 10.0.186.97:3306 142 24768 98 0 5523611 6160 0 45</div><div class="line">1592470141 271897 10.0.186.79:32026 10.0.186.97:3306 142 24762 98 0 5390495 6148 0 45</div><div class="line">1592470141 271904 10.0.186.79:31850 10.0.186.97:3306 142 24761 98 0 5505279 6147 0 45</div><div class="line">1592470141 272024 10.0.186.79:32078 10.0.186.97:3306 142 24644 100 0 5470898 6024 0 45</div></pre></td></tr></table></figure>
+<h3 id="原因总结"><a href="#原因总结" class="headerlink" title="原因总结"></a>原因总结</h3><p><strong>这个时间点发送压力的sysbench卡顿了20ms左右，导致一批请求发送慢，同时这个时候因为delay ack，导致server感知到的是网络慢了</strong></p>
+<h2 id="最后一个数据发送慢导致计时显示网络rt偏高"><a href="#最后一个数据发送慢导致计时显示网络rt偏高" class="headerlink" title="最后一个数据发送慢导致计时显示网络rt偏高"></a>最后一个数据发送慢导致计时显示网络rt偏高</h2><p>server 收到请求到查到结果后开始发送成为server-rt，从开始发送结果到client ack所有结果成为总rt（server-rt+网络传输时间）</p>
+<p>如果 limit 164567, 1 的时候只有一个response，得到所有分片都返回来才开始发数据给client；但是当 limit 164567,5 的时候因为这个SQL下推到多个分片，第一个response很快发出来，但是最后一个response需要等很久。在tcprt眼中，这里传输花了很久（一旦开始response，所有时间都是传输时间），但实际这里response卡顿了。</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/07d3ca12864a69b622a6f69b933d9a82.png" alt=""></p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/78d2cc459976ef868fa85359b33bda5a.png" alt="image.png"></p>
+<p>从 jstack 抓的堆栈看到返回最后一个包之前，DRDS 在做 result.close()，因为关闭流模式结果集太耗时所以卡了。可以做的一个优化是提前发出 sendPacketEnd，然后异步去做物理连接的 result.close() 和 conn.close() 。</p>
+<p>这是因为close的时候要挨个把所有记录处理掉，但是这里还在挨个做对象转换并抛弃。</p>
+<h2 id="丢包造成rt过高"><a href="#丢包造成rt过高" class="headerlink" title="丢包造成rt过高"></a>丢包造成rt过高</h2><p>如下数据中第三行和第八行rt都比较高，超过200ms（第6列），但是server实际处理时间在3ms以内（最后一列）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">1593677820 305382 10.0.186.70:32610 10.0.186.97:3306 142 5798 113 0 36314729 2680</div><div class="line">1593677820 311182 10.0.186.70:32610 10.0.186.97:3306 142 5885 113 0 36314730 2758</div><div class="line">1593677820 317068 10.0.186.70:32610 10.0.186.97:3306 142 214047 113 1 36314731 2791 &lt;?</div><div class="line">1593677820 533814 10.0.186.70:32610 10.0.186.97:3306 142 5905 113 0 36314732 2771</div><div class="line">1593677820 539722 10.0.186.70:32610 10.0.186.97:3306 142 5842 113 0 36314733 2714</div><div class="line">1593677820 545565 10.0.186.70:32610 10.0.186.97:3306 142 5898 113 0 36314734 2751</div><div class="line">1593677820 551464 10.0.186.70:32610 10.0.186.97:3306 142 5866 113 0 36314735 2746</div><div class="line">1593677820 557331 10.0.186.70:32610 10.0.186.97:3306 142 213762 113 1 36314736 2627 &lt;?</div><div class="line">1593677820 772815 10.0.186.70:32610 10.0.186.97:3306 142 5845 113 0 36314737 2731</div><div class="line">1593677820 778677 10.0.186.70:32610 10.0.186.97:3306 142 5868 113 0 36314738 2744</div></pre></td></tr></table></figure>
+<p>对应这个时间点的抓包，可以看到这两个慢的查询都是因为第一个response发给client后没有收到ack（网络丢包？网络延时高？） 200ms后再发一次response就收到ack。所以总的rt都超过了200ms，其它没丢包的rt都很快。另外抓包的请求和和上面tcprt记录都是全对应的，时间精度都在微秒级。</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/63da5e221c8d2d26bc25f9e50ef35779.png" alt="image.png"></p>
+<p>丢包重传的分析</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/88849848f07ca74e000db971e3246def.png" alt="image.png"></p>
+<h2 id="丢包率对性能影响"><a href="#丢包率对性能影响" class="headerlink" title="丢包率对性能影响"></a>丢包率对性能影响</h2><p>在client端设置：</p>
+<blockquote>
+<p>tc qdisc add dev eth0 root netem loss 3% delay 3ms</p>
+</blockquote>
+<p>这时可以看到stats统计到的网络丢包率基本在3%左右，第6列是丢包率千分数：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">$cat tcp-rt/rt-network-stats | awk &apos;&#123; if($6!=0) print $0 &#125;&apos;</div><div class="line">1593677850 all 3306 10749 3217 23 915 0 141 0 45 882895</div><div class="line">1593677911 all 3306 11938 2789 28 1102 0 141 0 45 795169</div><div class="line">1593677972 all 3306 12001 2798 29 1104 0 141 0 45 789972</div><div class="line">1593678034 all 3306 11919 2778 28 1103 0 141 0 45 796126</div><div class="line">1593678095 all 3306 12049 2832 29 1714 0 141 0 45 786661</div><div class="line">1593678157 all 3306 11893 2773 28 3000 0 141 0 45 797950</div><div class="line">1593678218 all 3306 11956 2769 29 3000 0 141 0 45 793544</div><div class="line">1593678280 all 3306 12032 2800 29 3000 0 141 0 45 789403</div><div class="line">1593678341 all 3306 11973 2761 29 3000 0 141 0 45 791959</div><div class="line">1593678403 all 3306 7733 3376 13 1442 0 141 0 45 1237712</div></pre></td></tr></table></figure>
+<h2 id="时延增加对数据的影响"><a href="#时延增加对数据的影响" class="headerlink" title="时延增加对数据的影响"></a>时延增加对数据的影响</h2><p>在Server上增加了网络17ms delay，可以看到平均rt增加了34ms，因为Server到P4192增加17，到client增加17，所以总共增加了34ms。另外QPS（最后一列）从200万/60秒降到了26万/60秒</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div></pre></td><td class="code"><pre><div class="line">$sudo tc qdisc add dev eth0 root netem  delay 17ms</div><div class="line">$tail -40 tcp-rt/rt-network-stats</div><div class="line">1593684362 all 3306 4860 4702 0 97 0 141 0 45 2022008</div><div class="line">1593684362 all P4192 2596 2597 0 2359 0 139 0 139 2022289</div><div class="line">1593684424 all 3306 4652 4493 0 97 0 141 0 45 2112538</div><div class="line">1593684424 all P4192 2596 2597 0 2357 0 139 0 139 2112834</div><div class="line">1593684485 all 3306 4858 4699 0 97 0 141 0 45 2023052</div><div class="line">1593684485 all P4192 2598 2599 0 2358 0 139 0 139 2023316</div><div class="line">---------------这里增加网络 rt 17ms---------</div><div class="line">1593684547 all 3306 7188 4395 0 97 0 141 0 45 1367174</div><div class="line">1593684547 all P4192 2593 2593 0 2355 0 139 0 139 1367466</div><div class="line">1593684608 all 3306 19969 2838 0 97 0 141 0 45 492234</div><div class="line">1593684608 all P4192 2592 2592 0 2357 0 139 0 139 492587</div><div class="line">1593684669 all 3306 19935 2800 0 97 0 141 0 45 493045</div><div class="line">1593684669 all P4192 2595 2595 0 2354 0 139 0 139 493383</div><div class="line">1593684731 all 3306 20020 2885 0 97 0 141 0 45 491010</div><div class="line">1593684731 all P4192 2674 2674 0 2362 0 139 0 139 491305</div><div class="line">1593684792 all 3306 10362 4319 0 114 0 141 0 45 948355</div><div class="line">1593684792 all P4192 3379 3379 0 2356 0 139 0 139 948710</div><div class="line">1593684854 all 3306 37006 19866 0 317 0 141 0 45 265711</div><div class="line">1593684854 all P4192 19610 19610 0 2359 0 139 0 139 265963</div><div class="line">1593684915 all 3306 37088 19947 0 317 0 141 0 45 264957</div><div class="line">1593684915 all P4192 19618 19617 0 2360 0 139 0 139 265226</div><div class="line">1593684977 all 3306 37008 19869 0 317 0 141 0 45 265688</div><div class="line">1593684977 all P4192 19625 19625 0 2356 0 139 0 139 265962</div><div class="line">1593685038 all 3306 36968 19830 0 317 0 141 0 45 265864</div><div class="line">1593685038 all P4192 19618 19618 0 2360 0 139 0 139 266145</div><div class="line">1593685099 all 3306 37308 20166 0 317 0 141 0 45 263501</div><div class="line">1593685099 all P4192 19869 19869 0 2361 0 139 0 139 263799</div></pre></td></tr></table></figure>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;TCPRT-案例&quot;&gt;&lt;a href=&quot;#TCPRT-案例&quot; class=&quot;headerlink&quot; title=&quot;TCPRT 案例&quot;&gt;&lt;/a&gt;TCPRT 案例&lt;/h1&gt;&lt;p&gt;在微服务场景下如果rt出现问题一般都有pinpoint、Dapper、鹰眼之类的工具能帮忙分
+    
+    </summary>
+    
+      <category term="Linux" scheme="http://yoursite.com/categories/Linux/"/>
+    
+      <category term="TCP" scheme="http://yoursite.com/categories/Linux/TCP/"/>
+    
+      <category term="network" scheme="http://yoursite.com/categories/Linux/TCP/network/"/>
+    
+      <category term="TCPRT" scheme="http://yoursite.com/categories/Linux/TCP/network/TCPRT/"/>
+    
+    
+      <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
+    
+      <category term="TCP" scheme="http://yoursite.com/tags/TCP/"/>
+    
+      <category term="network" scheme="http://yoursite.com/tags/network/"/>
+    
+      <category term="Performance" scheme="http://yoursite.com/tags/Performance/"/>
     
   </entry>
   
@@ -2256,701 +2492,6 @@ ts=2019-06-04 11:38:06; [cost=2.75218ms] result=@HandlerExecutionChain[
       <category term="java" scheme="http://yoursite.com/tags/java/"/>
     
       <category term="arthas" scheme="http://yoursite.com/tags/arthas/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>SystemStap、BCC、bpftrace</title>
-    <link href="http://yoursite.com/2019/09/16/SystemStap/"/>
-    <id>http://yoursite.com/2019/09/16/SystemStap/</id>
-    <published>2019-09-16T04:30:03.000Z</published>
-    <updated>2019-09-19T09:21:12.695Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="SystemStap、BCC、bpftrace"><a href="#SystemStap、BCC、bpftrace" class="headerlink" title="SystemStap、BCC、bpftrace"></a>SystemStap、BCC、bpftrace</h1><h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><p>sudo stap-prep //安装好systemtap所有依赖的（debugfs等等）</p>
-<p>执行安装内核debug等等需要的一些包，然后才能运行systemtap</p>
-<pre><code># 简单的脚本，打印4s内所有进程打开了哪些文件
-#!/usr/bin/stap
-probe begin
-{
-    log(&quot;begin to probe&quot;)
-}
-
-probe syscall.open
-{
-    printf (&quot;%s(%d) open (%s)\n&quot;, execname(), pid(), argstr)
-}
-
-probe timer.ms(4000) # after 4 seconds
-{
-    exit ()
-}
-
-probe end
-{
-    log(&quot;end to probe&quot;)
-}
-</code></pre><p>主要需要两个包[“kernel-debuginfo”, “kernel-debuginfo-common”]<br>建议不要从yum装，可能会和内核小版本不同导致无法使用</p>
-<p>1 获取内核的参数<br>uname -r</p>
-<p>2 从下面的链接中取找对应内核的包</p>
-<p><a href="http://rpm.alibaba-inc.com/find.php?t=&amp;os=&amp;q=kernel-debuginfo&amp;d=1&amp;rid=1807" target="_blank" rel="external">http://rpm.alibaba-inc.com/find.php?t=&amp;os=&amp;q=kernel-debuginfo&amp;d=1&amp;rid=1807</a><br><a href="http://rpm.alibaba-inc.com/find.php?t=&amp;os=&amp;q=kernel-debuginfo-common-x86_64&amp;d=1&amp;rid=1805" target="_blank" rel="external">http://rpm.alibaba-inc.com/find.php?t=&amp;os=&amp;q=kernel-debuginfo-common-x86_64&amp;d=1&amp;rid=1805</a></p>
-<p>如果小版本不对导致装不上的话，加上–nodeps 参数<br>rpm -ivh kernel-debuginfo-2.6.32-220.23.2.ali878.el6.x86_64.rpm –nodeps</p>
-<pre><code>#验证安装是否成功
-sudo stap -v -e &apos;probe begin{printf(&quot;Hello, World&quot;); exit();}&apos;
-</code></pre><h2 id="案例"><a href="#案例" class="headerlink" title="案例"></a>案例</h2><p>写好的默认脚本都在：/usr/share/doc/systemtap-client-2.8/examples/<br>stap 部分源代码：  /usr/share/systemtap/tapset/linux/</p>
-<ul>
-<li>sudo ./socktop -N 20  //每个进程的流量，取最多的20个</li>
-<li>sudo stap netfilter_summary.stp -c “sleep 1” //每对IP之间的流量信息</li>
-<li>stap tcp_connections.stp -c “sleep 1” //每个进来的新连接</li>
-<li>sudo stap latencytap.stp –all-modules -w -t -x 38730 //监控进程38730最慢的内核操作</li>
-</ul>
-<pre><code>
-#! /usr/bin/env stap
-
-#################################################################
-# tcp_retransmit.stp
-# Author: Yang Bingwu (detailyang) &lt;detailyang@gmail.com&gt;
-# This systemtap script will prints the tcp retransmission packet
-#################################################################
-
-global record%
-global cwnd_record%
-
-probe begin {
-log(&quot;Printing tcp retransmission&quot;)
-}
-
-#probe kernel.function(&quot;tcp_retransmit_skb&quot;) {
-#probe kernel.function(&quot;tcp_xmit_retransmit_queue&quot;) {
-probe kernel.function(&quot;tcp_may_send_now&quot;) {
-    #print_usyms(ubacktrace())
-
-    print_backtrace()
-
-    #sudo stap tcp_retransmission.stp -x 19317  19317 is pid
-    if (pid() == target()) {
-
-        rto = tcp_get_info_rto($sk)
-        snd_cwnd = tcp_get_info_snd_cwnd($sk)
-        saddr   = format_ipaddr(__ip_sock_saddr($sk), __ip_sock_family($sk))
-        daddr   = format_ipaddr(__ip_sock_daddr($sk), __ip_sock_family($sk))
-        sport   = __tcp_sock_sport($sk)
-        dport   = __tcp_sock_dport($sk)
-        lastrto = record[saddr, sport, daddr, dport]
-        lastcwnd = cwnd_record[saddr, sport, daddr, dport]
-        state = tcp_ts_get_info_state($sk)
-
-        if (lastrto != rto) {
-            if (lastrto) {
-                printf(&quot;%s:%d =&gt; %s:%d STATE:%s RTO:%d -&gt; %d (ms)\n&quot;, saddr, sport,
-                daddr, dport, tcp_sockstate_str(state), lastrto/1000, rto/1000)
-            } else {
-                printf(&quot;%s:%d =&gt; %s:%d STATE:%s RTO:%d (ms)\n&quot;, saddr, sport,
-                daddr, dport, tcp_sockstate_str(state), rto/1000)
-            }
-
-            printf(&quot;%s:%d =&gt; %s:%d STATE:%s snd_cwnd: %d -&gt; %d\n&quot;, saddr, sport, daddr, dport, tcp_sockstate_str(state), snd_cwnd, lastcwnd);
-        }
-
-        record[saddr, sport, daddr, dport] = rto
-        cwnd_record[saddr, sport, daddr, dport] = snd_cwnd
-
-    }
-}
-</code></pre><p><a href="https://sourceware.org/systemtap/examples/network/tcp_retransmission.stp" target="_blank" rel="external">https://sourceware.org/systemtap/examples/network/tcp_retransmission.stp</a></p>
-<h2 id="案例2-需要模拟磁盘hang导致的io延迟，可以用systemtab来搞"><a href="#案例2-需要模拟磁盘hang导致的io延迟，可以用systemtab来搞" class="headerlink" title="案例2:需要模拟磁盘hang导致的io延迟，可以用systemtab来搞"></a>案例2:需要模拟磁盘hang导致的io延迟，可以用systemtab来搞</h2><pre><code>#!/usr/bin/env stap
-# 使用方式： stap delay.stp -g  --all-modules -x 7222   只对7222进程进行延迟hack
-
-# 延迟多少ms
-global DELAY = 100;
-global quit = 0;
-global found;
-
-probe begin {
-    warn(sprintf(&quot;Tracing pid %d ...\\n&quot;, target()))
-}
-
-# 如果想要针对mysql的写入，可以将下面换成
-#probe process(&quot;/u01/mysql/bin/mysqld&quot;).function(&quot;sync_binlog_file&quot;).call
-probe syscall.write.return {
-      if (pid() == target() &amp;&amp; !quit ) {
-          mdelay( DELAY );
-          printf(&quot;write delay detail: tid: %d func:%s  sleep: %d \n&quot;,tid(),probefunc(),DELAY);
-    }
-}
-
-
-probe syscall.fsync.return {
-   if (pid() == target() &amp;&amp; !quit ) {
-        mdelay( DELAY );
-        printf(&quot;fsync delay detail: tid: %d func:%s  sleep: %d \n&quot;,tid(),probefunc(),DELAY);
-    }
-
-}
-
-# 任务持续时间
-probe timer.s(20) {
-    if (!found) {
-        warn(&quot;No backtraces found. Quitting now...\n&quot;)
-        exit()
-    } else {
-        warn(&quot;Time&apos;s up. Quitting now...(it may take a while)\n&quot;)
-        quit = 1
-    }
-}
-</code></pre><p>7U的系统自动封装了mtime函数 /usr/share/systemtap/tapset/linux/guru-delay.stp<br>如果是6U的系统，需要在上面的脚本中自己加上mdelay的函数</p>
-<pre><code>%{
-#undef STP_OVERLOAD
-#include &lt;linux/delay.h&gt;
-%}
-
-function mdelay(ms:long) %{
-  mdelay(THIS-&gt;ms);
-%}
-</code></pre><p><a href="http://blog.csdn.net/justlinux2010/article/details/11171291" target="_blank" rel="external">使用Systemtap生成Flame Graph(火焰图) </a></p>
-<h2 id="网络重传"><a href="#网络重传" class="headerlink" title="网络重传"></a>网络重传</h2><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/be6ac944fb72b089dc0357298a47dc37.png" alt="image.png"></p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e9efaffe357a2d1ac72806ce36066532.png" alt="image.png"></p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/9340023fac65d9c1d0aeda8e73557792.png" alt="image.png"></p>
-<h2 id="网络包大小分布"><a href="#网络包大小分布" class="headerlink" title="网络包大小分布"></a>网络包大小分布</h2><pre><code>bpftrace -e &apos;tracepoint:net:net_dev_queue{
-@txsize=hist(args-&gt;len);
-@txstat=stats(args-&gt;len);
-}
-
-tracepoint:net:netif_receive_skb
-{
-    @rxsize=hist(args-&gt;len);
-    @rxstat=stats(args-&gt;len);
-}&apos;
-</code></pre><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/297eb625b1e157d85a29754108871c08.png" alt="image.png"></p>
-<h2 id="产看网络流量由哪个进程发出，或者说哪个进程在发包"><a href="#产看网络流量由哪个进程发出，或者说哪个进程在发包" class="headerlink" title="产看网络流量由哪个进程发出，或者说哪个进程在发包"></a>产看网络流量由哪个进程发出，或者说哪个进程在发包</h2><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/74b0a393a6334421957a032f1f141a9c.png" alt="image.png"></p>
-<h2 id="网络连接创建rt？"><a href="#网络连接创建rt？" class="headerlink" title="网络连接创建rt？"></a>网络连接创建rt？</h2><pre><code># ./tools/bcc/tcpconnlat
-PID    COMM         IP SADDR            DADDR            DPORT LAT(ms)
-1935   java         4  10.81.177.14     100.100.110.2    80    0.21
-6844   java         4  127.0.0.1        127.0.0.1        3406  0.05
-6844   java         4  127.0.0.1        127.0.0.1        3406  0.02
-1930   java         4  10.81.177.14     100.100.110.2    80    0.23
-1914   java         4  10.81.177.14     100.100.110.2    80    0.26
-6844   java         4  127.0.0.1        127.0.0.1        3406  0.04
-6844   java         4  127.0.0.1        127.0.0.1        3406  0.02
-1778   java         4  10.81.177.14     100.100.17.97    8000  1.62
-1915   java         4  10.81.177.14     100.100.110.2    80    0.20
-1944   java         4  10.81.177.14     100.100.110.2    80    0.23
-6844   java         4  127.0.0.1        127.0.0.1        3406  0.05
-6844   java         4  127.0.0.1        127.0.0.1        3406  0.03
-1823   java         4  10.81.177.14     100.100.110.2    80    9.58
-1928   java         4  10.81.177.14     100.100.110.2    80    9.61
-6844   java         4  127.0.0.1        127.0.0.1        3406  0.05
-6844   java         4  127.0.0.1        127.0.0.1        3406  0.03
-1796   java         4  10.81.177.14     100.100.110.2    80    0.27
-1949   java         4  10.81.177.14     100.100.110.2    80    0.22
-1795   java         4  10.81.177.14     100.100.110.2    80    0.26
-6844   java         4  127.0.0.1        127.0.0.1        3406  0.05
-6844   java         4  127.0.0.1        127.0.0.1        3406  0.02
-1916   java         4  10.81.177.14     100.100.110.2    80    3.70
-1929   java         4  10.81.177.14     100.100.110.2    80    3.73
-7059   java         4  127.0.0.1        127.0.0.1        3406  0.05
-7059   java         4  127.0.0.1        127.0.0.1        3406  0.02
-948    java         4  10.81.177.14     100.100.110.2    80    0.27
-1917   java         4  10.81.177.14     100.100.110.2    80    0.20
-1934   java         4  10.81.177.14     100.100.110.2    80    0.22
-6844   java         4  127.0.0.1        127.0.0.1        3406  0.05
-6844   java         4  127.0.0.1        127.0.0.1        3406  0.03
-</code></pre><h2 id="TCP队列实时查看"><a href="#TCP队列实时查看" class="headerlink" title="TCP队列实时查看"></a>TCP队列实时查看</h2><p>bpftrace工具包</p>
-<pre><code>cat tcpsynbl_example.txt
-Demonstrations of tcpsynbl, the Linux bpftrace/eBPF version.
-
-
-This tool shows the TCP SYN backlog size during SYN arrival as a histogram.
-This lets you see how close your applications are to hitting the backlog limit
-and dropping SYNs (causing performance issues with SYN retransmits). For
-example:
-
-# ./tcpsynbl.bt 
-Attaching 4 probes...
-Tracing SYN backlog size. Ctrl-C to end.
-^C
-@backlog[backlog limit]: histogram of backlog size
-
-
-@backlog[500]: 
-[0]                 2266 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
-[1]                    3 |                                                    |
-[2, 4)                 1 |                                                    |
-
-
-$sudo bpftrace ./tcpsynbl.bt
-Attaching 4 probes...
-Tracing SYN backlog size. Ctrl-C to end.
-
-^C
-@backlog[backlog limit]: histogram of backlog size
-
-
-@backlog[10]:
-[0]                    3 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
-
-@backlog[256]:
-[0]                   59 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
-</code></pre><p>或者 bpftrace tcpaccept.bt</p>
-<pre><code>cat tcpaccept_example.txt 
-Demonstrations of tcpaccept, the Linux bpftrace/eBPF version.
-
-
-This tool traces the kernel function accepting TCP socket connections (eg, a
-passive connection via accept(); not connect()). Some example output (IP
-addresses changed to protect the innocent):
-
-# ./tcpaccept
-Tracing tcp accepts. Hit Ctrl-C to end.
-TIME     PID     COMM           RADDR          RPORT LADDR          LPORT BL
-00:34:19 3949061 nginx          10.228.22.228  44226 10.229.20.169  8080  0/128
-00:34:19 3951399 ruby           127.0.0.1      52422 127.0.0.1      8000  0/128
-00:34:19 3949062 nginx          10.228.23.128  35408 10.229.20.169  8080  0/128
-
-
-This output shows three connections, an IPv4 connections to PID 1463622, a &quot;redis-server&quot;
-process listening on port 6379, and one IPv6 connection to a &quot;thread.rb&quot; process
-listening on port 8000. The remote address and port are also printed, and the accept queue
-current size as well as maximum size are shown.
-
-The overhead of this tool should be negligible, since it is only tracing the
-kernel function performing accept. It is not tracing every packet and then
-filtering.
-
-This tool only traces successful TCP accept()s. Connection attempts to closed
-ports will not be shown (those can be traced via other functions).
-
-There is another version of this tool in bcc: https://github.com/iovisor/bcc
-</code></pre><p>最后一列就是backlog最大大小和已经多少</p>
-<h2 id="DNS-域名解析时间"><a href="#DNS-域名解析时间" class="headerlink" title="DNS 域名解析时间"></a>DNS 域名解析时间</h2><pre><code>$sudo ./gethostlatency 
-TIME      PID    COMM                  LATms HOST
-15:40:01  10549  sendmail               0.19 localhost
-15:40:03  1782   java                   0.11 iZbp143cmod4v59cgon4zwZ
-15:40:13  10580  ping                   0.98 abck.akksda
-15:40:18  1823   java                   0.12 iZbp143cmod4v59cgon4zwZ
-</code></pre><p>可以明显抓到ping但是nslookup抓不到（因为nslookup 不调用 getaddrinfo/gethostbyname)</p>
-<h2 id="统计线程执行时间排名"><a href="#统计线程执行时间排名" class="headerlink" title="统计线程执行时间排名"></a>统计线程执行时间排名</h2><pre><code>$sudo stap thread-times.stp -T 5
-        comm   tid   %user %kernel (of 19997 ticks)
-        java 30474  20.06%   0.75%
-   swapper/0     0   0.00%   2.55%
-   swapper/2     0   0.00%   2.00%
-   swapper/3     0   0.00%   1.49%
-        java 19500   0.38%   0.72%
-        java 19501   0.35%   0.64%
-        java 19503   0.34%   0.65%
-        java 19496   0.28%   0.69%
-        java 19497   0.28%   0.67%
-        java 19502   0.31%   0.61%
-        java 19498   0.30%   0.58%
-        java 19499   0.26%   0.52%
-   swapper/1     0   0.00%   0.75%
-        java 20004   0.45%   0.18%
-        java 19995   0.40%   0.19%
-        java 20061   0.43%   0.16%
-        java 20066   0.41%   0.17%
-        java 20083   0.44%   0.13%
-        java 20027   0.41%   0.16%
-        java 20195   0.43%   0.13%
-</code></pre><p>如上java线程执行消耗在用户态和内核态的CPU占比，根据tid可以到jstack中对应，相当于是将top命令中的线程消耗CPU做了累积，分清了用户态和内核态</p>
-<h2 id="内核函数执行时间"><a href="#内核函数执行时间" class="headerlink" title="内核函数执行时间"></a>内核函数执行时间</h2><pre><code>$sudo ./funclatency &apos;c:connect&apos;
-Tracing 1 functions for &quot;c:connect&quot;... Hit Ctrl-C to end.
-^C
-
-Function = [unknown] [10997] 
-     nsecs               : count     distribution
-         0 -&gt; 1          : 0        |                                        |
-         2 -&gt; 3          : 0        |                                        |
-         4 -&gt; 7          : 0        |                                        |
-         8 -&gt; 15         : 0        |                                        |
-        16 -&gt; 31         : 0        |                                        |
-        32 -&gt; 63         : 0        |                                        |
-        64 -&gt; 127        : 0        |                                        |
-       128 -&gt; 255        : 0        |                                        |
-       256 -&gt; 511        : 0        |                                        |
-       512 -&gt; 1023       : 0        |                                        |
-      1024 -&gt; 2047       : 0        |                                        |
-      2048 -&gt; 4095       : 0        |                                        |
-      4096 -&gt; 8191       : 4        |****************************************|
-      8192 -&gt; 16383      : 2        |********************                    |
-     16384 -&gt; 32767      : 1        |**********                              |
-
-Function = connect [10999]  //telnet 连不上 tcp retry 
-     nsecs               : count     distribution
-         0 -&gt; 1          : 0        |                                        |
-         2 -&gt; 3          : 0        |                                        |
-         4 -&gt; 7          : 0        |                                        |
-         8 -&gt; 15         : 0        |                                        |
-        16 -&gt; 31         : 0        |                                        |
-        32 -&gt; 63         : 0        |                                        |
-        64 -&gt; 127        : 0        |                                        |
-       128 -&gt; 255        : 0        |                                        |
-       256 -&gt; 511        : 0        |                                        |
-       512 -&gt; 1023       : 0        |                                        |
-      1024 -&gt; 2047       : 0        |                                        |
-      2048 -&gt; 4095       : 0        |                                        |
-      4096 -&gt; 8191       : 3        |****************************************|
-      8192 -&gt; 16383      : 2        |**************************              |
-     16384 -&gt; 32767      : 1        |*************                           |
-</code></pre><h2 id="磁盘"><a href="#磁盘" class="headerlink" title="磁盘"></a>磁盘</h2><pre><code>15:49:40 loadavg: 0.07 0.04 0.05 1/1008 11533
-
-PID    COMM             D MAJ MIN DISK       I/O  Kbytes  AVGms
-10784  kworker/u8:0     W 254 0   vda         31     140   2.41
-416    jbd2/vda1-8      W 254 0   vda          2     100   0.93
-Detaching...
-
-[admin@iZbp143cmod4v59cgon4zwZ 15:49 /home/admin/tools/bcc]
-$df -lh
-Filesystem      Size  Used Avail Use% Mounted on
-devtmpfs        3.8G     0  3.8G   0% /dev
-tmpfs           3.9G     0  3.9G   0% /dev/shm
-tmpfs           3.9G  620K  3.9G   1% /run
-tmpfs           3.9G     0  3.9G   0% /sys/fs/cgroup
-/dev/vda1        99G  5.1G   89G   6% /
-tmpfs           779M     0  779M   0% /run/user/0
-tmpfs           779M     0  779M   0% /run/user/1000
-
-[admin@iZbp143cmod4v59cgon4zwZ 15:49 /home/admin/tools/bcc]
-$sudo ./biotop 5 1
-</code></pre><p> 或者</p>
-<pre><code>$sudo stap iostats.stp -T 5
-starting probe
-
-                                       read     read             write    write
-            name     open     read   KB tot    B avg    write   KB tot    B avg
-            java        8   125797     5406       44   251673    44337      180
-              ps      754      784      319      417        6       29     5105
-            grep       39       27       73     2781        9       42     4891
-              wc       10        6       17     2979        1        0        2
-       AliYunDun       43       53        9      175        0        0        0
-              sh        8        4        3      880        0        0        0
-             fio       20       20        2      136        5        0       81
-            sshd        0        6        0       70        6        0      121
- AliYunDunUpdate        2        4        0       75        0        0        0
-   systemd-udevd        1        4        0       65        0        0        0
-    DragoonAgent        0        0        0        0        1        0      100
-          stapio        0       27        0        1        1        0       15
-  aliyun-service        0       25        0        0        0        0        0
-</code></pre><h2 id="fs-latency"><a href="#fs-latency" class="headerlink" title="fs latency"></a>fs latency</h2><pre><code>[root@iZbp1d1tuijx3yqz46meimZ lwtools]# stap fslatency-nd.stp 1 1
-Tracing FS sync reads and writes... Output every 1 secs.
-
-Thu Sep 19 07:48:54 2019 FS latency (ns):
-
-FS call: __vfs_read()
- value |-------------------------------------------------- count
-   128 |                                                       0
-   256 |                                                       0
-   512 |                                                       2
-  1024 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  12423
-  2048 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@          10330
-  4096 |@@                                                   514
-  8192 |@@@@@@                                              1624
- 16384 |@                                                    273
- 32768 |                                                      48
- 65536 |                                                       1
-131072 |                                                       0
-262144 |                                                       0
-
-FS call: __vfs_write()
- value |-------------------------------------------------- count
-    64 |                                                       0
-   128 |                                                       0
-   256 |                                                     169
-   512 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  32549
-  1024 |@@@@@@@@@@@@@@@@@@@@@@@@@                          16276
-  2048 |                                                     469
-  4096 |                                                     385
-  8192 |                                                     439
- 16384 |                                                     100
- 32768 |                                                       5
- 65536 |                                                       1
-131072 |                                                       0
-262144 |                                                       0
-</code></pre><p>读写时间分布：<br>    [root@iZbp1d1tuijx3yqz46meimZ lwtools]# ./rwtime-nd.stp java<br>    Tracing read/write syscalls for processes named “java”… Hit Ctrl-C to end.<br>    ^C<br>    syscall read latency (ns):<br>     value |————————————————– count<br>       128 |                                                       0<br>       256 |                                                       0<br>       512 |@                                                   3129<br>      1024 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  85897<br>      2048 |@@@@@@@@@@@@@@@                                    26032<br>      4096 |                                                     386<br>      8192 |                                                    1142<br>     16384 |                                                      63<br>     32768 |                                                       3<br>     65536 |                                                       1<br>    131072 |                                                       1<br>    262144 |                                                       0<br>    524288 |                                                       0</p>
-<pre><code>syscall write latency (ns):
-  value |-------------------------------------------------- count
-    256 |                                                        0
-    512 |                                                        0
-   1024 |                                                     1720
-   2048 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  104247
-   4096 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  105507
-   8192 |@@@@@@@@                                            17768
-  16384 |@                                                    3715
-  32768 |                                                      353
-  65536 |                                                       44
- 131072 |                                                        0
- 262144 |                                                        3
- 524288 |                                                        0
-1048576 |                                                        0
-</code></pre><p>SLOW FS READ AND WRITE</p>
-<pre><code>[root@iZbp1d1tuijx3yqz46meimZ lwtools]# ./fsslower-nd.stp 5
-Tracing FS sync reads and writes slower than 5 ms... Hit Ctrl-C to end.
-TIME     PID    COMM             FUNC           SIZE     LAT(ms)
-07:55:13 30941  grep             __vfs_read     32768         18
-07:55:13 30942  grep             __vfs_read     32768          5
-07:55:13 30943  grep             __vfs_read     32768         23
-07:55:13 30944  wc               __vfs_read     16384         24
-07:55:13 1102   java             __vfs_read     8192          39
-07:55:13 1102   java             __vfs_read     8192          40
-</code></pre><h2 id="cache"><a href="#cache" class="headerlink" title="cache"></a>cache</h2><pre><code>$sudo ./cachestat -T 5 1
-TIME         HITS   MISSES  DIRTIES HITRATIO   BUFFERS_MB  CACHED_MB
-16:01:10     6297        0       52  100.00%           31        652
-</code></pre><h2 id="中断发生，主要是网卡"><a href="#中断发生，主要是网卡" class="headerlink" title="中断发生，主要是网卡"></a>中断发生，主要是网卡</h2><pre><code># sudo stap interrupts-by-dev.stp -c &apos;sleep 1&apos;
-  DEVICE      NUMBER OF INTERRUPTS 
-    virtio2-req.0 :      1
- virtio0-output.0 :      2
-  virtio0-input.0 :      1
- virtio0-output.0 :      1
-  virtio0-input.0 :      2
- virtio0-output.0 :      1
- virtio0-output.0 :      1
-  virtio0-input.0 :      1
- virtio0-output.0 :      1
-  virtio0-input.0 :      1
- virtio0-output.0 :      1
-  virtio0-input.0 :      1
-</code></pre><h2 id="futex"><a href="#futex" class="headerlink" title="futex"></a>futex</h2><pre><code>$sudo stap futexes.stp  -T 1
-java[4457] lock 0x7f5da0bbd548 contended 1 times, 1 avg us
-java[4457] lock 0x7f5d23c46188 contended 1 times, 27 avg us
-java[4457] lock 0x7f5d52f3f154 contended 1 times, 1945 avg us
-java[4457] lock 0x7f5da06a03f0 contended 1 times, 20 avg us
-java[4457] lock 0x7f5da2baad54 contended 1 times, 267 avg us
-java[4457] lock 0x7f5d23a8d574 contended 1 times, 60130 avg us
-java[4457] lock 0x7f5d23c30154 contended 1 times, 664 avg us
-java[4457] lock 0x7f5d23c5e1b4 contended 3 times, 70979 avg us
-java[4457] lock 0x7f5d23bc3154 contended 1 times, 4342 avg us
-java[4457] lock 0x7f5da2b897b4 contended 1 times, 70190 avg us
-java[4457] lock 0x7f5d533a0d54 contended 1 times, 2202 avg us
-</code></pre><p>参考：<a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/systemtap_beginners_guide/futexcontentionsect" target="_blank" rel="external">https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/systemtap_beginners_guide/futexcontentionsect</a></p>
-<p>Demo集锦：<br><a href="https://github.com/openresty/openresty-systemtap-toolkit/blob/master/README-CN.markdown" target="_blank" rel="external">openresty systemtap demo</a></p>
-<p><a href="https://yq.aliyun.com/articles/174916" target="_blank" rel="external">SystemTap原理、安装、入门、脚本语言及技巧</a></p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;SystemStap、BCC、bpftrace&quot;&gt;&lt;a href=&quot;#SystemStap、BCC、bpftrace&quot; class=&quot;headerlink&quot; title=&quot;SystemStap、BCC、bpftrace&quot;&gt;&lt;/a&gt;SystemStap、BCC、bp
-    
-    </summary>
-    
-      <category term="Performanc" scheme="http://yoursite.com/categories/Performanc/"/>
-    
-    
-      <category term="SystemStap" scheme="http://yoursite.com/tags/SystemStap/"/>
-    
-      <category term="BCC" scheme="http://yoursite.com/tags/BCC/"/>
-    
-      <category term="bpftrace" scheme="http://yoursite.com/tags/bpftrace/"/>
-    
-      <category term="dtrace" scheme="http://yoursite.com/tags/dtrace/"/>
-    
-      <category term="tcpretrans" scheme="http://yoursite.com/tags/tcpretrans/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>logback 日志异步化输出对性能的影响</title>
-    <link href="http://yoursite.com/2019/09/12/logback%E6%97%A5%E5%BF%97%E5%BC%82%E6%AD%A5%E5%8C%96%E8%BE%93%E5%87%BA%E5%AF%B9%E6%80%A7%E8%83%BD%E7%9A%84%E5%BD%B1%E5%93%8D/"/>
-    <id>http://yoursite.com/2019/09/12/logback日志异步化输出对性能的影响/</id>
-    <published>2019-09-12T04:30:03.000Z</published>
-    <updated>2019-10-10T09:26:24.277Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="logback-日志异步化输出对性能的影响"><a href="#logback-日志异步化输出对性能的影响" class="headerlink" title="logback 日志异步化输出对性能的影响"></a>logback 日志异步化输出对性能的影响</h1><p>异步化基本百利而无一害，特定的场景、机器下可以数倍提升效率</p>
-<h2 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h2><ul>
-<li>异步化对性能的影响取决于日志的多少和机器CPU的核数</li>
-<li>如果一秒钟日志输出达到6M（主要取决于条数），那么异步化能提升一倍的性能（日志太多的时候同步下CPU跑不满）</li>
-<li>异步输出条件下，日志多少对性能的影响有，但是不明显（15%以内）</li>
-<li>immediateFlush 对同步影响比较明显（一倍），主要是因为每次刷盘慢导致别的线程等锁时间长，在异步场景下基本不明显</li>
-<li>同步日志输出场景下瓶颈主要在同步锁而不是磁盘写日志（顺序写磁盘）</li>
-<li>从Profiler堆栈来看异步后锁和日志输出部分占比明显降低</li>
-<li>CPU核数越多意味着并发越多，那么同步异步和immediateFlush的影响越明显</li>
-<li>异步对avg rt 和 rt 95%线下降影响非常明显</li>
-<li>immediateFlush为false有丢日志的风险，异步后没有必要再设immediateFlush为false</li>
-<li>延迟Flush的cache取决于JDK的BufferedOutputStream缓冲大小，默认8K，不可更改</li>
-<li>异步后日志输出的瓶颈在于单核能力，Intel(R) Xeon(R) Platinum 8163 CPU @ 2.50GHz 输出能力大概是每秒20万条日志</li>
-</ul>
-<h2 id="测试数据"><a href="#测试数据" class="headerlink" title="测试数据"></a>测试数据</h2><h3 id="同步和异步以及immediateFlush的影响"><a href="#同步和异步以及immediateFlush的影响" class="headerlink" title="同步和异步以及immediateFlush的影响"></a>同步和异步以及immediateFlush的影响</h3><p>16core的机器</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/f0e39a66b63fe00877b6663f8857a739.png" alt="image.png"></p>
-<p>结论：同步输出的情况下immediateFlush 为false性能有一倍的提升（但是异常退出的情况下有丢日志风险）<br>异步输出是同步的4倍（这个差异依赖于cpu核数、业务逻辑的特点等），在异步的情况下immediateFlush无所谓，所以王者还是异步输出，同时异步输出对rt 95%线下降非常明显</p>
-<h3 id="一个业务逻辑稍微慢点的场景"><a href="#一个业务逻辑稍微慢点的场景" class="headerlink" title="一个业务逻辑稍微慢点的场景"></a>一个业务逻辑稍微慢点的场景</h3><p>异步输出日志点查场景tps11万+，同步输出日志后点查tps4万+，同时jstack堆栈也能看到333个BLOCKED堆栈：</p>
-<pre><code>#[ 210s] threads: 400, tps: 0.00, reads/s: 115845.43, writes/s: 0.00, response time: 7.57ms (95%)
-#[ 220s] threads: 400, tps: 0.00, reads/s: 116453.12, writes/s: 0.00, response time: 7.28ms (95%)
-#[ 230s] threads: 400, tps: 0.00, reads/s: 116400.31, writes/s: 0.00, response time: 7.33ms (95%)
-#[ 240s] threads: 400, tps: 0.00, reads/s: 116025.35, writes/s: 0.00, response time: 7.48ms (95%)
-#[ 250s] threads: 400, tps: 0.00, reads/s: 45260.97, writes/s: 0.00, response time: 29.57ms (95%)
-#[ 260s] threads: 400, tps: 0.00, reads/s: 41598.41, writes/s: 0.00, response time: 29.07ms (95%)
-#[ 270s] threads: 400, tps: 0.00, reads/s: 41939.98, writes/s: 0.00, response time: 28.96ms (95%)
-#[ 280s] threads: 400, tps: 0.00, reads/s: 40875.48, writes/s: 0.00, response time: 29.16ms (95%)
-#[ 290s] threads: 400, tps: 0.00, reads/s: 41053.73, writes/s: 0.00, response time: 29.07ms (95%)
-
---- 1687260767618 ns (100.00%), 91083 samples
- [ 0] ch.qos.logback.classic.sift.SiftingAppender
- [ 1] ch.qos.logback.core.AppenderBase.doAppend
- [ 2] ch.qos.logback.core.spi.AppenderAttachableImpl.appendLoopOnAppenders
- [ 3] ch.qos.logback.classic.Logger.appendLoopOnAppenders
- [ 4] ch.qos.logback.classic.Logger.callAppenders
- [ 5] ch.qos.logback.classic.Logger.buildLoggingEventAndAppend
- [ 6] ch.qos.logback.classic.Logger.filterAndLog_0_Or3Plus
- [ 7] ch.qos.logback.classic.Logger.info
- [ 8] com.*****.logger.slf4j.Slf4jLogger.info
- [ 9] com.*****.utils.logger.support.FailsafeLogger.info
- [10] com.*****.util.LogUtils.recordSql
-
-
-&quot;ServerExecutor-3-thread-480&quot; #753 daemon prio=5 os_prio=0 tid=0x00007f8265842000 nid=0x26f1 waiting for monitor entry [0x00007f82270bf000]
-  java.lang.Thread.State: BLOCKED (on object monitor)
-    at ch.qos.logback.core.AppenderBase.doAppend(AppenderBase.java:64)
-    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-    at ch.qos.logback.core.spi.AppenderAttachableImpl.appendLoopOnAppenders(AppenderAttachableImpl.java:48)
-    at ch.qos.logback.classic.Logger.appendLoopOnAppenders(Logger.java:282)
-    at ch.qos.logback.classic.Logger.callAppenders(Logger.java:269)
-    at ch.qos.logback.classic.Logger.buildLoggingEventAndAppend(Logger.java:470)
-    at ch.qos.logback.classic.Logger.filterAndLog_0_Or3Plus(Logger.java:424)
-    at ch.qos.logback.classic.Logger.info(Logger.java:628)
-    at com.****.utils.logger.slf4j.Slf4jLogger.info(Slf4jLogger.java:42)
-    at com.****.utils.logger.support.FailsafeLogger.info(FailsafeLogger.java:102)
-    at com.****.util.LogUtils.recordSql(LogUtils.java:115)
-
-
-  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-    - locked &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
-</code></pre><h3 id="4核的机器下性能提升没这么明显，因为锁争抢没这么激烈"><a href="#4核的机器下性能提升没这么明显，因为锁争抢没这么激烈" class="headerlink" title="4核的机器下性能提升没这么明显，因为锁争抢没这么激烈"></a>4核的机器下性能提升没这么明显，因为锁争抢没这么激烈</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d38fecd4932266209c6a1ca0265f98aa.png" alt="image.png"></p>
-<h3 id="同步情况下的profiler"><a href="#同步情况下的profiler" class="headerlink" title="同步情况下的profiler"></a>同步情况下的profiler</h3><p>recordSQL: 12.9%<br>logback.doAppend: 10%</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/4e0595c173522e37edf87b568eab6e7f.png" alt="image.png"></p>
-<h3 id="异步情况下的profiler"><a href="#异步情况下的profiler" class="headerlink" title="异步情况下的profiler:"></a>异步情况下的profiler:</h3><p>recordSQL:  3.7%<br><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/a88a3595d386be2ffeb0652ba2fdeea1.png" alt="image.png"></p>
-<p>logback.doAppend: 2.63%</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e3d0200c0edf97540d422252fb23a4c2.png" alt="image.png"></p>
-<h3 id="在16个core的机器上锁争抢更明显"><a href="#在16个core的机器上锁争抢更明显" class="headerlink" title="在16个core的机器上锁争抢更明显"></a>在16个core的机器上锁争抢更明显</h3><p><a href="https://yuque.antfin-inc.com/preview/lark/0/2019/svg/33359/1568184395734-ff64a8ee-8b24-45ec-8fc3-024e14b8e7f0.svg" target="_blank" rel="external">99.8%的锁都是doApend</a> </p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/15879d15dbe876b5ee3bed02dfa18894.png" alt="image.png"></p>
-<h2 id="异步配置"><a href="#异步配置" class="headerlink" title="异步配置"></a>异步配置</h2><pre><code>&lt;appender name=&quot;asyncROOT&quot; class=&quot;ch.qos.logback.classic.AsyncAppender&quot;&gt;
-    &lt;queueSize&gt;1000&lt;/queueSize&gt;
-    &lt;maxFlushTime&gt;3000&lt;/maxFlushTime&gt;
-    &lt;discardingThreshold&gt;0&lt;/discardingThreshold&gt;
-    &lt;neverBlock&gt;true&lt;/neverBlock&gt;
-    &lt;appender-ref ref=&quot;ROOT&quot;/&gt;
-&lt;/appender&gt;
-</code></pre><h2 id="JDK中BufferedOutputStream-Buffer大小"><a href="#JDK中BufferedOutputStream-Buffer大小" class="headerlink" title="JDK中BufferedOutputStream Buffer大小"></a>JDK中BufferedOutputStream Buffer大小</h2><pre><code>/** 
- * Creates a new buffered output stream to write data to the 
- * specified underlying output stream. 
- * 
- * @param   out   the underlying output stream. 
- */  
-public BufferedOutputStream(OutputStream out) {  
-    this(out, 8192);  
-}  
-</code></pre><h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>关键结论见最前面，但是要结合自己场景输出日志的速度，日志输出越少影响越不明显，机器核数越多会越明显，总的原因就是logback的 AppenderBase的doAppend()函数需要同步</p>
-<pre><code>public synchronized void doAppend(E eventObject)
-</code></pre><h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://www.iteye.com/blog/k1280000-2265177" target="_blank" rel="external">flush cache 大小8K </a></p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;logback-日志异步化输出对性能的影响&quot;&gt;&lt;a href=&quot;#logback-日志异步化输出对性能的影响&quot; class=&quot;headerlink&quot; title=&quot;logback 日志异步化输出对性能的影响&quot;&gt;&lt;/a&gt;logback 日志异步化输出对性能的影响&lt;/
-    
-    </summary>
-    
-      <category term="Java" scheme="http://yoursite.com/categories/Java/"/>
-    
-      <category term="Performance" scheme="http://yoursite.com/categories/Java/Performance/"/>
-    
-    
-      <category term="logback" scheme="http://yoursite.com/tags/logback/"/>
-    
-      <category term="AsyncAppender" scheme="http://yoursite.com/tags/AsyncAppender/"/>
-    
-      <category term="neverBlock" scheme="http://yoursite.com/tags/neverBlock/"/>
-    
-      <category term="immediateFlush" scheme="http://yoursite.com/tags/immediateFlush/"/>
-    
-      <category term="lock" scheme="http://yoursite.com/tags/lock/"/>
-    
-      <category term="log4j" scheme="http://yoursite.com/tags/log4j/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>就是要你懂TCP队列--通过实战案例来展示问题</title>
-    <link href="http://yoursite.com/2019/08/31/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82TCP%E9%98%9F%E5%88%97--%E9%80%9A%E8%BF%87%E5%AE%9E%E6%88%98%E6%A1%88%E4%BE%8B%E6%9D%A5%E5%B1%95%E7%A4%BA%E9%97%AE%E9%A2%98/"/>
-    <id>http://yoursite.com/2019/08/31/就是要你懂TCP队列--通过实战案例来展示问题/</id>
-    <published>2019-08-31T09:30:03.000Z</published>
-    <updated>2019-09-24T06:21:43.423Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="就是要你懂TCP队列–通过实战案例来展示问题"><a href="#就是要你懂TCP队列–通过实战案例来展示问题" class="headerlink" title="就是要你懂TCP队列–通过实战案例来展示问题"></a>就是要你懂TCP队列–通过实战案例来展示问题</h1><p>详细理论和实践部分可以看<a href="https://plantegg.github.io/2117/06/07/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82TCP--%E5%8D%8A%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97%E5%92%8C%E5%85%A8%E8%BF%9E%E6%8E%A5%E9%98%9F%E5%88%97/" target="_blank" rel="external">这篇</a></p>
-<p>再写这篇原因是，即使我在上篇文章里将这个问题阐述的相当清晰，但是当我再次碰到这个问题居然还是费了一些周折，所以想再次总结下。</p>
-<h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><blockquote>
-<p>使用其他团队的WEBShell 调试问题的时候非常卡，最开始怀疑是定时任务导致压力大，然后重启Server端的Tomcat就恢复了，当时该应用的开发同学看到机器磁盘、cpu、内存、gc等都正常，实在不知道为什么会这么卡</p>
-</blockquote>
-<h2 id="分析问题"><a href="#分析问题" class="headerlink" title="分析问题"></a>分析问题</h2><p>因为每天都是上午出现问题，拿到权限后，也跟着先检查一遍定时任务，没发现什么异常。</p>
-<p>既然在客户端表现出来卡顿，那么tsar先看看网络吧，果然大致是卡顿的时候网络重传率有点高，不过整个问题不是一直出现，只是间歇性的。</p>
-<p>抓包、netstat -s 看重传、reset等都还好、ss -lnt 看也没有溢出，我看了很多次当前队列都是0</p>
-<h3 id="重启Tomcat"><a href="#重启Tomcat" class="headerlink" title="重启Tomcat"></a>重启Tomcat</h3><p>问题恢复，所以基本觉得问题还是跟Tomcat非常相关，抓包看到的重传率非常低（不到0.01%—被这里坑了一下），因为中间链路还有nginx等，一度怀疑是不是抓包没抓到本地回环网卡导致的，要不不会tsar看到的重传率高，而tcpdump抓下来的非常低。</p>
-<p>重启后 jstack 看看tomcat状态，同时跟正常的server对比了一下，发现明显有一个线程不太对，一直在增加</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/c6a60ee1c4e93e2d4912b7c5ef26a95e.png" alt="image.png"></p>
-<p>所以到这里大概知道问题的原因了，只是还不能完全确认。</p>
-<p>应该是Tomcat里面的线程越来越多导致Tomcat越来越慢，这个慢不是表现在gc、cpu等上，所以开发同学发现卡顿上去也没看出端倪来。</p>
-<p>那么对于网络很熟悉的同学，上去看到网络重传很高也没找到原因有点不太应该，主要是问题出现的时候间歇性非常低，通过ss -lnt去看溢出队列和netstat -s |grep -i listen 的时候基本都没什么问题，就忽视了，再说在tcpdump抓包只看到很少的几个重传，反倒是几百个reset包干扰了问题（几百个reset肯定不对，但是没有影响我所说的应用）。</p>
-<h3 id="调整参数，加速问题重现"><a href="#调整参数，加速问题重现" class="headerlink" title="调整参数，加速问题重现"></a>调整参数，加速问题重现</h3><p>因为总是每天上午一卡顿、有人抱怨、然后重启恢复，第二天仍是这个循环，也就是问题轻微出现后就通过重启解决了</p>
-<p>故意将全连接队列从当前的128改成16，重启后运行正常，实际并发不是很高的时候16也够了，改成16是为了让问题出现的时候如果是全连接队列不够导致的，那么会影响更明显一些，经过一天的运行后，可以清晰地观察到：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/91a12c64e360ffd5a7ab7231da6d8430.png" alt="image.png"></p>
-<p>tsar的重传率稳定的很高，ss -lnt也能明显地看到全连接队列完全满了，这个满不是因为压力大了，压力一直还是差不多的，所以只能理解是Tomcat处理非常慢了，同时netstat -s 看到 overflowed也稳定增加</p>
-<p>这个时候客户端不只是卡顿了，是完全连不上。</p>
-<p>Tomcat jstack也能看到这几个线程创建了2万多个：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/adca65f70c19929d78f63d8e5f70ed5a.png" alt="image.png"></p>
-<p>抓包(第二次抓包的机会，所以这次抓了所有网卡而不只是eth0)看到 Tomcat的8080端口上基本是这样的：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d12cd194822280906353d9961897ad19.png" alt="image.png"></p>
-<p>而看所有网卡的所有重传的话，这次终于可以看到重传率和tsar看到的一致，同时也清晰的看到主要127.0.0.1的本地流量，也就是Nginx过来的，而之前的抓包只抓了eth0，只能零星看到几个eth0上的重传包，跟tsar对不上，也导致问题跑偏了（重点去关注reset了）</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/1e7a22621908e7b6f790ebcb6970ae39.png" alt="image.png"></p>
-<h3 id="或者这个异常状态的截图"><a href="#或者这个异常状态的截图" class="headerlink" title="或者这个异常状态的截图"></a>或者这个异常状态的截图</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e3870d58dd88ccd7b2977748dffe5496.png" alt="image.png"></p>
-<h2 id="一些疑问"><a href="#一些疑问" class="headerlink" title="一些疑问"></a>一些疑问</h2><h3 id="为什么之前抓包看不到这些重传"><a href="#为什么之前抓包看不到这些重传" class="headerlink" title="为什么之前抓包看不到这些重传"></a>为什么之前抓包看不到这些重传</h3><p>因为对业务部署的不了解只抓了eth0, 导致没抓到真正跟客户端表现出来的卡顿相关的重传。比如这是只抓eth0上的包，看到的重传：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ffb525eb443e0656712f6d8c6357adc2.png" alt="image.png"></p>
-<p>可以看到明显非常少，这完全不是问题。</p>
-<h3 id="为什么-ss-lnt-netstat-s-都没发现问题"><a href="#为什么-ss-lnt-netstat-s-都没发现问题" class="headerlink" title="为什么 ss -lnt / netstat -s 都没发现问题"></a>为什么 ss -lnt / netstat -s 都没发现问题</h3><p>当时抱怨的时候都是间歇性的，所以 ss -lnt看了10多次都是当前连接0， netstat -s 倒是比较疏忽没仔细比较</p>
-<h3 id="为什么线程暴涨没有监控到"><a href="#为什么线程暴涨没有监控到" class="headerlink" title="为什么线程暴涨没有监控到"></a>为什么线程暴涨没有监控到</h3><p>边缘业务，本身就是监控管理其它服务的，本身监控不健全。</p>
-<h2 id="网络重传和业务的关系"><a href="#网络重传和业务的关系" class="headerlink" title="网络重传和业务的关系"></a>网络重传和业务的关系</h2><p>一般我们通过tsar等看到的是整个机器的重传率，而实际影响我们业务的（比如这里的8080端口）只是我这个端口上的重传率，有时候tsar看到重传率很高，那可能是因为机器上其他无关应用拉高的，所以这里需要一个查看具体业务（或者说具体端口上的重传率的工具）</p>
-<h3 id="如何快速定位网络重传发生的端口"><a href="#如何快速定位网络重传发生的端口" class="headerlink" title="如何快速定位网络重传发生的端口"></a>如何快速定位网络重传发生的端口</h3><p>bcc、bpftrace或者systemtap等工具都提供了观察网络重传包发生的时候的网络四元组以及发生重传的阶段（握手、建立连接后……），这样对我们定位问题就很容易了</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/be6ac944fb72b089dc0357298a47dc37.png" alt="image.png"></p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e9efaffe357a2d1ac72806ce36066532.png" alt="image.png"></p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/9340023fac65d9c1d0aeda8e73557792.png" alt="image.png"></p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>问题的根本原因不是因为TCP连接队列不够，而是 Tomcat中线程泄露，导致Tomcat反应越来越慢，进而导致TCP连接队列溢出，然后网络重传率升高，最终导致了client端操作卡顿。</p>
-<p>这种问题最快的是 jstack 发现，但是因为这只是一个后台Manager，所以基本没有监控，当时也漏看了jstack，所以导致问题定位花的时间长一些。当然通过tcpdump(漏抓了 lo 网卡，主要重传都是本地nginx和本地tomcat的，所以没有发现问题），通过 ss -lnt 和 netstat -s 本来也应该可以发现的，但是因为干扰因素太多而导致也没有发现，这个时候tcp_retrans等工具可以帮我们看的更清楚。</p>
-<p>当然从发现连接队列不够到Tomcat处理太慢这个是紧密联系的，一般应用重启的时候也会短暂连接队列不够，那是因为重启的时候Tomcat前累积了太多连接，这个时候Tomcat重启中，需要热身，本身处理也慢，所以短暂会出现连接队列不够，等Tomcat启动几分钟后就正常了。</p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;就是要你懂TCP队列–通过实战案例来展示问题&quot;&gt;&lt;a href=&quot;#就是要你懂TCP队列–通过实战案例来展示问题&quot; class=&quot;headerlink&quot; title=&quot;就是要你懂TCP队列–通过实战案例来展示问题&quot;&gt;&lt;/a&gt;就是要你懂TCP队列–通过实战案例来展示
-    
-    </summary>
-    
-      <category term="tcp" scheme="http://yoursite.com/categories/tcp/"/>
-    
-    
-      <category term="netstat" scheme="http://yoursite.com/tags/netstat/"/>
-    
-      <category term="ss" scheme="http://yoursite.com/tags/ss/"/>
-    
-      <category term="tcp queue" scheme="http://yoursite.com/tags/tcp-queue/"/>
-    
-      <category term="accept queue" scheme="http://yoursite.com/tags/accept-queue/"/>
-    
-      <category term="syn queue" scheme="http://yoursite.com/tags/syn-queue/"/>
-    
-      <category term="syn flood" scheme="http://yoursite.com/tags/syn-flood/"/>
-    
-      <category term="overflows" scheme="http://yoursite.com/tags/overflows/"/>
-    
-      <category term="dropped" scheme="http://yoursite.com/tags/dropped/"/>
     
   </entry>
   

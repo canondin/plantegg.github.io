@@ -261,6 +261,583 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/01/13/中间件的自己的DNS服务在alios7上域名解析失败/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/01/13/中间件的自己的DNS服务在alios7上域名解析失败/" itemprop="url">中间件的vipclient服务在centos7上域名解析失败</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-13T10:30:03+08:00">
+                2019-01-13
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/dns/" itemprop="url" rel="index">
+                    <span itemprop="name">dns</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/01/13/中间件的自己的DNS服务在alios7上域名解析失败/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2019/01/13/中间件的自己的DNS服务在alios7上域名解析失败/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="中间件的vipclient服务在centos7上域名解析失败"><a href="#中间件的vipclient服务在centos7上域名解析失败" class="headerlink" title="中间件的vipclient服务在centos7上域名解析失败"></a>中间件的vipclient服务在centos7上域名解析失败</h1><blockquote>
+<p>我们申请了一批ECS，操作系统是centos7，这些ECS部署了中间件的DNS服务（vipclient），但是发现这个时候域名解析失败，而同样的配置在centos6上就运行正确</p>
+</blockquote>
+<h2 id="抓包分析"><a href="#抓包分析" class="headerlink" title="抓包分析"></a>抓包分析</h2><p>分别在centos6、centos7上nslookup通过同一个DNS Server解析同一个域名，并抓包比较得到如下截图（为了方便我将centos6、7抓包做到了一张图上）：</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/1d5295ccb1fab715f246b54faf94eaaf.png" alt="image.png"></p>
+<p>绿色部分是正常的解析（centos6），<strong>红色部分是解析，多了一个OPT（centos7）</strong></p>
+<p>赶紧Google一下OPT，原来DNS协议还有一个extention，参考<a href="https://tools.ietf.org/html/rfc6891#page-15" title="EDNS OPT" target="_blank" rel="external">这里</a>： </p>
+<p>而centos7默认启用edns，但是vipclient实现的时候没有支持edns，所以 centos7 解析域名就出了问题</p>
+<h2 id="通过-dig-命令来查看dns解析过程"><a href="#通过-dig-命令来查看dns解析过程" class="headerlink" title="通过 dig 命令来查看dns解析过程"></a>通过 dig 命令来查看dns解析过程</h2><p>在centos7上，通过命令 dig edas.console.cztest.com 解析失败，但是改用这个命令禁用edns后就解析正常了：dig +noedns edas.console.cztest.com </p>
+<p>vipclient会启动一个53端口，在上面监听dns query，也就是自己就是一个DNS Service</p>
+<h2 id="分析vipclient域名解析返回的包内容"><a href="#分析vipclient域名解析返回的包内容" class="headerlink" title="分析vipclient域名解析返回的包内容"></a>分析vipclient域名解析返回的包内容</h2><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/0882e4815fb1acfa80f813db4bb7265b.png" alt="image.png"></p>
+<p>把上图中最后4个16进制翻译成10进制IP地址，这个IP地址正是域名所对应的IP，可见vipclient收到域名解析后，因为看不懂edns协议，就按照自己的理解返回了结果，客户端收到这个结果后按照edns协议解析不出来IP，也就是两个的协议不对等导致了问题</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>centos7之前默认都不启用edns，centos7后默认启用edns，但是vipclient目前不支持edns<br>通过命令：dig +noedns edas.console.cztest.com 能解析到域名所对应的IP<br>但是命令：dig edas.console.cztest.com  解析不到IP，因为vipclient（相当于这里的dns server）没有兼容edns，实际返回的结果带了IP但是客户端不支持edns协议所以解析不到（vipclient返回的格式、规范不对）</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/01/12/Docker中的DNS解析过程/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/01/12/Docker中的DNS解析过程/" itemprop="url">Docker中的DNS解析过程</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-12T10:30:03+08:00">
+                2019-01-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/dns/" itemprop="url" rel="index">
+                    <span itemprop="name">dns</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/01/12/Docker中的DNS解析过程/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2019/01/12/Docker中的DNS解析过程/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="Docker中的DNS解析过程"><a href="#Docker中的DNS解析过程" class="headerlink" title="Docker中的DNS解析过程"></a>Docker中的DNS解析过程</h1><h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><blockquote>
+<p>同一个Docker集群中两个容器中通过 nslookup 同一个域名，这个域名是容器启动的时候通过net alias指定的，但是返回来的IP不一样</p>
+</blockquote>
+<p>如图所示：</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/892a98b53c7f9e65da79d1d6d890c3b0.png" alt="image.png"></p>
+<p>图中上面的容器中 nslookup 返回来了两个IP，但是只有146是正确的，155是多出来，不对的。</p>
+<p>要想解决这个问题抓包就没用了，因为Docker 中的net alias 域名是 Docker Daemon自己来解析的，也就是在容器中做域名解析（nslookup、ping）的时候，Docker Daemon先看这个域名是不是net alias的，是的话返回对应的ip，如果不是（比如 www.baidu.com) ，那么Docker Daemon再把这个域名丢到宿主机上去解析，在宿主机上的解析过程就是标准的DNS，可以抓包分析。但是Docker Daemon内部的解析过程没有走DNS协议，不好分析，所以得先了解一下 Docker Daemon的域名解析原理</p>
+<p>具体参考文章： <a href="http://www.jianshu.com/p/4433f4c70cf0" target="_blank" rel="external">http://www.jianshu.com/p/4433f4c70cf0</a> <a href="http://www.bijishequ.com/detail/261401?p=70-67" target="_blank" rel="external">http://www.bijishequ.com/detail/261401?p=70-67</a></p>
+<h2 id="继续分析所有容器对这个域名的解析"><a href="#继续分析所有容器对这个域名的解析" class="headerlink" title="继续分析所有容器对这个域名的解析"></a>继续分析所有容器对这个域名的解析</h2><p>继续分析所有容器对这个域名的解析发现只有某一台宿主机上的有这个问题，而且这台宿主机上所有容器都有着问题，结合上面的文章，那么这个问题比较明朗了，这台有问题的宿主机的Docker Daemon中残留了一个net alias，你可以理解成cache中有脏数据没有清理。</p>
+<p>进而跟业务的同学们沟通，确实155这个IP的容器做过升级，改动过配置，可能升级前这个155也绑定过这个域名，但是升级后绑到146这个容器上去了，但是Docker Daemon中还残留这条记录。</p>
+<h2 id="重启Docker-Daemon后问题解决（容器不需要重启）"><a href="#重启Docker-Daemon后问题解决（容器不需要重启）" class="headerlink" title="重启Docker Daemon后问题解决（容器不需要重启）"></a>重启Docker Daemon后问题解决（容器不需要重启）</h2><p>重启Docker Daemon的时候容器还在正常运行，只是这段时间的域名解析会不正常，其它业务长连接都能正常运行，在Docker Daemon重启的时候它会去检查所有容器的endpoint、重建sandbox、清理network等等各种事情，所以就把这个脏数据修复掉了。</p>
+<p>在Docker Daemon重启过程中，会给每个容器构建DNS Resovler（setup-resolver），如果构建DNS Resovler这个过程中容器发送了大量域名查询过来同时这些域名又查询不到的话Docker Daemon在重启过程中需要等待这个查询超时，然后才能继续往下走重启流程，所以导致启动流程拉长<a href="https://www.atatech.org/articles/87339" target="_blank" rel="external">问题严重的时候导致Docker Daemon长时间无法启动</a></p>
+<p>Docker的域名解析为什么要这么做，是因为容器中有两种域名解析需求：</p>
+<ol>
+<li>容器启动时通过 net alias 命名的域名</li>
+<li>容器中正常对外网各种域名的解析（比如 baidu.com/api.taobao.com)</li>
+</ol>
+<p>对于第一种只能由docker daemon来解析了，所以容器中碰到的任何域名解析都会丢给 docker daemon(127.0.0.11), 如果 docker daemon 发现这个域名不认识，也就是不是net alias命名的域名，那么docker就会把这个域名解析丢给宿主机配置的 nameserver 来解析【非常非常像 dns-f/vipclient 的解析原理】</p>
+<h2 id="容器中的域名解析"><a href="#容器中的域名解析" class="headerlink" title="容器中的域名解析"></a>容器中的域名解析</h2><p>容器启动的时候读取宿主机的 /etc/resolv.conf (去掉127.0.0.1/16 的nameserver）然后当成容器的 /etc/resolv.conf, 但是实际在容器中看到的 /etc/resolve.conf 中的nameserver只有一个：127.0.0.11，因为如上描述nameserver都被代理掉了</p>
+<p>容器 -&gt; docker daemon(127.0.0.11) -&gt; 宿主机中的/etc/resolv.conf 中的nameserver</p>
+<p>如果宿主机中的/etc/resolv.conf 中的nameserver没有，那么daemon默认会用8.8.8.8/8.8.4.4来做下一级dns server，如果在一些隔离网络中（跟外部不通），那么域名解析就会超时，因为一直无法连接到 8.8.8.8/8.8.4.4 ，进而导致故障。</p>
+<p>比如 vipserver 中需要解析 armory的域名，如果这个时候在私有云环境，宿主机又没有配置 nameserver, 那么这个域名解析会发送给 8.8.8.8/8.8.4.4 ，长时间没有响应，超时后 vipserver 会关闭自己的探活功能，从而导致 vipserver 基本不可用一样。</p>
+<p>修改 宿主机的/etc/resolv.conf后 重新启动、创建的容器才会load新的nameserver</p>
+<h2 id="如果容器中需要解析vipserver中的域名"><a href="#如果容器中需要解析vipserver中的域名" class="headerlink" title="如果容器中需要解析vipserver中的域名"></a>如果容器中需要解析vipserver中的域名</h2><ol>
+<li>容器中安装vipclient，同时容器的 /etc/resolv.conf 配置 nameserver 127.0.0.1 </li>
+<li>要保证vipclient起来之后才能启动业务</li>
+</ol>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/01/10/windows7的wifi总是报DNS域名异常无法上网/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/01/10/windows7的wifi总是报DNS域名异常无法上网/" itemprop="url">windows7的wifi总是报DNS域名异常无法上网</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-10T10:30:03+08:00">
+                2019-01-10
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/dns/" itemprop="url" rel="index">
+                    <span itemprop="name">dns</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/01/10/windows7的wifi总是报DNS域名异常无法上网/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2019/01/10/windows7的wifi总是报DNS域名异常无法上网/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="windows7的wifi总是报DNS域名异常无法上网"><a href="#windows7的wifi总是报DNS域名异常无法上网" class="headerlink" title="windows7的wifi总是报DNS域名异常无法上网"></a>windows7的wifi总是报DNS域名异常无法上网</h1><p>Windows7笔记本+公司wifi（dhcp）环境下，用着用着dns服务不可用（无法通过域名上网，通过IP地址可以访问），这里有个一模一样的Case了：<a href="https://superuser.com/questions/629559/why-is-my-computer-suddenly-using-nbns-instead-of-dns" target="_blank" rel="external">https://superuser.com/questions/629559/why-is-my-computer-suddenly-using-nbns-instead-of-dns</a> 一样的环境，看来这个问题也不只是我一个人碰到了。</p>
+<p>其实之前一直有，一个月偶尔出来一两次，以为是其他原因就没管，这次换了新电脑还是这个毛病有点不能忍，于是决定彻底解决一下。</p>
+<p>这个问题出现后，通过下面三个办法都可以让DNS恢复正常：</p>
+<ol>
+<li>重启系统大法，恢复正常</li>
+<li>禁用wifi驱动再启用，恢复正常</li>
+<li>不用DHCP，而是手工填入一个DNS服务器，比如114.114.114.114【公司域名就无法解析了】</li>
+</ol>
+<p>如果只是停用一下wifi再启用问题还在。</p>
+<h2 id="找IT升级了网卡驱动不管用"><a href="#找IT升级了网卡驱动不管用" class="headerlink" title="找IT升级了网卡驱动不管用"></a>找IT升级了网卡驱动不管用</h2><h2 id="重现的时候抓包看看"><a href="#重现的时候抓包看看" class="headerlink" title="重现的时候抓包看看"></a>重现的时候抓包看看</h2><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/c110f232829cbea9d5503166531d7f1d.png" alt="image.png"></p>
+<p>这肯定不对了，254上根本就没有跑DNS服务，可是当时没有检查 ipconfig，看看是否将网关IP动态配置到dns server里面去了，等下次重现后再确认吧。</p>
+<p>第二次重现后抓包，发现不一样了：</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/295797df3c311d6902d68fb16f6212d8.png" alt="image.png"></p>
+<p>出来一个 NBNS 的鬼东西，赶紧查了一下，把它禁掉，如下图所示：</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/9f06b680ae1f8b4cb781360f7c0ac2eb.png" alt="image.png"></p>
+<p>把NBNS服务关了就能上网了，同时也能抓到各种DNS Query包</p>
+<h2 id="事情没有这么简单"><a href="#事情没有这么简单" class="headerlink" title="事情没有这么简单"></a>事情没有这么简单</h2><p>过一段时间后还是会出现上面的症状，但是因为NBNS关闭了，所以这次 ping www.baidu.com 的时候没有任何包了，没有DNS Query包，也没有NBNS包，这下好尴尬。</p>
+<p>尝试Enable NBNS，又恢复了正常，看来<strong>开关 NBNS 仍然只是一个workaround，他不是导致问题的根因</strong>，开关一下没有真正解决问题，只是临时相当于重启了dns修复了问题而已。</p>
+<p>继续在网络不通的时候尝试直接ping dns server ip，发现一个奇怪的现象，丢包很多，丢包的时候还总是从 192.168.0.11返回来的，这就奇怪了，我的笔记本基本IP是30开头的，dns server ip也是30开头的，route 路由表也是对的，怎么就走到 192.168.0.11 上了啊（<a href="https://www.atatech.org/articles/80573" target="_blank" rel="external">参考我的另外一篇文章，网络到底通不通</a>），赶紧 ipconfig /all | grep 192 </p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/5212ee5e7496dafb122ce144293184e1.png" alt="image.png"></p>
+<p>发现这个IP是VirtualBox虚拟机在笔记本上虚拟出来的网卡IP，这下我倒是能理解为啥总是我碰到这个问题了，因为我的工作笔记本一拿到后第一件事情就是装VirtualBox 跑虚拟机。</p>
+<p>VirtualBox为啥导致了这个问题就是一个很偏的方向，我实在无能为力了，尝试找到了一个和VirtualBox的DNS相关的开关命令，只能死马当活马医了（像极了算命大师和老中医）</p>
+<pre><code>./VBoxManage.exe  modifyvm &quot;ubuntu&quot; --natdnshostresolver1 on
+</code></pre><p>执行完上面的命令观察了3个月了，暂时没有再出现这个问题，相对于以前轻则一个月2、3次，重则一天出现5、6次，应该算是解决了，同时升级 VirtualBox 也无法解决这个问题。</p>
+<p>route 信息：</p>
+<pre><code>$route PRINT -4
+===========================================================================
+接口列表
+ 23...00 ff c1 57 7f 12 ......Sangfor SSL VPN CS Support System VNIC
+ 18...f6 96 34 38 76 06 ......Microsoft Virtual WiFi Miniport Adapter #2
+ 17...f6 96 34 38 76 07 ......Microsoft Virtual WiFi Miniport Adapter
+ 15...00 ff 1f 24 e6 6c ......Sophos SSL VPN Adapter
+ 12...f4 96 34 38 76 06 ......Intel(R) Dual Band Wireless-AC 8260
+ 11...54 ee 75 d4 99 ae ......Intel(R) Ethernet Connection I219-V
+ 14...0a 00 27 00 00 0e ......VirtualBox Host-Only Ethernet Adapter
+  1...........................Software Loopback Interface 1
+ 25...00 00 00 00 00 00 00 e0 Microsoft ISATAP Adapter
+ 19...00 00 00 00 00 00 00 e0 Microsoft ISATAP Adapter #9
+ 26...00 00 00 00 00 00 00 e0 Microsoft ISATAP Adapter #2
+ 27...00 00 00 00 00 00 00 e0 Microsoft ISATAP Adapter #3
+ 22...00 00 00 00 00 00 00 e0 Microsoft ISATAP Adapter #7
+ 21...00 00 00 00 00 00 00 e0 Microsoft ISATAP Adapter #5
+ 20...00 00 00 00 00 00 00 e0 Microsoft 6to4 Adapter #2
+ 16...00 00 00 00 00 00 00 e0 Teredo Tunneling Pseudo-Interface
+ 24...00 00 00 00 00 00 00 e0 Microsoft ISATAP Adapter #8
+===========================================================================
+
+IPv4 路由表
+===========================================================================
+活动路由:
+网络目标网络掩码  网关   接口   跃点数
+  0.0.0.0  0.0.0.0192.168.0.250169.254.24.89266
+  0.0.0.0  0.0.0.030.27.115.254 30.27.112.21 20
+  30.27.112.0255.255.252.0在链路上  30.27.112.21276
+ 30.27.112.21  255.255.255.255在链路上  30.27.112.21276
+30.27.115.255  255.255.255.255在链路上  30.27.112.21276
+127.0.0.0255.0.0.0在链路上 127.0.0.1306
+127.0.0.1  255.255.255.255在链路上 127.0.0.1306
+  127.255.255.255  255.255.255.255在链路上 127.0.0.1306
+  169.254.0.0  255.255.0.0在链路上 169.254.24.89266
+169.254.24.89  255.255.255.255在链路上 169.254.24.89266
+  169.254.255.255  255.255.255.255在链路上 169.254.24.89266
+224.0.0.0240.0.0.0在链路上 127.0.0.1306
+224.0.0.0240.0.0.0在链路上 169.254.24.89266
+224.0.0.0240.0.0.0在链路上  30.27.112.21276
+  255.255.255.255  255.255.255.255在链路上 127.0.0.1306
+  255.255.255.255  255.255.255.255在链路上 169.254.24.89266
+  255.255.255.255  255.255.255.255在链路上  30.27.112.21276
+===========================================================================
+永久路由:
+  网络地址  网络掩码  网关地址  跃点数
+  0.0.0.0  0.0.0.0192.168.0.250 默认
+  0.0.0.0  0.0.0.0192.168.0.250 默认
+===========================================================================
+</code></pre><h2 id="另外DHCP也许可以做一些事情，至少同样的用法在以前的公司网络环境没有出过问题"><a href="#另外DHCP也许可以做一些事情，至少同样的用法在以前的公司网络环境没有出过问题" class="headerlink" title="另外DHCP也许可以做一些事情，至少同样的用法在以前的公司网络环境没有出过问题"></a>另外DHCP也许可以做一些事情，至少同样的用法在以前的公司网络环境没有出过问题</h2><p>下面是来自微软官方的建议：</p>
+<blockquote>
+<p> One big advise – do not disable the DHCP Client service on any server, whether the machine is a DHCP client or statically configured. Somewhat of a misnomer, this service performs Dynamic DNS registration and is tied in with the client resolver service. If disabled on a DC, you’ll get a slew of errors, and no DNS queries will get resolved.</p>
+<p>No DNS Name Resolution If DHCP Client Service Is Not Running. When you try to resolve a host name using Domain Name Service (DNS), the attempt is unsuccessful. Communication by Internet Protocol (IP) address (even to …</p>
+<p><a href="http://support.microsoft.com/kb/268674" target="_blank" rel="external">http://support.microsoft.com/kb/268674</a></p>
+</blockquote>
+<p>from： <a href="https://blogs.msmvps.com/acefekay/2009/11/29/dns-wins-netbios-amp-the-client-side-resolver-browser-service-disabling-netbios-direct-hosted-smb-directsmb-if-one-dc-is-down-does-a-client-logon-to-another-dc-and-dns-forwarders-algorithm/#section4" target="_blank" rel="external">https://blogs.msmvps.com/acefekay/2009/11/29/dns-wins-netbios-amp-the-client-side-resolver-browser-service-disabling-netbios-direct-hosted-smb-directsmb-if-one-dc-is-down-does-a-client-logon-to-another-dc-and-dns-forwarders-algorithm/#section4</a></p>
+<h2 id="NBNS也许会导致nslookup-OK-but-ping-fail的问题"><a href="#NBNS也许会导致nslookup-OK-but-ping-fail的问题" class="headerlink" title="NBNS也许会导致nslookup OK but ping fail的问题"></a>NBNS也许会导致nslookup OK but ping fail的问题</h2><p><a href="https://www.experts-exchange.com/questions/28894006/NetBios-name-resolution-instead-of-DNS.html" target="_blank" rel="external">https://www.experts-exchange.com/questions/28894006/NetBios-name-resolution-instead-of-DNS.html</a></p>
+<p>The Windows Client Resolver（ping dns流程）</p>
+<ol>
+<li>Windows checks whether the host name is the same as the local host name.</li>
+<li>If the host name and local host name are not the same, Windows searches the DNS client resolver cache.</li>
+<li>If the host name cannot be resolved using the DNS client resolver cache, Windows sends DNS Name Query Request messages to its configured DNS servers.</li>
+<li>If the host name is a single-label name (such as server1) and cannot be resolved using the configured DNS servers, Windows converts the host name to a NetBIOS name and checks its local NetBIOS name cache.</li>
+<li>If Windows cannot find the NetBIOS name in the NetBIOS name cache, Windows contacts its configured WINS servers.</li>
+<li>If Windows cannot resolve the NetBIOS name by querying its configured WINS servers, Windows broadcasts as many as three NetBIOS Name Query Request messages on the directly attached subnet.</li>
+<li>If there is no reply to the NetBIOS Name Query Request messages, Windows searches the local Lmhosts file.<br>Ping</li>
+</ol>
+<p>windows下nslookup 流程</p>
+<ol>
+<li>Check the DNS resolver cache. This is true for records that were cached via a previous name query or records that are cached as part of a pre-load operation from updating the hosts file.</li>
+<li>Attempt NetBIOS name resolution.</li>
+<li>Append all suffixes from the suffix search list.</li>
+<li>When a Primary Domain Suffix is used, nslookup will only take devolution 3 levels.</li>
+</ol>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>碰到问题绕过去也不是长久之计，还是要从根本上了解问题的本质，这个问题在其它公司没有碰到过，我觉得跟公司的DNS、DHCP的配置也有点关系吧，但是这个我不好确认，应该还有好多用Windows本本的同学同样会碰到这个问题的，希望对你们有些帮助</p>
+<p><a href="https://support.microsoft.com/en-us/help/172218/microsoft-tcp-ip-host-name-resolution-order" target="_blank" rel="external">https://support.microsoft.com/en-us/help/172218/microsoft-tcp-ip-host-name-resolution-order</a></p>
+<p><a href="http://www.man7.org/linux/man-pages/man5/resolv.conf.5.html" target="_blank" rel="external">http://www.man7.org/linux/man-pages/man5/resolv.conf.5.html</a></p>
+<hr>
+<h2 id="本文附带鸡汤："><a href="#本文附带鸡汤：" class="headerlink" title="本文附带鸡汤："></a>本文附带鸡汤：</h2><p><strong>有些技能初学很难，大家水平都差不多，但是日积月累就会形成极强的优势，而且一旦突破某个临界点，它就会突飞猛进，这种技能叫指数型技能，是值得长期投资的，比如物理学就是一种指数型技能。</strong></p>
+<p>那么抓包算不算呢？​​</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/01/09/nslookup-OK-but-ping-fail/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -3111,7 +3688,7 @@ ProxyCommand ssh -l root 2.2.2.2 exec /usr/bin/nc %h %p
         
           <h2 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2018/01/01/通过tcpdump对Unix Socket 进行抓包解析/" itemprop="url">通过tcpdump对Unix Socket 进行抓包解析</a></h2>
+                <a class="post-title-link" href="/2018/01/01/通过tcpdump对Unix Socket 进行抓包解析/" itemprop="url">通过tcpdump对Unix Domain Socket 进行抓包解析</a></h2>
         
 
         <div class="post-meta">
@@ -3193,18 +3770,18 @@ ProxyCommand ssh -l root 2.2.2.2 exec /usr/bin/nc %h %p
       
         
           
-            <h1 id="通过tcpdump对Unix-Socket-进行抓包解析"><a href="#通过tcpdump对Unix-Socket-进行抓包解析" class="headerlink" title="通过tcpdump对Unix Socket 进行抓包解析"></a>通过tcpdump对Unix Socket 进行抓包解析</h1><h2 id="背景介绍"><a href="#背景介绍" class="headerlink" title="背景介绍"></a>背景介绍</h2><p>大多时候我们可以通过tcpdump对网络抓包分析请求、响应数据来排查问题。但是如果程序是通过Unix Socket方式来访问的那么tcpdump就看不到Unix Socket里面具体流淌的内容了，本文希望找到一种方法达到如同抓包查看网卡内容一样来抓包查看Unix Socket上具体的请求、响应数据。</p>
+            <h1 id="通过tcpdump对Unix-domain-Socket-进行抓包解析"><a href="#通过tcpdump对Unix-domain-Socket-进行抓包解析" class="headerlink" title="通过tcpdump对Unix domain Socket 进行抓包解析"></a>通过tcpdump对Unix domain Socket 进行抓包解析</h1><h2 id="背景介绍"><a href="#背景介绍" class="headerlink" title="背景介绍"></a>背景介绍</h2><p>大多时候我们可以通过tcpdump对网络抓包分析请求、响应数据来排查问题。但是如果程序是通过Unix Domain Socket方式来访问的那么tcpdump就看不到Unix Domain Socket里面具体流淌的内容了，本文希望找到一种方法达到如同抓包查看网卡内容一样来抓包查看Unix Domain Socket上具体的请求、响应数据。</p>
 <h2 id="socat工具"><a href="#socat工具" class="headerlink" title="socat工具"></a>socat工具</h2><p>类似nc，但是是个超级增强版的nc，<a href="https://payloads.online/tools/socat" target="_blank" rel="external">主要用作两个独立数据通道之间的双向数据传输的继电器（或者说代理）</a></p>
 <p>基本原理，通过socat在Unix-Socket和TCP/UDP port之间建立一个代理，然后对代理上的端口进行抓包。</p>
 <p>以下案例通过对 docker.sock 抓包来分析方案。大多时候我们都可以通过curl 来将http post请求发送到docker deamon所监听的端口，这些请求和响应都可以通过tcpdump抓包分析得到。但是我们通过 docker ps / docker run 将命令发给本地 docker-deamon的时候就是将请求翻译成 http请求发给了 docker.sock, 这个时候如果需要排查问题就没法用tcpdump来分析http内容了。</p>
-<h2 id="通过socat-启动一个tcp端口来代理unix-socket"><a href="#通过socat-启动一个tcp端口来代理unix-socket" class="headerlink" title="通过socat 启动一个tcp端口来代理unix socket"></a>通过socat 启动一个tcp端口来代理unix socket</h2><p>启动本地8080端口，将docker.sock映射到8080端口,8080收到的东西都会转给docker.sock，docker.sock收到的东西都通过抓8080的包看到,但是要求应用访问8080而不是docker.sock。</p>
+<h2 id="通过socat-启动一个tcp端口来代理Unix-Domain-Socket"><a href="#通过socat-启动一个tcp端口来代理Unix-Domain-Socket" class="headerlink" title="通过socat 启动一个tcp端口来代理Unix Domain Socket"></a>通过socat 启动一个tcp端口来代理Unix Domain Socket</h2><p>启动本地8080端口，将docker.sock映射到8080端口,8080收到的东西都会转给docker.sock，docker.sock收到的东西都通过抓8080的包看到,但是要求应用访问8080而不是docker.sock。</p>
 <pre><code>socat -d -d TCP-LISTEN:8080,fork,bind=127.0.0.1 UNIX:/var/run/docker.sock
 </code></pre><p><strong>缺点：需要修改客户端的访问方式</strong></p>
 <pre><code>sudo curl --unix-socket /var/run/docker.sock http://localhost/images/json
 </code></pre><p>上面的访问方式对8080抓包还是抓不到，因为绕过了我们的代理。</p>
 <p>只能通过如下方式访问8080端口，然后请求通过socat代理转发给docker.sock，整个结果跟访问–unix-socket是一样的，这个时候通过8080端口抓包能看到–unix-socket的工作数据</p>
 <pre><code>sudo curl http://localhost:8080/images/json
-</code></pre><h2 id="通过socat启动另外一个unix-socket代理，但是不是tcpdump抓包"><a href="#通过socat启动另外一个unix-socket代理，但是不是tcpdump抓包" class="headerlink" title="通过socat启动另外一个unix socket代理，但是不是tcpdump抓包"></a>通过socat启动另外一个unix socket代理，但是不是tcpdump抓包</h2><pre><code>sudo mv /var/run/docker.sock /var/run/docker.sock.original
+</code></pre><h2 id="通过socat启动另外一个Unix-Domain-Socket代理，但是不是tcpdump抓包"><a href="#通过socat启动另外一个Unix-Domain-Socket代理，但是不是tcpdump抓包" class="headerlink" title="通过socat启动另外一个Unix Domain Socket代理，但是不是tcpdump抓包"></a>通过socat启动另外一个Unix Domain Socket代理，但是不是tcpdump抓包</h2><pre><code>sudo mv /var/run/docker.sock /var/run/docker.sock.original
 sudo socat -t100 -d -x -v UNIX-LISTEN:/var/run/docker.sock,mode=777,reuseaddr,fork UNIX-CONNECT:/var/run/docker.sock.original
 </code></pre><p>优点：客户端访问方式不变，还是直接访问–unix-socket<br>缺点：输出的数据不如tcpdump方便，也就不能用wireshark来分析了</p>
 <p>本质也还是socat代理，只是不是用的一个tcp端口来代理了，而是通过一个unix-socet代理了另外一个unix-socket，直接在代理上输出所有收发的数据</p>
@@ -3217,7 +3794,7 @@ sudo socat UNIX-LISTEN:/var/run/docker.sock,fork TCP-CONNECT:127.0.0.1:8089
 </code></pre><p>实际是结合前面两种方法，做了两次代理，先将socket映射到8089端口上，然后再将8089端口映射到一个新的socket上，最后client访问这个新的socket。</p>
 <p>实际流程如下： client -&gt; 新socket -&gt; 8089 -&gt; 原来的socket  这个时候对8089可以任意抓包了</p>
 <p>参考来源：<a href="https://mivehind.net/2018/04/20/sniffing-unix-domain-sockets/" target="_blank" rel="external">https://mivehind.net/2018/04/20/sniffing-unix-domain-sockets/</a>    </p>
-<h2 id="一些socat的其它用法"><a href="#一些socat的其它用法" class="headerlink" title="一些socat的其它用法"></a>一些socat的其它用法</h2><p> 把监听在远程主机12.34.56.78上的mysql服务unix socket映射到本地的/var/run/mysqld.temp.sock, 这样就可以用mysql -S /var/run/mysqld/mysqld.sock来访问远程主机的mysql服务了。</p>
+<h2 id="一些socat的其它用法"><a href="#一些socat的其它用法" class="headerlink" title="一些socat的其它用法"></a>一些socat的其它用法</h2><p> 把监听在远程主机12.34.56.78上的mysql服务Unix Domain Socket映射到本地的/var/run/mysqld.temp.sock, 这样就可以用mysql -S /var/run/mysqld/mysqld.sock来访问远程主机的mysql服务了。</p>
 <pre><code>socat &quot;UNIX-LISTEN:/var/run/mysqld.temp.sock,reuseaddr,fork&quot; EXEC:&quot;ssh root@12.34.56.78 socat STDIO UNIX-CONNECT:/var/run/mysqld/mysqld.sock&quot;
 </code></pre><p> 还可以用下面的命令把12.34.56.78上的mysql映射到本地的5500端口，然后使用mysql -p 5500命令访问。</p>
 <pre><code>socat TCP-LISTEN:5500 EXEC:&apos;ssh root@12.34.56.78 &quot;socat STDIO UNIX-CONNECT:/var/run/mysqld/mysqld.sock&quot;&apos;
@@ -3230,12 +3807,12 @@ Client: socat -dd - tcp:localhost:2000,keepalive,keepidle=10,keepcnt=2,keepintvl
 Drop Connection (Unplug Cable, Shut down Link(WiFi/Interface)): sudo iptables -A INPUT -p tcp --dport 2000 -j DROP
 </code></pre><p>启动本地8080端口，将docker.sock映射到8080端口(docker.sock收到的东西都通过抓8080的包看到)。 8080收到的东西都会转给docker.sock</p>
 <pre><code>socat -d -d TCP-LISTEN:8080,fork,bind=99.13.252.208 UNIX:/var/run/docker.sock
-</code></pre><h3 id="用socat远程Unix-Socket映射"><a href="#用socat远程Unix-Socket映射" class="headerlink" title="用socat远程Unix Socket映射"></a>用socat远程Unix Socket映射</h3><p>除了将我们本地服务通过端口映射提供给其它人访问，我们还可以通过端口转发玩一些更high的。比如下面这条命令，它把监听在远程主机12.34.56.78上的mysql服务unix socket映射到本地的/var/run/mysqld.temp.sock，这样，小明就可以用mysql -S /var/run/mysqld/mysqld.temp.sock来访问远程主机的mysql服务了。</p>
+</code></pre><h3 id="用socat远程Unix-Domain-Socket映射"><a href="#用socat远程Unix-Domain-Socket映射" class="headerlink" title="用socat远程Unix Domain Socket映射"></a>用socat远程Unix Domain Socket映射</h3><p>除了将我们本地服务通过端口映射提供给其它人访问，我们还可以通过端口转发玩一些更high的。比如下面这条命令，它把监听在远程主机12.34.56.78上的mysql服务Unix Domain Socket映射到本地的/var/run/mysqld.temp.sock，这样，小明就可以用mysql -S /var/run/mysqld/mysqld.temp.sock来访问远程主机的mysql服务了。</p>
 <pre><code>socat &quot;UNIX-LISTEN:/var/run/mysqld.temp.sock,reuseaddr,fork&quot; EXEC:&quot;ssh root@12.34.56.78 socat STDIO UNIX-CONNECT\:/var/run/mysqld/mysqld.sock&quot;
-</code></pre><p>当然，小明如果不喜欢本地unix socket，他还可以用下面的命令把12.34.56.78上的mysql映射到本地的5500端口，然后使用mysql -p 5500命令访问。</p>
+</code></pre><p>当然，小明如果不喜欢本地Unix Domain Socket，他还可以用下面的命令把12.34.56.78上的mysql映射到本地的5500端口，然后使用mysql -p 5500命令访问。</p>
 <pre><code>socat TCP-LISTEN:5500 EXEC:&apos;ssh root@12.34.56.78 &quot;socat STDIO UNIX-CONNECT:/var/run/mysqld/mysqld.sock&quot;&apos;
 
-# 把监听在远程主机12.34.56.78上的mysql服务unix socket映射到本地的/var/run/mysqld.temp.sock, 这样就可以用mysql -S /var/run/mysqld/mysqld.sock来访问远程主机的mysql服务了。
+# 把监听在远程主机12.34.56.78上的mysql服务Unix Domain Socket映射到本地的/var/run/mysqld.temp.sock, 这样就可以用mysql -S /var/run/mysqld/mysqld.sock来访问远程主机的mysql服务了。
 socat &quot;UNIX-LISTEN:/var/run/mysqld.temp.sock,reuseaddr,fork&quot; EXEC:&quot;ssh root@12.34.56.78 socat STDIO UNIX-CONNECT:/var/run/mysqld/mysqld.sock&quot;
 # 还可以用下面的命令把12.34.56.78上的mysql映射到本地
 # 的5500端口，然后使用mysql -p 5500命令访问。
@@ -4237,486 +4814,6 @@ msg_size  =4 KiB (4,096)
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/08/28/netstat --timer/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/08/28/netstat --timer/" itemprop="url">netstat timer keepalive explain</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-08-28T10:30:03+08:00">
-                2017-08-28
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/network/" itemprop="url" rel="index">
-                    <span itemprop="name">network</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2017/08/28/netstat --timer/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2017/08/28/netstat --timer/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="netstat-–-timer"><a href="#netstat-–-timer" class="headerlink" title="netstat – timer"></a>netstat – timer</h1><p>from: <a href="https://superuser.com/questions/240456/how-to-interpret-the-output-of-netstat-o-netstat-timers" target="_blank" rel="external">https://superuser.com/questions/240456/how-to-interpret-the-output-of-netstat-o-netstat-timers</a></p>
-<p>The timer column has two fields (from your o/p above):</p>
-<p>keepalive (6176.47/0/0)  </p>
-<p><1st field=""> <2nd field=""><br>The 1st field can have values:<br>keepalive - when the keepalive timer is ON for the socket<br>on - when the retransmission timer is ON for the socket<br>off - none of the above is ON</2nd></1st></p>
-<p>The 2nd field has THREE subfields:</p>
-<p>(6176.47/0/0) -&gt; (a/b/c)<br>a=timer value (a=keepalive timer, when 1st field=“keepalive”; a=retransmission timer, when 1st field=“on”)<br>b=number of retransmissions that have occurred<br>c=number of keepalive probes that have been sent</p>
-<p>For example, I had two sockets opened between a client &amp; a server (not loopback). The keepalive setting are:</p>
-<p>KEEPALIVE_IDLETIME   30<br>KEEPALIVE_NUMPROBES   4<br>KEEPALIVE_INTVL      10<br>And I did a shutdown of the client machine, so at …SHED on (2.47/254/2)<br>tcp        0    210 192.0.0.1:36483             192.0.68.1:43881            ESTABLISHED on (1.39/254/2)<br>tcp        0    210 192.0.0.1:36483             192.0.68.1:43881            ESTABLISHED on (0.31/254/2)<br>tcp        0    210 192.0.0.1:36483             192.0.68.1:43881            ESTABLISHED on (2.19/255/2)<br>tcp        0    210 192.0.0.1:36483             192.0.68.1:43881            ESTABLISHED on (1.12/255/2)<br>As you can see, in this case things are a little different. When the client went down, my server started sending keepalive messages, but while it was still sending those keepalives, my server tried to send a message to the client. Since the client had gone down, the server couldn’t get any ACK from the client, so the TCP retransmission started and the server tried to send the data again, each time incrementing the retransmit count (2nd field) when the retransmission timer (1st field) expired.</p>
-<p>Hope this explains the netstat –timer option well.</p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/08/03/就是要你懂TCP--一个没有遵守tcp规则导致的问题/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/08/03/就是要你懂TCP--一个没有遵守tcp规则导致的问题/" itemprop="url">一个没有遵守tcp规则导致的问题</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-08-03T19:30:03+08:00">
-                2017-08-03
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/tcp/" itemprop="url" rel="index">
-                    <span itemprop="name">tcp</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2017/08/03/就是要你懂TCP--一个没有遵守tcp规则导致的问题/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2017/08/03/就是要你懂TCP--一个没有遵守tcp规则导致的问题/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="就是要你懂TCP–一个没有遵守tcp规则导致的问题"><a href="#就是要你懂TCP–一个没有遵守tcp规则导致的问题" class="headerlink" title="就是要你懂TCP–一个没有遵守tcp规则导致的问题"></a>就是要你懂TCP–一个没有遵守tcp规则导致的问题</h1><h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><p>应用连接数据库一段时间后，执行SQL的时候总是抛出异常，通过抓包分析发现每次发送SQL给数据的时候，数据库总是Reset这个连接</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/3ea1a415f772af24d8f619a38542eb7e.png" alt="image.png"></p>
-<p>注意图中34号包，server（5029）发了一个fin包给client ，想要断开连接。client没断开，接着发了一个查询SQL给server。</p>
-<p>进一步分析所有断开连接（发送第一个fin包）的时间点，得到如图：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/0ac00bfe8dcf87fa5c4997c89a16eb59.png" alt="image.png"></p>
-<p>基本上可以猜测，server（5029端口）在建立连接100秒终止后如果没有任何请求过来就主动发送fin包给client，要断开连接，但是这个时候client比较无耻，收到端口请求后没搭理（除非是故意的），这个时候意味着server准备好关闭了，也不会再给client发送数据了（ack除外）。</p>
-<p>但是client虽然收到了fin断开连接的请求不但不理，过一会还不识时务发SQL查询给server，server一看不懂了（server早就申明连接关闭，没法发数据给client了），就只能回复reset，强制告诉client断开连接吧，client这时才迫于无奈断开了这次连接（图一绿框）</p>
-<p>client的应用代码层肯定会抛出异常。</p>
-<h3 id="server强行断开连接"><a href="#server强行断开连接" class="headerlink" title="server强行断开连接"></a>server强行断开连接</h3><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/eca804fbb71e9cdfb033a9c072d8b72d.png" alt="image.png"></p>
-<p>18745号包，client发了一个查询SQL给server，server先是回复ack 18941号包，然后回复fin 19604号包，强行断开连接，client端只能抛异常了</p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/08/01/如何徒手撕Bug/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/08/01/如何徒手撕Bug/" itemprop="url">如何徒手撕Bug</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-08-01T10:30:03+08:00">
-                2017-08-01
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/performance/" itemprop="url" rel="index">
-                    <span itemprop="name">performance</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2017/08/01/如何徒手撕Bug/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2017/08/01/如何徒手撕Bug/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="如何徒手撕Bug"><a href="#如何徒手撕Bug" class="headerlink" title="如何徒手撕Bug"></a>如何徒手撕Bug</h1><p>经常碰到bug，如果有源代码，或者源代码比较简单一般通过bug现象结合读源代码，基本能比较快解决掉。但是有些时候源代码过于复杂，比如linux kernel，比如 docker，复杂的另一方面是没法比较清晰地去理清源代码的结构。</p>
-<p>所以不到万不得已不要碰积极复杂的源代码</p>
-<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>docker daemon重启，上面有几十个容器，重启后daemon基本上卡死不动了。 docker ps/exec 都没有任何响应，同时能看到很多这样的进程：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/ed7f275935b32c7fd5fef3e0caf2eb0c.png" alt="image.png"></p>
-<p>这个进程是docker daemon在启动的时候去设置每个容器的iptables，来实现dns解析。</p>
-<p>这个时候执行 sudo iptables -L 也告诉你有其他应用锁死iptables了：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/901fd2057fb3b32ff79dc5a29c9cdd67.png" alt="image.png"></p>
-<pre><code>$sudo fuser /run/xtables.lock 
-/run/xtables.lock:1203  5544 10161 14451 14482 14503 14511 14530 14576 14602 14617 14637 14659 14664 14680 14698 14706 14752 14757 14777 14807 14815 14826 14834 14858 14872 14889 14915 14972 14973 14979 14991 15006 15031 15067 15076 15104 15127 15155 15176 15178 15179 15180 16506 17656 17657 17660 21904 21910 24174 28424 29741 29839 29847 30018 32418 32424 32743 33056 33335 59949 64006
-</code></pre><p>通过上面的命令基本可以看到哪些进程在等iptables这个锁，之所以有这么多进程在等这个锁，应该是拿到锁的进程执行比较慢所以导致后面的进程拿不到锁，卡在这里</p>
-<h2 id="跟踪具体拿到锁的进程"><a href="#跟踪具体拿到锁的进程" class="headerlink" title="跟踪具体拿到锁的进程"></a>跟踪具体拿到锁的进程</h2><pre><code>$sudo lsof  /run/xtables.lock | grep 3rW
-iptables 36057 root3rW  REG   0,190 48341 /run/xtables.lock
-</code></pre><p>通过strace这个拿到锁的进程可以看到：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/27d266ab8fd492f009fb7047d9337518.png" alt="image.png"></p>
-<p>发现在这个配置容器dns的进程同时还在执行一些dns查询任务（容器发起了dns查询），但是这个时候dns还没配置好，所以这个查询会超时</p>
-<p>看看物理机上的dns服务器配置：</p>
-<pre><code>$cat /etc/resolv.conf   
-options timeout:2 attempts:2   
-nameserver 10.0.0.1  
-nameserver 10.0.0.2
-nameserver 10.0.0.3
-</code></pre><p>尝试将 timeout 改到20秒、1秒分别验证一下，发现如果timeout改到20秒strace这里也会卡20秒，如果是1秒（这个时候attempts改成1，后面两个dns去掉），那么整体没有感知到任何卡顿，就是所有iptables修改的进程都很快执行完毕了</p>
-<h2 id="strace某个等锁的进程，拿到锁后非常快"><a href="#strace某个等锁的进程，拿到锁后非常快" class="headerlink" title="strace某个等锁的进程，拿到锁后非常快"></a>strace某个等锁的进程，拿到锁后非常快</h2><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/25ab3e2385e08e8e23eeb1309d949839.png" alt="image.png"></p>
-<p>拿到锁后如果这个时候没有收到 dns 查询，那么很快iptables修改完毕，也不会导致卡住</p>
-<h2 id="我的分析"><a href="#我的分析" class="headerlink" title="我的分析"></a>我的分析</h2><p>docker启动的时候要修改每个容器的dns（iptables规则），如果这个时候又收到了dns查询，但是查询的时候dns还没配置好，所以只能等待dns默认超时，等到超时完了再往后执行修改dns动作然后释放iptables锁。这里会发生恶性循环，导致dns修改时占用iptables的时间非常长，进而看着像把物理机iptables锁死，同时docker daemon不响应任何请求。</p>
-<p>这应该是docker daemon实现上的小bug，也就是改iptables这里没加锁，如果修改dns的时候同时收到了dns查询，要是让查询等锁的话就不至于出现这种恶性循环</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>其实这个问题还是挺容易出现的，daemon重启，上面有很多容器，容器里面的任务启动的时候都要做dns解析，这个时候daemon还在修改dns，冲进来很多dns查询的话会导致修改进程变慢</p>
-<p>这也跟物理机的 /etc/resolv.conf 配置有关</p>
-<p>暂时先只留一个dns server，同时把timeout改成1秒（似乎没法改成比1秒更小），同时 attempts:1 ，也就是加快dns查询的失败，当然这会导致应用启动的时候dns解析失败，最终还是需要从docker的源代码修复这个问题。</p>
-<p>解决过程中无数次想放弃，但是反复在那里strace，正是看到了有dns和没有dns查询的两个strace才想清楚这个问题，感谢自己的坚持和很多同事的帮助，手撕的过程中必然有很多不理解的东西，需要请教同事</p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
@@ -4766,7 +4863,7 @@ nameserver 10.0.0.3
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">76</span>
+                <span class="site-state-item-count">79</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -4777,7 +4874,7 @@ nameserver 10.0.0.3
             
             <div class="site-state-item site-state-categories">
               
-                <span class="site-state-item-count">20</span>
+                <span class="site-state-item-count">21</span>
                 <span class="site-state-item-name">分类</span>
               
             </div>
@@ -4788,7 +4885,7 @@ nameserver 10.0.0.3
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">160</span>
+                <span class="site-state-item-count">162</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>

@@ -261,6 +261,486 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/08/28/netstat --timer/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/08/28/netstat --timer/" itemprop="url">netstat timer keepalive explain</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-08-28T10:30:03+08:00">
+                2017-08-28
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/network/" itemprop="url" rel="index">
+                    <span itemprop="name">network</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2017/08/28/netstat --timer/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2017/08/28/netstat --timer/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="netstat-–-timer"><a href="#netstat-–-timer" class="headerlink" title="netstat – timer"></a>netstat – timer</h1><p>from: <a href="https://superuser.com/questions/240456/how-to-interpret-the-output-of-netstat-o-netstat-timers" target="_blank" rel="external">https://superuser.com/questions/240456/how-to-interpret-the-output-of-netstat-o-netstat-timers</a></p>
+<p>The timer column has two fields (from your o/p above):</p>
+<p>keepalive (6176.47/0/0)  </p>
+<p><1st field=""> <2nd field=""><br>The 1st field can have values:<br>keepalive - when the keepalive timer is ON for the socket<br>on - when the retransmission timer is ON for the socket<br>off - none of the above is ON</2nd></1st></p>
+<p>The 2nd field has THREE subfields:</p>
+<p>(6176.47/0/0) -&gt; (a/b/c)<br>a=timer value (a=keepalive timer, when 1st field=“keepalive”; a=retransmission timer, when 1st field=“on”)<br>b=number of retransmissions that have occurred<br>c=number of keepalive probes that have been sent</p>
+<p>For example, I had two sockets opened between a client &amp; a server (not loopback). The keepalive setting are:</p>
+<p>KEEPALIVE_IDLETIME   30<br>KEEPALIVE_NUMPROBES   4<br>KEEPALIVE_INTVL      10<br>And I did a shutdown of the client machine, so at …SHED on (2.47/254/2)<br>tcp        0    210 192.0.0.1:36483             192.0.68.1:43881            ESTABLISHED on (1.39/254/2)<br>tcp        0    210 192.0.0.1:36483             192.0.68.1:43881            ESTABLISHED on (0.31/254/2)<br>tcp        0    210 192.0.0.1:36483             192.0.68.1:43881            ESTABLISHED on (2.19/255/2)<br>tcp        0    210 192.0.0.1:36483             192.0.68.1:43881            ESTABLISHED on (1.12/255/2)<br>As you can see, in this case things are a little different. When the client went down, my server started sending keepalive messages, but while it was still sending those keepalives, my server tried to send a message to the client. Since the client had gone down, the server couldn’t get any ACK from the client, so the TCP retransmission started and the server tried to send the data again, each time incrementing the retransmit count (2nd field) when the retransmission timer (1st field) expired.</p>
+<p>Hope this explains the netstat –timer option well.</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/08/03/就是要你懂TCP--一个没有遵守tcp规则导致的问题/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/08/03/就是要你懂TCP--一个没有遵守tcp规则导致的问题/" itemprop="url">一个没有遵守tcp规则导致的问题</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-08-03T19:30:03+08:00">
+                2017-08-03
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/tcp/" itemprop="url" rel="index">
+                    <span itemprop="name">tcp</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2017/08/03/就是要你懂TCP--一个没有遵守tcp规则导致的问题/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2017/08/03/就是要你懂TCP--一个没有遵守tcp规则导致的问题/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="就是要你懂TCP–一个没有遵守tcp规则导致的问题"><a href="#就是要你懂TCP–一个没有遵守tcp规则导致的问题" class="headerlink" title="就是要你懂TCP–一个没有遵守tcp规则导致的问题"></a>就是要你懂TCP–一个没有遵守tcp规则导致的问题</h1><h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><p>应用连接数据库一段时间后，执行SQL的时候总是抛出异常，通过抓包分析发现每次发送SQL给数据的时候，数据库总是Reset这个连接</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/3ea1a415f772af24d8f619a38542eb7e.png" alt="image.png"></p>
+<p>注意图中34号包，server（5029）发了一个fin包给client ，想要断开连接。client没断开，接着发了一个查询SQL给server。</p>
+<p>进一步分析所有断开连接（发送第一个fin包）的时间点，得到如图：</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/0ac00bfe8dcf87fa5c4997c89a16eb59.png" alt="image.png"></p>
+<p>基本上可以猜测，server（5029端口）在建立连接100秒终止后如果没有任何请求过来就主动发送fin包给client，要断开连接，但是这个时候client比较无耻，收到端口请求后没搭理（除非是故意的），这个时候意味着server准备好关闭了，也不会再给client发送数据了（ack除外）。</p>
+<p>但是client虽然收到了fin断开连接的请求不但不理，过一会还不识时务发SQL查询给server，server一看不懂了（server早就申明连接关闭，没法发数据给client了），就只能回复reset，强制告诉client断开连接吧，client这时才迫于无奈断开了这次连接（图一绿框）</p>
+<p>client的应用代码层肯定会抛出异常。</p>
+<h3 id="server强行断开连接"><a href="#server强行断开连接" class="headerlink" title="server强行断开连接"></a>server强行断开连接</h3><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/eca804fbb71e9cdfb033a9c072d8b72d.png" alt="image.png"></p>
+<p>18745号包，client发了一个查询SQL给server，server先是回复ack 18941号包，然后回复fin 19604号包，强行断开连接，client端只能抛异常了</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/08/01/如何徒手撕Bug/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/08/01/如何徒手撕Bug/" itemprop="url">如何徒手撕Bug</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-08-01T10:30:03+08:00">
+                2017-08-01
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/performance/" itemprop="url" rel="index">
+                    <span itemprop="name">performance</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2017/08/01/如何徒手撕Bug/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2017/08/01/如何徒手撕Bug/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="如何徒手撕Bug"><a href="#如何徒手撕Bug" class="headerlink" title="如何徒手撕Bug"></a>如何徒手撕Bug</h1><p>经常碰到bug，如果有源代码，或者源代码比较简单一般通过bug现象结合读源代码，基本能比较快解决掉。但是有些时候源代码过于复杂，比如linux kernel，比如 docker，复杂的另一方面是没法比较清晰地去理清源代码的结构。</p>
+<p>所以不到万不得已不要碰积极复杂的源代码</p>
+<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>docker daemon重启，上面有几十个容器，重启后daemon基本上卡死不动了。 docker ps/exec 都没有任何响应，同时能看到很多这样的进程：</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/ed7f275935b32c7fd5fef3e0caf2eb0c.png" alt="image.png"></p>
+<p>这个进程是docker daemon在启动的时候去设置每个容器的iptables，来实现dns解析。</p>
+<p>这个时候执行 sudo iptables -L 也告诉你有其他应用锁死iptables了：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/901fd2057fb3b32ff79dc5a29c9cdd67.png" alt="image.png"></p>
+<pre><code>$sudo fuser /run/xtables.lock 
+/run/xtables.lock:1203  5544 10161 14451 14482 14503 14511 14530 14576 14602 14617 14637 14659 14664 14680 14698 14706 14752 14757 14777 14807 14815 14826 14834 14858 14872 14889 14915 14972 14973 14979 14991 15006 15031 15067 15076 15104 15127 15155 15176 15178 15179 15180 16506 17656 17657 17660 21904 21910 24174 28424 29741 29839 29847 30018 32418 32424 32743 33056 33335 59949 64006
+</code></pre><p>通过上面的命令基本可以看到哪些进程在等iptables这个锁，之所以有这么多进程在等这个锁，应该是拿到锁的进程执行比较慢所以导致后面的进程拿不到锁，卡在这里</p>
+<h2 id="跟踪具体拿到锁的进程"><a href="#跟踪具体拿到锁的进程" class="headerlink" title="跟踪具体拿到锁的进程"></a>跟踪具体拿到锁的进程</h2><pre><code>$sudo lsof  /run/xtables.lock | grep 3rW
+iptables 36057 root3rW  REG   0,190 48341 /run/xtables.lock
+</code></pre><p>通过strace这个拿到锁的进程可以看到：</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/27d266ab8fd492f009fb7047d9337518.png" alt="image.png"></p>
+<p>发现在这个配置容器dns的进程同时还在执行一些dns查询任务（容器发起了dns查询），但是这个时候dns还没配置好，所以这个查询会超时</p>
+<p>看看物理机上的dns服务器配置：</p>
+<pre><code>$cat /etc/resolv.conf   
+options timeout:2 attempts:2   
+nameserver 10.0.0.1  
+nameserver 10.0.0.2
+nameserver 10.0.0.3
+</code></pre><p>尝试将 timeout 改到20秒、1秒分别验证一下，发现如果timeout改到20秒strace这里也会卡20秒，如果是1秒（这个时候attempts改成1，后面两个dns去掉），那么整体没有感知到任何卡顿，就是所有iptables修改的进程都很快执行完毕了</p>
+<h2 id="strace某个等锁的进程，拿到锁后非常快"><a href="#strace某个等锁的进程，拿到锁后非常快" class="headerlink" title="strace某个等锁的进程，拿到锁后非常快"></a>strace某个等锁的进程，拿到锁后非常快</h2><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/25ab3e2385e08e8e23eeb1309d949839.png" alt="image.png"></p>
+<p>拿到锁后如果这个时候没有收到 dns 查询，那么很快iptables修改完毕，也不会导致卡住</p>
+<h2 id="我的分析"><a href="#我的分析" class="headerlink" title="我的分析"></a>我的分析</h2><p>docker启动的时候要修改每个容器的dns（iptables规则），如果这个时候又收到了dns查询，但是查询的时候dns还没配置好，所以只能等待dns默认超时，等到超时完了再往后执行修改dns动作然后释放iptables锁。这里会发生恶性循环，导致dns修改时占用iptables的时间非常长，进而看着像把物理机iptables锁死，同时docker daemon不响应任何请求。</p>
+<p>这应该是docker daemon实现上的小bug，也就是改iptables这里没加锁，如果修改dns的时候同时收到了dns查询，要是让查询等锁的话就不至于出现这种恶性循环</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>其实这个问题还是挺容易出现的，daemon重启，上面有很多容器，容器里面的任务启动的时候都要做dns解析，这个时候daemon还在修改dns，冲进来很多dns查询的话会导致修改进程变慢</p>
+<p>这也跟物理机的 /etc/resolv.conf 配置有关</p>
+<p>暂时先只留一个dns server，同时把timeout改成1秒（似乎没法改成比1秒更小），同时 attempts:1 ，也就是加快dns查询的失败，当然这会导致应用启动的时候dns解析失败，最终还是需要从docker的源代码修复这个问题。</p>
+<p>解决过程中无数次想放弃，但是反复在那里strace，正是看到了有dns和没有dns查询的两个strace才想清楚这个问题，感谢自己的坚持和很多同事的帮助，手撕的过程中必然有很多不理解的东西，需要请教同事</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/07/31/优酷双11全链路压测中通过Perf发现的一个SpringMVC 的性能问题/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -974,8 +1454,12 @@
         
           
             <h1 id="关于TCP-半连接队列和全连接队列"><a href="#关于TCP-半连接队列和全连接队列" class="headerlink" title="关于TCP 半连接队列和全连接队列"></a>关于TCP 半连接队列和全连接队列</h1><blockquote>
-<p>最近碰到一个client端连接异常问题，然后定位分析并查阅各种资料文章，对TCP连接队列有个深入的理解</p>
-<p>查资料过程中发现没有文章把这两个队列以及怎么观察他们的指标说清楚，希望通过这篇文章能把他们说清楚</p>
+<p>最近碰到一个client端连接异常问题，然后定位分析发现是因为全连接队列满了导致的。查阅各种资料文章和通过一系列的实验对TCP连接队列有了更深入的理解</p>
+<p>查资料过程中发现没有文章把这两个队列以及怎么观察他们的指标说清楚，希望通过这篇文章能说清楚:</p>
+<p>1) 这两个队列是干什么用的；</p>
+<p>2）怎么设置和观察他们的最大值；</p>
+<p>3）怎么查看这两个队列当前使用到了多少；</p>
+<p>4）一旦溢出的后果和现象是什么</p>
 </blockquote>
 <h3 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h3><pre><code>场景：JAVA的client和server，使用socket通信。server使用NIO。
 
@@ -1003,7 +1487,8 @@
 <blockquote>
 <p>但是不能只是满足问题的解决，而是要去复盘解决过程，中间涉及到了哪些知识点是我所缺失或者理解不到位的；这个问题除了上面的异常信息表现出来之外，还有没有更明确地指征来查看和确认这个问题。</p>
 </blockquote>
-<h3 id="深入理解TCP握手过程中建连接的流程和队列"><a href="#深入理解TCP握手过程中建连接的流程和队列" class="headerlink" title="深入理解TCP握手过程中建连接的流程和队列"></a>深入理解TCP握手过程中建连接的流程和队列</h3><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2703fc07dfc4dd5b6e1bb4c2ce620e59.png" alt="image.png"><br>（图片来源：<a href="http://www.cnxct.com/something-about-phpfpm-s-backlog/）" target="_blank" rel="external">http://www.cnxct.com/something-about-phpfpm-s-backlog/）</a></p>
+<h3 id="深入理解TCP握手过程中建连接的流程和队列"><a href="#深入理解TCP握手过程中建连接的流程和队列" class="headerlink" title="深入理解TCP握手过程中建连接的流程和队列"></a>深入理解TCP握手过程中建连接的流程和队列</h3><p>[^_^]:<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2703fc07dfc4dd5b6e1bb4c2ce620e59.png" alt="image.png"><br><a href="!--（图片来源：http://www.cnxct.com/something-about-phpfpm-s-backlog/）--">!--（图片来源：http://www.cnxct.com/something-about-phpfpm-s-backlog/）--</a></p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d5947bd339c58c631217100f80ee7078.png" alt="image.png"></p>
 <p>如上图所示，这里有两个队列：syns queue(半连接队列）；accept queue（全连接队列）</p>
 <p>三次握手中，在第一步server收到client的syn后，把这个连接信息放到半连接队列中，同时回复syn+ack给client（第二步）；</p>
 <pre><code>题外话，比如syn floods 攻击就是针对半连接队列的，攻击方不停地建连接，但是建连接的时候只做第一步，第二步中攻击方收到server的syn+ack后故意扔掉什么也不做，导致server上这个队列满其它正常请求无法进来
@@ -1022,6 +1507,11 @@ Recv-Q Send-Q Local Address:Port  Peer Address:Port
 0        50               *:3306             *:* 
 </code></pre><p><strong>上面看到的第二列Send-Q 值是50，表示第三列的listen端口上的全连接队列最大为50，第一列Recv-Q为全连接队列当前使用了多少</strong></p>
 <p><strong>全连接队列的大小取决于：min(backlog, somaxconn) . backlog是在socket创建的时候传入的，somaxconn是一个os级别的系统参数</strong></p>
+<p>《Unix Network Programming》中关于backlog的描述</p>
+<blockquote>
+<p>The backlog argument to the listen function has historically specified the maximum value for the sum of both queues.</p>
+<p>There has never been a formal definition of what the backlog means. The 4.2BSD man page says that it “defines the maximum length the queue of pending connections may grow to.” Many man pages and even the POSIX specification copy this definition verbatim, but this definition does not say whether a pending connection is one in the SYN_RCVD state, one in the ESTABLISHED state that has not yet been accepted, or either. The historical definition in this bullet is the Berkeley implementation, dating back to 4.2BSD, and copied by many others.</p>
+</blockquote>
 <p>这个时候可以跟我们的代码建立联系了，比如Java创建ServerSocket的时候会让你传入backlog的值：</p>
 <pre><code>ServerSocket()
     Creates an unbound server socket.
@@ -1096,6 +1586,7 @@ State  Recv-Q Send-Q Local Address:PortPeer Address:Port
 LISTEN    0     511              *:8085           *:*
 LISTEN    0     511              *:8085           *:*
 </code></pre><p>因为Nginx是多进程模式，所以看到了多个8085，也就是多个进程都监听同一个端口以尽量避免上下文切换来提升性能   </p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/01dc036aca4b445ed86e3e295bf245b8.png" alt="image.png"></p>
 <h3 id="进一步思考"><a href="#进一步思考" class="headerlink" title="进一步思考"></a>进一步思考</h3><p>如果client走完第三步在client看来连接已经建立好了，但是server上的对应连接实际没有准备好，这个时候如果client发数据给server，server会怎么处理呢？（有同学说会reset，还是实践看看）</p>
 <p>先来看一个例子：</p>
 <p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/3f5f1eeb0646a3af8afd6bbff2a9ea0b.png" alt="image.png"><br>（图片来自：<a href="http://blog.chinaunix.net/uid-20662820-id-4154399.html）" target="_blank" rel="external">http://blog.chinaunix.net/uid-20662820-id-4154399.html）</a></p>
@@ -1145,12 +1636,6 @@ server5
 <p>另外就是jdk、netty等一些框架默认backlog比较小，可能有些情况下导致性能上不去，比如 @毕玄 碰到的这个 <a href="https://www.atatech.org/articles/12919" target="_blank" rel="external">《netty新建连接并发数很小的case》 </a><br>都是类似原因</p>
 <p>希望通过本文能够帮大家理解TCP连接过程中的半连接队列和全连接队列的概念、原理和作用，更关键的是有哪些指标可以明确看到这些问题。</p>
 <p>另外每个具体问题都是最好学习的机会，光看书理解肯定是不够深刻的，请珍惜每个具体问题，碰到后能够把来龙去脉弄清楚。</p>
-<p>我的其他几篇跟网络问题相关的文章，也很有趣，借着案例来理解好概念和原理，希望对大家也有点帮助</p>
-<p><a href="https://www.atatech.org/articles/60633" target="_blank" rel="external">https://www.atatech.org/articles/60633</a></p>
-<p><a href="https://www.atatech.org/articles/73174" target="_blank" rel="external">https://www.atatech.org/articles/73174</a></p>
-<p><a href="https://www.atatech.org/articles/73289" target="_blank" rel="external">https://www.atatech.org/articles/73289</a></p>
-<p><a href="https://www.atatech.org/articles/76138" target="_blank" rel="external">https://www.atatech.org/articles/76138</a></p>
-<p>最后感谢 @梦实 在这个过程中提供的帮助</p>
 <hr>
 <p>参考文章：</p>
 <p><a href="http://veithen.github.io/2014/01/01/how-tcp-backlog-works-in-linux.html" target="_blank" rel="external">http://veithen.github.io/2014/01/01/how-tcp-backlog-works-in-linux.html</a></p>
@@ -1160,6 +1645,8 @@ server5
 <p><a href="http://jin-yang.github.io/blog/network-synack-queue.html#" target="_blank" rel="external">http://jin-yang.github.io/blog/network-synack-queue.html#</a></p>
 <p><a href="http://blog.chinaunix.net/uid-20662820-id-4154399.html" target="_blank" rel="external">http://blog.chinaunix.net/uid-20662820-id-4154399.html</a></p>
 <p><a href="https://www.atatech.org/articles/12919" target="_blank" rel="external">https://www.atatech.org/articles/12919</a></p>
+<p><a href="https://blog.cloudflare.com/syn-packet-handling-in-the-wild/" target="_blank" rel="external">https://blog.cloudflare.com/syn-packet-handling-in-the-wild/</a></p>
+<p><a href="https://ops.tips/blog/how-linux-tcp-introspection/" target="_blank" rel="external">How Linux allows TCP introspection The inner workings of bind and listen on Linux.</a></p>
 
           
         
@@ -1508,6 +1995,17 @@ net.ipv4.tcp_keepalive_intvl = 3
 <p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/5322d0cf77a3a1ae6c87a972cc5843d0.png" alt="image.png"></p>
 <p>图中的红框就是SACK。</p>
 <p>知识点：ack数字表示这个数字前面的数据<strong>都</strong>收到了</p>
+<h2 id="TIME-WAIT-和-CLOSE-WAIT"><a href="#TIME-WAIT-和-CLOSE-WAIT" class="headerlink" title="TIME_WAIT 和 CLOSE_WAIT"></a>TIME_WAIT 和 CLOSE_WAIT</h2><p>假设服务器监听在 18080端口上，client使用18089端口建立连接。</p>
+<p>如果client主动断开连接那么就会看到client端的连接在 TIME_WAIT：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"># netstat -ant |grep 1808</div><div class="line">tcp        0      0 0.0.0.0:18080           0.0.0.0:*               LISTEN      </div><div class="line">tcp        0      0 192.168.1.79:18089      192.168.1.79:18080      TIME_WAIT</div></pre></td></tr></table></figure>
+<p>如果Server断开连接(也就是18080）那么就会看到client端的连接在CLOSE_WAIT 而Server在FIN_WAIT2：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"># netstat -ant |grep 1808</div><div class="line">tcp    0      0 192.168.1.79:18080      192.168.1.79:18089      FIN_WAIT2  --&lt;&lt; server</div><div class="line">tcp    0      0 192.168.1.79:18089      192.168.1.79:18080      CLOSE_WAIT --&lt;&lt; client</div></pre></td></tr></table></figure>
+<p>CLOSE_WAIT是被动关闭端在等待应用进程的关闭</p>
+<h3 id="此时client有两种选择"><a href="#此时client有两种选择" class="headerlink" title="此时client有两种选择"></a>此时client有两种选择</h3><p>1 如果client也立即断开，那么Server的这个连接会进入 TIME_WAIT状态</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"># netstat -ant |grep 1808</div><div class="line">tcp    0      0 0.0.0.0:18080           0.0.0.0:*               LISTEN  --&lt;&lt; server还在  </div><div class="line">tcp    0      0 192.168.1.79:18080      192.168.1.79:18089      TIME_WAIT --&lt;&lt; server</div></pre></td></tr></table></figure>
+<p>2 client 坚持不断开过 Server 一段时间后（3.10：net.netfilter.nf_conntrack_tcp_timeout_fin_wait = 120， 4.19：net.ipv4.tcp_fin_timeout = 15）会结束这个连接但是client还是会 在CLOSE_WAIT 直到client进程退出</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># netstat -ant |grep 1808</div><div class="line">tcp        0      0 192.168.1.79:18089      192.168.1.79:18080      CLOSE_WAIT</div></pre></td></tr></table></figure>
+<h2 id="状态图"><a href="#状态图" class="headerlink" title="状态图"></a>状态图</h2><p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b3d075782450b0c8d2615c5d2b75d923.png" alt="image.png"></p>
 <h2 id="总结下"><a href="#总结下" class="headerlink" title="总结下"></a>总结下</h2><p>tcp所有特性基本上核心都是为了<strong>可靠传输</strong>这个目标来服务的，然后有一些是出于优化性能的目的</p>
 <p>三次握手建连接的详细过程可以参考我这篇： <a href="https://www.atatech.org/articles/78858" target="_blank" rel="external">关于TCP 半连接队列和全连接队列</a></p>
 <p>后续希望再通过几个案例来深化一下上面的知识。</p>
@@ -3604,7 +4102,7 @@ script_url=&quot;hz_normal&quot;
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">76</span>
+                <span class="site-state-item-count">79</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -3615,7 +4113,7 @@ script_url=&quot;hz_normal&quot;
             
             <div class="site-state-item site-state-categories">
               
-                <span class="site-state-item-count">20</span>
+                <span class="site-state-item-count">21</span>
                 <span class="site-state-item-name">分类</span>
               
             </div>
@@ -3626,7 +4124,7 @@ script_url=&quot;hz_normal&quot;
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">160</span>
+                <span class="site-state-item-count">162</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>
