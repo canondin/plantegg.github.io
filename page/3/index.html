@@ -261,6 +261,271 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/01/24/Linux Module/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/01/24/Linux Module/" itemprop="url">Linux Module and make debug</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-24T17:30:03+08:00">
+                2019-01-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/01/24/Linux Module/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2019/01/24/Linux Module/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="Linux-Module-and-make-debug"><a href="#Linux-Module-and-make-debug" class="headerlink" title="Linux Module and make debug"></a>Linux Module and make debug</h1><h2 id="Makefile-中的-tab-键"><a href="#Makefile-中的-tab-键" class="headerlink" title="Makefile 中的 tab 键"></a>Makefile 中的 tab 键</h2><pre><code>$sudo make
+Makefile:4: *** missing separator.  Stop.
+</code></pre><p>Makefile 中每个指令前面必须是tab(不能是4个空格）！</p>
+<h2 id="pwd"><a href="#pwd" class="headerlink" title="pwd"></a>pwd</h2><pre><code>$sudo make
+make -C /lib/modules/4.19.48-002.ali4000.test.alios7.x86_64/build M= modules
+make[1]: Entering directory `/usr/src/kernels/4.19.48-002.ali4000.test.alios7.x86_64&apos;
+make[2]: *** No rule to make target `arch/x86/entry/syscalls/syscall_32.tbl&apos;, needed by `arch/x86/include/generated/asm/syscalls_32.h&apos;.  Stop.
+make[1]: *** [archheaders] Error 2
+make[1]: Leaving directory `/usr/src/kernels/4.19.48-002.ali4000.test.alios7.x86_64&apos;
+make: *** [all] Error 2
+</code></pre><p>Makefile中的：<br>    make -C /lib/modules/$(shell uname -r)/build M=$(pwd) modules</p>
+<p>$(pwd) 需要修改成：$(shell pwd)</p>
+<h2 id="makefile调试的法宝"><a href="#makefile调试的法宝" class="headerlink" title="makefile调试的法宝"></a>makefile调试的法宝</h2><h3 id="makefile调试的法宝1"><a href="#makefile调试的法宝1" class="headerlink" title="makefile调试的法宝1"></a>makefile调试的法宝1</h3><pre><code>$ make --debug=a,m SHELL=&quot;bash -x&quot; &gt; make.log  2&gt;&amp;1                # 可以获取make过程最完整debug信息
+$ make --debug=v,m SHELL=&quot;bash -x&quot; &gt; make.log  2&gt;&amp;1                # 一个相对精简版，推荐使用这个命令
+$ make --debug=v  &gt; make.log  2&gt;&amp;1                                 # 再精简一点的版本
+$ make --debug=b  &gt; make.log  2&gt;&amp;1                                 # 最精简的版本
+</code></pre><h3 id="makefile调试的法宝2"><a href="#makefile调试的法宝2" class="headerlink" title="makefile调试的法宝2"></a>makefile调试的法宝2</h3><p>上面的法宝1更多的还是在整体工程的makefile结构、makefile读取和makefile内部的rule之间的关系方面有很好的帮助作用。但是对于makefile中rule部分之前的变量部分的引用过程则表现的不是很充分。在这里，我们有另外一个法宝，可以把变量部分的引用过程给出一个比较好的调试信息。具体命令如下。</p>
+<pre><code>$ make -p 2&gt;&amp;1 | grep -A 1 &apos;^# makefile&apos; | grep -v &apos;^--&apos; | awk &apos;/# makefile/&amp;&amp;/line/{getline n;print $0,&quot;;&quot;,n}&apos; | LC_COLLATE=C sort -k 4 -k 6n &gt; variable.log
+$ cat variable.log
+# makefile (from `Makefile&apos;, line 1) ; aa := 11
+# makefile (from `Makefile&apos;, line 3) ; cc := 11
+# makefile (from `Makefile&apos;, line 4) ; bb := 9999
+# makefile (from `cfg_makefile&apos;, line 1) ; MAKEFILE_LIST :=  Makefile cfg_makefile
+# makefile (from `cfg_makefile&apos;, line 1) ; xx := 4444
+# makefile (from `cfg_makefile&apos;, line 2) ; yy := 4444
+# makefile (from `cfg_makefile&apos;, line 3) ; zz := 4444
+# makefile (from `sub_makefile&apos;, line 1) ; MAKEFILE_LIST :=  sub_makefile
+# makefile (from `sub_makefile&apos;, line 1) ; aaaa := 222222
+# makefile (from `sub_makefile&apos;, line 2) ; bbbb := 222222
+# makefile (from `sub_makefile&apos;, line 3) ; cccc := 222222
+</code></pre><h3 id="makefile调试的法宝3"><a href="#makefile调试的法宝3" class="headerlink" title="makefile调试的法宝3"></a>makefile调试的法宝3</h3><p>法宝2可以把makefile文件中每个变量的最终值清晰的展现出来，但是对于这些变量引用过程中的中间值却没有展示。此时，我们需要依赖法宝3来帮助我们。</p>
+<pre><code>$(warning $(var123))
+</code></pre><p>很多人可能都知道这个warning语句。我们可以在makefile文件中的变量引用阶段的任何两行之间，添加这个语句打印关键变量的引用过程。</p>
+<h2 id="依赖错误"><a href="#依赖错误" class="headerlink" title="依赖错误"></a>依赖错误</h2><p>编译报错缺少的组件需要yum install一下(bison/flex)</p>
+<h2 id="hping3"><a href="#hping3" class="headerlink" title="hping3"></a>hping3</h2><p>构造半连接：</p>
+<pre><code>sudo hping3 -i u100 -S -p 3306 10.0.186.79
+</code></pre><h2 id="tcp-sk-state"><a href="#tcp-sk-state" class="headerlink" title="tcp sk_state"></a>tcp sk_state</h2><pre><code>enum {
+    TCP_ESTABLISHED = 1,
+    TCP_SYN_SENT,
+    TCP_SYN_RECV,
+    TCP_FIN_WAIT1,
+    TCP_FIN_WAIT2,
+    TCP_TIME_WAIT,
+    TCP_CLOSE,
+    TCP_CLOSE_WAIT,
+    TCP_LAST_ACK,
+    TCP_LISTEN,
+    TCP_CLOSING,    /* Now a valid state */
+
+    TCP_MAX_STATES  /* Leave at the end! */
+};
+</code></pre><h2 id="kdump"><a href="#kdump" class="headerlink" title="kdump"></a>kdump</h2><p>启动kdump(kexec-tools), 系统崩溃的时候dump 内核(/var/crash)</p>
+<pre><code>sudo systemctl start kdump
+</code></pre><h2 id="crash"><a href="#crash" class="headerlink" title="crash"></a>crash</h2><pre><code>sudo yum install crash -y
+//手动触发crash
+#echo 1 &gt; /proc/sys/kernel/sysrq
+#echo c &gt; /proc/sysrq-trigger
+//系统crash，然后重启，重启后分析：
+sudo crash /usr/lib/debug/lib/modules/4.19.57-15.1.al7.x86_64/vmlinux /var/crash/127.0.0.1-2020-04-02-14\:40\:45/vmcore
+</code></pre><h2 id="内核函数替换"><a href="#内核函数替换" class="headerlink" title="内核函数替换"></a>内核函数替换</h2><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/c41363dae054baa6d7f79d03376c57cb.png" alt="image.png"></p>
+<pre><code>static int __init hotfix_init(void)
+{
+  unsigned char e8_call[POKE_LENGTH];
+  s32 offset, i;
+
+  addr = (void *)kallsyms_lookup_name(&quot;tcp_reset&quot;);
+  if (!addr) {
+    printk(&quot;一切还没有准备好！请先加载tcp_reset模块。\n&quot;);
+    return -1;
+  }
+
+  _text_poke_smp = (void *)kallsyms_lookup_name(&quot;text_poke&quot;);
+  _text_mutex = (void *)kallsyms_lookup_name(&quot;text_mutex&quot;);
+
+  stub = (void *)test_stub1;
+
+  offset = (s32)((long)stub - (long)addr - FTRACE_SIZE);
+
+  e8_call[0] = 0xe8;
+  (*(s32 *)(&amp;e8_call[1])) = offset;
+  for (i = 5; i &lt; POKE_LENGTH; i++) {
+    e8_call[i] = 0x90;
+  }
+  get_online_cpus();
+  mutex_lock(_text_mutex);
+  _text_poke_smp(&amp;addr[POKE_OFFSET], e8_call, POKE_LENGTH);
+  mutex_unlock(_text_mutex);
+  put_online_cpus();
+
+  return 0;
+}
+
+void test_stub1(void)
+{
+  struct sock *sk = NULL;
+  unsigned long sk_addr = 0;
+  char buf[MAX_BUF_SIZE];
+  int size=0;
+  asm (&quot;push %rdi&quot;);
+
+  asm ( &quot;mov %%rdi, %0;&quot; :&quot;=m&quot;(sk_addr) : :);
+  sk = (struct sock *)sk_addr;
+
+  printk(&quot;aaaaaaaa yes :%d  dest:%X  source:%X\n&quot;,
+      sk-&gt;sk_state,
+      sk-&gt;sk_rcv_saddr,
+      sk-&gt;sk_daddr);
+/*
+  size = snprintf(buf, MAX_BUF_SIZE-1, &quot;rst %lu %d %pI4:%u-&gt;%pI4:%u \n&quot;,
+                     get_seconds(),
+                     sk-&gt;sk_state,
+                     &amp;(inet_sk(sk)-&gt;inet_saddr),
+                     ntohs(inet_sk(sk)-&gt;inet_sport),
+                     ntohs(inet_sk(sk)-&gt;inet_dport),
+                     &amp;(inet_sk(sk)-&gt;inet_daddr));
+*/
+//  tcp_rt_log_output(buf,size,1);
+
+  asm (&quot;pop %rdi&quot;);
+}
+</code></pre><h2 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h2><p><a href="https://blog.sourcerer.io/writing-a-simple-linux-kernel-module-d9dc3762c234" target="_blank" rel="external">https://blog.sourcerer.io/writing-a-simple-linux-kernel-module-d9dc3762c234</a></p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/01/13/中间件的自己的DNS服务在alios7上域名解析失败/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -4389,431 +4654,6 @@ sudo tcptrack -r 5 -i eth0 host 10.0.48.1 //filter 语法和tcpdump一样
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/08/31/vxlan网络性能测试/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/08/31/vxlan网络性能测试/" itemprop="url">vxlan网络性能测试</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-08-31T12:30:03+08:00">
-                2017-08-31
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/performance/" itemprop="url" rel="index">
-                    <span itemprop="name">performance</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2017/08/31/vxlan网络性能测试/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2017/08/31/vxlan网络性能测试/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="vxlan网络性能测试"><a href="#vxlan网络性能测试" class="headerlink" title="vxlan网络性能测试"></a>vxlan网络性能测试</h1><hr>
-<h2 id="缘起"><a href="#缘起" class="headerlink" title="缘起"></a>缘起</h2><blockquote>
-<p>Docker集群中需要给每个容器分配一个独立的IP，同时在不同宿主机环境上的容器IP又要能够互相联通，所以需要一个overlay的网络（vlan也可以解决这个问题）</p>
-<p>overlay网络就是把容器之间的网络包重新打包在宿主机的IP包里面，传到目的容器所在的宿主机后，再把这个overlay的网络包还原成容器包交给容器</p>
-<p>这里多了一次封包解包的过程，所以性能上必然有些损耗</p>
-<p>封包解包可以在应用层（比如Flannel的UDP封装），但是需要将每个网络包从内核态复制到应用态进行封包，所以性能非常差</p>
-<p>比较新的Linux内核带了vxlan功能，也就是将网络包直接在内核态完成封包，所以性能要好很多，本文vxlan指的就是这种方式</p>
-</blockquote>
-<h2 id="本文主要是比较通过vxlan实现的overlay网络之间的性能（相对宿主机之间而言）"><a href="#本文主要是比较通过vxlan实现的overlay网络之间的性能（相对宿主机之间而言）" class="headerlink" title="本文主要是比较通过vxlan实现的overlay网络之间的性能（相对宿主机之间而言）"></a>本文主要是比较通过vxlan实现的overlay网络之间的性能（相对宿主机之间而言）</h2><h2 id="测试环境宿主机的基本配置情况"><a href="#测试环境宿主机的基本配置情况" class="headerlink" title="测试环境宿主机的基本配置情况"></a>测试环境宿主机的基本配置情况</h2><pre><code>conf:
-loc_node   =  e12174.bja
-loc_cpu=  2 Cores: Intel Xeon E5-2430 0 @ 2.20GHz
-loc_os =  Linux 3.10.0-327.ali2010.alios7.x86_64
-loc_qperf  =  0.4.9
-rem_node   =  e26108.bja
-rem_cpu=  2 Cores: Intel Xeon E5-2430 0 @ 2.20GHz
-rem_os =  Linux 3.10.0-327.ali2010.alios7.x86_64
-rem_qperf  =  0.4.9
-</code></pre><h2 id="iperf3-下载和安装"><a href="#iperf3-下载和安装" class="headerlink" title="iperf3 下载和安装"></a>iperf3 下载和安装</h2><ul>
-<li>wget <a href="http://downloads.es.net/pub/iperf/iperf-3.0.6.tar.gz" target="_blank" rel="external">http://downloads.es.net/pub/iperf/iperf-3.0.6.tar.gz</a></li>
-<li>tar zxvf iperf-3.0.6.tar.gz</li>
-<li>cd iperf-3.0.6</li>
-<li>./configure</li>
-<li>make install</li>
-</ul>
-<h3 id="容器到自身宿主机之间-跟两容器在同一宿主机，速度差不多"><a href="#容器到自身宿主机之间-跟两容器在同一宿主机，速度差不多" class="headerlink" title="容器到自身宿主机之间, 跟两容器在同一宿主机，速度差不多"></a>容器到自身宿主机之间, 跟两容器在同一宿主机，速度差不多</h3><pre><code>$iperf3 -c 192.168.6.6 
-Connecting to host 192.168.6.6, port 5201
-[  4] local 192.168.6.1 port 21112 connected to 192.168.6.6 port 5201
-[ ID] Interval   Transfer Bandwidth   Retr
-[  4]   0.00-10.00  sec  13.9 GBytes  11.9 Gbits/sec1 sender
-[  4]   0.00-10.00  sec  13.9 GBytes  11.9 Gbits/sec  receiver
-
-[ ID] Interval   Transfer Bandwidth   Retr
-[  4]   0.00-10.00  sec  14.2 GBytes  12.2 Gbits/sec  139 sender
-[  4]   0.00-10.00  sec  14.2 GBytes  12.2 Gbits/sec  receiver
-
-[ ID] Interval   Transfer Bandwidth   Retr
-[  4]   0.00-10.00  sec  13.9 GBytes  11.9 Gbits/sec   96 sender
-[  4]   0.00-10.00  sec  13.9 GBytes  11.9 Gbits/sec  receiver
-</code></pre><h3 id="从宿主机A到宿主机B上的容器"><a href="#从宿主机A到宿主机B上的容器" class="headerlink" title="从宿主机A到宿主机B上的容器"></a>从宿主机A到宿主机B上的容器</h3><pre><code>$iperf3 -c 192.168.6.6
-Connecting to host 192.168.6.6, port 5201
-[  4] local 192.168.6.1 port 47940 connected to 192.168.6.6 port 5201
-[ ID] Interval   Transfer Bandwidth   Retr
-[  4]   0.00-10.00  sec   409 MBytes   343 Mbits/sec0 sender
-[  4]   0.00-10.00  sec   405 MBytes   340 Mbits/sec  receiver
-
-[ ID] Interval   Transfer Bandwidth   Retr
-[  4]   0.00-10.00  sec   389 MBytes   326 Mbits/sec   14 sender
-[  4]   0.00-10.00  sec   386 MBytes   324 Mbits/sec  receiver
-
-[ ID] Interval   Transfer Bandwidth   Retr
-[  4]   0.00-10.00  sec   460 MBytes   386 Mbits/sec7 sender
-[  4]   0.00-10.00  sec   458 MBytes   384 Mbits/sec  receiver
-</code></pre><h3 id="两宿主机之间测试"><a href="#两宿主机之间测试" class="headerlink" title="两宿主机之间测试"></a>两宿主机之间测试</h3><pre><code>$iperf3 -c 10.0.26.108
-Connecting to host 10.0.26.108, port 5201
-[  4] local 10.0.12.174 port 24309 connected to 10.0.26.108 port 5201
-[ ID] Interval   Transfer Bandwidth   Retr
-[  4]   0.00-10.00  sec   471 MBytes   395 Mbits/sec0 sender
-[  4]   0.00-10.00  sec   469 MBytes   393 Mbits/sec  receiver
-
-[ ID] Interval   Transfer Bandwidth   Retr
-[  4]   0.00-10.00  sec   428 MBytes   359 Mbits/sec0 sender
-[  4]   0.00-10.00  sec   426 MBytes   357 Mbits/sec  receiver
-
-[ ID] Interval   Transfer Bandwidth   Retr
-[  4]   0.00-10.00  sec   430 MBytes   360 Mbits/sec0 sender
-[  4]   0.00-10.00  sec   427 MBytes   358 Mbits/sec  receiver
-</code></pre><h3 id="两容器之间（跨宿主机）"><a href="#两容器之间（跨宿主机）" class="headerlink" title="两容器之间（跨宿主机）"></a>两容器之间（跨宿主机）</h3><pre><code>$iperf3 -c 192.168.6.6
-Connecting to host 192.168.6.6, port 5201
-[  4] local 192.168.6.5 port 37719 connected to 192.168.6.6 port 5201
-[ ID] Interval   Transfer Bandwidth   Retr
-[  4]   0.00-10.00  sec   403 MBytes   338 Mbits/sec   18 sender
-[  4]   0.00-10.00  sec   401 MBytes   336 Mbits/sec  receiver
-
-[ ID] Interval   Transfer Bandwidth   Retr
-[  4]   0.00-10.00  sec   428 MBytes   359 Mbits/sec   15 sender
-[  4]   0.00-10.00  sec   425 MBytes   356 Mbits/sec  receiver
-
-[ ID] Interval   Transfer Bandwidth   Retr
-[  4]   0.00-10.00  sec   508 MBytes   426 Mbits/sec   11 sender
-[  4]   0.00-10.00  sec   506 MBytes   424 Mbits/sec  receiver
-</code></pre><h2 id="netperf-安装依赖-automake-1-14-环境无法升级，放弃"><a href="#netperf-安装依赖-automake-1-14-环境无法升级，放弃" class="headerlink" title="netperf 安装依赖 automake-1.14, 环境无法升级，放弃"></a>netperf 安装依赖 automake-1.14, 环境无法升级，放弃</h2><h2 id="qperf-测试工具"><a href="#qperf-测试工具" class="headerlink" title="qperf 测试工具"></a>qperf 测试工具</h2><ul>
-<li>sudo yum install qperf -y</li>
-</ul>
-<h3 id="两台宿主机之间"><a href="#两台宿主机之间" class="headerlink" title="两台宿主机之间"></a>两台宿主机之间</h3><pre><code>$qperf -t 10  10.0.26.108 tcp_bw tcp_lat
-tcp_bw:
-bw  =  50.5 MB/sec
-tcp_lat:
-latency  =  332 us
-</code></pre><h4 id="包的大小分别为1和128"><a href="#包的大小分别为1和128" class="headerlink" title="包的大小分别为1和128"></a>包的大小分别为1和128</h4><pre><code>$qperf  -oo msg_size:1   10.0.26.108 tcp_bw tcp_lat
-tcp_bw:
-bw  =  1.75 MB/sec
-tcp_lat:
-latency  =  428 us
-
-$qperf  -oo msg_size:128   10.0.26.108 tcp_bw tcp_lat
-tcp_bw:
-bw  =  57.8 MB/sec
-tcp_lat:
-latency  =  504 us
-</code></pre><h4 id="两台宿主机之间，包的大小从一个字节每次翻倍测试"><a href="#两台宿主机之间，包的大小从一个字节每次翻倍测试" class="headerlink" title="两台宿主机之间，包的大小从一个字节每次翻倍测试"></a>两台宿主机之间，包的大小从一个字节每次翻倍测试</h4><pre><code>$qperf  -oo msg_size:1:4K:*2 -vu  10.0.26.108 tcp_bw tcp_lat 
-tcp_bw:
-bw=  1.86 MB/sec
-msg_size  = 1 bytes
-tcp_bw:
-bw=  3.54 MB/sec
-msg_size  = 2 bytes
-tcp_bw:
-bw=  6.43 MB/sec
-msg_size  = 4 bytes
-tcp_bw:
-bw=  14.3 MB/sec
-msg_size  = 8 bytes
-tcp_bw:
-bw=  27.1 MB/sec
-msg_size  =16 bytes
-tcp_bw:
-bw=  42.3 MB/sec
-msg_size  =32 bytes
-tcp_bw:
-bw=  51.8 MB/sec
-msg_size  =64 bytes
-tcp_bw:
-bw=  49.7 MB/sec
-msg_size  =   128 bytes
-tcp_bw:
-bw=  48.2 MB/sec
-msg_size  =   256 bytes
-tcp_bw:
-bw=   58 MB/sec
-msg_size  =  512 bytes
-tcp_bw:
-bw=  54.6 MB/sec
-msg_size  = 1 KiB (1,024)
-tcp_bw:
-bw=  48.7 MB/sec
-msg_size  = 2 KiB (2,048)
-tcp_bw:
-bw=  53.6 MB/sec
-msg_size  = 4 KiB (4,096)
-tcp_lat:
-latency   =  432 us
-msg_size  =1 bytes
-tcp_lat:
-latency   =  480 us
-msg_size  =2 bytes
-tcp_lat:
-latency   =  441 us
-msg_size  =4 bytes
-tcp_lat:
-latency   =  487 us
-msg_size  =8 bytes
-tcp_lat:
-latency   =  404 us
-msg_size  =   16 bytes
-tcp_lat:
-latency   =  335 us
-msg_size  =   32 bytes
-tcp_lat:
-latency   =  338 us
-msg_size  =   64 bytes
-tcp_lat:
-latency   =  401 us
-msg_size  =  128 bytes
-tcp_lat:
-latency   =  496 us
-msg_size  =  256 bytes
-tcp_lat:
-latency   =  684 us
-msg_size  =  512 bytes
-tcp_lat:
-latency   =  534 us
-msg_size  =1 KiB (1,024)
-tcp_lat:
-latency   =  681 us
-msg_size  =2 KiB (2,048)
-tcp_lat:
-latency   =  701 us
-msg_size  =4 KiB (4,096)
-</code></pre><h3 id="两个容器之间（分别在两台宿主机上）"><a href="#两个容器之间（分别在两台宿主机上）" class="headerlink" title="两个容器之间（分别在两台宿主机上）"></a>两个容器之间（分别在两台宿主机上）</h3><pre><code>$qperf -t 10  192.168.6.6 tcp_bw tcp_lat 
-tcp_bw:
-bw  =  44.4 MB/sec
-tcp_lat:
-latency  =  512 us
-</code></pre><h4 id="包的大小分别为1和128-1"><a href="#包的大小分别为1和128-1" class="headerlink" title="包的大小分别为1和128"></a>包的大小分别为1和128</h4><pre><code>$qperf -oo msg_size:1  192.168.6.6 tcp_bw tcp_lat 
-tcp_bw:
-bw  =  1.13 MB/sec
-tcp_lat:
-latency  =  630 us
-
-$qperf -oo msg_size:128  192.168.6.6 tcp_bw tcp_lat 
-tcp_bw:
-bw  =  44.2 MB/sec
-tcp_lat:
-latency  =  526 us
-</code></pre><h4 id="两个容器之间，包的大小从一个字节每次翻倍测试"><a href="#两个容器之间，包的大小从一个字节每次翻倍测试" class="headerlink" title="两个容器之间，包的大小从一个字节每次翻倍测试"></a>两个容器之间，包的大小从一个字节每次翻倍测试</h4><pre><code>$qperf -oo msg_size:1:4K:*2  192.168.6.6 -vu tcp_bw tcp_lat 
-tcp_bw:
-bw=  1.06 MB/sec
-msg_size  = 1 bytes
-tcp_bw:
-bw=  2.29 MB/sec
-msg_size  = 2 bytes
-tcp_bw:
-bw=  3.79 MB/sec
-msg_size  = 4 bytes
-tcp_bw:
-bw=  7.66 MB/sec
-msg_size  = 8 bytes
-tcp_bw:
-bw=  14 MB/sec
-msg_size  =  16 bytes
-tcp_bw:
-bw=  24.4 MB/sec
-msg_size  =32 bytes
-tcp_bw:
-bw=  36 MB/sec
-msg_size  =  64 bytes
-tcp_bw:
-bw=  46.7 MB/sec
-msg_size  =   128 bytes
-tcp_bw:
-bw=   56 MB/sec
-msg_size  =  256 bytes
-tcp_bw:
-bw=  42.2 MB/sec
-msg_size  =   512 bytes
-tcp_bw:
-bw=  57.6 MB/sec
-msg_size  = 1 KiB (1,024)
-tcp_bw:
-bw=  52.3 MB/sec
-msg_size  = 2 KiB (2,048)
-tcp_bw:
-bw=  41.7 MB/sec
-msg_size  = 4 KiB (4,096)
-tcp_lat:
-latency   =  447 us
-msg_size  =1 bytes
-tcp_lat:
-latency   =  417 us
-msg_size  =2 bytes
-tcp_lat:
-latency   =  503 us
-msg_size  =4 bytes
-tcp_lat:
-latency   =  488 us
-msg_size  =8 bytes
-tcp_lat:
-latency   =  452 us
-msg_size  =   16 bytes
-tcp_lat:
-latency   =  537 us
-msg_size  =   32 bytes
-tcp_lat:
-latency   =  712 us
-msg_size  =   64 bytes
-tcp_lat:
-latency   =  521 us
-msg_size  =  128 bytes
-tcp_lat:
-latency   =  450 us
-msg_size  =  256 bytes
-tcp_lat:
-latency   =  442 us
-msg_size  =  512 bytes
-tcp_lat:
-latency   =  630 us
-msg_size  =1 KiB (1,024)
-tcp_lat:
-latency   =  519 us
-msg_size  =2 KiB (2,048)
-tcp_lat:
-latency   =  621 us
-msg_size  =4 KiB (4,096)
-</code></pre><h2 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h2><ul>
-<li>iperf3测试带宽方面vxlan网络基本和宿主机一样，没有什么损失</li>
-<li>qperf测试vxlan的带宽只相当于宿主机的60-80%</li>
-<li>qperf测试一个字节的小包vxlan的带宽只相当于宿主机的60-65%</li>
-<li>由上面的结论猜测：物理带宽更大的情况下vxlan跟宿主机的差别会扩大</li>
-</ul>
-<p><strong>qperf安装更容易，功能更强大，推荐</strong></p>
-<h2 id="参考文章："><a href="#参考文章：" class="headerlink" title="参考文章："></a>参考文章：</h2><p><a href="https://linoxide.com/monitoring-2/install-iperf-test-network-speed-bandwidth/" target="_blank" rel="external">https://linoxide.com/monitoring-2/install-iperf-test-network-speed-bandwidth/</a><br><a href="http://blog.yufeng.info/archives/2234" target="_blank" rel="external">http://blog.yufeng.info/archives/2234</a></p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
@@ -4863,7 +4703,7 @@ msg_size  =4 KiB (4,096)
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">79</span>
+                <span class="site-state-item-count">80</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -4874,7 +4714,7 @@ msg_size  =4 KiB (4,096)
             
             <div class="site-state-item site-state-categories">
               
-                <span class="site-state-item-count">21</span>
+                <span class="site-state-item-count">22</span>
                 <span class="site-state-item-name">分类</span>
               
             </div>
@@ -4885,7 +4725,7 @@ msg_size  =4 KiB (4,096)
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">163</span>
+                <span class="site-state-item-count">167</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>
