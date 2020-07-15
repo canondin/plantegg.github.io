@@ -521,7 +521,7 @@
 <li>Stream读取，Stream读取是在执行SQL前设置FetchSize：statement.setFetchSize(Integer.MIN_VALUE)，同时确保游标是只读、向前滚动的（为游标的默认值），MySQL JDBC内置的操作方法是将Statement强制转换为：com.mysql.jdbc.StatementImpl，调用其方法：enableStreamingResults()，这2者达到的效果是一致的，都是启动Stream流方式读取数据。这个时候MySQL不停地发数据，inputStream.read()不停地读取。一般来说发数据更快些，很快client的OS TCP recv buffer就满了，这时MySQL停下来等buffer有空闲就继续发数据。等待过程中如果超过 net_write_timeout MySQL就会报错，中断这次查询。</li>
 </ol>
 <p>从这里的描述来看，数据小的时候第一种方式还能接受，但是数据大了容易OOM，方式三看起来不错，但是要特别注意 net_write_timeout。</p>
-<p>1和3对MySQL Server来说处理上没有啥区别，也感知不到这两种方式。只是对1来说从OS Buffer中的数据复制到JVM内存中速度快，JVM攒多了数据内存就容易爆掉；对3来说JDBC一条条将OS Buffer中的数据复制到JVM同时返回给execute挨个处理，一般来说挨个处理要慢一些，这就导致了从OS Buffer中复制数据较慢，容易Buffer满了，那么MySQL Server感知到的就是TCP 传输窗口为0了，导致暂停传输数据。</p>
+<p>1和3对MySQL Server来说处理上没有啥区别，也感知不到这两种方式的不同。只是对1来说从OS Buffer中的数据复制到JVM内存中速度快，JVM攒多了数据内存就容易爆掉；对3来说JDBC一条条将OS Buffer中的数据复制到JVM同时返回给execute挨个处理，一般来说挨个处理要慢一些，这就导致了从OS Buffer中复制数据较慢，容易Buffer满了，那么MySQL Server感知到的就是TCP 传输窗口为0了，导致暂停传输数据。</p>
 <p>在数据量很小的时候方式三没什么优势，因为总是多一次set net_write_tiemout，也就是多了一次RTT。</p>
 <h2 id="net-write-timeout"><a href="#net-write-timeout" class="headerlink" title="net_write_timeout"></a>net_write_timeout</h2><p>先看下 <a href="https://dev.mysql.com/doc/refman/5.7/en/server-system-variables.html#sysvar_net_write_timeout" target="_blank" rel="external"><code>net_write_timeout</code></a>的解释：The number of seconds to wait for a block to be written to a connection before aborting the write. </p>
 <table>
@@ -830,20 +830,20 @@
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># nc 192.168.0.79 18082 -p 18082</div></pre></td></tr></table></figure>
 <p>然后就能看到</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># netstat -ant |grep 18082</div><div class="line">tcp        0      0 192.168.0.79:18082      192.168.0.79:18082      ESTABLISHED</div></pre></td></tr></table></figure>
-<p>这个连接完全可以工作，也能收发数据。这有点颠覆大家的理解，端口能重复使用？</p>
+<p>比较神奇，这个连接的srcport等于destport，并且完全可以工作，也能收发数据。这有点颠覆大家的理解，端口能重复使用？</p>
 <h2 id="port-range"><a href="#port-range" class="headerlink" title="port range"></a>port range</h2><p>我们都知道linux下本地端口范围由参数控制</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># cat /proc/sys/net/ipv4/ip_local_port_range </div><div class="line">10000	65535</div></pre></td></tr></table></figure>
 <p>所以也经常看到一个误解：一台机器上最多能创建65535个TCP连接</p>
-<h2 id="一台机器上最多能创建多少个TCP连接"><a href="#一台机器上最多能创建多少个TCP连接" class="headerlink" title="一台机器上最多能创建多少个TCP连接"></a>一台机器上最多能创建多少个TCP连接</h2><p>在内存、文件句柄足够的话可以创建的连接是没有限制的，那么/proc/sys/net/ipv4/ip_local_port_range指定的端口范围到底是什么意思呢？</p>
+<h2 id="到底一台机器上最多能创建多少个TCP连接"><a href="#到底一台机器上最多能创建多少个TCP连接" class="headerlink" title="到底一台机器上最多能创建多少个TCP连接"></a>到底一台机器上最多能创建多少个TCP连接</h2><p>在内存、文件句柄足够的话可以创建的连接是没有限制的，那么/proc/sys/net/ipv4/ip_local_port_range指定的端口范围到底是什么意思呢？</p>
 <p>一个TCP连接只要保证四元组(src-ip src-port dest-ip dest-port)唯一就可以了，而不是要求src port唯一，比如：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"># netstat -ant |grep 18089</div><div class="line">tcp        0      0 192.168.1.79:18089      192.168.1.79:22         ESTABLISHED</div><div class="line">tcp        0      0 192.168.1.79:18089      192.168.1.79:18080      ESTABLISHED</div><div class="line">tcp        0      0 192.168.0.79:18089      192.168.0.79:22         TIME_WAIT </div><div class="line">tcp        0      0 192.168.1.79:22         192.168.1.79:18089      ESTABLISHED</div><div class="line">tcp        0      0 192.168.1.79:18080      192.168.1.79:18089      ESTABLISHED</div></pre></td></tr></table></figure>
-<p>从前三行可以清楚地看到18089被用了三次，第一第二行src-ip、dest-ip也是重复的，但是dest port不一样，第三行的src-port还是18089，这是因为src-ip变了。</p>
-<p>所以一台机器能创建的TCP连接是没有限制的，而ip_local_port_range限制的是连同一个目标（dest-ip和dest-port一样）的port的数量（请忽略本地多网卡的情况，因为dest-ip为以后route只会选用一个本地ip）。</p>
+<p>从前三行可以清楚地看到18089被用了三次，第一第二行src-ip、dest-ip也是重复的，但是dest port不一样，第三行的src-port还是18089，但是src-ip变了。</p>
+<p>所以一台机器能创建的TCP连接是没有限制的，而ip_local_port_range是指没有bind的时候OS随机分配端口的范围，但是分配到的端口要同时满足五元组唯一，这样 ip_local_port_range 限制的是连同一个目标（dest-ip和dest-port一样）的port的数量（请忽略本地多网卡的情况，因为dest-ip为以后route只会选用一个本地ip）。</p>
 <h2 id="自己连自己的连接"><a href="#自己连自己的连接" class="headerlink" title="自己连自己的连接"></a>自己连自己的连接</h2><p>我们来看自己连自己发生了什么</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line"><span class="comment"># strace nc 192.168.0.79 18084 -p 18084</span></div><div class="line">execve(<span class="string">"/usr/bin/nc"</span>, [<span class="string">"nc"</span>, <span class="string">"192.168.0.79"</span>, <span class="string">"18084"</span>, <span class="string">"-p"</span>, <span class="string">"18084"</span>], [/* 31 vars */]) = 0</div><div class="line">brk(NULL)                               = 0x23d4000</div><div class="line">mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f213f394000</div><div class="line">access(<span class="string">"/etc/ld.so.preload"</span>, R_OK)      = -1 ENOENT (No such file or directory)</div><div class="line">open(<span class="string">"/etc/ld.so.cache"</span>, O_RDONLY|O_CLOEXEC) = 3</div><div class="line">fstat(3, &#123;st_mode=S_IFREG|0644, st_size=23295, ...&#125;) = 0</div><div class="line">mmap(NULL, 23295, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7f213f38e000</div><div class="line">close(3)                                = 0</div><div class="line">open(<span class="string">"/lib64/libssl.so.10"</span>, O_RDONLY|O_CLOEXEC) = 3</div><div class="line">………………</div><div class="line">munmap(0x7f213f393000, 4096)            = 0</div><div class="line">open(<span class="string">"/usr/share/ncat/ca-bundle.crt"</span>, O_RDONLY) = -1 ENOENT (No such file or directory)</div><div class="line">socket(AF_INET, SOCK_STREAM, IPPROTO_TCP) = 3</div><div class="line">fcntl(3, F_GETFL)                       = 0x2 (flags O_RDWR)</div><div class="line">fcntl(3, F_SETFL, O_RDWR|O_NONBLOCK)    = 0</div><div class="line">setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0</div><div class="line"><span class="built_in">bind</span>(3, &#123;sa_family=AF_INET, sin_port=htons(18084), sin_addr=inet_addr(<span class="string">"0.0.0.0"</span>)&#125;, 16) = 0</div><div class="line">//注意这里<span class="built_in">bind</span>后直接就是connect，没有listen</div><div class="line">connect(3, &#123;sa_family=AF_INET, sin_port=htons(18084), sin_addr=inet_addr(<span class="string">"192.168.0.79"</span>)&#125;, 16) = -1 EINPROGRESS (Operation now <span class="keyword">in</span> progress)</div><div class="line">select(4, [3], [3], [3], &#123;10, 0&#125;)       = 1 (out [3], left &#123;9, 999998&#125;)</div><div class="line">getsockopt(3, SOL_SOCKET, SO_ERROR, [0], [4]) = 0</div><div class="line">select(4, [0 3], [], [], NULL</div></pre></td></tr></table></figure>
 <p>抓包看看，正常三次握手，但是syn的seq和syn+ack的seq是一样的</p>
 <p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/341f2891253baa4eebdaeaf34aa60c4b.png" alt="image.png"></p>
-<p>这里不是常说的TCP simultaneous open，simultaneous open指的是两个不同port同时发syn建连接。而这里是先创建了一个socket，然后socket bind到18084端口上（作为local port，因为nc指定了local port），然后执行 connect, 连接到的目标也是192.168.0.79:18084，而这个目标正好是刚刚创建的socket，也就是自己连自己（连接双方总共只有一个socket）。</p>
+<p>这里算是常说的TCP simultaneous open，simultaneous open指的是两个不同port同时发syn建连接。而这里是先创建了一个socket，然后socket bind到18084端口上（作为local port，因为nc指定了local port），然后执行 connect, 连接到的目标也是192.168.0.79:18084，而这个目标正好是刚刚创建的socket，也就是自己连自己（连接双方总共只有一个socket）。因为一个socket充当了两个角色（client、server），这里发syn，自己收到自己发的syn，就相当于两个角色simultaneous open了。</p>
 <p>正常一个连接一定需要两个socket参与（这两个socket不一定要在两台机器上），而这个连接只用了一个socket就创建了，还能正常传输数据。但是仔细观察发数据的时候发放的seq增加（注意tcp_len 11那里的seq），收方的seq也增加了11，这是因为本来这就是用的同一个socket。正常两个socket通讯不是这样的。</p>
 <p>那么这种情况为什么没有当做bug被处理呢？</p>
 <h2 id="TCP-simultanous-open"><a href="#TCP-simultanous-open" class="headerlink" title="TCP simultanous open"></a>TCP simultanous open</h2><p>在tcp连接的定义中，通常都是一方先发起连接，假如两边同时发起连接，也就是两个socket同时给对方发 syn 呢？ 这在内核中是支持的，就叫同时打开（simultaneous open）。</p>
@@ -2602,6 +2602,169 @@ LISTEN    0     511              *:8085           *:*
 <p>光纤稳定性好很多，平均rt是网线的三分之一，最大值则是网线的十分之一</p>
 <p>光纤接口：</p>
 <p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b67715de1b8e143f6fc17ba574bcf0c4.png" alt="image.png" style="zoom:60%;"></p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/01/24/如何制作本地yum repository/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2020/01/24/如何制作本地yum repository/" itemprop="url">如何制作本地yum repository</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-01-24T17:30:03+08:00">
+                2020-01-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2020/01/24/如何制作本地yum repository/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2020/01/24/如何制作本地yum repository/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="如何制作本地yum-repository"><a href="#如何制作本地yum-repository" class="headerlink" title="如何制作本地yum repository"></a>如何制作本地yum repository</h1><p>某些情况下在没有外网的环境需要安装一些软件，但是软件依赖比较多，那么可以提前将所有依赖下载到本地，然后将他们制作成一个yum repo，安装的时候就会自动将依赖包都安装好。</p>
+<h2 id="收集所有rpm包"><a href="#收集所有rpm包" class="headerlink" title="收集所有rpm包"></a>收集所有rpm包</h2><p>创建一个文件夹，比如 Yum，将收集到的所有rpm包放在里面，比如安装ansible和docker需要的依赖文件：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">-rwxr-xr-x 1 root root  73K 7月  12 14:22 audit-libs-python-2.8.4-4.el7.x86_64.rpm</div><div class="line">-rwxr-xr-x 1 root root 295K 7月  12 14:22 checkpolicy-2.5-8.el7.x86_64.rpm</div><div class="line">-rwxr-xr-x 1 root root  23M 7月  12 14:22 containerd.io-1.2.2-3.el7.x86_64.rpm</div><div class="line">-rwxr-xr-x 1 root root  26K 7月  12 14:22 container-selinux-2.9-4.el7.noarch.rpm</div><div class="line">-rwxr-xr-x 1 root root  37K 7月  12 14:22 container-selinux-2.74-1.el7.noarch.rpm</div><div class="line">-rwxr-xr-x 1 root root  14M 7月  12 14:22 docker-ce-cli-18.09.0-3.el7.x86_64.rpm</div><div class="line">-rwxr-xr-x 1 root root  29K 7月  12 14:22 docker-ce-selinux-17.03.2.ce-1.el7.centos.noarch.rpm</div><div class="line">-r-xr-xr-x 1 root root  22K 7月  12 14:23 sshpass-1.06-2.el7.x86_64.rpm</div><div class="line">-r-xr-xr-x 1 root root  22K 7月  12 14:23 sshpass-1.06-1.el7.x86_64.rpm</div><div class="line">-r-xr-xr-x 1 root root 154K 7月  12 14:23 PyYAML-3.10-11.el7.x86_64.rpm</div><div class="line">-r-xr-xr-x 1 root root  29K 7月  12 14:23 python-six-1.9.0-2.el7.noarch.rpm</div><div class="line">-r-xr-xr-x 1 root root 397K 7月  12 14:23 python-setuptools-0.9.8-7.el7.noarch.rpm</div></pre></td></tr></table></figure>
+<p>收集方法：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">//先安装yum工具</div><div class="line">yum install yum-utils -y</div><div class="line">//将 ansible 依赖包都下载下来</div><div class="line">repoquery -R --resolve --recursive ansible | xargs -r yumdownloader --destdir=/tmp/ansible</div><div class="line">//将ansible rpm自己下载回来</div><div class="line">yumdownloader --destdir=/tmp/ansible --resolve ansible</div><div class="line">//验证一下依赖关系是完整的</div><div class="line">//repotrack ansible</div></pre></td></tr></table></figure>
+<h2 id="创建仓库索引"><a href="#创建仓库索引" class="headerlink" title="创建仓库索引"></a>创建仓库索引</h2><p>需要安装工具 createrepo：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"># createrepo ./yum/</div><div class="line">Spawning worker 0 with 6 pkgs</div><div class="line">Spawning worker 1 with 6 pkgs</div><div class="line">Spawning worker 23 with 5 pkgs</div><div class="line">Workers Finished</div><div class="line">Saving Primary metadata</div><div class="line">Saving file lists metadata</div><div class="line">Saving other metadata</div><div class="line">Generating sqlite DBs</div><div class="line">Sqlite DBs complete</div></pre></td></tr></table></figure>
+<p>会在yum文件夹下生成一个索引文件夹 repodata</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">drwxr-xr-x 2 root root 4.0K 7月  12 14:25 repodata</div><div class="line">[root@az1-drds-79 yum]# ls repodata/</div><div class="line">5e15c62fec1fe43c6025ecf4d370d632f4b3f607500016e045ad94b70f87bac3-filelists.xml.gz</div><div class="line">7a314396d6e90532c5c534567f9bd34eee94c3f8945fc2191b225b2861ace2b6-other.xml.gz</div><div class="line">ce9dce19f6b426b8856747b01d51ceaa2e744b6bbd5fbc68733aa3195f724590-primary.xml.gz</div><div class="line">ee33b7d79e32fe6ad813af92a778a0ec8e5cc2dfdc9b16d0be8cff6a13e80d99-filelists.sqlite.bz2</div><div class="line">f7e8177e7207a4ff94bade329a0f6b572a72e21da106dd9144f8b1cdf0489cab-primary.sqlite.bz2</div><div class="line">ff52e1f1859790a7b573d2708b02404eb8b29aa4b0c337bda83af75b305bfb36-other.sqlite.bz2</div><div class="line">repomd.xml</div></pre></td></tr></table></figure>
+<h2 id="生成iso镜像文件"><a href="#生成iso镜像文件" class="headerlink" title="生成iso镜像文件"></a>生成iso镜像文件</h2><p>非必要步骤，如果需要带到客户环境可以先生成iso，不过不够灵活。</p>
+<p>也可以不用生成iso，直接在drds.repo中指定 createrepo 的目录也可以，记得要先执行 yum clean all和yum update</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">#mkisofs -r -o docker_ansible.iso ./yum/</div><div class="line">I: -input-charset not specified, using utf-8 (detected in locale settings)</div><div class="line">Using PYTHO000.RPM;1 for  /python-httplib2-0.7.7-3.el7.noarch.rpm (python-httplib2-0.9.1-3.el7.noarch.rpm)</div><div class="line">Using MARIA006.RPM;1 for  /mariadb-5.5.56-2.el7.x86_64.rpm (mariadb-libs-5.5.56-2.el7.x86_64.rpm)</div><div class="line">Using LIBTO001.RPM;1 for  /libtomcrypt-1.17-25.el7.x86_64.rpm (libtomcrypt-1.17-26.el7.x86_64.rpm)</div><div class="line">  6.11% done, estimate finish Sun Jul 12 14:26:47 2020</div><div class="line"> 97.60% done, estimate finish Sun Jul 12 14:26:48 2020</div><div class="line">Total translation table size: 0</div><div class="line">Total rockridge attributes bytes: 14838</div><div class="line">Total directory bytes: 2048</div><div class="line">Path table size(bytes): 26</div><div class="line">Max brk space used 21000</div><div class="line">81981 extents written (160 MB)</div></pre></td></tr></table></figure>
+<h2 id="将-生成的-iso挂载到目标机器上"><a href="#将-生成的-iso挂载到目标机器上" class="headerlink" title="将 生成的 iso挂载到目标机器上"></a>将 生成的 iso挂载到目标机器上</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"># mkdir /mnt/iso</div><div class="line"># mount ./docker_ansible.iso /mnt/iso</div><div class="line">mount: /dev/loop0 is write-protected, mounting read-only</div></pre></td></tr></table></figure>
+<h2 id="配置本地-yum-源"><a href="#配置本地-yum-源" class="headerlink" title="配置本地 yum 源"></a>配置本地 yum 源</h2><p>yum repository不是必须要求iso挂载，直接指向rpm文件夹（必须要有 createrepo 建立索引了）也可以</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"># cat /etc/yum.repos.d/drds.repo </div><div class="line">[drds]</div><div class="line">name=drds Extra Packages for Enterprise Linux 7 - $basearch</div><div class="line">enabled=1</div><div class="line">failovermethod=priority</div><div class="line">baseurl=file:///mnt/repo #baseurl=http://192.168.1.91:8000/ 本地内网</div><div class="line">priority=1  #添加priority=1，数字越小优先级越高，也可以修改网络源的priority的值</div><div class="line">gpgcheck=0</div><div class="line">#gpgkey=file:///mnt/cdrom/RPM-GPG-KEY-CentOS-5    #注：这个你cd /mnt/cdrom/可以看到这个key，这里仅仅是个例子， 因为gpgcheck是0 ，所以gpgkey不需要了</div></pre></td></tr></table></figure>
+<p>到此就可以在没有网络环境的机器上直接：yum install ansible docker -y 了 </p>
+<h2 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h2><p>测试的话可以指定repo 源： yum install ansible –enablerepo=drds （drds 优先级最高）</p>
+<p>本地会cache一些rpm的版本信息，可以执行 yum clean all 得到一个干净的测试环境</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">yum clean all</div><div class="line">yum list</div><div class="line">yum deplist ansible</div></pre></td></tr></table></figure>
 
           
         
@@ -4751,419 +4914,11 @@ LISTEN     0      128           *:tr-rsrb-p2                  *:*
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/09/28/就是要你懂TCP--性能和发送接收Buffer的关系/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/09/28/就是要你懂TCP--性能和发送接收Buffer的关系/" itemprop="url">TCP性能和发送接收窗口、Buffer的关系</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-09-28T12:30:03+08:00">
-                2019-09-28
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/09/28/就是要你懂TCP--性能和发送接收Buffer的关系/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2019/09/28/就是要你懂TCP--性能和发送接收Buffer的关系/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>本文希望解析清楚，当我们在代码中写下 socket.setSendBufferSize 和 sysctl 看到的rmem/wmem系统参数以及最终我们在TCP常常谈到的接收发送窗口的关系，以及他们怎样影响TCP传输的性能，同时如何通过图形来展示哪里是传输瓶颈。</p>
-<p>拥塞窗口相关文章比较多，他们跟带宽紧密相关，所以大家比较好判断，反而是接收、发送窗口一旦出现瓶颈，就没这么好判断了。</p>
-<p>先明确一下：<strong>文章标题中所说的Buffer指的是sysctl中的 rmem或者wmem，如果是代码中指定的话对应着SO_SNDBUF或者SO_RCVBUF，从TCP的概念来看对应着发送窗口或者接收窗口</strong></p>
-<h1 id="TCP性能和发送接收Buffer的关系"><a href="#TCP性能和发送接收Buffer的关系" class="headerlink" title="TCP性能和发送接收Buffer的关系"></a>TCP性能和发送接收Buffer的关系</h1><p>先从碰到的一个实际问题看起：</p>
-<blockquote>
-<p>应用通过专线跨网络访问云上的服务，专线100M，时延20ms，一个SQL查询了22M数据，结果花了大概25秒，这太慢了，不正常。</p>
-<p>如果通过云上client访问云上服务那么1-2秒就返回了（说明不跨网络服务是正常的）。</p>
-<p>如果通过http或者scp从公司向云上传输这22M的数据大概两秒钟也传送完毕了（说明网络带宽不是瓶颈），</p>
-<p>所以这里问题的原因基本上是我们的服务在这种网络条件下有性能问题，需要找出为什么。</p>
-</blockquote>
-<h2 id="抓包分析-tcpdump-wireshark"><a href="#抓包分析-tcpdump-wireshark" class="headerlink" title="抓包分析 tcpdump+wireshark"></a>抓包分析 tcpdump+wireshark</h2><p>抓包分析这22M的数据传输，如下图（wireshark 时序图），横轴是时间，纵轴是sequence number：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d188530df31712e8341f5687a960743a.png" alt="image.png"></p>
-<p>粗一看没啥问题，因为时间太长掩盖了问题。把这个图形放大，只看中间50ms内的传输情况（横轴是时间，纵轴是sequence number，一个点代表一个包）</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e177d59ecb886daef5905ed80a84dfd2.png" alt="image.png" style="zoom: 80%;"></p>
-<p>换个角度，看看窗口尺寸图形：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/7ae26e844629258de173a05d5ad595f9.png" alt="image.png"></p>
-<p>从bytes in flight也大致能算出来总的传输速度 16K*1000/20=800Kb/秒</p>
-<p>我们的应用代码中会默认设置 socketSendBuffer 为16K:</p>
-<blockquote>
-<p>socket.setSendBufferSize(16*1024) //16K send buffer</p>
-</blockquote>
-<p>来看一下tcp包发送流程：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d385a7dad76ec4031dfb6c096bca434b.png" alt="image.png"></p>
-<p>（图片<a href="https://www.atatech.org/articles/9032" target="_blank" rel="external">来自</a>）</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ff025f076a4a2bc2b1b13d11f32a97d3.png" alt="image.png"></p>
-<p>如果sendbuffer不够就会卡在上图中的第一步 sk_stream_wait_memory, 通过systemtap脚本可以验证：</p>
-<pre><code>#!/usr/bin/stap
-# Simple probe to detect when a process is waiting for more socket send
-# buffer memory. Usually means the process is doing writes larger than the
-# socket send buffer size or there is a slow receiver at the other side.
-# Increasing the socket&apos;s send buffer size might help decrease application
-# latencies, but it might also make it worse, so buyer beware.
-
-# Typical output: timestamp in microseconds: procname(pid) event
-#
-# 1218230114875167: python(17631) blocked on full send buffer
-# 1218230114876196: python(17631) recovered from full send buffer
-# 1218230114876271: python(17631) blocked on full send buffer
-# 1218230114876479: python(17631) recovered from full send buffer
-probe kernel.function(&quot;sk_stream_wait_memory&quot;)
-{
-    printf(&quot;%u: %s(%d) blocked on full send buffern&quot;,
-        gettimeofday_us(), execname(), pid())
-}
-
-probe kernel.function(&quot;sk_stream_wait_memory&quot;).return
-{
-    printf(&quot;%u: %s(%d) recovered from full send buffern&quot;,
-        gettimeofday_us(), execname(), pid())
-}
-</code></pre><h2 id="原理解析"><a href="#原理解析" class="headerlink" title="原理解析"></a>原理解析</h2><p>如果tcp发送buffer也就是SO_SNDBUF只有16K的话，这些包很快都发出去了，但是这16K的buffer不能立即释放出来填新的内容进去，因为tcp要保证可靠，万一中间丢包了呢。只有等到这16K中的某些包ack了，才会填充一些新包进来然后继续发出去。由于这里rt基本是20ms，也就是16K发送完毕后，等了20ms才收到一些ack，这20ms应用、内核什么都不能做，所以就是如前面第二个图中的大概20ms的等待平台。这块请参考<a href="https://www.atatech.org/articles/79660" target="_blank" rel="external">这篇文章</a></p>
-<p>比如下图，wmem大小是8，发出1-8后，buffer不能释放，等到收到ack1-4后，释放1-4，buffer也就是释放了一半，这一半可以填充新的发送数据进来了。 上面的问题在于ack花了很久，导致buffer一直不能释放。</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/3d9e77f8c9b0cab1484c870d2c0d2473.png" alt="image.png"></p>
-<p><strong>sendbuffer相当于发送仓库的大小，仓库的货物都发走后，不能立即腾出来发新的货物，而是要等对方确认收到了(ack)才能腾出来发新的货物。 传输速度取决于发送仓库（sendbuffer）、接收仓库（recvbuffer）、路宽（带宽）的大小，如果发送仓库（sendbuffer）足够大了之后接下来的瓶颈就会是高速公路了（带宽、拥塞窗口）。而实际上这个案例中带宽够、接收仓库也够，但是发送仓库太小了，导致发送过程断断续续，所以非常慢。</strong></p>
-<p>如果是UDP，就没有可靠的概念，有数据统统发出去，根本不关心对方是否收到，也就不需要ack和这个发送buffer了。</p>
-<h2 id="几个发送buffer相关的内核参数"><a href="#几个发送buffer相关的内核参数" class="headerlink" title="几个发送buffer相关的内核参数"></a>几个发送buffer相关的内核参数</h2><pre><code>vm.lowmem_reserve_ratio = 256   256     32
-net.core.wmem_max = 1048576
-net.core.wmem_default = 124928
-net.ipv4.tcp_wmem = 4096        16384   4194304【最小值  默认值  最大值】
-net.ipv4.udp_wmem_min = 4096
-</code></pre><p>net.ipv4.tcp_wmem 默认就是16K，而且内核是能够动态调整的，只不过我们代码中这块的参数是很多年前从Cobra中继承过来的，初始指定了sendbuffer的大小。代码中设置了这个参数后就关闭了内核的动态调整功能，这就是为什么http或者scp都很快，因为他们的send buffer是动态调整的。</p>
-<p>接收buffer是有开关可以动态控制的，发送buffer没有开关默认就是开启，关闭只能在代码层面来控制</p>
-<blockquote>
-<p>net.ipv4.tcp_moderate_rcvbuf</p>
-</blockquote>
-<h2 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h2><p>调整 socketSendBuffer 到256K，查询时间从25秒下降到了4秒多，但是比理论带宽所需要的时间略高</p>
-<p>继续查看系统 net.core.wmem_max 参数默认最大是130K，所以即使我们代码中设置256K实际使用的也是130K，继续调大这个系统参数后整个网络传输时间大概2秒(跟100M带宽匹配了，scp传输22M数据也要2秒），整体查询时间2.8秒。测试用的mysql client短连接，如果代码中的是长连接的话会块300-400ms（消掉了握手和慢启动阶段），这基本上是理论上最快速度了</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/3dcfd469fe1e2f7e1d938a5289b83826.png" alt="image.png"></p>
-<p>如果指定了tcp_wmem，则net.core.wmem_default被tcp_wmem的覆盖。send Buffer在tcp_wmem的最小值和最大值之间自动调整。如果调用setsockopt()设置了socket选项SO_SNDBUF，将关闭发送端缓冲的自动调节机制，tcp_wmem将被忽略，SO_SNDBUF的最大值由net.core.wmem_max限制。</p>
-<h2 id="BDP-带宽时延积"><a href="#BDP-带宽时延积" class="headerlink" title="BDP 带宽时延积"></a>BDP 带宽时延积</h2><p>BDP=rtt*(带宽/8)</p>
-<p>这个 buffer 调到1M测试没有帮助，从理论计算BDP（带宽时延积） 0.02秒<em>(100MB/8)=250Kb  所以 **</em>SO_SNDBUF为256Kb的时候基本能跑满带宽了，再大也没有什么实际意义了** 。也就是前面所说的仓库足够后瓶颈在带宽上了。</p>
-<p>因为这里根据带宽、rtt计算得到的BDP是250K，BDP跑满后拥塞窗口（带宽、接收窗口和rt决定的）即将成为新的瓶颈，所以调大buffer没意义了。</p>
-<h2 id="用tc构造延时和带宽限制的模拟重现环境"><a href="#用tc构造延时和带宽限制的模拟重现环境" class="headerlink" title="用tc构造延时和带宽限制的模拟重现环境"></a>用tc构造延时和带宽限制的模拟重现环境</h2><pre><code>sudo tc qdisc del dev eth0 root netem delay 20ms
-sudo tc qdisc add dev eth0 root tbf rate 500kbit latency 50ms burst 15kb
-</code></pre><h2 id="这个案例关于wmem的结论"><a href="#这个案例关于wmem的结论" class="headerlink" title="这个案例关于wmem的结论"></a>这个案例关于wmem的结论</h2><p>默认情况下Linux系统会自动调整这个buffer（net.ipv4.tcp_wmem）, 也就是不推荐程序中主动去设置SO_SNDBUF，除非明确知道设置的值是最优的。</p>
-<p>从这里我们可以看到，有些理论知识点虽然我们知道，但是在实践中很难联系起来，也就是常说的无法学以致用，最开始看到抓包结果的时候比较怀疑发送、接收窗口之类的，没有直接想到send buffer上，理论跟实践没联系上。</p>
-<h2 id="接下来看看接收buffer-rmem-和接收窗口的关系"><a href="#接下来看看接收buffer-rmem-和接收窗口的关系" class="headerlink" title="接下来看看接收buffer(rmem)和接收窗口的关系"></a>接下来看看接收buffer(rmem)和接收窗口的关系</h2><p>用这样一个案例下来验证接收窗口的作用：</p>
-<blockquote>
-<p>有一个batch insert语句，整个一次要插入5532条记录，所有记录大小总共是376K，也就是这个sql语句本身是376K。</p>
-</blockquote>
-<h2 id="SO-RCVBUF很小的时候并且rtt很大对性能的影响"><a href="#SO-RCVBUF很小的时候并且rtt很大对性能的影响" class="headerlink" title="SO_RCVBUF很小的时候并且rtt很大对性能的影响"></a>SO_RCVBUF很小的时候并且rtt很大对性能的影响</h2><p>如果rtt是40ms，总共需要5-6秒钟：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/4af4765c045e9eed2e36d9760d4a2aba.png" alt="image.png"></p>
-<p>基本可以看到server一旦空出来点窗口，client马上就发送数据，由于这点窗口太小，rtt是40ms，也就是一个rtt才能传3456字节的数据，整个带宽才用到80-90K，完全没跑满。</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/1984258c0300921799476777f5f0a38a.png" alt="image.png"></p>
-<p>比较明显间隔 40ms 一个等待台阶，台阶之间两个包大概3K数据，总的传输效率如下：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/5ec50ecf25444e96d81fab975b5a79e6.png" alt="image.png"></p>
-<p><strong>斜线越陡表示速度越快，从上图看整体SQL上传花了5.5秒，执行0.5秒。</strong></p>
-<p>此时对应的窗口尺寸：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/05d6357ed53c1c16f0dd0454251916ef.png" alt="image.png"></p>
-<p>窗口由最开始28K(20个1448）很快降到了不到4K的样子，然后基本游走在即将满的边缘，虽然读取慢，幸好rtt也大，导致最终也没有满。（这个是3.1的Linux，应用SO_RCVBUF设置的是8K，用一半来做接收窗口）</p>
-<h2 id="SO-RCVBUF很小的时候并且rtt很小时对性能的影响"><a href="#SO-RCVBUF很小的时候并且rtt很小时对性能的影响" class="headerlink" title="SO_RCVBUF很小的时候并且rtt很小时对性能的影响"></a>SO_RCVBUF很小的时候并且rtt很小时对性能的影响</h2><p>如果同样的语句在 rtt 是0.1ms的话</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/67f280a1cf499ae388fc44d6418869a7.png" alt="image.png"></p>
-<p>虽然明显看到接收窗口经常跑满，但是因为rtt很小，一旦窗口空出来很快就通知到对方了，所以整个过小的接收窗口也没怎么影响到整体性能</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/15b7d6852e44fc179d60d76f322695c7.png" alt="image.png"></p>
-<p>如上图11.4秒整个SQL开始，到11.41秒SQL上传完毕，11.89秒执行完毕（执行花了0.5秒），上传只花了0.01秒</p>
-<p>接收窗口情况：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/0f3050cd98db40a352410a11a521e8b2.png" alt="image.png"></p>
-<p>如图，接收窗口由最开始的28K降下来，然后一直在5880和满了之间跳动</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/0db5c3684a9314907f9158ac15b6ac71.png" alt="image.png"></p>
-<p>从这里可以得出结论，接收窗口的大小对性能的影响，rtt越大影响越明显，当然这里还需要应用程序配合，如果应用程序一直不读走数据即使接收窗口再大也会堆满的。</p>
-<h2 id="SO-RCVBUF和tcp-window-full的坏case"><a href="#SO-RCVBUF和tcp-window-full的坏case" class="headerlink" title="SO_RCVBUF和tcp window full的坏case"></a>SO_RCVBUF和tcp window full的坏case</h2><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/55cf9875d24d76a077c442327d54fa34.png" alt="image.png"></p>
-<p>上图中红色平台部分，停顿了大概6秒钟没有发任何有内容的数据包，这6秒钟具体在做什么如下图所示，可以看到这个时候接收方的TCP Window Full，同时也能看到接收方（3306端口）的TCP Window Size是8192（8K），发送方（27545端口）是20480.</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/da48878ce0c01bcdedb1e6d6a6cc6d1c.png" alt="image.png"></p>
-<p>这个状况跟前面描述的recv buffer太小不一样，8K是很小，但是因为rtt也很小，所以server总是能很快就ack收到了，接收窗口也一直不容易达到full状态，但是一旦接收窗口达到了full状态，居然需要惊人的6秒钟才能恢复，这等待的时间有点太长了。这里应该是应用读取数据太慢导致了耗时6秒才恢复，所以最终这个请求执行会非常非常慢（时间主要耗在了上传SQL而不是执行SQL）.</p>
-<p>实际原因不知道，从读取TCP数据的逻辑来看这里没有明显的block，可能的原因：</p>
-<ul>
-<li>request的SQL太大，Server（3306端口上的服务）从TCP读取SQL需要放到一块分配好的内存，内存不够的时候需要扩容，扩容有可能触发fgc，从图形来看，第一次满就卡顿了，而且每次满都卡顿，不像是这个原因</li>
-<li>request请求一次发过来的是多个SQL，应用读取SQL后，将SQL分成多个，然后先执行第一个，第一个执行完后返回response，再读取第二个。图形中卡顿前没有response返回，所以也不是这个原因</li>
-<li>……其它未知原因</li>
-</ul>
-<h2 id="接收方不读取数据导致的接收窗口满同时有丢包发生"><a href="#接收方不读取数据导致的接收窗口满同时有丢包发生" class="headerlink" title="接收方不读取数据导致的接收窗口满同时有丢包发生"></a>接收方不读取数据导致的接收窗口满同时有丢包发生</h2><p>服务端返回数据到client端，TCP协议栈ack这些包，但是应用层没读走包，这个时候 SO_RCVBUF 堆积满，client的TCP协议栈发送 ZeroWindow 标志给服务端。也就是接收端的 buffer 堆满了（但是服务端这个时候看到的bytes in fly是0，因为都ack了），这时服务端不能继续发数据，要等 ZeroWindow 恢复。</p>
-<p>那么接收端上层应用不读走包可能的原因：</p>
-<ul>
-<li>应用代码卡顿、GC等等</li>
-<li>应用代码逻辑上在做其它事情（比如Server将SQL分片到多个DB上，Server先读取第一个分片，如果第一个分片数据很大很大，处理也慢，那么即使第二个分片数据都返回到了TCP 的recv buffer，应用也没去读取其它分片的结果集，直到第一个分片读取完毕。如果SQL带排序，那么Server会轮询读取多个分片，造成这种卡顿的概率小了很多）</li>
-</ul>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/49e2635a7c4025d44b915a1f17dd272a.png" alt="image.png"></p>
-<p>上图这个流因为应用层不读取TCP数据，导致TCP接收Buffer满，进而接收窗口为0，server端不能再发送数据而卡住，但是ZeroWindow的探测包，client都有正常回复，所以1903秒之后接收方窗口不为0后（window update）传输恢复。</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/2e493d8dc32bb63f2126375de6675351.png" alt="image.png"></p>
-<p>这个截图和前一个类似，是在Server上(3003端口)抓到的包，不同的是接收窗口为0后，server端多次探测（Server上抓包能看到），但是client端没有回复 ZeroWindow（也有可能是回复了，但是中间环节把ack包丢了,或者这个探测包client没收到），造成server端认为client死了、不可达之类，进而反复重传，重传超过15次之后，server端认为这个连接死了，粗暴单方面断开（没有reset和fin,因为没必要，server认为网络连通性出了问题）。</p>
-<p>等到1800秒后，client的接收窗口恢复了，发个window update给server，这个时候server认为这个连接已经断开了，只能回复reset</p>
-<p>网络不通，重传超过一定的时间（tcp_retries2)然后断开这个连接是正常的，这里的问题是：</p>
-<ol>
-<li>为什么这种场景下丢包了，而且是针对某个stream一直丢包</li>
-</ol>
-<p>可能是因为这种场景下触发了中间环节的流量管控，故意丢包了（比如proxy、slb、交换机都有可能做这种选择性的丢包）</p>
-<p>这里server认为连接断开，没有发reset和fin,因为没必要，server认为网络连通性出了问题。client还不知道server上这个连接清理掉了，等client回复了一个window update，server早就认为这个连接早断了，突然收到一个update，莫名其妙，只能reset</p>
-<h2 id="接收窗口和SO-RCVBUF的关系"><a href="#接收窗口和SO-RCVBUF的关系" class="headerlink" title="接收窗口和SO_RCVBUF的关系"></a>接收窗口和SO_RCVBUF的关系</h2><p>初始接收窗口一般是 <strong>mss乘以初始cwnd（为了和慢启动逻辑兼容，不想一下子冲击到网络）</strong>，如果没有设置SO_RCVBUF，那么会根据 net.ipv4.tcp_rmem 动态变化，如果设置了SO_RCVBUF，那么接收窗口要向下面描述的值靠拢。</p>
-<p><a href="https://access.redhat.com/discussions/3624151" target="_blank" rel="external">初始cwnd可以大致通过查看到</a>： </p>
-<pre><code>ss -itmpn dst &quot;10.81.212.8&quot;
-State      Recv-Q Send-Q Local Address:Port  Peer Address:Port
-ESTAB      0      0      10.xx.xx.xxx:22     10.yy.yy.yyy:12345  users:((&quot;sshd&quot;,pid=1442,fd=3))
-         skmem:(r0,rb369280,t0,tb87040,f4096,w0,o0,bl0,d92)
-
-Here we can see this socket has Receive Buffer 369280 bytes, and Transmit Buffer 87040 bytes.
-Keep in mind the kernel will double any socket buffer allocation for overhead. 
-So a process asks for 256 KiB buffer with setsockopt(SO_RCVBUF) then it will get 512 KiB buffer
-space. This is described on man 7 tcp. 
-</code></pre><p>初始窗口计算的代码逻辑，重点在18行： </p>
-<pre><code>    /* TCP initial congestion window as per rfc6928 */
-    #define TCP_INIT_CWND           10
-    /* 3. Try to fixup all. It is made immediately after connection enters
-
-       established state.
-             */
-            void tcp_init_buffer_space(struct sock *sk)
-            {
-          int tcp_app_win = sock_net(sk)-&gt;ipv4.sysctl_tcp_app_win;
-          struct tcp_sock *tp = tcp_sk(sk);
-          int maxwin;
-
-        if (!(sk-&gt;sk_userlocks &amp; SOCK_SNDBUF_LOCK))
-                tcp_sndbuf_expand(sk);
-
-        //初始最大接收窗口计算过程
-        tp-&gt;rcvq_space.space = min_t(u32, tp-&gt;rcv_wnd, TCP_INIT_CWND * tp-&gt;advmss);
-        tcp_mstamp_refresh(tp);
-        tp-&gt;rcvq_space.time = tp-&gt;tcp_mstamp;
-        tp-&gt;rcvq_space.seq = tp-&gt;copied_seq;
-
-        maxwin = tcp_full_space(sk);
-
-        if (tp-&gt;window_clamp &gt;= maxwin) {
-                tp-&gt;window_clamp = maxwin;
-
-                if (tcp_app_win &amp;&amp; maxwin &gt; 4 * tp-&gt;advmss)
-                        tp-&gt;window_clamp = max(maxwin -
-                                               (maxwin &gt;&gt; tcp_app_win),
-                                               4 * tp-&gt;advmss);
-        }
-
-        /* Force reservation of one segment. */
-        if (tcp_app_win &amp;&amp;
-            tp-&gt;window_clamp &gt; 2 * tp-&gt;advmss &amp;&amp;
-            tp-&gt;window_clamp + tp-&gt;advmss &gt; maxwin)
-                tp-&gt;window_clamp = max(2 * tp-&gt;advmss, maxwin - tp-&gt;advmss);
-
-        tp-&gt;rcv_ssthresh = min(tp-&gt;rcv_ssthresh, tp-&gt;window_clamp);
-        tp-&gt;snd_cwnd_stamp = tcp_jiffies32;
-}
-</code></pre><p>传输过程中，最大接收窗口会动态调整，当指定了SO_RCVBUF后，实际buffer是两倍SO_RCVBUF，但是要分出一部分（2^net.ipv4.tcp_adv_win_scale)来作为乱序报文缓存。</p>
-<blockquote>
-<ol>
-<li>net.ipv4.tcp_adv_win_scale = 2  //2.6内核，3.1中这个值默认是1</li>
-</ol>
-</blockquote>
-<p>如果SO_RCVBUF是8K，总共就是16K，然后分出2^2分之一，也就是4分之一，还剩12K当做接收窗口；如果设置的32K，那么接收窗口是48K<br>    static inline int tcp_win_from_space(const struct sock <em>sk, int space)<br>    {//space 传入的时候就已经是 2</em>SO_RCVBUF了<br>            int tcp_adv_win_scale = sock_net(sk)-&gt;ipv4.sysctl_tcp_adv_win_scale;</p>
-<pre><code>        return tcp_adv_win_scale &lt;= 0 ?
-                (space&gt;&gt;(-tcp_adv_win_scale)) :
-                space - (space&gt;&gt;tcp_adv_win_scale); //sysctl参数tcp_adv_win_scale 
-}
-</code></pre><p>接收窗口有最大接收窗口和当前可用接收窗口。</p>
-<p>一般来说一次中断基本都会将 buffer 中的包都取走。</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d7d3af2c03653e6cf8ae2befa0022832.png" alt="image.png"></p>
-<p>绿线是最大接收窗口动态调整的过程，最开始是1460*10，握手完毕后略微调整到1472*10（可利用body增加了12），随着数据的传输开始跳涨</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d0e12e8bad8764385549f9b391c62ab0.png" alt="image.png"></p>
-<p>上图是四个batch insert语句，可以看到绿色接收窗口随着数据的传输越来越大，图中蓝色竖直部分基本表示SQL上传，两个蓝色竖直条的间隔代表这个insert在服务器上真正的执行时间。这图非常陡峭，表示上传没有任何瓶颈.</p>
-<h3 id="设置-SO-RCVBUF-后通过wireshark观察到的接收窗口基本"><a href="#设置-SO-RCVBUF-后通过wireshark观察到的接收窗口基本" class="headerlink" title="设置 SO_RCVBUF 后通过wireshark观察到的接收窗口基本"></a>设置 SO_RCVBUF 后通过wireshark观察到的接收窗口基本</h3><p>下图是设置了 SO_RCVBUF 为8192的实际情况：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d0e12e8bad8764385549f9b391c62ab0.png" alt="image.png"></p>
-<p>从最开始的14720，执行第一个create table语句后降到14330，到真正执行batch insert就降到了8192*1.5. 然后一直保持在这个值</p>
-<h3 id="If-you-set-a-“receive-buffer-size”-on-a-TCP-socket-what-does-it-actually-mean"><a href="#If-you-set-a-“receive-buffer-size”-on-a-TCP-socket-what-does-it-actually-mean" class="headerlink" title="If you set a “receive buffer size” on a TCP socket, what does it actually mean?"></a>If you set a “receive buffer size” on a TCP socket, what does it actually mean?</h3><p><a href="https://blog.cloudflare.com/the-story-of-one-latency-spike/" target="_blank" rel="external">The naive answer would go something along the lines of: the TCP receive buffer setting indicates the maximum number of bytes a </a><a href="https://blog.cloudflare.com/the-story-of-one-latency-spike/" target="_blank" rel="external"><code>read()</code></a><a href="https://blog.cloudflare.com/the-story-of-one-latency-spike/" target="_blank" rel="external"> syscall could retrieve without blocking.</a></p>
-<p>Note that if the buffer size is set with <code>setsockopt()</code>, the value returned with <code>getsockopt()</code> is always <em>double</em> the size requested to allow for overhead. This is described in <code>man 7 socket</code>.</p>
-<h1 id="长肥网络（rt很高、带宽也高）下接收窗口对传输性能的影响"><a href="#长肥网络（rt很高、带宽也高）下接收窗口对传输性能的影响" class="headerlink" title="长肥网络（rt很高、带宽也高）下接收窗口对传输性能的影响"></a>长肥网络（rt很高、带宽也高）下接收窗口对传输性能的影响</h1><p>最后通过一个实际碰到的案例，涉及到了接收窗口、发送Buffer以及高延时情况下的性能问题</p>
-<p>案例描述：从中国访问美国的服务器下载图片，只能跑到220K，远远没有达到带宽能力，其中中美之间的网络延时时150ms，这个150ms已经不能再优化了。业务结构是：</p>
-<p>client ——150ms—–&gt;&gt;&gt;LVS—1ms–&gt;&gt;&gt;美国的统一接入server—–1ms—–&gt;&gt;&gt;nginx</p>
-<p>通过下载一个4M的文件大概需要20秒，分别在client和nginx上抓包来分析这个问题（统一接入server没权限上去）</p>
-<h2 id="Nginx上抓包"><a href="#Nginx上抓包" class="headerlink" title="Nginx上抓包"></a>Nginx上抓包</h2><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/259767fb17f7dbffe7f77ab059c47dbd.png" alt="image.png"></p>
-<p>从这里可以看到Nginx大概在60ms内就将4M的数据都发完了</p>
-<h2 id="client上抓包"><a href="#client上抓包" class="headerlink" title="client上抓包"></a>client上抓包</h2><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/466fba92829f6a922ccd2d57a7e3fdac.png" alt="image.png"></p>
-<p>从这个图上可以清楚看到大概每传输大概30K数据就有一个150ms的等待平台，这个150ms基本是client到美国的rt。</p>
-<p>从我们前面的阐述可以清楚了解到因为rt比较高，统一接入server每发送30K数据后要等150ms才能收到client的ack，然后继续发送，猜是因为上面设置的发送buffer大概是30K。</p>
-<p>检查统一接入server的配置，可以看到接入server的配置里面果然有个32K buffer设置</p>
-<h2 id="将buffer改大"><a href="#将buffer改大" class="headerlink" title="将buffer改大"></a>将buffer改大</h2><p>速度可以到420K，但是还没有跑满带宽：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/93e254c5154ce2e065bec9fb34f3db2b.png" alt="image.png"></p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/0a8c68a58da6f169573b57cde0ffba93.png" alt="image.png"></p>
-<p>接着看一下client上的抓包</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/822737a4ed6ffe6b920d4b225a1be5bf.png" alt="image.png"></p>
-<p>可以清楚看到 client的接收窗口是64K， 64K*1000/150=426K 这个64K很明显是16位的最大值，应该是TCP握手有一方不支持window scaling factor</p>
-<p>那么继续分析一下握手包，syn：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/004886698ddbaa1cbc8342a9cd667c76.png" alt="image.png"></p>
-<p>说明client是支持的，再看 syn+ack：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/70155e021390cb1ee07091c306c375f4.png" alt="image.png"></p>
-<p>可以看到服务端不支持，那就最大只能用到64K。需要修改服务端代理程序，这主要是LVS或者代理的锅。</p>
-<p>如果内网之间rt很小这个锅不会爆发，一旦网络慢一点就把问题恶化了</p>
-<p>比如这是这个应用的开发人员的反馈：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/a08a204ec7ad4bba7867dacea1668322.png" alt="image.png"></p>
-<p>长肥网络就像是很长很宽的高速公路，上面可以同时跑很多车，而如果发车能力不够，就容易跑不满高速公路。<br>在rt很短的时候可以理解为高速公路很短，所以即使发车慢也还好，因为车很快就到了，到了后就又能发新车了。rt很长的话就要求更大的仓库了。</p>
-<p>整个这个问题，我最初拿到的问题描述结构是这样的：</p>
-<p>client ——150ms—–&gt;&gt;&gt;nginx</p>
-<p>实际开发人员也不能完全描述清楚结构，从抓包中慢慢分析反推他们的结构，到最后问题的解决。</p>
-<p>这个案例综合了发送窗口（32K）、接收窗口（64K，因为握手LVS不支持window scale）、rt很大将问题暴露出来（跨国网络，rt没法优化）。</p>
-<h2 id="OS层面相关参数："><a href="#OS层面相关参数：" class="headerlink" title="OS层面相关参数："></a>OS层面相关参数：</h2><pre><code>$sudo sysctl -a | egrep &quot;rmem|wmem|tcp_mem|adv_win|moderate&quot;
-net.core.rmem_default = 212992
-net.core.rmem_max = 212992
-net.core.wmem_default = 212992
-net.core.wmem_max = 212992
-net.ipv4.tcp_adv_win_scale = 1
-net.ipv4.tcp_moderate_rcvbuf = 1
-net.ipv4.tcp_rmem = 4096    87380    6291456
-net.ipv4.tcp_wmem = 4096    16384    4194304
-net.ipv4.udp_rmem_min = 4096
-net.ipv4.udp_wmem_min = 4096
-vm.lowmem_reserve_ratio = 256    256    32
-net.ipv4.tcp_mem = 88560        118080  177120
-</code></pre><p>发送buffer系统比较好自动调节，依靠发送数据大小和rt延时大小，可以相应地进行调整；但是接受buffer就不一定了，接受buffer的使用取决于收到的数据快慢和应用读走数据的速度，只能是OS根据系统内存的压力来调整接受buffer。系统内存的压力取决于 net.ipv4.tcp_mem.</p>
-<p>需要特别注意：<strong>tcp_wmem 和 tcp_rmem 的单位是字节，而 tcp_mem 的单位的页面</strong></p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
-<li>一般来说绝对不要在程序中手工设置SO_SNDBUF和SO_RCVBUF，内核自动调整比你做的要好；</li>
-<li>SO_SNDBUF一般会比发送滑动窗口要大，因为发送出去并且ack了的才能从SO_SNDBUF中释放；</li>
-<li>TCP接收窗口跟SO_RCVBUF关系很复杂；</li>
-<li>SO_RCVBUF太小并且rtt很大的时候会严重影响性能；</li>
-<li>接收窗口比发送窗口复杂多了；</li>
-<li>发送窗口/SO_SNDBUF–发送仓库，带宽/拥塞窗口–马路通畅程度，接收窗口/SO_RCVBUF–接收仓库；</li>
-<li>发送仓库、马路宽度、长度（rt）、接收仓库一起决定了传输速度–类比一下快递过程。</li>
-</ul>
-<p><strong>总之记住一句话：不要设置socket的SO_SNDBUF和SO_RCVBUF</strong></p>
-<h1 id="相关和参考文章"><a href="#相关和参考文章" class="headerlink" title="相关和参考文章"></a>相关和参考文章</h1><p><a href="https://www.atatech.org/articles/80292" target="_blank" rel="external">经典的 nagle 和 dalay ack对性能的影响 就是要你懂 TCP– 最经典的TCP性能问题</a></p>
-<p><a href="https://www.atatech.org/articles/78858" target="_blank" rel="external">关于TCP 半连接队列和全连接队列</a></p>
-<p><a href="https://www.atatech.org/articles/60633" target="_blank" rel="external">MSS和MTU导致的悲剧</a></p>
-<p><a href="https://www.atatech.org/articles/73174" target="_blank" rel="external">双11通过网络优化提升10倍性能</a></p>
-<p><a href="https://www.atatech.org/articles/79660" target="_blank" rel="external">就是要你懂TCP的握手和挥手</a></p>
-<p><a href="https://www.atatech.org/articles/13203" target="_blank" rel="external">高性能网络编程7–tcp连接的内存使用</a></p>
-<p><a href="https://blog.cloudflare.com/the-story-of-one-latency-spike/" target="_blank" rel="external">The story of one latency spike</a></p>
-<p><a href="https://access.redhat.com/discussions/782343" target="_blank" rel="external">What is rcv_space in the ‘ss –info’ output, and why it’s value is larger than net.core.rmem_max</a></p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right"></i></a>
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -5208,7 +4963,7 @@ net.ipv4.tcp_mem = 88560        118080  177120
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">80</span>
+                <span class="site-state-item-count">81</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -5230,7 +4985,7 @@ net.ipv4.tcp_mem = 88560        118080  177120
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">167</span>
+                <span class="site-state-item-count">171</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>

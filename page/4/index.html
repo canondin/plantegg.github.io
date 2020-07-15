@@ -261,6 +261,169 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/12/07/如何追踪网络流量/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/12/07/如何追踪网络流量/" itemprop="url">如何追踪网络流量</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-12-07T17:30:03+08:00">
+                2017-12-07
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/network/" itemprop="url" rel="index">
+                    <span itemprop="name">network</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2017/12/07/如何追踪网络流量/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2017/12/07/如何追踪网络流量/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="如何追踪网络流量"><a href="#如何追踪网络流量" class="headerlink" title="如何追踪网络流量"></a>如何追踪网络流量</h1><h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>某些场景下通过监控发现了流量比较大，不太合理，需要知道这些流量都是哪些进程访问哪些服务触发的</p>
+<h2 id="方法"><a href="#方法" class="headerlink" title="方法"></a>方法</h2><ol>
+<li>定位流量是由哪个进程触发的</li>
+<li>定位流量主要是访问哪些ip导致的</li>
+<li>定位具体的端口有较大的流量</li>
+</ol>
+<h2 id="工具"><a href="#工具" class="headerlink" title="工具"></a>工具</h2><p>nethogs/iftop/tcptrack</p>
+<h2 id="定位进程"><a href="#定位进程" class="headerlink" title="定位进程"></a>定位进程</h2><pre><code>sudo nethogs 
+</code></pre><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e89eaf27aa98a6192d109ee22f9c0da8.png" alt="image.png"></p>
+<p>从上图可以看到总的流量，以及每个进程的流量大小。这里可以确认流量主要是3820的java进程消耗的</p>
+<h2 id="定位ip"><a href="#定位ip" class="headerlink" title="定位ip"></a>定位ip</h2><pre><code>sudo iftop -p -n -B
+</code></pre><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/1f03abbebbfc173b5af3163d017fd901.png" alt="image.png"></p>
+<p>通过上图可以看到流量主要是消耗在 10.0.48.1的ip上</p>
+<h2 id="定位端口"><a href="#定位端口" class="headerlink" title="定位端口"></a>定位端口</h2><p>10.0.48.1 有可能是一个mapping ip，需要进一步查看具体</p>
+<pre><code>sudo tcptrack -r 5 -i eth0  //然后输入小写s，按流量排序
+sudo tcptrack -r 5 -i eth0 host 10.0.48.1 //filter 语法和tcpdump一样
+</code></pre><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/07f0fceb6af4c4387832561b630c00b3.png" alt="image.png"></p>
+<p>可以看到4355/4356端口上流量相对较大</p>
+<h2 id="软件安装"><a href="#软件安装" class="headerlink" title="软件安装"></a>软件安装</h2><p>后续发布新镜像都会带上这三个软件的rpm安装包<br>目前可以手动下载这三个rpm安装包：</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/08/31/vxlan网络性能测试/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1549,7 +1712,7 @@ nameserver 10.0.0.3
 </tbody>
 </table>
 <h2 id="debug-crond"><a href="#debug-crond" class="headerlink" title="debug crond"></a>debug crond</h2><p>先停掉 crond service，然后开启debug参数</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">systemctl stop crond</div><div class="line">crond -x test</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">systemctl stop crond</div><div class="line">crond -x proc //不想真正执行的话：test</div></pre></td></tr></table></figure>
 <p>或者增加更多的debug信息， debug sudo/sudoers , 在 /etc/sudo.conf 中增加了：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">Debug sudo /var/log/sudo_debug all@warn</div><div class="line">Debug sudoers.so /var/log/sudoers_debug all@debug</div></pre></td></tr></table></figure>
 <h2 id="systemd-limits"><a href="#systemd-limits" class="headerlink" title="systemd limits"></a>systemd limits</h2><p>/etc/security/limits.conf 的配置，只适用于通过PAM 认证登录用户的资源限制，它对systemd 的service 的资源限制不生效。</p>
@@ -3975,7 +4138,7 @@ manager_user1: &quot;{{ manager_user_name }}&quot;
 <h2 id="开始准备"><a href="#开始准备" class="headerlink" title="开始准备"></a>开始准备</h2><blockquote>
 <p>如果不想每次输入ssh密码的话请提前将本地公钥(~/.ssh/id_rsa.pub 没有的话 ssh-keygen生成一对)复制到目标机器的 ~/.ssh/authorized_keys 里面，否则每次执行命令都要输入密码</p>
 </blockquote>
-<h3 id="编写一个-hosts-ini-配置文件，内容如下"><a href="#编写一个-hosts-ini-配置文件，内容如下" class="headerlink" title="编写一个 hosts.ini 配置文件，内容如下:"></a>编写一个 hosts.ini 配置文件，内容如下:</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">[server]</div><div class="line">10.125.0.169 ansible_ssh_port=9999 #如果只有这台机器ssh走的是9999端口，其它没有设置的还是默认22端口</div><div class="line">10.125.3.33</div><div class="line">120.26.116.193  </div><div class="line"></div><div class="line">[worker]</div><div class="line">10.125.12.174</div><div class="line">10.125.14.238</div><div class="line"></div><div class="line">[target]</div><div class="line">10.125.192.40 </div><div class="line">10.125.7.151</div></pre></td></tr></table></figure>
+<h3 id="编写一个-hosts-ini-配置文件，内容如下"><a href="#编写一个-hosts-ini-配置文件，内容如下" class="headerlink" title="编写一个 hosts.ini 配置文件，内容如下:"></a>编写一个 hosts.ini 配置文件，内容如下:</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">[server]</div><div class="line">10.125.0.169 ansible_ssh_port=9999 #如果只有这台机器ssh走的是9999端口，其它没有设置的还是默认22端口</div><div class="line">10.125.3.33</div><div class="line">120.26.116.193  </div><div class="line"></div><div class="line">[worker]</div><div class="line">10.125.12.174</div><div class="line">10.125.14.238</div><div class="line"></div><div class="line">[target]</div><div class="line">10.125.192.40 </div><div class="line">10.125.7.151</div><div class="line">192.168.2.[101:107]</div></pre></td></tr></table></figure>
 <blockquote>
 <p>server/worker/target表示将7台机器分成了三组，可以到所有7台机器执行同一个命令，也可以只在server/worker/target中的一组机器上执行某个命令.all代表所有7台机器</p>
 </blockquote>
@@ -3997,41 +4160,49 @@ total 12K
 drwxr-xr-x  2 root  root  4.0K Nov 13 12:34 files
 drwxr-xr-x 11 admin admin 4.0K Oct 20 10:49 tomcat
 drwxr-xr-x  3 test  games 4.0K Nov 18 15:40 ansible-engine
-</code></pre><p>​<br>​    success =&gt; 10.125.3.33 =&gt; rc=0 =&gt;<br>​    total 20K<br>​    -rw——-  1 admin admin 1.4K Nov 12 13:39 authorized_keys<br>​    drwxr-xr-x  2 root  root  4.0K Nov 12 16:24 engine<br>​    drwxr-xr-x  2 root  root  4.0K Nov 13 12:22 files<br>​    drwxr-xr-x 11 admin admin 4.0K Nov 18 15:43 tomcat<br>​    drwxr-xr-x  3 test  games 4.0K Nov 18 15:40 ansible-engine</p>
+</code></pre><p>​    success =&gt; 10.125.3.33 =&gt; rc=0 =&gt;<br>​    total 20K<br>​    -rw——-  1 admin admin 1.4K Nov 12 13:39 authorized_keys<br>​    drwxr-xr-x  2 root  root  4.0K Nov 12 16:24 engine<br>​    drwxr-xr-x  2 root  root  4.0K Nov 13 12:22 files<br>​    drwxr-xr-x 11 admin admin 4.0K Nov 18 15:43 tomcat<br>​    drwxr-xr-x  3 test  games 4.0K Nov 18 15:40 ansible-engine</p>
+<h3 id="查看部分机器-hostname"><a href="#查看部分机器-hostname" class="headerlink" title="查看部分机器 hostname"></a>查看部分机器 hostname</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line"># ansible -i ccb_test.ini 192.168.2.10* -m shell -a &apos;hostname &apos;</div><div class="line">[WARNING]: Invalid characters were found in group names but not replaced, use -vvvv to see details</div><div class="line">192.168.2.100 | CHANGED | rc=0 &gt;&gt;</div><div class="line">az2-drds-100</div><div class="line">192.168.2.106 | CHANGED | rc=0 &gt;&gt;</div><div class="line">az2-manager-106</div><div class="line">192.168.2.101 | CHANGED | rc=0 &gt;&gt;</div><div class="line">az2-alisql-101</div><div class="line">192.168.2.102 | CHANGED | rc=0 &gt;&gt;</div><div class="line">az2-alisql-102</div><div class="line">192.168.2.105 | CHANGED | rc=0 &gt;&gt;</div><div class="line">az2-alisql-105</div><div class="line">192.168.2.104 | CHANGED | rc=0 &gt;&gt;</div><div class="line">az2-alisql-104</div><div class="line">192.168.2.103 | CHANGED | rc=0 &gt;&gt;</div><div class="line">az2-alisql-103</div><div class="line">192.168.2.107 | CHANGED | rc=0 &gt;&gt;</div><div class="line">az2-manager-107</div></pre></td></tr></table></figure>
+<h3 id="使用环境变量"><a href="#使用环境变量" class="headerlink" title="使用环境变量"></a>使用环境变量</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line">#config /etc/hosts</div><div class="line">ansible -i $1 all -m shell -a  &quot; sed -i &apos;/registry/d&apos; /etc/hosts &quot;</div><div class="line">ansible -i $1 all -m shell -a  &quot; echo &apos;&#123;&#123; registry &#125;&#125;    registry&apos; &gt;/etc/hosts &quot;</div><div class="line">ansible -i $1 all -m shell -a &quot; echo &apos;&#123;&#123; inventory_hostname &#125;&#125; `hostname`&apos; &gt;&gt;/etc/hosts &quot;</div><div class="line">ansible -i $1 diamond -m shell -a &quot; echo &apos;&#123;&#123; inventory_hostname  &#125;&#125;   jmenv.tbsite.net&apos; &gt;&gt; /etc/hosts &quot; -u root</div><div class="line">//修改机器hostname</div><div class="line">ansible -i $1 all -m shell -a &quot; hostnamectl set-hostname=&apos;drds-&#123;&#123; server_id &#125;&#125;&apos; &quot; -u root</div><div class="line">//修改机器hostname -i</div><div class="line">ansible -i $1 all -m shell -a &quot; echo &apos; &#123;&#123; inventory_hostname &#125;&#125; drds-&#123;&#123; server_id &#125;&#125;&apos; &gt;&gt; /etc/hosts  &quot; -u root</div><div class="line"></div><div class="line">//hostname 修改机器名</div><div class="line"># ansible -i ccb_test.ini 192.168.2.101 -m hostname -a &quot; name=az2-alisql-101 &quot;</div><div class="line">[WARNING]: Invalid characters were found in group names but not replaced, use -vvvv to see details</div><div class="line">192.168.2.101 | CHANGED =&gt; &#123;</div><div class="line">    &quot;ansible_facts&quot;: &#123;</div><div class="line">        &quot;ansible_domain&quot;: &quot;&quot;, </div><div class="line">        &quot;ansible_fqdn&quot;: &quot;iZ2ze9aj0re2ggbqa4dgxkZ&quot;, </div><div class="line">        &quot;ansible_hostname&quot;: &quot;az2-alisql-101&quot;, </div><div class="line">        &quot;ansible_nodename&quot;: &quot;az2-alisql-101&quot;, </div><div class="line">        &quot;discovered_interpreter_python&quot;: &quot;/usr/bin/python&quot;</div><div class="line">    &#125;, </div><div class="line">    &quot;changed&quot;: true, </div><div class="line">    &quot;name&quot;: &quot;az2-alisql-101&quot;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="管理系统service"><a href="#管理系统service" class="headerlink" title="管理系统service"></a>管理系统service</h3><p>设置 docker daemon服务重新启动和开机自动启动</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div><div class="line">99</div><div class="line">100</div><div class="line">101</div><div class="line">102</div><div class="line">103</div><div class="line">104</div><div class="line">105</div><div class="line">106</div><div class="line">107</div><div class="line">108</div><div class="line">109</div><div class="line">110</div><div class="line">111</div><div class="line">112</div><div class="line">113</div><div class="line">114</div><div class="line">115</div><div class="line">116</div><div class="line">117</div><div class="line">118</div><div class="line">119</div><div class="line">120</div><div class="line">121</div><div class="line">122</div><div class="line">123</div><div class="line">124</div><div class="line">125</div><div class="line">126</div><div class="line">127</div><div class="line">128</div><div class="line">129</div><div class="line">130</div><div class="line">131</div><div class="line">132</div><div class="line">133</div><div class="line">134</div><div class="line">135</div><div class="line">136</div><div class="line">137</div><div class="line">138</div><div class="line">139</div><div class="line">140</div><div class="line">141</div><div class="line">142</div><div class="line">143</div><div class="line">144</div><div class="line">145</div><div class="line">146</div><div class="line">147</div><div class="line">148</div><div class="line">149</div><div class="line">150</div><div class="line">151</div><div class="line">152</div><div class="line">153</div><div class="line">154</div><div class="line">155</div><div class="line">156</div><div class="line">157</div><div class="line">158</div><div class="line">159</div><div class="line">160</div></pre></td><td class="code"><pre><div class="line"># ansible -i ccb_test.ini 192.168.2.101 -m service -a &quot; name=docker enabled=yes state=restarted &quot;</div><div class="line">[WARNING]: Invalid characters were found in group names but not replaced, use -vvvv to see details</div><div class="line">192.168.2.101 | CHANGED =&gt; &#123;</div><div class="line">    &quot;ansible_facts&quot;: &#123;</div><div class="line">        &quot;discovered_interpreter_python&quot;: &quot;/usr/bin/python&quot;</div><div class="line">    &#125;, </div><div class="line">    &quot;changed&quot;: true, </div><div class="line">    &quot;enabled&quot;: true, </div><div class="line">    &quot;name&quot;: &quot;docker&quot;, </div><div class="line">    &quot;state&quot;: &quot;started&quot;, </div><div class="line">    &quot;status&quot;: &#123;</div><div class="line">        &quot;ActiveEnterTimestamp&quot;: &quot;二 2020-05-12 19:03:57 CST&quot;, </div><div class="line">        &quot;ActiveEnterTimestampMonotonic&quot;: &quot;1553024093129&quot;, </div><div class="line">        &quot;ActiveExitTimestamp&quot;: &quot;二 2020-05-12 19:01:24 CST&quot;, </div><div class="line">        &quot;ActiveExitTimestampMonotonic&quot;: &quot;1552870910912&quot;, </div><div class="line">        &quot;ActiveState&quot;: &quot;active&quot;, </div><div class="line">        &quot;After&quot;: &quot;systemd-journald.socket system.slice docker.socket firewalld.service containerd.service network-online.target basic.target&quot;, </div><div class="line">        &quot;AllowIsolate&quot;: &quot;no&quot;, </div><div class="line">        &quot;AmbientCapabilities&quot;: &quot;0&quot;, </div><div class="line">        &quot;AssertResult&quot;: &quot;yes&quot;, </div><div class="line">        &quot;AssertTimestamp&quot;: &quot;二 2020-05-12 19:03:57 CST&quot;, </div><div class="line">        &quot;AssertTimestampMonotonic&quot;: &quot;1553023902297&quot;, </div><div class="line">        &quot;Before&quot;: &quot;multi-user.target shutdown.target&quot;, </div><div class="line">        &quot;BindsTo&quot;: &quot;containerd.service&quot;, </div><div class="line">        &quot;BlockIOAccounting&quot;: &quot;no&quot;, </div><div class="line">        &quot;BlockIOWeight&quot;: &quot;18446744073709551615&quot;, </div><div class="line">        &quot;CPUAccounting&quot;: &quot;no&quot;, </div><div class="line">        &quot;CPUQuotaPerSecUSec&quot;: &quot;infinity&quot;, </div><div class="line">        &quot;CPUSchedulingPolicy&quot;: &quot;0&quot;, </div><div class="line">        &quot;CPUSchedulingPriority&quot;: &quot;0&quot;, </div><div class="line">        &quot;CPUSchedulingResetOnFork&quot;: &quot;no&quot;, </div><div class="line">        &quot;CPUShares&quot;: &quot;18446744073709551615&quot;, </div><div class="line">        &quot;CanIsolate&quot;: &quot;no&quot;, </div><div class="line">        &quot;CanReload&quot;: &quot;yes&quot;, </div><div class="line">        &quot;CanStart&quot;: &quot;yes&quot;, </div><div class="line">        &quot;CanStop&quot;: &quot;yes&quot;, </div><div class="line">        &quot;CapabilityBoundingSet&quot;: &quot;18446744073709551615&quot;, </div><div class="line">        &quot;ConditionResult&quot;: &quot;yes&quot;, </div><div class="line">        &quot;ConditionTimestamp&quot;: &quot;二 2020-05-12 19:03:57 CST&quot;, </div><div class="line">        &quot;ConditionTimestampMonotonic&quot;: &quot;1553023902297&quot;, </div><div class="line">        &quot;Conflicts&quot;: &quot;shutdown.target&quot;, </div><div class="line">        &quot;ConsistsOf&quot;: &quot;docker.socket&quot;, </div><div class="line">        &quot;ControlGroup&quot;: &quot;/system.slice/docker.service&quot;, </div><div class="line">        &quot;ControlPID&quot;: &quot;0&quot;, </div><div class="line">        &quot;DefaultDependencies&quot;: &quot;yes&quot;, </div><div class="line">        &quot;Delegate&quot;: &quot;yes&quot;, </div><div class="line">        &quot;Description&quot;: &quot;Docker Application Container Engine&quot;, </div><div class="line">        &quot;DevicePolicy&quot;: &quot;auto&quot;, </div><div class="line">        &quot;Documentation&quot;: &quot;https://docs.docker.com&quot;, </div><div class="line">        &quot;ExecMainCode&quot;: &quot;0&quot;, </div><div class="line">        &quot;ExecMainExitTimestampMonotonic&quot;: &quot;0&quot;, </div><div class="line">        &quot;ExecMainPID&quot;: &quot;16213&quot;, </div><div class="line">        &quot;ExecMainStartTimestamp&quot;: &quot;二 2020-05-12 19:03:57 CST&quot;, </div><div class="line">        &quot;ExecMainStartTimestampMonotonic&quot;: &quot;1553023907468&quot;, </div><div class="line">        &quot;ExecMainStatus&quot;: &quot;0&quot;, </div><div class="line">        &quot;ExecReload&quot;: &quot;&#123; path=/bin/kill ; argv[]=/bin/kill -s HUP $MAINPID ; ignore_errors=no ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 &#125;&quot;, </div><div class="line">        &quot;ExecStart&quot;: &quot;&#123; path=/usr/bin/dockerd ; argv[]=/usr/bin/dockerd -H fd:// -H tcp://0.0.0.0:2376 --data-root=/var/lib/docker --log-opt max-size=50m --log-opt max-file=3 --registry-mirror=https://oqpc6eum.mirror.aliyuncs.com --containerd=/run/containerd/containerd.sock ; ignore_errors=no ; start_time=[n/a] ; stop_time=[n/a] ; pid=0 ; code=(null) ; status=0/0 &#125;&quot;, </div><div class="line">        &quot;FailureAction&quot;: &quot;none&quot;, </div><div class="line">        &quot;FileDescriptorStoreMax&quot;: &quot;0&quot;, </div><div class="line">        &quot;FragmentPath&quot;: &quot;/usr/lib/systemd/system/docker.service&quot;, </div><div class="line">        &quot;GuessMainPID&quot;: &quot;yes&quot;, </div><div class="line">        &quot;IOScheduling&quot;: &quot;0&quot;, </div><div class="line">        &quot;Id&quot;: &quot;docker.service&quot;, </div><div class="line">        &quot;IgnoreOnIsolate&quot;: &quot;no&quot;, </div><div class="line">        &quot;IgnoreOnSnapshot&quot;: &quot;no&quot;, </div><div class="line">        &quot;IgnoreSIGPIPE&quot;: &quot;yes&quot;, </div><div class="line">        &quot;InactiveEnterTimestamp&quot;: &quot;二 2020-05-12 19:03:43 CST&quot;, </div><div class="line">        &quot;InactiveEnterTimestampMonotonic&quot;: &quot;1553009791884&quot;, </div><div class="line">        &quot;InactiveExitTimestamp&quot;: &quot;二 2020-05-12 19:03:57 CST&quot;, </div><div class="line">        &quot;InactiveExitTimestampMonotonic&quot;: &quot;1553023907496&quot;, </div><div class="line">        &quot;JobTimeoutAction&quot;: &quot;none&quot;, </div><div class="line">        &quot;JobTimeoutUSec&quot;: &quot;0&quot;, </div><div class="line">        &quot;KillMode&quot;: &quot;process&quot;, </div><div class="line">        &quot;KillSignal&quot;: &quot;15&quot;, </div><div class="line">        &quot;LimitAS&quot;: &quot;18446744073709551615&quot;, </div><div class="line">        &quot;LimitCORE&quot;: &quot;18446744073709551615&quot;, </div><div class="line">        &quot;LimitCPU&quot;: &quot;18446744073709551615&quot;, </div><div class="line">        &quot;LimitDATA&quot;: &quot;18446744073709551615&quot;, </div><div class="line">        &quot;LimitFSIZE&quot;: &quot;18446744073709551615&quot;, </div><div class="line">        &quot;LimitLOCKS&quot;: &quot;18446744073709551615&quot;, </div><div class="line">        &quot;LimitMEMLOCK&quot;: &quot;65536&quot;, </div><div class="line">        &quot;LimitMSGQUEUE&quot;: &quot;819200&quot;, </div><div class="line">        &quot;LimitNICE&quot;: &quot;0&quot;, </div><div class="line">        &quot;LimitNOFILE&quot;: &quot;18446744073709551615&quot;, </div><div class="line">        &quot;LimitNPROC&quot;: &quot;18446744073709551615&quot;, </div><div class="line">        &quot;LimitRSS&quot;: &quot;18446744073709551615&quot;, </div><div class="line">        &quot;LimitRTPRIO&quot;: &quot;0&quot;, </div><div class="line">        &quot;LimitRTTIME&quot;: &quot;18446744073709551615&quot;, </div><div class="line">        &quot;LimitSIGPENDING&quot;: &quot;379870&quot;, </div><div class="line">        &quot;LimitSTACK&quot;: &quot;18446744073709551615&quot;, </div><div class="line">        &quot;LoadState&quot;: &quot;loaded&quot;, </div><div class="line">        &quot;MainPID&quot;: &quot;16213&quot;, </div><div class="line">        &quot;MemoryAccounting&quot;: &quot;no&quot;, </div><div class="line">        &quot;MemoryCurrent&quot;: &quot;58327040&quot;, </div><div class="line">        &quot;MemoryLimit&quot;: &quot;18446744073709551615&quot;, </div><div class="line">        &quot;MountFlags&quot;: &quot;0&quot;, </div><div class="line">        &quot;Names&quot;: &quot;docker.service&quot;, </div><div class="line">        &quot;NeedDaemonReload&quot;: &quot;no&quot;, </div><div class="line">        &quot;Nice&quot;: &quot;0&quot;, </div><div class="line">        &quot;NoNewPrivileges&quot;: &quot;no&quot;, </div><div class="line">        &quot;NonBlocking&quot;: &quot;no&quot;, </div><div class="line">        &quot;NotifyAccess&quot;: &quot;main&quot;, </div><div class="line">        &quot;OOMScoreAdjust&quot;: &quot;0&quot;, </div><div class="line">        &quot;OnFailureJobMode&quot;: &quot;replace&quot;, </div><div class="line">        &quot;PermissionsStartOnly&quot;: &quot;no&quot;, </div><div class="line">        &quot;PrivateDevices&quot;: &quot;no&quot;, </div><div class="line">        &quot;PrivateNetwork&quot;: &quot;no&quot;, </div><div class="line">        &quot;PrivateTmp&quot;: &quot;no&quot;, </div><div class="line">        &quot;ProtectHome&quot;: &quot;no&quot;, </div><div class="line">        &quot;ProtectSystem&quot;: &quot;no&quot;, </div><div class="line">        &quot;RefuseManualStart&quot;: &quot;no&quot;, </div><div class="line">        &quot;RefuseManualStop&quot;: &quot;no&quot;, </div><div class="line">        &quot;RemainAfterExit&quot;: &quot;no&quot;, </div><div class="line">        &quot;Requires&quot;: &quot;docker.socket basic.target&quot;, </div><div class="line">        &quot;Restart&quot;: &quot;always&quot;, </div><div class="line">        &quot;RestartUSec&quot;: &quot;2s&quot;, </div><div class="line">        &quot;Result&quot;: &quot;success&quot;, </div><div class="line">        &quot;RootDirectoryStartOnly&quot;: &quot;no&quot;, </div><div class="line">        &quot;RuntimeDirectoryMode&quot;: &quot;0755&quot;, </div><div class="line">        &quot;SameProcessGroup&quot;: &quot;no&quot;, </div><div class="line">        &quot;SecureBits&quot;: &quot;0&quot;, </div><div class="line">        &quot;SendSIGHUP&quot;: &quot;no&quot;, </div><div class="line">        &quot;SendSIGKILL&quot;: &quot;yes&quot;, </div><div class="line">        &quot;Slice&quot;: &quot;system.slice&quot;, </div><div class="line">        &quot;StandardError&quot;: &quot;inherit&quot;, </div><div class="line">        &quot;StandardInput&quot;: &quot;null&quot;, </div><div class="line">        &quot;StandardOutput&quot;: &quot;journal&quot;, </div><div class="line">        &quot;StartLimitAction&quot;: &quot;none&quot;, </div><div class="line">        &quot;StartLimitBurst&quot;: &quot;3&quot;, </div><div class="line">        &quot;StartLimitInterval&quot;: &quot;60000000&quot;, </div><div class="line">        &quot;StartupBlockIOWeight&quot;: &quot;18446744073709551615&quot;, </div><div class="line">        &quot;StartupCPUShares&quot;: &quot;18446744073709551615&quot;, </div><div class="line">        &quot;StatusErrno&quot;: &quot;0&quot;, </div><div class="line">        &quot;StopWhenUnneeded&quot;: &quot;no&quot;, </div><div class="line">        &quot;SubState&quot;: &quot;running&quot;, </div><div class="line">        &quot;SyslogLevelPrefix&quot;: &quot;yes&quot;, </div><div class="line">        &quot;SyslogPriority&quot;: &quot;30&quot;, </div><div class="line">        &quot;SystemCallErrorNumber&quot;: &quot;0&quot;, </div><div class="line">        &quot;TTYReset&quot;: &quot;no&quot;, </div><div class="line">        &quot;TTYVHangup&quot;: &quot;no&quot;, </div><div class="line">        &quot;TTYVTDisallocate&quot;: &quot;no&quot;, </div><div class="line">        &quot;TasksAccounting&quot;: &quot;no&quot;, </div><div class="line">        &quot;TasksCurrent&quot;: &quot;58&quot;, </div><div class="line">        &quot;TasksMax&quot;: &quot;18446744073709551615&quot;, </div><div class="line">        &quot;TimeoutStartUSec&quot;: &quot;0&quot;, </div><div class="line">        &quot;TimeoutStopUSec&quot;: &quot;0&quot;, </div><div class="line">        &quot;TimerSlackNSec&quot;: &quot;50000&quot;, </div><div class="line">        &quot;Transient&quot;: &quot;no&quot;, </div><div class="line">        &quot;TriggeredBy&quot;: &quot;docker.socket&quot;, </div><div class="line">        &quot;Type&quot;: &quot;notify&quot;, </div><div class="line">        &quot;UMask&quot;: &quot;0022&quot;, </div><div class="line">        &quot;UnitFilePreset&quot;: &quot;disabled&quot;, </div><div class="line">        &quot;UnitFileState&quot;: &quot;enabled&quot;, </div><div class="line">        &quot;WantedBy&quot;: &quot;multi-user.target&quot;, </div><div class="line">        &quot;Wants&quot;: &quot;network-online.target system.slice&quot;, </div><div class="line">        &quot;WatchdogTimestamp&quot;: &quot;二 2020-05-12 19:03:57 CST&quot;, </div><div class="line">        &quot;WatchdogTimestampMonotonic&quot;: &quot;1553024093096&quot;, </div><div class="line">        &quot;WatchdogUSec&quot;: &quot;0&quot;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
 <h3 id="一次执行多个命令"><a href="#一次执行多个命令" class="headerlink" title="一次执行多个命令"></a>一次执行多个命令</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line">$ ansible -i hosts.ini server -m raw -a &quot; which nc ; find /opt/aliUDP/logs/  &quot; -u admin</div><div class="line"></div><div class="line">/usr/bin/ansible -i hosts.ini server -m raw -a  which nc ; find /opt/aliUDP/logs/   -u admin</div><div class="line"></div><div class="line">FAILED =&gt; 120.26.116.193 =&gt; rc=1 =&gt;</div><div class="line">which: no nc in (/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin)</div><div class="line">find: /opt/aliUDP: No such file or directory</div><div class="line"></div><div class="line"></div><div class="line">success =&gt; 10.125.3.33 =&gt; rc=0 =&gt;</div><div class="line">/usr/bin/nc</div><div class="line">/opt/aliUDP/logs/</div><div class="line">/opt/aliUDP/logs/ansible.log.bak</div><div class="line">/opt/aliUDP/logs/ansible.log</div><div class="line"></div><div class="line"></div><div class="line">success =&gt; 10.125.0.169 =&gt; rc=0 =&gt;</div><div class="line">/usr/bin/nc</div><div class="line">/opt/aliUDP/logs/</div><div class="line">/opt/aliUDP/logs/ansible.log.bak</div><div class="line">/opt/aliUDP/logs/ansible.log</div></pre></td></tr></table></figure>
 <blockquote>
 <p>结果说明</p>
 <p>  其中  120.26.116.193 上没有命令 nc 和 /opt/aliUDP 文件夹所有执行失败，但是其他两台机器都正常返回了结果</p>
 </blockquote>
-<h3 id="Copy本地的某个文件到服务器上【前面的例子中都是单独在远程机器上执行的命令】"><a href="#Copy本地的某个文件到服务器上【前面的例子中都是单独在远程机器上执行的命令】" class="headerlink" title="Copy本地的某个文件到服务器上【前面的例子中都是单独在远程机器上执行的命令】"></a>Copy本地的某个文件到服务器上【前面的例子中都是单独在远程机器上执行的命令】</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div></pre></td><td class="code"><pre><div class="line">$ ansible  -i hosts.ini server  -m copy -a &quot; src=&apos;~/.ssh/id_rsa.pub&apos; dest=&apos;/tmp/&apos; &quot; -u admin</div><div class="line"></div><div class="line">SUCCESS =&gt; 120.26.116.193 =&gt; &#123;</div><div class="line">    &quot;changed&quot;: true, </div><div class="line">    &quot;checksum&quot;: &quot;b12ccf236ab788bbaebd7159c563e97411389c9e&quot;, </div><div class="line">    &quot;dest&quot;: &quot;/tmp/id_rsa.pub&quot;, </div><div class="line">    &quot;gid&quot;: 0, </div><div class="line">    &quot;group&quot;: &quot;root&quot;, </div><div class="line">    &quot;md5sum&quot;: &quot;b6ba28284ab95aaa0f47602bdab49f46&quot;, </div><div class="line">    &quot;mode&quot;: &quot;0644&quot;, </div><div class="line">    &quot;owner&quot;: &quot;root&quot;, </div><div class="line">    &quot;size&quot;: 392, </div><div class="line">    &quot;src&quot;: &quot;/root/.ansible/ansible-tmp-1449109886.94-70134064194486/source&quot;, </div><div class="line">    &quot;state&quot;: &quot;file&quot;, </div><div class="line">    &quot;uid&quot;: 0</div><div class="line">&#125;</div><div class="line"></div><div class="line">SUCCESS =&gt; 10.125.0.169 =&gt; &#123;</div><div class="line">    &quot;changed&quot;: true, </div><div class="line">    &quot;checksum&quot;: &quot;b12ccf236ab788bbaebd7159c563e97411389c9e&quot;, </div><div class="line">    &quot;dest&quot;: &quot;/tmp/id_rsa.pub&quot;, </div><div class="line">    &quot;gid&quot;: 500, </div><div class="line">    &quot;group&quot;: &quot;admin&quot;, </div><div class="line">    &quot;md5sum&quot;: &quot;b6ba28284ab95aaa0f47602bdab49f46&quot;, </div><div class="line">    &quot;mode&quot;: &quot;0664&quot;, </div><div class="line">    &quot;owner&quot;: &quot;admin&quot;, </div><div class="line">    &quot;size&quot;: 392, </div><div class="line">    &quot;src&quot;: &quot;/home/admin/.ansible/ansible-tmp-1449109886.78-98797505042348/source&quot;, </div><div class="line">    &quot;state&quot;: &quot;file&quot;, </div><div class="line">    &quot;uid&quot;: 500</div><div class="line">&#125;</div><div class="line"></div><div class="line">SUCCESS =&gt; 10.125.3.33 =&gt; &#123;</div><div class="line">    &quot;changed&quot;: true, </div><div class="line">    &quot;checksum&quot;: &quot;b12ccf236ab788bbaebd7159c563e97411389c9e&quot;, </div><div class="line">    &quot;dest&quot;: &quot;/tmp/id_rsa.pub&quot;, </div><div class="line">    &quot;gid&quot;: 500, </div><div class="line">    &quot;group&quot;: &quot;admin&quot;, </div><div class="line">    &quot;md5sum&quot;: &quot;b6ba28284ab95aaa0f47602bdab49f46&quot;, </div><div class="line">    &quot;mode&quot;: &quot;0664&quot;, </div><div class="line">    &quot;owner&quot;: &quot;admin&quot;, </div><div class="line">    &quot;size&quot;: 392, </div><div class="line">    &quot;src&quot;: &quot;/home/admin/.ansible/ansible-tmp-1449109886.81-269249309502640/source&quot;, </div><div class="line">    &quot;state&quot;: &quot;file&quot;, </div><div class="line">    &quot;uid&quot;: 500</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<h3 id="Copy本地的某个文件到服务器上【前面的例子中都是单独在远程机器上执行的命令】"><a href="#Copy本地的某个文件到服务器上【前面的例子中都是单独在远程机器上执行的命令】" class="headerlink" title="Copy本地的某个文件到服务器上【前面的例子中都是单独在远程机器上执行的命令】"></a>Copy本地的某个文件到服务器上【前面的例子中都是单独在远程机器上执行的命令】</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div></pre></td><td class="code"><pre><div class="line">$ ansible  -i hosts.ini server  -m copy -a &quot; src=&apos;~/.ssh/id_rsa.pub&apos; dest=&apos;/tmp/&apos; owner=admin &quot; -u admin</div><div class="line"></div><div class="line">SUCCESS =&gt; 120.26.116.193 =&gt; &#123;</div><div class="line">    &quot;changed&quot;: true, </div><div class="line">    &quot;checksum&quot;: &quot;b12ccf236ab788bbaebd7159c563e97411389c9e&quot;, </div><div class="line">    &quot;dest&quot;: &quot;/tmp/id_rsa.pub&quot;, </div><div class="line">    &quot;gid&quot;: 0, </div><div class="line">    &quot;group&quot;: &quot;root&quot;, </div><div class="line">    &quot;md5sum&quot;: &quot;b6ba28284ab95aaa0f47602bdab49f46&quot;, </div><div class="line">    &quot;mode&quot;: &quot;0644&quot;, </div><div class="line">    &quot;owner&quot;: &quot;root&quot;, </div><div class="line">    &quot;size&quot;: 392, </div><div class="line">    &quot;src&quot;: &quot;/root/.ansible/ansible-tmp-1449109886.94-70134064194486/source&quot;, </div><div class="line">    &quot;state&quot;: &quot;file&quot;, </div><div class="line">    &quot;uid&quot;: 0</div><div class="line">&#125;</div><div class="line"></div><div class="line">SUCCESS =&gt; 10.125.0.169 =&gt; &#123;</div><div class="line">    &quot;changed&quot;: true, </div><div class="line">    &quot;checksum&quot;: &quot;b12ccf236ab788bbaebd7159c563e97411389c9e&quot;, </div><div class="line">    &quot;dest&quot;: &quot;/tmp/id_rsa.pub&quot;, </div><div class="line">    &quot;gid&quot;: 500, </div><div class="line">    &quot;group&quot;: &quot;admin&quot;, </div><div class="line">    &quot;md5sum&quot;: &quot;b6ba28284ab95aaa0f47602bdab49f46&quot;, </div><div class="line">    &quot;mode&quot;: &quot;0664&quot;, </div><div class="line">    &quot;owner&quot;: &quot;admin&quot;, </div><div class="line">    &quot;size&quot;: 392, </div><div class="line">    &quot;src&quot;: &quot;/home/admin/.ansible/ansible-tmp-1449109886.78-98797505042348/source&quot;, </div><div class="line">    &quot;state&quot;: &quot;file&quot;, </div><div class="line">    &quot;uid&quot;: 500</div><div class="line">&#125;</div><div class="line"></div><div class="line">SUCCESS =&gt; 10.125.3.33 =&gt; &#123;</div><div class="line">    &quot;changed&quot;: true, </div><div class="line">    &quot;checksum&quot;: &quot;b12ccf236ab788bbaebd7159c563e97411389c9e&quot;, </div><div class="line">    &quot;dest&quot;: &quot;/tmp/id_rsa.pub&quot;, </div><div class="line">    &quot;gid&quot;: 500, </div><div class="line">    &quot;group&quot;: &quot;admin&quot;, </div><div class="line">    &quot;md5sum&quot;: &quot;b6ba28284ab95aaa0f47602bdab49f46&quot;, </div><div class="line">    &quot;mode&quot;: &quot;0664&quot;, </div><div class="line">    &quot;owner&quot;: &quot;admin&quot;, </div><div class="line">    &quot;size&quot;: 392, </div><div class="line">    &quot;src&quot;: &quot;/home/admin/.ansible/ansible-tmp-1449109886.81-269249309502640/source&quot;, </div><div class="line">    &quot;state&quot;: &quot;file&quot;, </div><div class="line">    &quot;uid&quot;: 500</div><div class="line">&#125;</div></pre></td></tr></table></figure>
 <blockquote>
 <p>参数说明</p>
 <p>   <strong>-m copy -a:</strong> 指定这是 <strong>copy</strong> 的命令</p>
 <p>   <strong>“  src=’~/.ssh/id_rsa.pub’ dest=’/tmp/‘ “</strong> src表示本地文件 dest表示远程目标位置</p>
 </blockquote>
 <h3 id="验证一下刚刚copy上去的文件的MD5值"><a href="#验证一下刚刚copy上去的文件的MD5值" class="headerlink" title="验证一下刚刚copy上去的文件的MD5值"></a>验证一下刚刚copy上去的文件的MD5值</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">$ ansible  -i hosts.ini server  -m command -a &quot; md5sum /tmp/id_rsa.pub &quot; -u admin</div><div class="line"></div><div class="line">success =&gt; 10.125.0.169 =&gt; rc=0 =&gt;</div><div class="line">b6ba28284ab95aaa0f47602bdab49f46  /tmp/id_rsa.pub</div><div class="line"></div><div class="line">success =&gt; 10.125.3.33 =&gt; rc=0 =&gt;</div><div class="line">b6ba28284ab95aaa0f47602bdab49f46  /tmp/id_rsa.pub</div><div class="line"></div><div class="line">success =&gt; 120.26.116.193 =&gt; rc=0 =&gt;</div><div class="line">b6ba28284ab95aaa0f47602bdab49f46  /tmp/id_rsa.pub</div></pre></td></tr></table></figure>
-<blockquote>
 <p>结果说明</p>
+<blockquote>
 <p>  md5都是b6ba28284ab95aaa0f47602bdab49f46 跟本地的一致，说明成功复制到目标机器了</p>
 </blockquote>
 <h3 id="执行远程服务器上已经写好的Shell脚本"><a href="#执行远程服务器上已经写好的Shell脚本" class="headerlink" title="执行远程服务器上已经写好的Shell脚本"></a>执行远程服务器上已经写好的Shell脚本</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">$ cat test.sh </div><div class="line">#/bin/sh</div><div class="line"></div><div class="line">ifconfig | grep &apos;inet addr&apos; </div><div class="line">echo &quot;-------------&quot;</div><div class="line">uptime</div><div class="line">echo &quot;-------------&quot;</div><div class="line">date</div><div class="line"></div><div class="line">df -lh</div></pre></td></tr></table></figure>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div></pre></td><td class="code"><pre><div class="line">$ ansible  -i hosts.ini server  -m command -a &quot; sh /tmp/test.sh &quot; -u admin</div><div class="line"></div><div class="line">/usr/bin/ansible -i hosts.ini server -m command -a  sh /tmp/test.sh  -u admin</div><div class="line"></div><div class="line">success =&gt; 10.125.3.33 =&gt; rc=0 =&gt;</div><div class="line">          inet addr:10.125.3.33  Bcast:10.125.15.255  Mask:255.255.240.0</div><div class="line">          inet addr:127.0.0.1  Mask:255.0.0.0</div><div class="line">-------------</div><div class="line"> 10:50:51 up 28 days, 15:20,  2 users,  load average: 0.01, 0.05, 0.06</div><div class="line">-------------</div><div class="line">Thu Dec  3 10:50:51 CST 2015</div><div class="line">Filesystem            Size  Used Avail Use% Mounted on</div><div class="line">/dev/xvda1            250G  7.8G  230G   4% /</div><div class="line">tmpfs                 2.0G  148K  2.0G   1% /dev/shm</div><div class="line"></div><div class="line">success =&gt; 10.125.0.169 =&gt; rc=0 =&gt;</div><div class="line">          inet addr:10.125.0.169  Bcast:10.125.15.255  Mask:255.255.240.0</div><div class="line">          inet addr:127.0.0.1  Mask:255.0.0.0</div><div class="line">-------------</div><div class="line"> 10:50:51 up 29 days, 44 min,  3 users,  load average: 0.00, 0.01, 0.05</div><div class="line">-------------</div><div class="line">Thu Dec  3 10:50:51 CST 2015</div><div class="line">Filesystem            Size  Used Avail Use% Mounted on</div><div class="line">/dev/xvda1            250G  8.2G  230G   4% /</div><div class="line">tmpfs                 2.0G   72K  2.0G   1% /dev/shm</div><div class="line"></div><div class="line">success =&gt; 120.26.116.193 =&gt; rc=0 =&gt;</div><div class="line">          inet addr:10.51.38.122  Bcast:10.51.39.255  Mask:255.255.248.0</div><div class="line">          inet addr:120.26.116.193  Bcast:120.26.119.255  Mask:255.255.252.0</div><div class="line">          inet addr:127.0.0.1  Mask:255.0.0.0</div><div class="line">-------------</div><div class="line"> 10:50:51 up 14 days, 20:47,  0 users,  load average: 0.00, 0.00, 0.00</div><div class="line">-------------</div><div class="line">2015年 12月 03日 星期四 10:50:51 CST</div><div class="line">Filesystem            Size  Used Avail Use% Mounted on</div><div class="line">/dev/hda1              20G  1.5G   19G   8% /</div><div class="line">tmpfs                 249M     0  249M   0% /dev/shm</div></pre></td></tr></table></figure>
 <h3 id="copy个人笔记本的公钥到服务器上，以后从笔记本登录服务器不再需要输入密码"><a href="#copy个人笔记本的公钥到服务器上，以后从笔记本登录服务器不再需要输入密码" class="headerlink" title="copy个人笔记本的公钥到服务器上，以后从笔记本登录服务器不再需要输入密码"></a>copy个人笔记本的公钥到服务器上，以后从笔记本登录服务器不再需要输入密码</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ ansible -i ansible-hosts.ini all -m authorized_key -a &quot; user=xijun.rxj key=\&quot;&#123;&#123; lookup(&apos;file&apos;, &apos;/tmp/id_rsa.pub&apos;) &#125;&#125; \&quot;  &quot; -u xijun.rxj -k</div></pre></td></tr></table></figure>
-<blockquote>
-<p>执行说明</p>
-<p>  首先将你本地 ~/.ssh/id_rsa.pub 复制到ansible机器的/tmp/下面，然后执行上面的命令</p>
-</blockquote>
+<h3 id="效率更高的-copy：synchronize"><a href="#效率更高的-copy：synchronize" class="headerlink" title="效率更高的 copy：synchronize"></a>效率更高的 copy：synchronize</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">ansible -i xty_172.ini all -m synchronize -a &quot; src=/home/ren/ali/xintongyuan/system/docker.service dest=/usr/lib/systemd/system/docker.socket &quot; -u root</div></pre></td></tr></table></figure>
 <h3 id="不使用-hosts-ini文件，从命令行中传入目标机的-ip-列表"><a href="#不使用-hosts-ini文件，从命令行中传入目标机的-ip-列表" class="headerlink" title="不使用 hosts.ini文件，从命令行中传入目标机的 ip 列表"></a>不使用 hosts.ini文件，从命令行中传入目标机的 ip 列表</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">$ ansible -i 10.125.0.169,10.125.192.40 all -e &quot;ansible_ssh_port=22&quot; -a &quot;uptime&quot; -u xijun.rxj</div><div class="line"></div><div class="line">success =&gt; 10.125.192.40 =&gt; rc=0 =&gt;</div><div class="line"> 12:31:50 up 48 days, 17:01,  0 users,  load average: 0.13, 0.06, 0.05</div><div class="line"></div><div class="line">success =&gt; 10.125.0.169 =&gt; rc=0 =&gt;</div><div class="line"> 12:31:50 up 49 days,  2:25,  0 users,  load average: 0.00, 0.01, 0.05</div></pre></td></tr></table></figure>
-<blockquote>
 <p>执行说明</p>
+<blockquote>
 <p>   -i 后面带入ip列表，注意每个IP后面一定要有 “,” 分割开来，all 关键字也是必须的</p>
 <p>   -e 中ansible_ssh_port=22表示ssh使用22端口（默认），如果ssh使用9999端口在这里将22改成9999即可</p>
 </blockquote>
 <h3 id="使用root-sudo权限来执行命令"><a href="#使用root-sudo权限来执行命令" class="headerlink" title="使用root sudo权限来执行命令"></a>使用root sudo权限来执行命令</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">ansible -i 10.125.6.93, all -m  shell -a &quot; ls -lh /home/admin/&quot;    -u xijun.rxj --become-user=root --ask-become-pass --become-method=sudo --become -k</div></pre></td></tr></table></figure>
 <h3 id="给admin授权登录server不需要输入密码（也不知道admin的密码）"><a href="#给admin授权登录server不需要输入密码（也不知道admin的密码）" class="headerlink" title="给admin授权登录server不需要输入密码（也不知道admin的密码）"></a>给admin授权登录server不需要输入密码（也不知道admin的密码）</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">通过 xijun.rxj(已知密码) 以root 权限将本机pub key复制到server上的 /home/admin, 再通过admin账号登录server就不需要密码了：</div><div class="line">ansible -i 10.125.6.93, all -m  authorized_key -a &quot; user=admin key=\&quot;&#123;&#123; lookup(&apos;file&apos;, &apos;/home/ren/.ssh/id_rsa.pub&apos;) &#125;&#125; \&quot;  &quot; -u xijun.rxj --become-user=root --ask-become-pass --become-method=sudo --become -k</div><div class="line"></div><div class="line">不需要密码就可以执行：</div><div class="line">ansible -i 10.125.6.93, all -m shell -a &quot; ls -lha /home/admin/  &quot; -u admin</div></pre></td></tr></table></figure>
 <h3 id="将远程服务器上的public-key-读取到本地"><a href="#将远程服务器上的public-key-读取到本地" class="headerlink" title="将远程服务器上的public key 读取到本地"></a>将远程服务器上的public key 读取到本地</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">ansible -i kfc.ini hadoop -m fetch -a &quot; src=/home/admin/.ssh/id_rsa.pub dest=./test/  &quot;  -u admin</div><div class="line"></div><div class="line">find test/ -type f | xargs cat &gt; ./authorized_keys</div><div class="line"></div><div class="line">#push all the public keys to the server</div><div class="line">ansible -i ~/ali/ansible-edas/kfc.ini hadoop -m  copy -a &quot; src=./authorized_keys dest=/home/admin/.ssh/authorized_keys mode=600  &quot; -u admin</div></pre></td></tr></table></figure>
-<h2 id="创建用户并打通账号"><a href="#创建用户并打通账号" class="headerlink" title="创建用户并打通账号"></a>创建用户并打通账号</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div></pre></td><td class="code"><pre><div class="line">$cat create_user.yml</div><div class="line"># create user ren with passwd test and sudo privileges.</div><div class="line"># ansible-playbook -i docker.ini create_user.yml</div><div class="line">- hosts: all</div><div class="line">  user: root</div><div class="line">  sudo: true</div><div class="line">  vars:</div><div class="line">    # created with:</div><div class="line">    # python -c &apos;import crypt; print crypt.crypt(&quot;password&quot;, &quot;$1$SomeSalt$&quot;)&apos;</div><div class="line">    password: $1$SomeSalt$OrX9ouxOCP0ZOpVG9SwnR/</div><div class="line"></div><div class="line">  tasks:</div><div class="line">    - name: create a new user</div><div class="line">      user:</div><div class="line">       name: &apos;&#123;&#123; user &#125;&#125;&apos;</div><div class="line">       password: &apos;&#123;&#123; password &#125;&#125;&apos;</div><div class="line">       home: /home/&#123;&#123; user &#125;&#125;</div><div class="line">       state: present</div><div class="line">       shell: /bin/bash</div><div class="line"></div><div class="line">    - name: Add user to the sudoers</div><div class="line">      copy:</div><div class="line">          dest: &quot;/etc/sudoers.d/&#123;&#123; user &#125;&#125;&quot;</div><div class="line">          content: &quot;&#123;&#123; user &#125;&#125;  ALL=(ALL)  NOPASSWD: ALL&quot;</div><div class="line"></div><div class="line">    - name: Deploy SSH Key</div><div class="line">      authorized_key: user=&#123;&#123; user &#125;&#125;</div><div class="line">           key=&quot;&#123;&#123; lookup(&apos;file&apos;, &apos;/root/.ssh/id_rsa.pub&apos;) &#125;&#125;&quot;</div><div class="line">           state=present</div></pre></td></tr></table></figure>
-<p>然后执行： ansible-playbook -i  all.ini create_user.yml “user=username”</p>
+<h2 id="创建用户并打通账号"><a href="#创建用户并打通账号" class="headerlink" title="创建用户并打通账号"></a>创建用户并打通账号</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div></pre></td><td class="code"><pre><div class="line">$cat create_user.yml</div><div class="line"># create user ren with passwd test and sudo privileges.</div><div class="line"># ansible-playbook -i docker.ini create_user.yml</div><div class="line">- hosts: all</div><div class="line">  user: root</div><div class="line">  vars:</div><div class="line">    # created with:</div><div class="line">    # python -c &apos;import crypt; print crypt.crypt(&quot;password&quot;, &quot;$1$SomeSalt$&quot;)&apos;</div><div class="line">    password: $1$SomeSalt$OrX9ouxOCP0ZOpVG9SwnR/</div><div class="line"></div><div class="line">  tasks:</div><div class="line">    - name: create a new user</div><div class="line">      user:</div><div class="line">       name: &apos;&#123;&#123; user &#125;&#125;&apos;</div><div class="line">       password: &apos;&#123;&#123; password &#125;&#125;&apos;</div><div class="line">       home: /home/&#123;&#123; user &#125;&#125;</div><div class="line">       state: present</div><div class="line">       shell: /bin/bash</div><div class="line"></div><div class="line">    - name: Add user to the sudoers</div><div class="line">      copy:</div><div class="line">          dest: &quot;/etc/sudoers.d/&#123;&#123; user &#125;&#125;&quot;</div><div class="line">          content: &quot;&#123;&#123; user &#125;&#125;  ALL=(ALL)  NOPASSWD: ALL&quot;</div><div class="line"></div><div class="line">    - name: Deploy SSH Key</div><div class="line">      authorized_key: user=&#123;&#123; user &#125;&#125;</div><div class="line">           key=&quot;&#123;&#123; lookup(&apos;file&apos;, &apos;/root/.ssh/id_rsa.pub&apos;) &#125;&#125;&quot;</div><div class="line">           state=present</div></pre></td></tr></table></figure>
+<p>然后执行： ansible-playbook -i  all.ini create_user.yml -e “user=admin” 。</p>
+<p>或者：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line"> ansible -i 192.168.2.101, all -m user -a &quot;name=user02 system=yes uid=503 group=root groups=root shell=/etc/nologin home=/home/user02 password=pwd@123&quot;</div><div class="line"> 192.168.2.101 | CHANGED =&gt; &#123;</div><div class="line">    &quot;ansible_facts&quot;: &#123;</div><div class="line">        &quot;discovered_interpreter_python&quot;: &quot;/usr/bin/python&quot;</div><div class="line">    &#125;, </div><div class="line">    &quot;changed&quot;: true, </div><div class="line">    &quot;comment&quot;: &quot;&quot;, </div><div class="line">    &quot;create_home&quot;: true, </div><div class="line">    &quot;group&quot;: 0, </div><div class="line">    &quot;groups&quot;: &quot;root&quot;, </div><div class="line">    &quot;home&quot;: &quot;/home/user02&quot;, </div><div class="line">    &quot;name&quot;: &quot;user02&quot;, </div><div class="line">    &quot;password&quot;: &quot;NOT_LOGGING_PASSWORD&quot;, </div><div class="line">    &quot;shell&quot;: &quot;/etc/nologin&quot;, </div><div class="line">    &quot;state&quot;: &quot;present&quot;, </div><div class="line">    &quot;system&quot;: true, </div><div class="line">    &quot;uid&quot;: 503</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>playbook task规范：</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d502a11765273304abd673fb358b482a.png" alt="image.png"></p>
+<p><strong>对齐的时候不能用tab和空格混合</strong></p>
+<h2 id="部署docker-daemon的playbook"><a href="#部署docker-daemon的playbook" class="headerlink" title="部署docker daemon的playbook"></a>部署docker daemon的playbook</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div><div class="line">99</div><div class="line">100</div><div class="line">101</div><div class="line">102</div><div class="line">103</div><div class="line">104</div><div class="line">105</div><div class="line">106</div><div class="line">107</div><div class="line">108</div><div class="line">109</div><div class="line">110</div><div class="line">111</div><div class="line">112</div><div class="line">113</div><div class="line">114</div><div class="line">115</div><div class="line">116</div><div class="line">117</div><div class="line">118</div><div class="line">119</div><div class="line">120</div><div class="line">121</div><div class="line">122</div><div class="line">123</div><div class="line">124</div><div class="line">125</div></pre></td><td class="code"><pre><div class="line">$cat roles/docker/tasks/main.yml </div><div class="line"># filename: main.yml</div><div class="line">---</div><div class="line">#&quot;****************************************************************************&quot;&quot;</div><div class="line">- name: copy docker execute file to remote</div><div class="line">  copy: src=docker/ dest=/usr/bin/ mode=0755 force=yes</div><div class="line">  tags: copytar</div><div class="line"></div><div class="line">- name: create storage dir</div><div class="line">  file: path=&#123;&#123; storage_dir &#125;&#125; state=directory</div><div class="line">  ignore_errors: true</div><div class="line">  tags: docker</div><div class="line"></div><div class="line">- name: create the dir</div><div class="line">  file: path=/etc/systemd/system/ state=directory</div><div class="line">  ignore_errors: true</div><div class="line">  tags: docker</div><div class="line"></div><div class="line">- name: template docker.service to server</div><div class="line">  template: src=docker.service dest=/etc/systemd/system/docker.service</div><div class="line">  tags: docker</div><div class="line"></div><div class="line">- name: template docker.socket to server</div><div class="line">  template: src=docker.socket dest=/usr/lib/systemd/system/docker.socket</div><div class="line">  tags: docker</div><div class="line"></div><div class="line">- name: create /etc/docker dir to server</div><div class="line">  file: path=/etc/docker state=directory</div><div class="line">  ignore_errors: true</div><div class="line">  tags: docker</div><div class="line"></div><div class="line">- name: copy daemon.json to server</div><div class="line">  template: src=&#123;&#123; inventory_hostname &#125;&#125;/daemon.json dest=/etc/docker/daemon.json</div><div class="line">  ignore_errors: true</div><div class="line">  tags: docker</div><div class="line"></div><div class="line">- name: copy the load ovs modules to server</div><div class="line">  copy: src=openvswitch.modules dest=/etc/sysconfig/modules/openvswitch.modules mode=0755  force=yes</div><div class="line">  tags: docker</div><div class="line"></div><div class="line">- name: kill docker daemon</div><div class="line">  shell: &quot;kill -9 $(cat /var/run/docker.pid)&quot;</div><div class="line">  ignore_errors: true</div><div class="line">  tags: test</div><div class="line"></div><div class="line">- name: reload systemctl daemon-reload</div><div class="line">  shell: &quot;systemctl daemon-reload&quot;</div><div class="line">  tags: docker</div><div class="line"></div><div class="line">- name: enabled the docker service</div><div class="line">  shell: &quot;systemctl enable docker.service&quot;</div><div class="line">  ignore_errors: true</div><div class="line">  tags: docker</div><div class="line"></div><div class="line">- name: start docker service</div><div class="line">  shell: &quot;systemctl start docker.service&quot;</div><div class="line"></div><div class="line">- name: remove all containers</div><div class="line">  shell: sudo docker ps -a | awk &apos;&#123;print $1&#125;&apos; | xargs sudo docker rm -f -v</div><div class="line">  ignore_errors: true</div><div class="line"></div><div class="line">- name: template /etc/hosts to server</div><div class="line">  template: src=hosts dest=/etc/hosts owner=root group=root mode=0644 force=yes</div><div class="line">  tags: restorehosts</div><div class="line"></div><div class="line">- name: mkdir /tmp/etc/</div><div class="line">  shell: &quot;mkdir /tmp/etc/ &quot;</div><div class="line">  ignore_errors: true</div><div class="line">  tags: hosts</div><div class="line"></div><div class="line">- name: copy remote /etc/hosts to /tmp</div><div class="line">  shell: &quot;cp /etc/hosts /tmp/etc/ &quot;</div><div class="line">  tags: hosts</div><div class="line"></div><div class="line">- name: copy /etc/hosts to server</div><div class="line">  template: src=etc.host dest=/tmp/etc/ owner=&#123;&#123; remote_user &#125;&#125; group=&#123;&#123; remote_user &#125;&#125; mode=0700 force=yes</div><div class="line">  tags: hosts</div><div class="line"></div><div class="line">- name: merge /etc/hosts</div><div class="line">  assemble: src=/tmp/etc dest=/etc/hosts owner=root group=root mode=0644 force=yes</div><div class="line">  tags: hosts</div><div class="line"></div><div class="line">- name: copy docker_rc.sh to server</div><div class="line">  template: src=docker_rc.sh dest=&#123;&#123; docker_rc_dir &#125;&#125;/docker_rc.sh owner=root group=root mode=0755 force=yes</div><div class="line">  when: use_vxlan!=&quot;true&quot;</div><div class="line">  tags: docker_rc</div><div class="line"></div><div class="line">- name: copy docker_rc.sh to server</div><div class="line">  template: src=docker_rc_vm.sh dest=&#123;&#123; docker_rc_dir &#125;&#125;/docker_rc.sh owner=root group=root mode=0755 force=yes</div><div class="line">  when: use_vxlan==&quot;true&quot;</div><div class="line">  tags: docker_rc</div><div class="line"></div><div class="line">- name: clean docker_rc in rc.local</div><div class="line">  command: su - root -c &quot; sed -i &apos;/docker_rc.sh/d&apos; /etc/rc.d/rc.local &quot;</div><div class="line">  ignore_errors: true</div><div class="line">  sudo: yes</div><div class="line">  tags: docker_rc</div><div class="line"></div><div class="line">- name: start the docker when the system reboot</div><div class="line">  command: su - root -c &quot; echo &apos;su - root -c \&quot;&#123;&#123; docker_rc_dir &#125;&#125;/docker_rc.sh\&quot; &apos; &gt;&gt; /etc/rc.d/rc.local &quot;</div><div class="line">  ignore_errors: true</div><div class="line">  sudo: yes</div><div class="line">  tags: docker_rc</div><div class="line"></div><div class="line">- name: chown the /etc/rc.d/rc.local</div><div class="line">  shell: &quot;chmod +x /etc/rc.d/rc.local &quot;</div><div class="line">  ignore_errors: true</div><div class="line">  sudo: yes</div><div class="line">  tags: docker_rc</div><div class="line"></div><div class="line">- name: clean previous space occupier</div><div class="line">  file: path=&#123;&#123; storage_dir &#125;&#125;/ark.disk&#123;&#123; item &#125;&#125;.tmp state=absent</div><div class="line">  with_items:</div><div class="line">    - 1</div><div class="line">    - 2</div><div class="line">  ignore_errors: true</div><div class="line">  tags: docker</div><div class="line"></div><div class="line">- name: Occupy space for docker</div><div class="line">  shell: &quot;dd if=/dev/zero of=&#123;&#123; storage_dir &#125;&#125;/ark.disk&#123;&#123; item &#125;&#125;.tmp bs=1M count=1024&quot;</div><div class="line">  sudo: yes</div><div class="line">  with_items:</div><div class="line">    - 1</div><div class="line">    - 2</div><div class="line">  tags: docker</div></pre></td></tr></table></figure>
+<h2 id="部署zk"><a href="#部署zk" class="headerlink" title="部署zk"></a>部署zk</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div></pre></td><td class="code"><pre><div class="line">$cat roles/zookeeper/tasks/main.yml</div><div class="line"># filename: main.yml</div><div class="line">---</div><div class="line">#&quot;****************************************************************************&quot;&quot;</div><div class="line">- name: extract zookeeper tgz</div><div class="line">  unarchive: src=&#123;&#123; packages_dir &#125;&#125;/lib/&#123;&#123; zk_package_name &#125;&#125; dest=/opt</div><div class="line">  sudo: yes</div><div class="line"></div><div class="line">- name: create zk data and log dir</div><div class="line">  file: path=&#123;&#123; zk_data_dir &#125;&#125; state=directory mode=0755</div><div class="line">  with_items:</div><div class="line">    - &quot;&#123;&#123; zk_data_dir &#125;&#125;&quot;</div><div class="line">    - &quot;&#123;&#123; zk_logs_dir &#125;&#125;&quot;</div><div class="line"></div><div class="line">- name: set the myid</div><div class="line">  template: src=myid dest=&#123;&#123; zk_myid_file &#125;&#125;  mode=0644</div><div class="line"></div><div class="line">- name: template zoo.cfg</div><div class="line">  template: src=zoo.cfg dest=&#123;&#123; zk_install_dir &#125;&#125;/conf/ mode=0644</div><div class="line"></div><div class="line">- name: copy log4j to remote</div><div class="line">  template: src=log4j.properties dest=&#123;&#123; zk_install_dir &#125;&#125;/conf/log4j.properties</div><div class="line"></div><div class="line">- name: determine zk process</div><div class="line">  command: su - root -c &quot;ps aux | grep java | grep -v grep | grep &#123;&#123; zk_install_dir &#125;&#125;&quot;</div><div class="line">  register: result</div><div class="line">  ignore_errors: true</div><div class="line"></div><div class="line">- name: stop zk server</div><div class="line">  command: su - root -c &quot;sh &#123;&#123; zk_install_dir &#125;&#125;/bin/zkServer.sh  stop&quot;</div><div class="line">  ignore_errors: true</div><div class="line">  when: &quot;result.rc == 0&quot;</div><div class="line"></div><div class="line">- name: start zk server</div><div class="line">  command: su - root -c &quot;sh &#123;&#123; zk_install_dir &#125;&#125;/bin/zkServer.sh start&quot;</div><div class="line"></div><div class="line">- name: get process info</div><div class="line">  command: su - root -c &quot;ps aux | grep java | grep -v grep | grep &#123;&#123; zk_install_dir &#125;&#125;&quot;</div><div class="line">  register: result</div><div class="line"></div><div class="line">- name: clean zk service when the system reboot</div><div class="line">  command: su - root -c &quot; sed -i &apos;/&#123;&#123; zk_dir_name &#125;&#125;/d&apos; /etc/rc.d/rc.local &quot;</div><div class="line">  ignore_errors: true</div><div class="line">  sudo: yes</div><div class="line"></div><div class="line">- name: start the zk service when the system reboot</div><div class="line">  command: su - root -c &quot; echo &apos;su - root -c \&quot;&#123;&#123; zk_install_dir &#125;&#125;/bin/zkServer.sh start\&quot; &apos; &gt;&gt; /etc/rc.d/rc.local &quot;</div><div class="line">  ignore_errors: true</div><div class="line">  sudo: yes</div><div class="line"></div><div class="line">- name: start the zk service when the system reboot</div><div class="line">  shell: &quot;chmod +x /etc/rc.d/rc.local &quot;</div><div class="line">  ignore_errors: true</div><div class="line">  sudo: yes</div></pre></td></tr></table></figure>
 
           
         
@@ -4292,200 +4463,11 @@ drwxr-xr-x  3 test  games 4.0K Nov 18 15:40 ansible-engine
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/03/22/ansible PlayBook中如何定义不同的机器、不同的Role使用不同的变量/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2016/03/22/ansible PlayBook中如何定义不同的机器、不同的Role使用不同的变量/" itemprop="url">在ansible PlayBook中如何定义不同的机器、不同的Role使用不同的变量</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2016-03-22T17:30:03+08:00">
-                2016-03-22
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2016/03/22/ansible PlayBook中如何定义不同的机器、不同的Role使用不同的变量/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2016/03/22/ansible PlayBook中如何定义不同的机器、不同的Role使用不同的变量/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="在ansible-PlayBook中如何定义不同的机器、不同的Role使用不同的变量"><a href="#在ansible-PlayBook中如何定义不同的机器、不同的Role使用不同的变量" class="headerlink" title="在ansible PlayBook中如何定义不同的机器、不同的Role使用不同的变量"></a>在ansible PlayBook中如何定义不同的机器、不同的Role使用不同的变量</h1><h2 id="问题场景1"><a href="#问题场景1" class="headerlink" title="问题场景1"></a>问题场景1</h2><blockquote>
-<p> 在安装Edas Agent脚本的时候发现在不同的机房[深圳、杭州、北京]有不同的网络定义[VPC、Normal],希望不同机房的机器在不同网络下使用不同的下载地址</p>
-</blockquote>
-<h2 id="问题场景2"><a href="#问题场景2" class="headerlink" title="问题场景2"></a>问题场景2</h2><blockquote>
-<p> 在同一台机器上安装MySQL和Diamond，需要定义一个Project_Name, 如果定义在Hosts.ini中必然会覆盖，一台机器相当于一个作用域【同一个函数中也不允许你定义两个一样的名字吧！】</p>
-</blockquote>
-<h2 id="问题场景1的解决"><a href="#问题场景1的解决" class="headerlink" title="问题场景1的解决"></a>问题场景1的解决</h2><h3 id="在hosts-ini文件中定义不同的机器和变量"><a href="#在hosts-ini文件中定义不同的机器和变量" class="headerlink" title="在hosts.ini文件中定义不同的机器和变量"></a>在hosts.ini文件中定义不同的机器和变量</h3><pre><code>[sz_vpc]
-10.125.0.169 
-10.125.192.40
-
-[sz_normal]
-10.125.12.174 
-
-[sz:children]
-sz_vpc
-sz_normal
-
-[hz_vpc]
-10.125.3.33  
-[hz_normal]
-10.125.14.238
-
-[hz:children]
-hz_vpc
-hz_normal
-
-############variables
-[sz_vpc:vars]
-script_url=&quot;sz_vpc&quot;
-
-[sz_normal:vars]
-script_url=&quot;sz_normal&quot;
-
-[hz_vpc:vars]
-script_url=&quot;hz_vpc&quot;
-
-[hz_normal:vars]
-script_url=&quot;hz_normal&quot;
-</code></pre><h3 id="执行代码"><a href="#执行代码" class="headerlink" title="执行代码"></a>执行代码</h3><pre><code><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">- name: test variables</div><div class="line">  debug: msg=&#123;&#123; script_url &#125;&#125;  #对所有机器输出他们的url来验证一下我们的定义生效没有</div><div class="line">  tags: test</div></pre></td></tr></table></figure>
-</code></pre><h3 id="执行结果"><a href="#执行结果" class="headerlink" title="执行结果"></a>执行结果</h3><pre><code><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line">	$udp-playbook -i udp-hosts.ini site.yml -b -u admin -t test    </div><div class="line">	</div><div class="line">	UDP-PLAY-START: [apply common configuration to all nodes] ********************* </div><div class="line">	</div><div class="line">	UDP-TASK: [test variables] **************************************************** </div><div class="line">	ok =&gt; 10.125.3.33 =&gt; &#123;</div><div class="line">	    &quot;msg&quot;: &quot;hz_vpc&quot;</div><div class="line">	&#125;</div><div class="line">	ok =&gt; 10.125.0.169 =&gt; &#123;</div><div class="line">	    &quot;msg&quot;: &quot;sz_vpc&quot;</div><div class="line">	&#125;</div><div class="line">	ok =&gt; 10.125.192.40 =&gt; &#123;</div><div class="line">	    &quot;msg&quot;: &quot;sz_vpc&quot;</div><div class="line">	&#125;</div><div class="line">	ok =&gt; 10.125.14.238 =&gt; &#123;</div><div class="line">	    &quot;msg&quot;: &quot;hz_normal&quot;</div><div class="line">	&#125;</div><div class="line">	ok =&gt; 10.125.12.174 =&gt; &#123;</div><div class="line">	    &quot;msg&quot;: &quot;sz_normal&quot;</div><div class="line">	&#125;</div><div class="line"></div><div class="line"></div><div class="line">​</div></pre></td></tr></table></figure>
-</code></pre><h2 id="问题场景2的解决"><a href="#问题场景2的解决" class="headerlink" title="问题场景2的解决"></a>问题场景2的解决</h2><blockquote>
-<p>在这里变量不要放在hosts.ini中，到MySQL、Diamond的roles中新建两个yml文件,在 里面分别写上 MySQL和Diamond的 Project_Name 这样就不会覆盖了</p>
-</blockquote>
-<h3 id="目录结构"><a href="#目录结构" class="headerlink" title="目录结构"></a>目录结构</h3><pre><code><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">$ find roles</div><div class="line">roles/</div><div class="line">roles/mysql</div><div class="line">roles/mysql/tasks</div><div class="line">roles/mysql/tasks/main.yml</div><div class="line">roles/mysql/defaults</div><div class="line">roles/mysql/defaults/main.yml</div><div class="line">roles/diamond</div><div class="line">roles/diamond/tasks</div><div class="line">roles/diamond/tasks/main.yml</div><div class="line">roles/diamond/defaults</div><div class="line">roles/diamond/defaults/main.yml</div></pre></td></tr></table></figure>
-</code></pre><h3 id="变量定义"><a href="#变量定义" class="headerlink" title="变量定义"></a>变量定义</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">$ cat roles/mysql/defaults/main.yml</div><div class="line"></div><div class="line">project: &#123;</div><div class="line">        &quot;project_name&quot;: mysql,</div><div class="line">		&quot;version&quot;: 5.6.0</div><div class="line">        &#125;</div><div class="line"></div><div class="line">$ cat roles/daimond/defaults/main.yml</div><div class="line"></div><div class="line">project: &#123;</div><div class="line">        &quot;project_name&quot;: daimond,</div><div class="line">		&quot;version&quot;: 3.5.0</div><div class="line">        &#125;</div></pre></td></tr></table></figure>
-<h3 id="变量使用"><a href="#变量使用" class="headerlink" title="变量使用"></a>变量使用</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">- name: print the tar file name</div><div class="line">  debug: msg=&quot;&#123;&#123; project.project_name &#125;&#125;&quot;</div><div class="line">  tags: test</div></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/3/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span>
+    <a class="extend prev" rel="prev" href="/page/3/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><a class="extend next" rel="next" href="/page/5/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -4530,7 +4512,7 @@ script_url=&quot;hz_normal&quot;
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">80</span>
+                <span class="site-state-item-count">81</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -4552,7 +4534,7 @@ script_url=&quot;hz_normal&quot;
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">167</span>
+                <span class="site-state-item-count">171</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>

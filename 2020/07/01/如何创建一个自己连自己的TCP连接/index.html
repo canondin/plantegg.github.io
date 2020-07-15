@@ -106,7 +106,7 @@
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b9a0144a3835759c844f697bc45103fa.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/5373ecfe0d4496d106c64d3f370c893c.png">
 <meta property="og:image" content="d:%5Cali%5Ccase%5Cimage%5Cimage-20200702131215819.png">
-<meta property="og:updated_time" content="2020-07-03T04:35:09.932Z">
+<meta property="og:updated_time" content="2020-07-15T03:27:26.483Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="如何创建一个自己连自己的TCP连接">
 <meta name="twitter:description" content="如何创建一个自己连自己的TCP连接 能不能建立一个tcp连接， src-ip:src-port 等于dest-ip:dest-port 呢？  执行 1# nc 192.168.0.79 18082 -p 18082 然后就能看到 12# netstat -ant |grep 18082tcp        0      0 192.168.0.79:18082      192.168.0.79">
@@ -397,20 +397,20 @@
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># nc 192.168.0.79 18082 -p 18082</div></pre></td></tr></table></figure>
 <p>然后就能看到</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># netstat -ant |grep 18082</div><div class="line">tcp        0      0 192.168.0.79:18082      192.168.0.79:18082      ESTABLISHED</div></pre></td></tr></table></figure>
-<p>这个连接完全可以工作，也能收发数据。这有点颠覆大家的理解，端口能重复使用？</p>
+<p>比较神奇，这个连接的srcport等于destport，并且完全可以工作，也能收发数据。这有点颠覆大家的理解，端口能重复使用？</p>
 <h2 id="port-range"><a href="#port-range" class="headerlink" title="port range"></a>port range</h2><p>我们都知道linux下本地端口范围由参数控制</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># cat /proc/sys/net/ipv4/ip_local_port_range </div><div class="line">10000	65535</div></pre></td></tr></table></figure>
 <p>所以也经常看到一个误解：一台机器上最多能创建65535个TCP连接</p>
-<h2 id="一台机器上最多能创建多少个TCP连接"><a href="#一台机器上最多能创建多少个TCP连接" class="headerlink" title="一台机器上最多能创建多少个TCP连接"></a>一台机器上最多能创建多少个TCP连接</h2><p>在内存、文件句柄足够的话可以创建的连接是没有限制的，那么/proc/sys/net/ipv4/ip_local_port_range指定的端口范围到底是什么意思呢？</p>
+<h2 id="到底一台机器上最多能创建多少个TCP连接"><a href="#到底一台机器上最多能创建多少个TCP连接" class="headerlink" title="到底一台机器上最多能创建多少个TCP连接"></a>到底一台机器上最多能创建多少个TCP连接</h2><p>在内存、文件句柄足够的话可以创建的连接是没有限制的，那么/proc/sys/net/ipv4/ip_local_port_range指定的端口范围到底是什么意思呢？</p>
 <p>一个TCP连接只要保证四元组(src-ip src-port dest-ip dest-port)唯一就可以了，而不是要求src port唯一，比如：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"># netstat -ant |grep 18089</div><div class="line">tcp        0      0 192.168.1.79:18089      192.168.1.79:22         ESTABLISHED</div><div class="line">tcp        0      0 192.168.1.79:18089      192.168.1.79:18080      ESTABLISHED</div><div class="line">tcp        0      0 192.168.0.79:18089      192.168.0.79:22         TIME_WAIT </div><div class="line">tcp        0      0 192.168.1.79:22         192.168.1.79:18089      ESTABLISHED</div><div class="line">tcp        0      0 192.168.1.79:18080      192.168.1.79:18089      ESTABLISHED</div></pre></td></tr></table></figure>
-<p>从前三行可以清楚地看到18089被用了三次，第一第二行src-ip、dest-ip也是重复的，但是dest port不一样，第三行的src-port还是18089，这是因为src-ip变了。</p>
-<p>所以一台机器能创建的TCP连接是没有限制的，而ip_local_port_range限制的是连同一个目标（dest-ip和dest-port一样）的port的数量（请忽略本地多网卡的情况，因为dest-ip为以后route只会选用一个本地ip）。</p>
+<p>从前三行可以清楚地看到18089被用了三次，第一第二行src-ip、dest-ip也是重复的，但是dest port不一样，第三行的src-port还是18089，但是src-ip变了。</p>
+<p>所以一台机器能创建的TCP连接是没有限制的，而ip_local_port_range是指没有bind的时候OS随机分配端口的范围，但是分配到的端口要同时满足五元组唯一，这样 ip_local_port_range 限制的是连同一个目标（dest-ip和dest-port一样）的port的数量（请忽略本地多网卡的情况，因为dest-ip为以后route只会选用一个本地ip）。</p>
 <h2 id="自己连自己的连接"><a href="#自己连自己的连接" class="headerlink" title="自己连自己的连接"></a>自己连自己的连接</h2><p>我们来看自己连自己发生了什么</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line"><span class="comment"># strace nc 192.168.0.79 18084 -p 18084</span></div><div class="line">execve(<span class="string">"/usr/bin/nc"</span>, [<span class="string">"nc"</span>, <span class="string">"192.168.0.79"</span>, <span class="string">"18084"</span>, <span class="string">"-p"</span>, <span class="string">"18084"</span>], [/* 31 vars */]) = 0</div><div class="line">brk(NULL)                               = 0x23d4000</div><div class="line">mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f213f394000</div><div class="line">access(<span class="string">"/etc/ld.so.preload"</span>, R_OK)      = -1 ENOENT (No such file or directory)</div><div class="line">open(<span class="string">"/etc/ld.so.cache"</span>, O_RDONLY|O_CLOEXEC) = 3</div><div class="line">fstat(3, &#123;st_mode=S_IFREG|0644, st_size=23295, ...&#125;) = 0</div><div class="line">mmap(NULL, 23295, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7f213f38e000</div><div class="line">close(3)                                = 0</div><div class="line">open(<span class="string">"/lib64/libssl.so.10"</span>, O_RDONLY|O_CLOEXEC) = 3</div><div class="line">………………</div><div class="line">munmap(0x7f213f393000, 4096)            = 0</div><div class="line">open(<span class="string">"/usr/share/ncat/ca-bundle.crt"</span>, O_RDONLY) = -1 ENOENT (No such file or directory)</div><div class="line">socket(AF_INET, SOCK_STREAM, IPPROTO_TCP) = 3</div><div class="line">fcntl(3, F_GETFL)                       = 0x2 (flags O_RDWR)</div><div class="line">fcntl(3, F_SETFL, O_RDWR|O_NONBLOCK)    = 0</div><div class="line">setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0</div><div class="line"><span class="built_in">bind</span>(3, &#123;sa_family=AF_INET, sin_port=htons(18084), sin_addr=inet_addr(<span class="string">"0.0.0.0"</span>)&#125;, 16) = 0</div><div class="line">//注意这里<span class="built_in">bind</span>后直接就是connect，没有listen</div><div class="line">connect(3, &#123;sa_family=AF_INET, sin_port=htons(18084), sin_addr=inet_addr(<span class="string">"192.168.0.79"</span>)&#125;, 16) = -1 EINPROGRESS (Operation now <span class="keyword">in</span> progress)</div><div class="line">select(4, [3], [3], [3], &#123;10, 0&#125;)       = 1 (out [3], left &#123;9, 999998&#125;)</div><div class="line">getsockopt(3, SOL_SOCKET, SO_ERROR, [0], [4]) = 0</div><div class="line">select(4, [0 3], [], [], NULL</div></pre></td></tr></table></figure>
 <p>抓包看看，正常三次握手，但是syn的seq和syn+ack的seq是一样的</p>
 <p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/341f2891253baa4eebdaeaf34aa60c4b.png" alt="image.png"></p>
-<p>这里不是常说的TCP simultaneous open，simultaneous open指的是两个不同port同时发syn建连接。而这里是先创建了一个socket，然后socket bind到18084端口上（作为local port，因为nc指定了local port），然后执行 connect, 连接到的目标也是192.168.0.79:18084，而这个目标正好是刚刚创建的socket，也就是自己连自己（连接双方总共只有一个socket）。</p>
+<p>这里算是常说的TCP simultaneous open，simultaneous open指的是两个不同port同时发syn建连接。而这里是先创建了一个socket，然后socket bind到18084端口上（作为local port，因为nc指定了local port），然后执行 connect, 连接到的目标也是192.168.0.79:18084，而这个目标正好是刚刚创建的socket，也就是自己连自己（连接双方总共只有一个socket）。因为一个socket充当了两个角色（client、server），这里发syn，自己收到自己发的syn，就相当于两个角色simultaneous open了。</p>
 <p>正常一个连接一定需要两个socket参与（这两个socket不一定要在两台机器上），而这个连接只用了一个socket就创建了，还能正常传输数据。但是仔细观察发数据的时候发放的seq增加（注意tcp_len 11那里的seq），收方的seq也增加了11，这是因为本来这就是用的同一个socket。正常两个socket通讯不是这样的。</p>
 <p>那么这种情况为什么没有当做bug被处理呢？</p>
 <h2 id="TCP-simultanous-open"><a href="#TCP-simultanous-open" class="headerlink" title="TCP simultanous open"></a>TCP simultanous open</h2><p>在tcp连接的定义中，通常都是一方先发起连接，假如两边同时发起连接，也就是两个socket同时给对方发 syn 呢？ 这在内核中是支持的，就叫同时打开（simultaneous open）。</p>
@@ -577,7 +577,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">80</span>
+                <span class="site-state-item-count">81</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -599,7 +599,7 @@
             
             <div class="site-state-item site-state-tags">
               
-                <span class="site-state-item-count">167</span>
+                <span class="site-state-item-count">171</span>
                 <span class="site-state-item-name">标签</span>
               
             </div>
@@ -641,7 +641,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#如何创建一个自己连自己的TCP连接"><span class="nav-number">1.</span> <span class="nav-text">如何创建一个自己连自己的TCP连接</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#port-range"><span class="nav-number">1.1.</span> <span class="nav-text">port range</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#一台机器上最多能创建多少个TCP连接"><span class="nav-number">1.2.</span> <span class="nav-text">一台机器上最多能创建多少个TCP连接</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#自己连自己的连接"><span class="nav-number">1.3.</span> <span class="nav-text">自己连自己的连接</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TCP-simultanous-open"><span class="nav-number">1.4.</span> <span class="nav-text">TCP simultanous open</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#自己连自己的原理解释"><span class="nav-number">1.5.</span> <span class="nav-text">自己连自己的原理解释</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#bind-和-connect、listen"><span class="nav-number">1.6.</span> <span class="nav-text">bind 和 connect、listen</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#listen"><span class="nav-number">1.6.1.</span> <span class="nav-text">listen</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">1.7.</span> <span class="nav-text">参考资料</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#如何创建一个自己连自己的TCP连接"><span class="nav-number">1.</span> <span class="nav-text">如何创建一个自己连自己的TCP连接</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#port-range"><span class="nav-number">1.1.</span> <span class="nav-text">port range</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#到底一台机器上最多能创建多少个TCP连接"><span class="nav-number">1.2.</span> <span class="nav-text">到底一台机器上最多能创建多少个TCP连接</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#自己连自己的连接"><span class="nav-number">1.3.</span> <span class="nav-text">自己连自己的连接</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TCP-simultanous-open"><span class="nav-number">1.4.</span> <span class="nav-text">TCP simultanous open</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#自己连自己的原理解释"><span class="nav-number">1.5.</span> <span class="nav-text">自己连自己的原理解释</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#bind-和-connect、listen"><span class="nav-number">1.6.</span> <span class="nav-text">bind 和 connect、listen</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#listen"><span class="nav-number">1.6.1.</span> <span class="nav-text">listen</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">1.7.</span> <span class="nav-text">参考资料</span></a></li></ol></li></ol></div>
             
 
           </div>
