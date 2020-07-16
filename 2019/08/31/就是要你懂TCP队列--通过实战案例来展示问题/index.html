@@ -77,7 +77,7 @@
 <link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="netstat,ss,tcp queue,accept queue,syn queue,syn flood,overflows,dropped," />
+  <meta name="keywords" content="netstat,ss,accept queue,syn queue,syn flood,overflows,dropped,TCP queue," />
 
 
 
@@ -96,7 +96,7 @@
 
 
 <meta name="description" content="就是要你懂TCP队列–通过实战案例来展示问题详细理论和实践部分可以看这篇 再写这篇原因是，即使我在上篇文章里将这个问题阐述的相当清晰，但是当我再次碰到这个问题居然还是费了一些周折，所以想再次总结下。 问题描述 使用其他团队的WEBShell 调试问题的时候非常卡，最开始怀疑是定时任务导致压力大，然后重启Server端的Tomcat就恢复了，当时该应用的开发同学看到机器磁盘、cpu、内存、gc等都正">
-<meta name="keywords" content="netstat,ss,tcp queue,accept queue,syn queue,syn flood,overflows,dropped">
+<meta name="keywords" content="netstat,ss,accept queue,syn queue,syn flood,overflows,dropped,TCP queue">
 <meta property="og:type" content="article">
 <meta property="og:title" content="就是要你懂TCP队列--通过实战案例来展示问题">
 <meta property="og:url" content="http://yoursite.com/2019/08/31/就是要你懂TCP队列--通过实战案例来展示问题/index.html">
@@ -112,7 +112,7 @@
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/be6ac944fb72b089dc0357298a47dc37.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e9efaffe357a2d1ac72806ce36066532.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/9340023fac65d9c1d0aeda8e73557792.png">
-<meta property="og:updated_time" content="2019-09-24T06:21:43.423Z">
+<meta property="og:updated_time" content="2020-07-16T06:53:18.244Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="就是要你懂TCP队列--通过实战案例来展示问题">
 <meta name="twitter:description" content="就是要你懂TCP队列–通过实战案例来展示问题详细理论和实践部分可以看这篇 再写这篇原因是，即使我在上篇文章里将这个问题阐述的相当清晰，但是当我再次碰到这个问题居然还是费了一些周折，所以想再次总结下。 问题描述 使用其他团队的WEBShell 调试问题的时候非常卡，最开始怀疑是定时任务导致压力大，然后重启Server端的Tomcat就恢复了，当时该应用的开发同学看到机器磁盘、cpu、内存、gc等都正">
@@ -344,8 +344,8 @@
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/tcp/" itemprop="url" rel="index">
-                    <span itemprop="name">tcp</span>
+                  <a href="/categories/TCP/" itemprop="url" rel="index">
+                    <span itemprop="name">TCP</span>
                   </a>
                 </span>
 
@@ -399,6 +399,7 @@
 <h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><blockquote>
 <p>使用其他团队的WEBShell 调试问题的时候非常卡，最开始怀疑是定时任务导致压力大，然后重启Server端的Tomcat就恢复了，当时该应用的开发同学看到机器磁盘、cpu、内存、gc等都正常，实在不知道为什么会这么卡</p>
 </blockquote>
+<p>​    </p>
 <h2 id="分析问题"><a href="#分析问题" class="headerlink" title="分析问题"></a>分析问题</h2><p>因为每天都是上午出现问题，拿到权限后，也跟着先检查一遍定时任务，没发现什么异常。</p>
 <p>既然在客户端表现出来卡顿，那么tsar先看看网络吧，果然大致是卡顿的时候网络重传率有点高，不过整个问题不是一直出现，只是间歇性的。</p>
 <p>抓包、netstat -s 看重传、reset等都还好、ss -lnt 看也没有溢出，我看了很多次当前队列都是0</p>
@@ -466,8 +467,6 @@
           
             <a href="/tags/ss/" rel="tag"># ss</a>
           
-            <a href="/tags/tcp-queue/" rel="tag"># tcp queue</a>
-          
             <a href="/tags/accept-queue/" rel="tag"># accept queue</a>
           
             <a href="/tags/syn-queue/" rel="tag"># syn queue</a>
@@ -477,6 +476,8 @@
             <a href="/tags/overflows/" rel="tag"># overflows</a>
           
             <a href="/tags/dropped/" rel="tag"># dropped</a>
+          
+            <a href="/tags/TCP-queue/" rel="tag"># TCP queue</a>
           
         </div>
       
