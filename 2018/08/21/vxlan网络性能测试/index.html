@@ -77,7 +77,7 @@
 <link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="Hexo, NexT" />
+  <meta name="keywords" content="performance,Linux,network,docker,vxlan," />
 
 
 
@@ -96,14 +96,15 @@
 
 
 <meta name="description" content="vxlan网络性能测试 缘起 Docker集群中需要给每个容器分配一个独立的IP，同时在不同宿主机环境上的容器IP又要能够互相联通，所以需要一个overlay的网络（vlan也可以解决这个问题） overlay网络就是把容器之间的网络包重新打包在宿主机的IP包里面，传到目的容器所在的宿主机后，再把这个overlay的网络包还原成容器包交给容器 这里多了一次封包解包的过程，所以性能上必然有些损耗 封">
+<meta name="keywords" content="performance,Linux,network,docker,vxlan">
 <meta property="og:type" content="article">
-<meta property="og:title" content="plantegg">
-<meta property="og:url" content="http://yoursite.com/2020/07/16/vxlan网络性能测试/index.html">
+<meta property="og:title" content="vxlan网络性能测试">
+<meta property="og:url" content="http://yoursite.com/2018/08/21/vxlan网络性能测试/index.html">
 <meta property="og:site_name" content="plantegg">
 <meta property="og:description" content="vxlan网络性能测试 缘起 Docker集群中需要给每个容器分配一个独立的IP，同时在不同宿主机环境上的容器IP又要能够互相联通，所以需要一个overlay的网络（vlan也可以解决这个问题） overlay网络就是把容器之间的网络包重新打包在宿主机的IP包里面，传到目的容器所在的宿主机后，再把这个overlay的网络包还原成容器包交给容器 这里多了一次封包解包的过程，所以性能上必然有些损耗 封">
-<meta property="og:updated_time" content="2020-07-16T06:07:34.897Z">
+<meta property="og:updated_time" content="2020-07-16T06:16:08.470Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="plantegg">
+<meta name="twitter:title" content="vxlan网络性能测试">
 <meta name="twitter:description" content="vxlan网络性能测试 缘起 Docker集群中需要给每个容器分配一个独立的IP，同时在不同宿主机环境上的容器IP又要能够互相联通，所以需要一个overlay的网络（vlan也可以解决这个问题） overlay网络就是把容器之间的网络包重新打包在宿主机的IP包里面，传到目的容器所在的宿主机后，再把这个overlay的网络包还原成容器包交给容器 这里多了一次封包解包的过程，所以性能上必然有些损耗 封">
 
 
@@ -132,13 +133,13 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/2020/07/16/vxlan网络性能测试/"/>
+  <link rel="canonical" href="http://yoursite.com/2018/08/21/vxlan网络性能测试/"/>
 
 
 
 
 
-  <title> | plantegg</title>
+  <title>vxlan网络性能测试 | plantegg</title>
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
@@ -280,7 +281,7 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/16/vxlan网络性能测试/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/08/21/vxlan网络性能测试/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="weibo @plantegg">
@@ -297,7 +298,7 @@
 
         
         
-          <h2 class="post-title" itemprop="name headline"></h2>
+          <h2 class="post-title" itemprop="name headline">vxlan网络性能测试</h2>
         
 
         <div class="post-meta">
@@ -309,8 +310,8 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-07-16T14:07:34+08:00">
-                2020-07-16
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-08-21T16:30:03+08:00">
+                2018-08-21
               </time>
             
 
@@ -320,6 +321,28 @@
           </span>
 
           
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/network/" itemprop="url" rel="index">
+                    <span itemprop="name">network</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
 
           
             
@@ -328,9 +351,9 @@
                 <span class="post-meta-item-icon">
                   <i class="fa fa-comment-o"></i>
                 </span>
-                <a href="/2020/07/16/vxlan网络性能测试/#comments" itemprop="discussionUrl">
+                <a href="/2018/08/21/vxlan网络性能测试/#comments" itemprop="discussionUrl">
                   <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2020/07/16/vxlan网络性能测试/" itemprop="commentCount"></span>
+                        data-disqus-identifier="2018/08/21/vxlan网络性能测试/" itemprop="commentCount"></span>
                 </a>
               </span>
             
@@ -670,6 +693,20 @@ msg_size  =4 KiB (4,096)
 
     <footer class="post-footer">
       
+        <div class="post-tags">
+          
+            <a href="/tags/performance/" rel="tag"># performance</a>
+          
+            <a href="/tags/Linux/" rel="tag"># Linux</a>
+          
+            <a href="/tags/network/" rel="tag"># network</a>
+          
+            <a href="/tags/docker/" rel="tag"># docker</a>
+          
+            <a href="/tags/vxlan/" rel="tag"># vxlan</a>
+          
+        </div>
+      
 
       
       
@@ -679,8 +716,8 @@ msg_size  =4 KiB (4,096)
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2020/07/16/TCP network Traning/" rel="next" title="">
-                <i class="fa fa-chevron-left"></i> 
+              <a href="/2018/07/26/优酷双11全链路压测中通过Perf发现的一个SpringMVC 的性能问题/" rel="next" title="双11全链路压测中通过Perf发现的一个SpringMVC 的性能问题">
+                <i class="fa fa-chevron-left"></i> 双11全链路压测中通过Perf发现的一个SpringMVC 的性能问题
               </a>
             
           </div>
@@ -689,8 +726,8 @@ msg_size  =4 KiB (4,096)
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/2020/07/16/性能优化，从老中医到科学理论指导/" rel="prev" title="">
-                 <i class="fa fa-chevron-right"></i>
+              <a href="/2018/08/24/性能优化，从老中医到科学理论指导/" rel="prev" title="性能优化，从老中医到科学理论指导">
+                性能优化，从老中医到科学理论指导 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -770,7 +807,7 @@ msg_size  =4 KiB (4,096)
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">93</span>
+                <span class="site-state-item-count">92</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -1007,9 +1044,9 @@ msg_size  =4 KiB (4,096)
     
       <script type="text/javascript">
         var disqus_config = function () {
-          this.page.url = 'http://yoursite.com/2020/07/16/vxlan网络性能测试/';
-          this.page.identifier = '2020/07/16/vxlan网络性能测试/';
-          this.page.title = '';
+          this.page.url = 'http://yoursite.com/2018/08/21/vxlan网络性能测试/';
+          this.page.identifier = '2018/08/21/vxlan网络性能测试/';
+          this.page.title = 'vxlan网络性能测试';
         };
         var d = document, s = d.createElement('script');
         s.src = 'https://.disqus.com/embed.js';
