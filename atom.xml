@@ -41,15 +41,15 @@
       <category term="tcp" scheme="http://yoursite.com/categories/tcp/"/>
     
     
-      <category term="performance" scheme="http://yoursite.com/tags/performance/"/>
+      <category term="performance" scheme="http://yoursite.com/tag/performance/"/>
     
-      <category term="network" scheme="http://yoursite.com/tags/network/"/>
+      <category term="network" scheme="http://yoursite.com/tag/network/"/>
     
-      <category term="tcpdump" scheme="http://yoursite.com/tags/tcpdump/"/>
+      <category term="tcpdump" scheme="http://yoursite.com/tag/tcpdump/"/>
     
-      <category term="tcp queue" scheme="http://yoursite.com/tags/tcp-queue/"/>
+      <category term="tcp queue" scheme="http://yoursite.com/tag/tcp-queue/"/>
     
-      <category term="lvs" scheme="http://yoursite.com/tags/lvs/"/>
+      <category term="lvs" scheme="http://yoursite.com/tag/lvs/"/>
     
   </entry>
   
@@ -214,15 +214,15 @@
       <category term="MySQL" scheme="http://yoursite.com/categories/MySQL/"/>
     
     
-      <category term="MySQL" scheme="http://yoursite.com/tags/MySQL/"/>
+      <category term="MySQL" scheme="http://yoursite.com/tag/MySQL/"/>
     
-      <category term="JDBC" scheme="http://yoursite.com/tags/JDBC/"/>
+      <category term="JDBC" scheme="http://yoursite.com/tag/JDBC/"/>
     
-      <category term="stream" scheme="http://yoursite.com/tags/stream/"/>
+      <category term="stream" scheme="http://yoursite.com/tag/stream/"/>
     
-      <category term="net_write_timeout" scheme="http://yoursite.com/tags/net-write-timeout/"/>
+      <category term="net_write_timeout" scheme="http://yoursite.com/tag/net-write-timeout/"/>
     
-      <category term="timeout" scheme="http://yoursite.com/tags/timeout/"/>
+      <category term="timeout" scheme="http://yoursite.com/tag/timeout/"/>
     
   </entry>
   
@@ -295,15 +295,15 @@
       <category term="network" scheme="http://yoursite.com/categories/Linux/TCP/network/"/>
     
     
-      <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
+      <category term="Linux" scheme="http://yoursite.com/tag/Linux/"/>
     
-      <category term="network" scheme="http://yoursite.com/tags/network/"/>
+      <category term="network" scheme="http://yoursite.com/tag/network/"/>
     
-      <category term="TCP" scheme="http://yoursite.com/tags/TCP/"/>
+      <category term="TCP" scheme="http://yoursite.com/tag/TCP/"/>
     
-      <category term="simultaneous" scheme="http://yoursite.com/tags/simultaneous/"/>
+      <category term="simultaneous" scheme="http://yoursite.com/tag/simultaneous/"/>
     
-      <category term="自连接" scheme="http://yoursite.com/tags/%E8%87%AA%E8%BF%9E%E6%8E%A5/"/>
+      <category term="自连接" scheme="http://yoursite.com/tag/%E8%87%AA%E8%BF%9E%E6%8E%A5/"/>
     
   </entry>
   
@@ -365,13 +365,13 @@
       <category term="TCPRT" scheme="http://yoursite.com/categories/Linux/TCP/network/TCPRT/"/>
     
     
-      <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
+      <category term="Linux" scheme="http://yoursite.com/tag/Linux/"/>
     
-      <category term="network" scheme="http://yoursite.com/tags/network/"/>
+      <category term="network" scheme="http://yoursite.com/tag/network/"/>
     
-      <category term="Performance" scheme="http://yoursite.com/tags/Performance/"/>
+      <category term="Performance" scheme="http://yoursite.com/tag/Performance/"/>
     
-      <category term="TCP" scheme="http://yoursite.com/tags/TCP/"/>
+      <category term="TCP" scheme="http://yoursite.com/tag/TCP/"/>
     
   </entry>
   
@@ -432,15 +432,15 @@
       <category term="network" scheme="http://yoursite.com/categories/Linux/MySQL/network/"/>
     
     
-      <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
+      <category term="Linux" scheme="http://yoursite.com/tag/Linux/"/>
     
-      <category term="MySQL" scheme="http://yoursite.com/tags/MySQL/"/>
+      <category term="MySQL" scheme="http://yoursite.com/tag/MySQL/"/>
     
-      <category term="network" scheme="http://yoursite.com/tags/network/"/>
+      <category term="network" scheme="http://yoursite.com/tag/network/"/>
     
-      <category term="Performance" scheme="http://yoursite.com/tags/Performance/"/>
+      <category term="Performance" scheme="http://yoursite.com/tag/Performance/"/>
     
-      <category term="ThreadPool" scheme="http://yoursite.com/tags/ThreadPool/"/>
+      <category term="ThreadPool" scheme="http://yoursite.com/tag/ThreadPool/"/>
     
   </entry>
   
@@ -544,9 +544,9 @@ LEVEL4_CACHE_LINESIZE              0
       <category term="Linux" scheme="http://yoursite.com/categories/Linux/"/>
     
     
-      <category term="perf" scheme="http://yoursite.com/tags/perf/"/>
+      <category term="perf" scheme="http://yoursite.com/tag/perf/"/>
     
-      <category term="IPC" scheme="http://yoursite.com/tags/IPC/"/>
+      <category term="IPC" scheme="http://yoursite.com/tag/IPC/"/>
     
   </entry>
   
@@ -624,9 +624,9 @@ LEVEL4_CACHE_LINESIZE              0
       <category term="network" scheme="http://yoursite.com/categories/Linux/TCP/network/"/>
     
     
-      <category term="network" scheme="http://yoursite.com/tags/network/"/>
+      <category term="network" scheme="http://yoursite.com/tag/network/"/>
     
-      <category term="TCP" scheme="http://yoursite.com/tags/TCP/"/>
+      <category term="TCP" scheme="http://yoursite.com/tag/TCP/"/>
     
   </entry>
   
@@ -763,21 +763,21 @@ LISTEN    0     511              *:8085           *:*
       <category term="tcp" scheme="http://yoursite.com/categories/tcp/"/>
     
     
-      <category term="netstat" scheme="http://yoursite.com/tags/netstat/"/>
+      <category term="netstat" scheme="http://yoursite.com/tag/netstat/"/>
     
-      <category term="ss" scheme="http://yoursite.com/tags/ss/"/>
+      <category term="ss" scheme="http://yoursite.com/tag/ss/"/>
     
-      <category term="tcp queue" scheme="http://yoursite.com/tags/tcp-queue/"/>
+      <category term="tcp queue" scheme="http://yoursite.com/tag/tcp-queue/"/>
     
-      <category term="accept queue" scheme="http://yoursite.com/tags/accept-queue/"/>
+      <category term="accept queue" scheme="http://yoursite.com/tag/accept-queue/"/>
     
-      <category term="syn queue" scheme="http://yoursite.com/tags/syn-queue/"/>
+      <category term="syn queue" scheme="http://yoursite.com/tag/syn-queue/"/>
     
-      <category term="syn flood" scheme="http://yoursite.com/tags/syn-flood/"/>
+      <category term="syn flood" scheme="http://yoursite.com/tag/syn-flood/"/>
     
-      <category term="overflows" scheme="http://yoursite.com/tags/overflows/"/>
+      <category term="overflows" scheme="http://yoursite.com/tag/overflows/"/>
     
-      <category term="dropped" scheme="http://yoursite.com/tags/dropped/"/>
+      <category term="dropped" scheme="http://yoursite.com/tag/dropped/"/>
     
   </entry>
   
@@ -885,9 +885,9 @@ LISTEN    0     511              *:8085           *:*
       <category term="performance" scheme="http://yoursite.com/categories/performance/"/>
     
     
-      <category term="performance" scheme="http://yoursite.com/tags/performance/"/>
+      <category term="performance" scheme="http://yoursite.com/tag/performance/"/>
     
-      <category term="tuning" scheme="http://yoursite.com/tags/tuning/"/>
+      <category term="tuning" scheme="http://yoursite.com/tag/tuning/"/>
     
   </entry>
   
@@ -950,11 +950,11 @@ LISTEN    0     511              *:8085           *:*
       <category term="network" scheme="http://yoursite.com/categories/Linux/TCP/network/"/>
     
     
-      <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
+      <category term="Linux" scheme="http://yoursite.com/tag/Linux/"/>
     
-      <category term="TCP" scheme="http://yoursite.com/tags/TCP/"/>
+      <category term="TCP" scheme="http://yoursite.com/tag/TCP/"/>
     
-      <category term="参数" scheme="http://yoursite.com/tags/%E5%8F%82%E6%95%B0/"/>
+      <category term="参数" scheme="http://yoursite.com/tag/%E5%8F%82%E6%95%B0/"/>
     
   </entry>
   
@@ -1000,13 +1000,13 @@ LISTEN    0     511              *:8085           *:*
       <category term="network" scheme="http://yoursite.com/categories/Linux/TCP/network/"/>
     
     
-      <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
+      <category term="Linux" scheme="http://yoursite.com/tag/Linux/"/>
     
-      <category term="磁盘性能" scheme="http://yoursite.com/tags/%E7%A3%81%E7%9B%98%E6%80%A7%E8%83%BD/"/>
+      <category term="磁盘性能" scheme="http://yoursite.com/tag/%E7%A3%81%E7%9B%98%E6%80%A7%E8%83%BD/"/>
     
-      <category term="san" scheme="http://yoursite.com/tags/san/"/>
+      <category term="san" scheme="http://yoursite.com/tag/san/"/>
     
-      <category term="光纤" scheme="http://yoursite.com/tags/%E5%85%89%E7%BA%A4/"/>
+      <category term="光纤" scheme="http://yoursite.com/tag/%E5%85%89%E7%BA%A4/"/>
     
   </entry>
   
@@ -1047,15 +1047,15 @@ LISTEN    0     511              *:8085           *:*
       <category term="Linux" scheme="http://yoursite.com/categories/Linux/"/>
     
     
-      <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
+      <category term="Linux" scheme="http://yoursite.com/tag/Linux/"/>
     
-      <category term="yum" scheme="http://yoursite.com/tags/yum/"/>
+      <category term="yum" scheme="http://yoursite.com/tag/yum/"/>
     
-      <category term="iso" scheme="http://yoursite.com/tags/iso/"/>
+      <category term="iso" scheme="http://yoursite.com/tag/iso/"/>
     
-      <category term="createrepo" scheme="http://yoursite.com/tags/createrepo/"/>
+      <category term="createrepo" scheme="http://yoursite.com/tag/createrepo/"/>
     
-      <category term="yum-utils" scheme="http://yoursite.com/tags/yum-utils/"/>
+      <category term="yum-utils" scheme="http://yoursite.com/tag/yum-utils/"/>
     
   </entry>
   
@@ -1118,13 +1118,13 @@ test.x86_64.rpm
       <category term="Linux" scheme="http://yoursite.com/categories/Linux/"/>
     
     
-      <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
+      <category term="Linux" scheme="http://yoursite.com/tag/Linux/"/>
     
-      <category term="free" scheme="http://yoursite.com/tags/free/"/>
+      <category term="free" scheme="http://yoursite.com/tag/free/"/>
     
-      <category term="Memory" scheme="http://yoursite.com/tags/Memory/"/>
+      <category term="Memory" scheme="http://yoursite.com/tag/Memory/"/>
     
-      <category term="vmtouch" scheme="http://yoursite.com/tags/vmtouch/"/>
+      <category term="vmtouch" scheme="http://yoursite.com/tag/vmtouch/"/>
     
   </entry>
   
@@ -1328,11 +1328,11 @@ sudo perf top
       <category term="performance" scheme="http://yoursite.com/categories/Linux/performance/"/>
     
     
-      <category term="performance" scheme="http://yoursite.com/tags/performance/"/>
+      <category term="performance" scheme="http://yoursite.com/tag/performance/"/>
     
-      <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
+      <category term="Linux" scheme="http://yoursite.com/tag/Linux/"/>
     
-      <category term="kernel" scheme="http://yoursite.com/tags/kernel/"/>
+      <category term="kernel" scheme="http://yoursite.com/tag/kernel/"/>
     
   </entry>
   
@@ -1574,17 +1574,17 @@ btr_estimate_n_rows_in_range_on_level(
       <category term="Linux" scheme="http://yoursite.com/categories/Linux/"/>
     
     
-      <category term="performance" scheme="http://yoursite.com/tags/performance/"/>
+      <category term="performance" scheme="http://yoursite.com/tag/performance/"/>
     
-      <category term="mysql" scheme="http://yoursite.com/tags/mysql/"/>
+      <category term="mysql" scheme="http://yoursite.com/tag/mysql/"/>
     
-      <category term="perf" scheme="http://yoursite.com/tags/perf/"/>
+      <category term="perf" scheme="http://yoursite.com/tag/perf/"/>
     
-      <category term="intel" scheme="http://yoursite.com/tags/intel/"/>
+      <category term="intel" scheme="http://yoursite.com/tag/intel/"/>
     
-      <category term="pause" scheme="http://yoursite.com/tags/pause/"/>
+      <category term="pause" scheme="http://yoursite.com/tag/pause/"/>
     
-      <category term="innodb_spin_wait_delay" scheme="http://yoursite.com/tags/innodb-spin-wait-delay/"/>
+      <category term="innodb_spin_wait_delay" scheme="http://yoursite.com/tag/innodb-spin-wait-delay/"/>
     
   </entry>
   
@@ -1680,23 +1680,23 @@ while (1) {
       <category term="Linux" scheme="http://yoursite.com/categories/Linux/"/>
     
     
-      <category term="epoll" scheme="http://yoursite.com/tags/epoll/"/>
+      <category term="epoll" scheme="http://yoursite.com/tag/epoll/"/>
     
-      <category term="惊群" scheme="http://yoursite.com/tags/%E6%83%8A%E7%BE%A4/"/>
+      <category term="惊群" scheme="http://yoursite.com/tag/%E6%83%8A%E7%BE%A4/"/>
     
-      <category term="nginx" scheme="http://yoursite.com/tags/nginx/"/>
+      <category term="nginx" scheme="http://yoursite.com/tag/nginx/"/>
     
-      <category term="reuseport" scheme="http://yoursite.com/tags/reuseport/"/>
+      <category term="reuseport" scheme="http://yoursite.com/tag/reuseport/"/>
     
-      <category term="EPOLLEXCLUSIVE" scheme="http://yoursite.com/tags/EPOLLEXCLUSIVE/"/>
+      <category term="EPOLLEXCLUSIVE" scheme="http://yoursite.com/tag/EPOLLEXCLUSIVE/"/>
     
-      <category term="条件触发" scheme="http://yoursite.com/tags/%E6%9D%A1%E4%BB%B6%E8%A7%A6%E5%8F%91/"/>
+      <category term="条件触发" scheme="http://yoursite.com/tag/%E6%9D%A1%E4%BB%B6%E8%A7%A6%E5%8F%91/"/>
     
-      <category term="边缘触发" scheme="http://yoursite.com/tags/%E8%BE%B9%E7%BC%98%E8%A7%A6%E5%8F%91/"/>
+      <category term="边缘触发" scheme="http://yoursite.com/tag/%E8%BE%B9%E7%BC%98%E8%A7%A6%E5%8F%91/"/>
     
-      <category term="LT" scheme="http://yoursite.com/tags/LT/"/>
+      <category term="LT" scheme="http://yoursite.com/tag/LT/"/>
     
-      <category term="ET" scheme="http://yoursite.com/tags/ET/"/>
+      <category term="ET" scheme="http://yoursite.com/tag/ET/"/>
     
   </entry>
   
@@ -1827,15 +1827,15 @@ while (1) {
       <category term="技巧" scheme="http://yoursite.com/categories/%E6%8A%80%E5%B7%A7/"/>
     
     
-      <category term="实践" scheme="http://yoursite.com/tags/%E5%AE%9E%E8%B7%B5/"/>
+      <category term="实践" scheme="http://yoursite.com/tag/%E5%AE%9E%E8%B7%B5/"/>
     
-      <category term="复盘" scheme="http://yoursite.com/tags/%E5%A4%8D%E7%9B%98/"/>
+      <category term="复盘" scheme="http://yoursite.com/tag/%E5%A4%8D%E7%9B%98/"/>
     
-      <category term="逻辑" scheme="http://yoursite.com/tags/%E9%80%BB%E8%BE%91/"/>
+      <category term="逻辑" scheme="http://yoursite.com/tag/%E9%80%BB%E8%BE%91/"/>
     
-      <category term="知识积累" scheme="http://yoursite.com/tags/%E7%9F%A5%E8%AF%86%E7%A7%AF%E7%B4%AF/"/>
+      <category term="知识积累" scheme="http://yoursite.com/tag/%E7%9F%A5%E8%AF%86%E7%A7%AF%E7%B4%AF/"/>
     
-      <category term="案例学习" scheme="http://yoursite.com/tags/%E6%A1%88%E4%BE%8B%E5%AD%A6%E4%B9%A0/"/>
+      <category term="案例学习" scheme="http://yoursite.com/tag/%E6%A1%88%E4%BE%8B%E5%AD%A6%E4%B9%A0/"/>
     
   </entry>
   
@@ -1890,11 +1890,11 @@ while (1) {
       <category term="network" scheme="http://yoursite.com/categories/Linux/TCP/network/"/>
     
     
-      <category term="TCP" scheme="http://yoursite.com/tags/TCP/"/>
+      <category term="TCP" scheme="http://yoursite.com/tag/TCP/"/>
     
-      <category term="TTL" scheme="http://yoursite.com/tags/TTL/"/>
+      <category term="TTL" scheme="http://yoursite.com/tag/TTL/"/>
     
-      <category term="identification" scheme="http://yoursite.com/tags/identification/"/>
+      <category term="identification" scheme="http://yoursite.com/tag/identification/"/>
     
   </entry>
   
@@ -2057,15 +2057,15 @@ ep_ptable_queue_proc
       <category term="Linux" scheme="http://yoursite.com/categories/Linux/"/>
     
     
-      <category term="epoll" scheme="http://yoursite.com/tags/epoll/"/>
+      <category term="epoll" scheme="http://yoursite.com/tag/epoll/"/>
     
-      <category term="惊群" scheme="http://yoursite.com/tags/%E6%83%8A%E7%BE%A4/"/>
+      <category term="惊群" scheme="http://yoursite.com/tag/%E6%83%8A%E7%BE%A4/"/>
     
-      <category term="nginx" scheme="http://yoursite.com/tags/nginx/"/>
+      <category term="nginx" scheme="http://yoursite.com/tag/nginx/"/>
     
-      <category term="reuseport" scheme="http://yoursite.com/tags/reuseport/"/>
+      <category term="reuseport" scheme="http://yoursite.com/tag/reuseport/"/>
     
-      <category term="EPOLLEXCLUSIVE" scheme="http://yoursite.com/tags/EPOLLEXCLUSIVE/"/>
+      <category term="EPOLLEXCLUSIVE" scheme="http://yoursite.com/tag/EPOLLEXCLUSIVE/"/>
     
   </entry>
   
@@ -2225,13 +2225,13 @@ LISTEN     0      128           *:tr-rsrb-p2                  *:*
       <category term="Network" scheme="http://yoursite.com/categories/Network/"/>
     
     
-      <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
+      <category term="Linux" scheme="http://yoursite.com/tag/Linux/"/>
     
-      <category term="netstat" scheme="http://yoursite.com/tags/netstat/"/>
+      <category term="netstat" scheme="http://yoursite.com/tag/netstat/"/>
     
-      <category term="ss" scheme="http://yoursite.com/tags/ss/"/>
+      <category term="ss" scheme="http://yoursite.com/tag/ss/"/>
     
-      <category term="socket" scheme="http://yoursite.com/tags/socket/"/>
+      <category term="socket" scheme="http://yoursite.com/tag/socket/"/>
     
   </entry>
   
