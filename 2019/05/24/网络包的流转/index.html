@@ -77,7 +77,7 @@
 <link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="Linux,network," />
+  <meta name="keywords" content="Linux,network,TCP," />
 
 
 
@@ -96,7 +96,7 @@
 
 
 <meta name="description" content="Linux Network Stack一个网络包进到网卡后续如何流转，中间有哪些关键参数，有什么工具能帮忙可以看到各个环节的一些指征，怎么调整他们 接收流程 网络包进到网卡，网卡驱动校验MAC，看是否扔掉，取决是否是混杂 promiscuous mode 网卡在启动时会申请一个接收ring buffer，其条目都会指向一个skb的内存。 DMA完成数据报文从网卡硬件到内存到拷贝 网卡发送一个中断通">
-<meta name="keywords" content="Linux,network">
+<meta name="keywords" content="Linux,network,TCP">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux Network Stack">
 <meta property="og:url" content="http://yoursite.com/2019/05/24/网络包的流转/index.html">
@@ -112,7 +112,7 @@
 <meta property="og:image" content="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1557291324544-ca69d448-08e4-46c4-9c49-8cf516fc3eaa.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d42ccdb0b8f6270d8b559145c0b89c86.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/a067b484c593aa3a4b6a525d1f93506e.png">
-<meta property="og:updated_time" content="2020-05-28T11:00:23.156Z">
+<meta property="og:updated_time" content="2020-07-16T06:07:35.077Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Linux Network Stack">
 <meta name="twitter:description" content="Linux Network Stack一个网络包进到网卡后续如何流转，中间有哪些关键参数，有什么工具能帮忙可以看到各个环节的一些指征，怎么调整他们 接收流程 网络包进到网卡，网卡驱动校验MAC，看是否扔掉，取决是否是混杂 promiscuous mode 网卡在启动时会申请一个接收ring buffer，其条目都会指向一个skb的内存。 DMA完成数据报文从网卡硬件到内存到拷贝 网卡发送一个中断通">
@@ -344,29 +344,7 @@
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-
-                
-                
-                  ， 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/TCP/" itemprop="url" rel="index">
-                    <span itemprop="name">TCP</span>
-                  </a>
-                </span>
-
-                
-                
-                  ， 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/TCP/network/" itemprop="url" rel="index">
+                  <a href="/categories/network/" itemprop="url" rel="index">
                     <span itemprop="name">network</span>
                   </a>
                 </span>
@@ -539,7 +517,7 @@ sysctl -w net.core.netdev_budget=400 //临时性增大
 <p>增大和查看 netdev_max_backlog：</p>
 <pre><code>sysctl -a |grep netdev_max_backlog
 sysctl -w net.core.netdev_max_backlog=1024 //临时性增大
-</code></pre><p>netdev_max_backlog(接收)和txqueuelen(发送)相对应</p>
+</code></pre><p>netdev_max_backlog(接收)和txqueuelen(发送)相对应 </p>
 <h3 id="TCP协议栈Buffer"><a href="#TCP协议栈Buffer" class="headerlink" title="TCP协议栈Buffer"></a>TCP协议栈Buffer</h3><pre><code>    sysctl -a | grep net.ipv4.tcp_rmem   // receive
     sysctl -a | grep net.ipv4.tcp_wmem   // send
     //监控
@@ -615,6 +593,8 @@ sysctl -w net.core.netdev_max_backlog=1024 //临时性增大
           
             <a href="/tags/network/" rel="tag"># network</a>
           
+            <a href="/tags/TCP/" rel="tag"># TCP</a>
+          
         </div>
       
 
@@ -626,8 +606,8 @@ sysctl -w net.core.netdev_max_backlog=1024 //临时性增大
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2019/05/15/网络通不通是个大问题--半夜鸡叫/" rel="next" title="就是要你懂网络 通不通是个大问题–半夜鸡叫">
-                <i class="fa fa-chevron-left"></i> 就是要你懂网络 通不通是个大问题–半夜鸡叫
+              <a href="/2019/05/15/就是要你懂网络--一个网络包的旅程/" rel="next" title="就是要你懂网络--一个网络包的旅程">
+                <i class="fa fa-chevron-left"></i> 就是要你懂网络--一个网络包的旅程
               </a>
             
           </div>
@@ -717,7 +697,7 @@ sysctl -w net.core.netdev_max_backlog=1024 //临时性增大
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">82</span>
+                <span class="site-state-item-count">93</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -728,7 +708,7 @@ sysctl -w net.core.netdev_max_backlog=1024 //临时性增大
             
             <div class="site-state-item site-state-categories">
               <a href="/categories/index.html">
-                <span class="site-state-item-count">23</span>
+                <span class="site-state-item-count">29</span>
                 <span class="site-state-item-name">分类</span>
               </a>
             </div>
@@ -739,7 +719,7 @@ sysctl -w net.core.netdev_max_backlog=1024 //临时性增大
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">172</span>
+                <span class="site-state-item-count">179</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>
