@@ -107,7 +107,7 @@
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/9340023fac65d9c1d0aeda8e73557792.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/297eb625b1e157d85a29754108871c08.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/74b0a393a6334421957a032f1f141a9c.png">
-<meta property="og:updated_time" content="2020-07-16T06:16:08.458Z">
+<meta property="og:updated_time" content="2020-07-16T06:59:10.923Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="SystemStap、BCC、bpftrace">
 <meta name="twitter:description" content="SystemStap、BCC、bpftrace安装sudo stap-prep //安装好systemtap所有依赖的（debugfs等等） 执行安装内核debug等等需要的一些包，然后才能运行systemtap # 简单的脚本，打印4s内所有进程打开了哪些文件 #!/usr/bin/stap probe begin {     log(&amp;quot;begin to probe&amp;quot;) }">
@@ -339,8 +339,8 @@
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Performance/" itemprop="url" rel="index">
-                    <span itemprop="name">Performance</span>
+                  <a href="/categories/performance/" itemprop="url" rel="index">
+                    <span itemprop="name">performance</span>
                   </a>
                 </span>
 
@@ -448,10 +448,8 @@ probe syscall.write.return {
           printf(&quot;write delay detail: tid: %d func:%s  sleep: %d \n&quot;,tid(),probefunc(),DELAY);
     }
 }
-</code></pre><p>​<br>    probe syscall.fsync.return {<br>       if (pid() == target() &amp;&amp; !quit ) {<br>            mdelay( DELAY );<br>            printf(“fsync delay detail: tid: %d func:%s  sleep: %d \n”,tid(),probefunc(),DELAY);<br>        }</p>
-<pre><code>}
-
-# 任务持续时间
+</code></pre><p>​<br>​    probe syscall.fsync.return {<br>​       if (pid() == target() &amp;&amp; !quit ) {<br>​            mdelay( DELAY );<br>​            printf(“fsync delay detail: tid: %d func:%s  sleep: %d \n”,tid(),probefunc(),DELAY);<br>​        }<br>​<br>    }</p>
+<pre><code># 任务持续时间
 probe timer.s(20) {
     if (!found) {
         warn(&quot;No backtraces found. Quitting now...\n&quot;)
@@ -521,38 +519,32 @@ PID    COMM         IP SADDR            DADDR            DPORT LAT(ms)
 </code></pre><h2 id="TCP队列实时查看"><a href="#TCP队列实时查看" class="headerlink" title="TCP队列实时查看"></a>TCP队列实时查看</h2><p>bpftrace工具包</p>
 <pre><code>cat tcpsynbl_example.txt
 Demonstrations of tcpsynbl, the Linux bpftrace/eBPF version.
-</code></pre><p>​<br>    This tool shows the TCP SYN backlog size during SYN arrival as a histogram.<br>    This lets you see how close your applications are to hitting the backlog limit<br>    and dropping SYNs (causing performance issues with SYN retransmits). For<br>    example:</p>
+</code></pre><p>​<br>​    This tool shows the TCP SYN backlog size during SYN arrival as a histogram.<br>​    This lets you see how close your applications are to hitting the backlog limit<br>​    and dropping SYNs (causing performance issues with SYN retransmits). For<br>​    example:<br>​    </p>
 <pre><code># ./tcpsynbl.bt 
 Attaching 4 probes...
 Tracing SYN backlog size. Ctrl-C to end.
 ^C
 @backlog[backlog limit]: histogram of backlog size
-</code></pre><p>​<br>    @backlog[500]:<br>    [0]                 2266 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|<br>    [1]                    3 |                                                    |<br>    [2, 4)                 1 |                                                    |</p>
+</code></pre><p>​<br>​    @backlog[500]:<br>​    [0]                 2266 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|<br>​    [1]                    3 |                                                    |<br>​    [2, 4)                 1 |                                                    |</p>
 <pre><code>$sudo bpftrace ./tcpsynbl.bt
 Attaching 4 probes...
 Tracing SYN backlog size. Ctrl-C to end.
 
 ^C
 @backlog[backlog limit]: histogram of backlog size
-</code></pre><p>​<br>    @backlog[10]:<br>    [0]                    3 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|</p>
-<pre><code>@backlog[256]:
-[0]                   59 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|
-</code></pre><p>或者 bpftrace tcpaccept.bt</p>
+</code></pre><p>​<br>​    @backlog[10]:<br>​    [0]                    3 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|<br>​<br>    @backlog[256]:<br>    [0]                   59 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|</p>
+<p>或者 bpftrace tcpaccept.bt</p>
 <pre><code>cat tcpaccept_example.txt 
 Demonstrations of tcpaccept, the Linux bpftrace/eBPF version.
-</code></pre><p>​<br>    This tool traces the kernel function accepting TCP socket connections (eg, a<br>    passive connection via accept(); not connect()). Some example output (IP<br>    addresses changed to protect the innocent):</p>
+</code></pre><p>​<br>​    This tool traces the kernel function accepting TCP socket connections (eg, a<br>​    passive connection via accept(); not connect()). Some example output (IP<br>​    addresses changed to protect the innocent):<br>​    </p>
 <pre><code># ./tcpaccept
 Tracing tcp accepts. Hit Ctrl-C to end.
 TIME     PID     COMM           RADDR          RPORT LADDR          LPORT BL
 00:34:19 3949061 nginx          10.228.22.228  44226 10.229.20.169  8080  0/128
 00:34:19 3951399 ruby           127.0.0.1      52422 127.0.0.1      8000  0/128
 00:34:19 3949062 nginx          10.228.23.128  35408 10.229.20.169  8080  0/128
-</code></pre><p>​<br>    This output shows three connections, an IPv4 connections to PID 1463622, a “redis-server”<br>    process listening on port 6379, and one IPv6 connection to a “thread.rb” process<br>    listening on port 8000. The remote address and port are also printed, and the accept queue<br>    current size as well as maximum size are shown.</p>
-<pre><code>The overhead of this tool should be negligible, since it is only tracing the
-kernel function performing accept. It is not tracing every packet and then
-filtering.
-
-This tool only traces successful TCP accept()s. Connection attempts to closed
+</code></pre><p>​<br>​    This output shows three connections, an IPv4 connections to PID 1463622, a “redis-server”<br>​    process listening on port 6379, and one IPv6 connection to a “thread.rb” process<br>​    listening on port 8000. The remote address and port are also printed, and the accept queue<br>​    current size as well as maximum size are shown.<br>​<br>    The overhead of this tool should be negligible, since it is only tracing the<br>    kernel function performing accept. It is not tracing every packet and then<br>    filtering.</p>
+<pre><code>This tool only traces successful TCP accept()s. Connection attempts to closed
 ports will not be shown (those can be traced via other functions).
 
 There is another version of this tool in bcc: https://github.com/iovisor/bcc
@@ -900,7 +892,7 @@ java[4457] lock 0x7f5d533a0d54 contended 1 times, 2202 avg us
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">93</span>
+                <span class="site-state-item-count">92</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
