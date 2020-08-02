@@ -58,7 +58,7 @@
     <link href="http://yoursite.com/2020/07/03/MySQL%20JDBC%20StreamResult%20%E5%92%8C%20net_write_timeout/"/>
     <id>http://yoursite.com/2020/07/03/MySQL JDBC StreamResult 和 net_write_timeout/</id>
     <published>2020-07-03T09:30:03.000Z</published>
-    <updated>2020-07-28T01:44:55.896Z</updated>
+    <updated>2020-08-02T12:41:18.366Z</updated>
     
     <content type="html"><![CDATA[<h1 id="MySQL-JDBC-StreamResult-和-net-write-timeout"><a href="#MySQL-JDBC-StreamResult-和-net-write-timeout" class="headerlink" title="MySQL JDBC StreamResult 和 net_write_timeout"></a>MySQL JDBC StreamResult 和 net_write_timeout</h1><p>MySQL JDBC 在从 MySQL 拉取数据的时候有三种方式：</p>
 <ol>
@@ -202,6 +202,9 @@
 </tbody>
 </table>
 <p>一般来说应该设置： max_execution_time/statement timeout &lt; Tranction Timeout &lt; socketTimeout</p>
+<h2 id="案例"><a href="#案例" class="headerlink" title="案例"></a>案例</h2><p>设置JDBC参数不合理（queryTimeout=10s，socketTimeout=10s），会导致在异常情况下，第二条get获得了第一条的结果，拿到了错误的数据，数据库则表现正常</p>
+<p>socketTimeout触发后，连接抛CommunicationsException（严重异常，触发后连接应该断开）, 但JDBC会检查请求是否被cancle了，如果cancle就会抛出MySQLTimeoutException异常，这是一个普通异常，连接会被重新放回连接池重用（导致下一个获取这个连接的线程可能会得到前一个请求的response）。</p>
+<p>queryTimeout（queryTimeoutKillsConnection=True–来强制关闭连接）会触发启动一个新的连接向server发送 kill id的命令，<strong>MySQL5.7增加了max_statement_time/max_execution_time来做到在server上直接检测到这种查询，然后结束掉</strong>。</p>
 <h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://www.atatech.org/articles/122079" target="_blank" rel="external">https://www.atatech.org/articles/122079</a></p>
 ]]></content>
     
@@ -435,7 +438,7 @@
     <link href="http://yoursite.com/2020/05/31/Perf%20IPC%E4%BB%A5%E5%8F%8ACPU%E5%88%A9%E7%94%A8%E7%8E%87/"/>
     <id>http://yoursite.com/2020/05/31/Perf IPC以及CPU利用率/</id>
     <published>2020-05-31T04:30:03.000Z</published>
-    <updated>2020-07-06T02:24:49.011Z</updated>
+    <updated>2020-08-02T12:41:18.374Z</updated>
     
     <content type="html"><![CDATA[<h1 id="Perf-IPC以及CPU利用率"><a href="#Perf-IPC以及CPU利用率" class="headerlink" title="Perf IPC以及CPU利用率"></a>Perf IPC以及CPU利用率</h1><h2 id="perf-使用"><a href="#perf-使用" class="headerlink" title="perf 使用"></a>perf 使用</h2><p>可以通过perf看到cpu的使用情况：</p>
 <pre><code>$sudo perf stat -a -- sleep 10
@@ -468,17 +471,22 @@
 <li>非流水线：</li>
 </ul>
 <p><img src="http://static.oschina.net/uploads/space/2018/0330/195430_76ME_2896894.png" alt="img"></p>
+<p>对于非流水计算机而言，上一条指令的 5 个子过程全部执行完毕后才能开始下一条指令，每隔 5 个时 钟周期才有一个输出结果。因此，图3中用了 15 个时钟周期才完成 3 条指令，每条指令平均用时 5 个时钟周期。 非流水线工作方式的控制比较简单，但部件的利用率较低，系统工作速度较慢。</p>
 <p>毫无疑问，非流水线效率很低下，5个单元同时只能有一个单元工作，每隔 5 个时 钟周期才有一个输出结果。每条指令用时5个时间周期。</p>
 <ul>
-<li>标量流水线：</li>
+<li>标量流水线, 标量（Scalar）流水计算机是<strong>只有一条指令流水线</strong>的计算机:</li>
 </ul>
 <p><img src="http://static.oschina.net/uploads/space/2018/0330/195701_ce0y_2896894.png" alt=""></p>
-<p>因此，图中仅用了 9 个时钟周期就完成了 5 条指令，每条指令平均用时 1.8 个时钟周期。</p>
+<p> 对标量流水计算机而言，上一条指令与下一条指令的 5 个子过程在时间上可以重叠执行，当流水线满 载时，每一个时钟周期就可以输出一个结果。因此，图中仅用了 9 个时钟周期就完成了 5 条指令，每条指令平均用时 1.8 个时钟周期。</p>
+<p>采用标量流水线工作方式，<strong>虽然每条指令的执行时间并未缩短，但 CPU 运行指令的总体速度却能成倍 提高</strong>。当然，作为速度提高的代价，需要增加部分硬件才能实现标量流水。</p>
 <ul>
 <li>超标量流水线：</li>
 </ul>
+<p>所谓超标量（Superscalar）流 水计算机，是指它<strong>具有两条以上的指令流水线</strong></p>
 <p><img src="http://static.oschina.net/uploads/space/2018/0330/200055_5w6G_2896894.png" alt=""></p>
-<p>图中仅用了 9 个时钟周期就完成了 10 条指令，每条指令平均用时 0.9 个时钟周期。 超标量流水计算机是时间并行技术和空间并行技术的综合应用。</p>
+<p>当流水线满载时，每一个时钟周期可以执行 2 条以上的指令。图中仅用了 9 个时钟周期就完成了 10 条指令，每条指令平均用时 0.9 个时钟周期。 超标量流水计算机是时间并行技术和空间并行技术的综合应用。</p>
+<p>在流水计算机中，指令的处理是重叠进行的，前一条指令还没有结束，第二、三条指令就陆续开始工 作。由于多条指令的重叠处理，当后继指令所需的操作数刚好是前一指令的运算结果时，便发生数据相关冲突。由于这两条指令的执行顺序直接影响到操作数读取的内容，必须等前一条指令执行完毕后才能执行后一条指令。</p>
+<p><strong>OoOE— Out-of-Order Execution 乱序执行也是在 Pentium Pro 开始引入的</strong>，它有些类似于多线程的概念。<strong>乱序执行是为了直接提升 ILP(Instruction Level Parallelism)指令级并行化的设计</strong>，在多个执行单元的超标量设计当中，一系列的执行单元可以<strong>同时运行</strong>一些<strong>没有数据关联性的若干指令</strong>，<strong>只有需要等待其他指令运算结果的数据会按照顺序执行</strong>，从而总体提升了运行效率。乱序执行引擎是一个很重要的部分，需要进行复杂的调度管理。</p>
 <h2 id="ECS和perf"><a href="#ECS和perf" class="headerlink" title="ECS和perf"></a>ECS和perf</h2><p>在ECS会采集不到 cycles等，cpu-clock、page-faults都是内核中的软事件，cycles/instructions得采集cpu的PMU数据，ECS采集不到这些。</p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/a120388ff72d712a4fd176e7cea005cf.png" alt="image.png"></p>
 <h2 id="调度"><a href="#调度" class="headerlink" title="调度"></a>调度</h2><p>NMI(non-maskable interrupt)，就是不可屏蔽的中断. NMI通常用于通知操作系统发生了无法恢复的硬件错误，也可以用于系统调试与采样，大多数服务器还提供了人工触发NMI的接口，比如NMI按钮或者iLO命令等。</p>
@@ -533,6 +541,10 @@ LEVEL4_CACHE_LINESIZE              0
       <category term="perf" scheme="http://yoursite.com/tags/perf/"/>
     
       <category term="IPC" scheme="http://yoursite.com/tags/IPC/"/>
+    
+      <category term="CPU" scheme="http://yoursite.com/tags/CPU/"/>
+    
+      <category term="pipeline" scheme="http://yoursite.com/tags/pipeline/"/>
     
   </entry>
   
@@ -945,13 +957,13 @@ LISTEN    0     511              *:8085           *:*
     <link href="http://yoursite.com/2020/01/25/ssd%20san%E5%92%8Csas%20%E7%A3%81%E7%9B%98%E6%80%A7%E8%83%BD%E6%AF%94%E8%BE%83/"/>
     <id>http://yoursite.com/2020/01/25/ssd san和sas 磁盘性能比较/</id>
     <published>2020-01-25T09:30:03.000Z</published>
-    <updated>2020-07-16T06:27:33.933Z</updated>
+    <updated>2020-08-02T12:41:18.382Z</updated>
     
     <content type="html"><![CDATA[<h1 id="ssd-san-sas-磁盘性能比较"><a href="#ssd-san-sas-磁盘性能比较" class="headerlink" title="ssd/san/sas 磁盘性能比较"></a>ssd/san/sas 磁盘性能比较</h1><p>正好有机会用到一个san存储设备，跑了一把性能数据，记录一下</p>
 <p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d57a004c846e193126ca01398e394319.png" alt="image.png"></p>
 <p>所使用的测试命令：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">fio -ioengine=libaio -bs=4k -direct=1 -thread -rw=randwrite -size=1000G -filename=/data/fio.test -name=&quot;EBS 4K randwrite test&quot; -iodepth=64 -runtime=60</div></pre></td></tr></table></figure>
-<p>ssd和san的比较是在同一台物理机上，所以排除了其他因素的干扰。</p>
+<p>ssd（Solid State Drive）和san的比较是在同一台物理机上，所以排除了其他因素的干扰。</p>
 <p>简要的结论：</p>
 <ul>
 <li><p>本地ssd性能最好、sas机械盘(RAID10)性能最差</p>
@@ -963,7 +975,18 @@ LISTEN    0     511              *:8085           *:*
 <li><p>san比本地sas机械盘性能要好，这也许取决于san的网络传输性能和san存储中的设备（比如用的ssd而不是机械盘）</p>
 </li>
 </ul>
-<h2 id="光纤和网线的性能差异"><a href="#光纤和网线的性能差异" class="headerlink" title="光纤和网线的性能差异"></a>光纤和网线的性能差异</h2><p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/553e1c5fff2dd04a668434f0da4f9d90.png" alt="image.png"></p>
+<h2 id="NVMe-SSD-和-HDD的性能比较"><a href="#NVMe-SSD-和-HDD的性能比较" class="headerlink" title="NVMe SSD 和 HDD的性能比较"></a>NVMe SSD 和 HDD的性能比较</h2><p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d64a0f78ebf471ac69d447ecb46d90f1.png" alt="image.png"></p>
+<p>表中性能差异比上面测试还要大，SSD 的随机 IO 延迟比传统硬盘快百倍以上，一般在微妙级别；IO 带宽也高很多倍，可以达到每秒几个 GB；随机 IOPS 更是快了上千倍，可以达到几十万。</p>
+<p><strong>HDD只有一个磁头，并发没有意义，但是SSD支持高并发写入读取。SSD没有磁头、不需要旋转，所以随机读取和顺序读取基本没有差别。</strong></p>
+<h2 id="SSD-的性能特性和机制"><a href="#SSD-的性能特性和机制" class="headerlink" title="SSD 的性能特性和机制"></a>SSD 的性能特性和机制</h2><p>SSD 的内部工作方式和 HDD 大相径庭，我们先了解几个概念。</p>
+<p><strong>单元（Cell）、页面（Page）、块（Block）</strong>。当今的主流 SSD 是基于 NAND 的，它将数字位存储在单元中。每个 SSD 单元可以存储一位或多位。对单元的每次擦除都会降低单元的寿命，所以单元只能承受一定数量的擦除。单元存储的位数越多，制造成本就越少，SSD 的容量也就越大，但是耐久性（擦除次数）也会降低。</p>
+<p>一个页面包括很多单元，典型的页面大小是 4KB，页面也是要读写的最小存储单元。SSD 上没有“重写”操作，不像 HDD 可以直接对任何字节重写覆盖。一个页面一旦写入内容后就不能进行部分重写，必须和其它相邻页面一起被整体擦除重置。</p>
+<p>多个页面组合成块。一个块的典型大小为 512KB 或 1MB，也就是大约 128 或 256 页。<strong>块是擦除的基本单位，每次擦除都是整个块内的所有页面都被重置。</strong></p>
+<p><strong>擦除速度相对很慢，通常为几毫秒</strong>。所以对同步的 IO，发出 IO 的应用程序可能会因为块的擦除，而经历很大的写入延迟。为了尽量地减少这样的场景，保持空闲块的阈值对于快速的写响应是很有必要的。SSD 的垃圾回收（GC）的目的就在于此。GC 可以回收用过的块，这样可以确保以后的页写入可以快速分配到一个全新的页。</p>
+<h3 id="写入放大（Write-Amplification-or-WA"><a href="#写入放大（Write-Amplification-or-WA" class="headerlink" title="写入放大（Write Amplification, or WA)"></a>写入放大（Write Amplification, or WA)</h3><p>这是 SSD 相对于 HDD 的一个缺点，即实际写入 SSD 的物理数据量，有可能是应用层写入数据量的多倍。一方面，页级别的写入需要移动已有的数据来腾空页面。另一方面，GC 的操作也会移动用户数据来进行块级别的擦除。所以对 SSD 真正的写操作的数据可能比实际写的数据量大，这就是写入放大。一块 SSD 只能进行有限的擦除次数，也称为编程 / 擦除（P/E）周期，所以写入放大效用会缩短 SSD 的寿命。</p>
+<h3 id="耗损平衡-Wear-Leveling"><a href="#耗损平衡-Wear-Leveling" class="headerlink" title="耗损平衡 (Wear Leveling)"></a>耗损平衡 (Wear Leveling)</h3><p>对每一个块而言，一旦达到最大数量，该块就会死亡。对于 SLC 块，P/E 周期的典型数目是十万次；对于 MLC 块，P/E 周期的数目是一万；而对于 TLC 块，则可能是几千。为了确保 SSD 的容量和性能，我们需要在擦除次数上保持平衡，SSD 控制器具有这种“耗损平衡”机制可以实现这一目标。在损耗平衡期间，数据在各个块之间移动，以实现均衡的损耗，这种机制也会对前面讲的写入放大推波助澜。</p>
+<h2 id="光纤和网线的性能差异"><a href="#光纤和网线的性能差异" class="headerlink" title="光纤和网线的性能差异"></a>光纤和网线的性能差异</h2><p>以下都是在4.19内核的UOS，光纤交换机为锐捷，服务器是华为鲲鹏920</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/553e1c5fff2dd04a668434f0da4f9d90.png" alt="image.png"></p>
 <p>光纤稳定性好很多，平均rt是网线的三分之一，最大值则是网线的十分之一</p>
 <p>光纤接口：</p>
 <p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b67715de1b8e143f6fc17ba574bcf0c4.png" alt="image.png" style="zoom:60%;"></p>
@@ -1034,6 +1057,102 @@ LISTEN    0     511              *:8085           *:*
       <category term="createrepo" scheme="http://yoursite.com/tags/createrepo/"/>
     
       <category term="yum-utils" scheme="http://yoursite.com/tags/yum-utils/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Linux 内存问题汇总</title>
+    <link href="http://yoursite.com/2020/01/15/Linux%20%E5%86%85%E5%AD%98%E9%97%AE%E9%A2%98%E6%B1%87%E6%80%BB/"/>
+    <id>http://yoursite.com/2020/01/15/Linux 内存问题汇总/</id>
+    <published>2020-01-15T08:30:03.000Z</published>
+    <updated>2020-08-02T12:41:18.358Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="Linux-内存问题汇总"><a href="#Linux-内存问题汇总" class="headerlink" title="Linux 内存问题汇总"></a>Linux 内存问题汇总</h1><h2 id="内存使用观察"><a href="#内存使用观察" class="headerlink" title="内存使用观察"></a>内存使用观察</h2><pre><code># free -m
+         total       used       free     shared    buffers     cached
+Mem:          7515       1115       6400          0        189        492
+-/+ buffers/cache:        432       7082
+Swap:            0          0          0
+</code></pre><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/f8d944e2c7a8611384acb820c4471007.png" alt="image.png" style="zoom:80%;"></p>
+<p><strong>上图中-/+ buffers/cache: -是指userd去掉buffers/cached后真正使用掉的内存; +是指free加上buffers和cached后真正free的内存大小。</strong></p>
+<h2 id="cached过高回收"><a href="#cached过高回收" class="headerlink" title="cached过高回收"></a>cached过高回收</h2><p>回收：<br>    echo 1/2/3 &gt;/proc/sys/vm/drop_cached</p>
+<p>查看回收后：</p>
+<pre><code>cat /proc/meminfo
+</code></pre><h2 id="还有很多cached无法回收"><a href="#还有很多cached无法回收" class="headerlink" title="还有很多cached无法回收"></a>还有很多cached无法回收</h2><p>可能是正打开的文件占用了cached，比如 vim 打开了一个巨大的文件；比如 mount的 tmpfs； 比如 journald 日志等等</p>
+<h3 id="通过vmtouch-查看"><a href="#通过vmtouch-查看" class="headerlink" title="通过vmtouch 查看"></a>通过<a href="https://hoytech.com/vmtouch/" target="_blank" rel="external">vmtouch</a> 查看</h3><pre><code># vmtouch -v test.x86_64.rpm 
+test.x86_64.rpm
+[OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO] 10988/10988
+
+           Files: 1
+     Directories: 0
+  Resident Pages: 10988/10988  42M/42M  100%
+         Elapsed: 0.000594 seconds
+
+# ls -lh test.x86_64.rpm
+-rw-r--r-- 1 root root 43M 10月  8 14:11 test.x86_64.rpm
+</code></pre><p>如上，表示整个文件 test.x86_64.rpm 都被cached了，回收的话执行：</p>
+<pre><code>vmtouch -e test.x86_64.rpm // 或者： echo 3 &gt;/proc/sys/vm/drop_cached
+</code></pre><h3 id="遍历某个目录下的所有文件被cached了多少"><a href="#遍历某个目录下的所有文件被cached了多少" class="headerlink" title="遍历某个目录下的所有文件被cached了多少"></a>遍历某个目录下的所有文件被cached了多少</h3><pre><code># vmtouch -vt /var/log/journal/
+/var/log/journal/20190829214900434421844640356160/user-1000@ad408d9cb9d94f9f93f2c2396c26b542-000000000011ba49-00059979e0926f43.journal
+[OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO] 4096/4096
+/var/log/journal/20190829214900434421844640356160/system@782ec314565e436b900454c59655247c-0000000000152f41-00059b2c88eb4344.journal
+[OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO] 14336/14336
+/var/log/journal/20190829214900434421844640356160/user-1000@ad408d9cb9d94f9f93f2c2396c26b542-00000000000f2181-000598335fcd492f.journal
+[OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO] 4096/4096
+/var/log/journal/20190829214900434421844640356160/system@782ec314565e436b900454c59655247c-0000000000129aea-000599e83996db80.journal
+[OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO] 14336/14336
+/var/log/journal/20190829214900434421844640356160/user-1000@ad408d9cb9d94f9f93f2c2396c26b542-000000000009f171-000595a722ead670.journal
+…………
+           Files: 48
+ Directories: 2
+    Touched Pages: 468992 (1G)
+     Elapsed: 13.274 seconds
+</code></pre><h2 id="slabtop和-proc-slabinfo"><a href="#slabtop和-proc-slabinfo" class="headerlink" title="slabtop和/proc/slabinfo"></a>slabtop和/proc/slabinfo</h2><p>slabtop和/proc/slabinfo 查看cached使用情况 主要是：pagecache（页面缓存）， dentries（目录缓存）， inodes</p>
+<h2 id="消失的内存"><a href="#消失的内存" class="headerlink" title="消失的内存"></a>消失的内存</h2><p>OS刚启动后就报内存不够了，什么都没跑就500G没了，top按内存排序没有超过0.5%的</p>
+<p>参考： <a href="https://cloud.tencent.com/developer/article/1087455" target="_blank" rel="external">https://cloud.tencent.com/developer/article/1087455</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div></pre></td><td class="code"><pre><div class="line">[aliyun@uos15 18:40 /u02/backup_15/leo/benchmark/run]</div><div class="line">$free -g</div><div class="line">              total        used        free      shared  buff/cache   available</div><div class="line">Mem:            503         501           1           0           0           1</div><div class="line">Swap:            15          12           3</div><div class="line"></div><div class="line">$cat /proc/meminfo </div><div class="line">MemTotal:       528031512 kB</div><div class="line">MemFree:         1469632 kB</div><div class="line">MemAvailable:          0 kB</div><div class="line">VmallocTotal:   135290290112 kB</div><div class="line">VmallocUsed:           0 kB</div><div class="line">VmallocChunk:          0 kB</div><div class="line">Percpu:            81920 kB</div><div class="line">AnonHugePages:    950272 kB</div><div class="line">ShmemHugePages:        0 kB</div><div class="line">ShmemPmdMapped:        0 kB</div><div class="line">HugePages_Total:   252557   ----- 预分配太多，一个2M，加起来刚好500G了</div><div class="line">HugePages_Free:    252557</div><div class="line">HugePages_Rsvd:        0</div><div class="line">HugePages_Surp:        0</div><div class="line">Hugepagesize:       2048 kB</div><div class="line">Hugetlb:        517236736 kB</div><div class="line"></div><div class="line">以下是一台正常的机器对比：</div><div class="line">Percpu:            41856 kB</div><div class="line">AnonHugePages:  11442176 kB</div><div class="line">ShmemHugePages:        0 kB</div><div class="line">ShmemPmdMapped:        0 kB</div><div class="line">HugePages_Total:       0            ----没有做预分配</div><div class="line">HugePages_Free:        0</div><div class="line">HugePages_Rsvd:        0</div><div class="line">HugePages_Surp:        0</div><div class="line">Hugepagesize:       2048 kB</div><div class="line">Hugetlb:               0 kB</div><div class="line"></div><div class="line">[aliyun@uos16 18:43 /home/aliyun]</div><div class="line">$free -g</div><div class="line">              total        used        free      shared  buff/cache   available</div><div class="line">Mem:            503          20         481           0           1         480</div><div class="line">Swap:            15           0          15</div><div class="line"></div><div class="line">对有问题的机器执行：</div><div class="line"># echo 1024 &gt; /proc/sys/vm/nr_hugepages</div><div class="line">可以看到内存恢复正常了 </div><div class="line">root@uos15:/u02/backup_15/leo/benchmark/run# free -g</div><div class="line">              total        used        free      shared  buff/cache   available</div><div class="line">Mem:            503          10         492           0           0         490</div><div class="line">Swap:            15          12           3</div><div class="line">root@uos15:/u02/backup_15/leo/benchmark/run# cat /proc/meminfo </div><div class="line">MemTotal:       528031512 kB</div><div class="line">MemFree:        516106832 kB</div><div class="line">MemAvailable:   514454408 kB</div><div class="line">VmallocTotal:   135290290112 kB</div><div class="line">VmallocUsed:           0 kB</div><div class="line">VmallocChunk:          0 kB</div><div class="line">Percpu:            81920 kB</div><div class="line">AnonHugePages:    313344 kB</div><div class="line">ShmemHugePages:        0 kB</div><div class="line">ShmemPmdMapped:        0 kB</div><div class="line">HugePages_Total:    1024</div><div class="line">HugePages_Free:     1024</div><div class="line">HugePages_Rsvd:        0</div><div class="line">HugePages_Surp:        0</div><div class="line">Hugepagesize:       2048 kB</div><div class="line">Hugetlb:         2097152 kB</div></pre></td></tr></table></figure>
+<h2 id="关于hugetlb"><a href="#关于hugetlb" class="headerlink" title="关于hugetlb"></a>关于hugetlb</h2><p> This is an entry in the TLB that points to a HugePage (a large/big page larger than regular 4K and predefined in size). HugePages are implemented via hugetlb entries, i.e. we can say that a HugePage is handled by a “hugetlb page entry”. The ‘hugetlb” term is also (and mostly) used synonymously with a HugePage (See Note 261889.1). In this document the term “HugePage” is going to be used but keep in mind that mostly “hugetlb” refers to the same concept.</p>
+<p> hugetlb 是TLB中指向HugePage的一个entry(通常大于4k或预定义页面大小)。 HugePage 通过hugetlb entries来实现，也可以理解为HugePage 是hugetlb page entry的一个句柄。</p>
+<p><strong>Linux下的大页分为两种类型：标准大页（Huge Pages）和透明大页（Transparent Huge Pages）</strong></p>
+<p>标准大页管理是预分配的方式，而透明大页管理则是动态分配的方式</p>
+<p>目前透明大页与传统HugePages联用会出现一些问题，导致性能问题和系统重启。Oracle 建议禁用透明大页（Transparent Huge Pages）</p>
+<p>hugetlbfs比THP要好，开thp的机器碎片化严重（不开THP会有更严重的碎片化问题），最后和没开THP一样 <a href="https://www.atatech.org/articles/152660" target="_blank" rel="external">https://www.atatech.org/articles/152660</a></p>
+<h2 id="THP"><a href="#THP" class="headerlink" title="THP"></a>THP</h2><p>在透明大页功能打开时，造成系统性能下降的主要原因可能是 <code>khugepaged</code> 守护进程。该进程会在（它认为）系统空闲时启动，扫描系统中剩余的空闲内存，并将普通 4k 页转换为大页。该操作会在内存路径中加锁，而该守护进程可能会在错误的时间启动扫描和转换大页的操作，从而影响应用性能。</p>
+<p>此外，当缺页异常(page faults)增多时，透明大页会和普通 4k 页一样，产生同步内存压缩(direct compaction)操作，以节省内存。该操作是一个同步的内存整理操作，如果应用程序会短时间分配大量内存，内存压缩操作很可能会被触发，从而会对系统性能造成风险。<a href="https://yq.aliyun.com/articles/712830" target="_blank" rel="external">https://yq.aliyun.com/articles/712830</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">#查看系统级别的 THP 使用情况，执行下列命令：</div><div class="line">cat /proc/meminfo  | grep AnonHugePages</div><div class="line">#类似地，查看进程级别的 THP 使用情况，执行下列命令：</div><div class="line">cat /proc/1730/smaps | grep AnonHugePages |grep -v &quot;0 kB&quot;</div></pre></td></tr></table></figure>
+<h2 id="碎片化"><a href="#碎片化" class="headerlink" title="碎片化"></a>碎片化</h2><p>内存碎片严重的话会导致系统hang很久(回收、压缩内存）</p>
+<p>尽量让系统的free多一点(比例高一点）可以调整 vm.min_free_kbytes(128G 以内 2G，256G以内 8G), 线上机器直接修改vm.min_free_kbytes<strong>会触发回收，导致系统hang住</strong> <a href="https://www.atatech.org/articles/163233" target="_blank" rel="external">https://www.atatech.org/articles/163233</a> <a href="https://www.atatech.org/articles/97130" target="_blank" rel="external">https://www.atatech.org/articles/97130</a></p>
+<p>每个zone都有自己的min low high,如下，但是单位是page, 计算案例：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div></pre></td><td class="code"><pre><div class="line">[root@jiangyi01.sqa.zmf /home/ahao.mah]</div><div class="line">#cat /proc/zoneinfo  |grep &quot;Node&quot;</div><div class="line">Node 0, zone      DMA</div><div class="line">Node 0, zone    DMA32</div><div class="line">Node 0, zone   Normal</div><div class="line">Node 1, zone   Normal</div><div class="line"></div><div class="line">[root@jiangyi01.sqa.zmf /home/ahao.mah]</div><div class="line">#cat /proc/zoneinfo  |grep &quot;Node 0, zone&quot; -A10</div><div class="line">Node 0, zone      DMA</div><div class="line">  pages free     3975</div><div class="line">        min      20</div><div class="line">        low      25</div><div class="line">        high     30</div><div class="line">        scanned  0</div><div class="line">        spanned  4095</div><div class="line">        present  3996</div><div class="line">        managed  3975</div><div class="line">    nr_free_pages 3975</div><div class="line">    nr_alloc_batch 5</div><div class="line">--</div><div class="line">Node 0, zone    DMA32</div><div class="line">  pages free     382873</div><div class="line">        min      2335</div><div class="line">        low      2918</div><div class="line">        high     3502</div><div class="line">        scanned  0</div><div class="line">        spanned  1044480</div><div class="line">        present  513024</div><div class="line">        managed  450639</div><div class="line">    nr_free_pages 382873</div><div class="line">    nr_alloc_batch 584</div><div class="line">--</div><div class="line">Node 0, zone   Normal</div><div class="line">  pages free     11105097</div><div class="line">        min      61463</div><div class="line">        low      76828</div><div class="line">        high     92194</div><div class="line">        scanned  0</div><div class="line">        spanned  12058624</div><div class="line">        present  12058624</div><div class="line">        managed  11859912</div><div class="line">    nr_free_pages 11105097</div><div class="line">    nr_alloc_batch 12344</div><div class="line">    </div><div class="line">    low = 5/4 * min</div><div class="line">high = 3/2 * min</div><div class="line"></div><div class="line">[root@jiangyi01.sqa.zmf /home/ahao.mah]</div><div class="line">#T=min;sum=0;for i in `cat /proc/zoneinfo  |grep $T | awk &apos;&#123;print $NF&#125;&apos;`;do sum=`echo &quot;$sum+$i&quot; |bc`;done;sum=`echo &quot;$sum*4/1024&quot; |bc`;echo &quot;sum=$&#123;sum&#125; MB&quot;</div><div class="line">sum=499 MB</div><div class="line"></div><div class="line">[root@jiangyi01.sqa.zmf /home/ahao.mah]</div><div class="line">#T=low;sum=0;for i in `cat /proc/zoneinfo  |grep $T | awk &apos;&#123;print $NF&#125;&apos;`;do sum=`echo &quot;$sum+$i&quot; |bc`;done;sum=`echo &quot;$sum*4/1024&quot; |bc`;echo &quot;sum=$&#123;sum&#125; MB&quot;</div><div class="line">sum=624 MB</div><div class="line"></div><div class="line">[root@jiangyi01.sqa.zmf /home/ahao.mah]</div><div class="line">#T=high;sum=0;for i in `cat /proc/zoneinfo  |grep $T | awk &apos;&#123;print $NF&#125;&apos;`;do sum=`echo &quot;$sum+$i&quot; |bc`;done;sum=`echo &quot;$sum*4/1024&quot; |bc`;echo &quot;sum=$&#123;sum&#125; MB&quot;</div><div class="line">sum=802 MB</div></pre></td></tr></table></figure>
+<h3 id="min-和-low的区别："><a href="#min-和-low的区别：" class="headerlink" title="min 和 low的区别："></a>min 和 low的区别：</h3><ol>
+<li>min下的内存是保留给内核使用的；当到达min，会触发内存的direct reclaim</li>
+<li>low水位比min高一些，当内存可用量小于low的时候，会触发 kswapd回收内存，当kswapd慢慢的将内存 回收到high水位，就开始继续睡眠</li>
+</ol>
+<h3 id="内存回收方式"><a href="#内存回收方式" class="headerlink" title="内存回收方式"></a>内存回收方式</h3><p>内存回收方式有两种，主要对应low ，min</p>
+<ol>
+<li>direct reclaim : 达到min水位线时执行</li>
+<li>kswapd reclaim : 达到low水位线时执行</li>
+</ol>
+<h2 id="定制内存"><a href="#定制内存" class="headerlink" title="定制内存"></a>定制内存</h2><p>物理内存700多G，要求OS只能用512G：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div></pre></td><td class="code"><pre><div class="line">24条32G的内存条，总内存768G</div><div class="line"># dmidecode -t memory |grep &quot;Size: 32 GB&quot;</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">root@uos15:/etc# dmidecode -t memory |grep &quot;Size: 32 GB&quot; | wc -l</div><div class="line">24</div><div class="line"></div><div class="line"># cat /boot/grub/grub.cfg  |grep 512</div><div class="line">  linux /vmlinuz-4.19.0-arm64-server root=UUID=dbc68010-8c36-40bf-b794-271e59ff5727 ro  splash quiet console=tty video=VGA-1:1280x1024@60 mem=512G DEEPIN_GFXMODE=$DEEPIN_GFXMODE</div><div class="line">    linux /vmlinuz-4.19.0-arm64-server root=UUID=dbc68010-8c36-40bf-b794-271e59ff5727 ro  splash quiet console=tty video=VGA-1:1280x1024@60 mem=512G DEEPIN_GFXMODE=$DEEPIN_GFXMODE</div></pre></td></tr></table></figure>
+<p>​    </p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;Linux-内存问题汇总&quot;&gt;&lt;a href=&quot;#Linux-内存问题汇总&quot; class=&quot;headerlink&quot; title=&quot;Linux 内存问题汇总&quot;&gt;&lt;/a&gt;Linux 内存问题汇总&lt;/h1&gt;&lt;h2 id=&quot;内存使用观察&quot;&gt;&lt;a href=&quot;#内存使用观察&quot;
+    
+    </summary>
+    
+      <category term="Linux" scheme="http://yoursite.com/categories/Linux/"/>
+    
+    
+      <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
+    
+      <category term="free" scheme="http://yoursite.com/tags/free/"/>
+    
+      <category term="Memory" scheme="http://yoursite.com/tags/Memory/"/>
+    
+      <category term="vmtouch" scheme="http://yoursite.com/tags/vmtouch/"/>
     
   </entry>
   
@@ -1390,7 +1509,7 @@ sudo perf top
     <link href="http://yoursite.com/2019/12/16/Intel%20PAUSE%E6%8C%87%E4%BB%A4%E5%8F%98%E5%8C%96%E6%98%AF%E5%A6%82%E4%BD%95%E5%BD%B1%E5%93%8D%E8%87%AA%E6%97%8B%E9%94%81%E4%BB%A5%E5%8F%8AMySQL%E7%9A%84%E6%80%A7%E8%83%BD%E7%9A%84/"/>
     <id>http://yoursite.com/2019/12/16/Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的/</id>
     <published>2019-12-16T04:30:03.000Z</published>
-    <updated>2020-07-28T01:44:55.884Z</updated>
+    <updated>2020-08-02T12:41:18.354Z</updated>
     
     <content type="html"><![CDATA[<h1 id="Intel-PAUSE指令变化是如何影响自旋锁以及MySQL的性能的"><a href="#Intel-PAUSE指令变化是如何影响自旋锁以及MySQL的性能的" class="headerlink" title="Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的"></a>Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的</h1><p>本文记录专有云场景下Tomcat+MySQL集群的一次全表扫描性能优化过程</p>
 <p>经验总结，长链路下性能瓶颈发现规则（最容易互相扯皮、协调难度大）：</p>
@@ -1520,6 +1639,7 @@ while (true) {
 <h4 id="Cache-Line-伪共享"><a href="#Cache-Line-伪共享" class="headerlink" title="Cache Line 伪共享"></a>Cache Line 伪共享</h4><p>Cache Line 伪共享问题，就是由多个 CPU 上的多个线程同时修改自己的变量引发的。这些变量表面上是不同的变量，但是实际上却存储在同一条 Cache Line 里（Cache Line 失效的最小单位是整个Line，而不是一个变量）。<br>在这种情况下，由于 Cache 一致性协议，两个处理器都存储有相同的 Cache Line 拷贝的前提下，本地 CPU 变量的修改会导致本地 Cache Line 变成 Modified 状态，然后在其它共享此 Cache Line 的 CPU 上，<br>引发 Cache Line 的 Invaidate 操作，导致 Cache Line 变为 Invalidate 状态，从而使 Cache Line 再次被访问时，发生本地 Cache Miss，从而伤害到应用的性能。<br>在此场景下，多个线程在不同的 CPU 上高频反复访问这种 Cache Line 伪共享的变量，则会因 Cache 颠簸引发严重的性能问题。</p>
 <h4 id="MESI-protocol"><a href="#MESI-protocol" class="headerlink" title="MESI protocol"></a><a href="https://en.wikipedia.org/wiki/MESI_protocol" target="_blank" rel="external">MESI protocol</a></h4><p>MySQL 这里读取Mutex or rw-lock 会导致其它core的cache line 失效，这个读取应该不是一个 Shared读，猜测是一个Exclusive读（加锁成功肯定会Modified），意味着读取就会让其他 cache line失效。</p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/2a5245c81a37d166c7e0b2ace45b9e4b.png" alt="image.png"></p>
+<p>在NUMA架构中，多个处理器中的同一个缓存页面必定在其中一个处理器中属于 F 状态(可以修改的状态)，这个页面在这个处理器中没有理由不可以多核心共享(可以多核心共享就意味着这个能进入修改状态的页面的多个有效位被设置为一)。MESIF协议应该是工作在核心(L1+L2)层面而不是处理器(L3)层面，这样同一处理器里多个核心共享的页面，只有其中一个是出于 F 状态(可以修改的状态)。见后面对 NUMA 和 MESIF 的解析。(L1/L2/L3 的同步应该是不需要 MESIF 的同步机制)</p>
 <h2 id="分析源代码"><a href="#分析源代码" class="headerlink" title="分析源代码"></a>分析源代码</h2><p>另外分析了MySQL源代码后，在select中通过使用force index来绕过优化器是可以达到相同的效果（不再走statistics流程，也就不会有这个锁争抢了）</p>
 <p>从下面的源代码中可以看到perf top中fil_space_get，在这个函数里面确实会对fil_system_mutex加锁（跟awr监控对应上了）</p>
 <pre><code>/** Look up a tablespace.
@@ -1944,177 +2064,6 @@ while (1) {
       <category term="TTL" scheme="http://yoursite.com/tags/TTL/"/>
     
       <category term="identification" scheme="http://yoursite.com/tags/identification/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>epoll和惊群</title>
-    <link href="http://yoursite.com/2019/10/31/epoll%E5%92%8C%E6%83%8A%E7%BE%A4/"/>
-    <id>http://yoursite.com/2019/10/31/epoll和惊群/</id>
-    <published>2019-10-31T04:30:03.000Z</published>
-    <updated>2020-07-16T03:27:13.325Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="epoll和惊群"><a href="#epoll和惊群" class="headerlink" title="epoll和惊群"></a>epoll和惊群</h1><p>本文尝试追踪不同的内核版本增加的方案来看内核是如何来尝试解决惊群问题的。以及像 SO_REUSEPORT 和EPOLLEXCLUSIVE又带来了什么小问题。</p>
-<h2 id="先上总结"><a href="#先上总结" class="headerlink" title="先上总结"></a>先上总结</h2><p>非IO复用的惊群在2.6内核就通过增加WQ_FLAG_EXCLUSIVE在内核中就行排他解决惊群了；epoll的惊群在3.10内核加了SO_REUSEPORT来解决惊群，但同时带来了不同的worker有的饥饿有的排队假死一样；4.5的内核增加EPOLLEXCLUSIVE在内核中直接将worker放在一个大queue，同时感知worker状态来派发任务更好滴解决了惊群，但是因为LIFO的机制导致在压力不大的情况下，任务主要派发给少数几个worker（能接受，压力大就会正常了）。</p>
-<h2 id="什么是惊群"><a href="#什么是惊群" class="headerlink" title="什么是惊群"></a>什么是惊群</h2><p>惊群效应也有人叫做雷鸣群体效应，惊群就是多进程（多线程）在同时阻塞等待同一个事件的时候（休眠状态），如果等待的这个事件发生，那么他就会唤醒等待的所有进程（或者线程），但是最终却只可能有一个进程（线程）获得这个事件的“控制权”，对该事件进行处理，而其他进程（线程）获取“控制权”失败，只能重新进入休眠状态，这种现象和性能浪费就叫做惊群。</p>
-<p>为了更好的理解何为惊群，举一个很简单的例子，当你往一群鸽子中间扔一粒谷子，所有的鸽子都被惊动前来抢夺这粒食物，但是最终只有一只鸽子抢到食物。这里鸽子表示进程（线程），那粒谷子就是等待处理的事件。</p>
-<h2 id="无IO复用时Accept"><a href="#无IO复用时Accept" class="headerlink" title="无IO复用时Accept"></a>无IO复用时Accept</h2><blockquote>
-<p>无IO复用的accept 不会有惊群，epoll_wait 才会。accept一定是只需要一个进程处理消息，内核可以解决。但是select、epoll就不一定了，所以内核只能唤醒所有的。</p>
-</blockquote>
-<p>在linux2.6版本以后，linux内核已经解决了accept()函数的“惊群”现象，大概的处理方式就是，当内核接收到一个客户连接后，只会唤醒等待队列上的第一个进程（线程）,所以如果服务器采用accept阻塞调用方式，在2.6的linux系统中已经没有“惊群效应”了。</p>
-<pre><code> /* nr_exclusive的值默认设为1 */
- #define wake_up_interruptible_sync_poll(x, m)              \
-    __wake_up_sync_key((x), TASK_INTERRUPTIBLE, 1, (void *) (m))
-
-tcp_v4_rcv
-tcp_v4_do_rcv
-tcp_child_process
-sock_def_readable
-wake_up_interruptible_sync_poll
-__wake_up_common
- /* 从头遍历监听socket的等待队列，唤醒等待进程，有EXCLUSIVE标识时只唤醒一个进程 */
-list_for_each_entry_safe(curr, next, &amp;q-&gt;task_list, task_list)
-    /* func最终调用try_to_wake_up，设置进程状态为TASK_RUNNING，并把进程插入CPU运行队列，来唤醒睡眠的进程 */
-    if (curr-&gt;func(curr, mode, wake_flags, key) &amp;&amp; (flags &amp; WQ_FLAG_EXCLUSIVE)  &amp;&amp;
-       !--nr_exclusive)
-       break; 
-</code></pre><p>sock中定义了几个I/O事件，当协议栈遇到这些事件时，会调用它们的处理函数。当监听socket收到新的连接时，会触发有数据可读事件，调用sock_def_readable，唤醒socket等待队列中的进程。进程被唤醒后，会执行accept的后续操作，最终返回新连接的描述符。</p>
-<p>这个socket等待队列是一个FIFO，所以最终是均衡的，也不需要惊群，有tcp connection ready的话直接让等待队列中第一个的线程出队就好了。</p>
-<p>2.6内核层面添加了一个WQ_FLAG_EXCLUSIVE标记，告诉内核进行排他性的唤醒，即唤醒一个进程后即退出唤醒的过程(适合accept，但是不适合 epoll–因为epoll除了有accept，还有其它IO事件）</p>
-<p>所以这就是大家经常看到的accept不存在惊群问题，内核10年前就解决了这个问题的场景，实际指的是非epoll下的accept 惊群。</p>
-<h2 id="epoll的Accept"><a href="#epoll的Accept" class="headerlink" title="epoll的Accept"></a>epoll的Accept</h2><p>epoll监听句柄，后续可能是accept，也有可能是其它网络IO事件，这些IO事件不一定只能由一个进程处理（很少见需要多个进程处理的），所以内核层面没直接解决epoll的惊群，交由上层应用来根据IO事件如何处理。</p>
-<pre><code>//主进程中：
-ngx_init_cycle
-ngx_open_listening_sockets
-    socket
-    bind
-    listen
-    epoll_create
-    epoll_ctl
-
-//子进程中：
-ngx_event_process_init
-ngx_prcocess_events_and_timers
-ngx_epoll_process_events
-    epoll_wait
-    rev-&gt;handler(rev) // 对于listening socket，handler是ngx_event_accept
-</code></pre><p>和标准的accept不同，使用epoll时，是在epoll_wait()返回后，发现监听socket有可读事件，才调用accept()。由于epoll_wait()是LIFO，导致多个子进程在accept新连接时，也变成了LIFO。</p>
-<pre><code>epoll_wait
-ep_poll
-    /* 创建等待任务，把等待任务加入到epfd等待队列的头部，而不是尾部 */
-    init_waitqueue_entry(&amp;wait, current) 
-    __add_wait_queue_exclusive(&amp;ep-&gt;wq, &amp;wait)
-    ...
-    __remove_wait-queue(&amp;ep-&gt;wq, &amp;wait) /* 最终从epfd等待队列中删除 */
-</code></pre><p>回调触发逻辑：</p>
-<pre><code>tcp_v4_rcv
-tcp_v4_do_rcv
-tcp_child_process
-sock_def_readable /* sock I/O 有数据可读事件 */
-wake_up_interruptible_sync_poll
-__wake_up_common
-    /* curr-&gt;func是等待任务的回调函数，在ep_insert初始化等待任务时，设置为ep_poll_callback */
-    if (curr-&gt;func(curr, mode, wake_flags, key) &amp;&amp; (flags &amp; WQ_FLAG_EXCLUSIVE)  &amp;&amp;
-        !--nr_exclusive)
-        break;
-</code></pre><p>那么这种情况下内核如何来解决惊群呢？</p>
-<h3 id="SO-REUSEPORT"><a href="#SO-REUSEPORT" class="headerlink" title="SO_REUSEPORT"></a>SO_REUSEPORT</h3><p>在3.10的内核中通过引入SO_REUSEPORT解决了这个epoll accept惊群的问题。</p>
-<p>linux man文档中一段文字描述其作用：</p>
-<blockquote>
-<p>The new socket option allows multiple sockets on the same host to bind to the same port, and is intended to improve the performance of multithreaded network server applications running on top of multicore systems.</p>
-</blockquote>
-<p>SO_REUSEPORT支持多个进程或者线程绑定到同一端口，提高服务器程序的性能，解决的问题：</p>
-<ul>
-<li>允许多个套接字 bind()/listen() 同一个TCP/UDP端口</li>
-<li>每一个线程拥有自己的服务器套接字</li>
-<li>在服务器套接字上没有了锁的竞争</li>
-<li>内核层面实现负载均衡</li>
-<li>安全层面，监听同一个端口的套接字只能位于同一个用户下面</li>
-</ul>
-<p>其核心的实现主要有三点：</p>
-<ul>
-<li>扩展 socket option，增加 SO_REUSEPORT 选项，用来设置 reuseport。</li>
-<li>修改 bind 系统调用实现，以便支持可以绑定到相同的 IP 和端口</li>
-<li>修改处理新建连接的实现，查找 listener 的时候，能够支持在监听相同 IP 和端口的多个 sock 之间均衡选择。</li>
-</ul>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/64ae30f3d1937d913f2a440d5ae3c920.png" alt="image.png"></p>
-<ul>
-<li>Nginx的accept_mutex通过抢锁来控制是否将监听套接字加入到epoll 中。监听套接字只在一个子进程的 epoll 中，当新的连接来到时，其他子进程当然不会惊醒了。通过 accept_mutex加锁性能要比reuseport差</li>
-<li>Linux内核解决了epoll_wait 惊群的问题，Nginx 1.9.1利用Linux3.10 的reuseport也能解决惊群、提升性能。</li>
-<li>内核的reuseport中相当于所有listen同一个端口的进程是一个组合，内核收包时不管查找到哪个socket，都能映射到他们所属的 reuseport 数组，再通过五元组哈希选择一个socket，这样只有这个socket队列里有数据，所以即便所有的进程都添加了epoll事件，也只有一个进程会被唤醒。</li>
-</ul>
-<h4 id="SO-REUSEPORT-带来的小问题"><a href="#SO-REUSEPORT-带来的小问题" class="headerlink" title="SO_REUSEPORT 带来的小问题"></a>SO_REUSEPORT 带来的小问题</h4><p>SO_REUSEPORT打开后，再有请求进来不再是各个进程一起去抢，而是内核通过五元组Hash来分配，所以不再会惊群了。但是可能会导致撑死或者饿死的问题，比如一个cpu一直在做一件耗时的任务（比如压缩），但是内核通过hash分配过来的时候是不知道的（抢锁就不会发生这种情况，你没空就不会去抢），以Nginx为例</p>
-<p><a href="https://www.atatech.org/articles/89653" target="_blank" rel="external">因为Nginx是ET模式，epoll要一直将事件处理完毕才能进入epoll_wait（才能响应新的请求）。带来了新的问题：如果有一个慢请求（比如gzip压缩文件需要2分钟），那么处理这个慢请求的进程在reuseport模式下还是会被内核分派到，但是这个时候他如同hang死了，新分配进来的请求无法处理。如果不是reuseport模式，他在处理慢请求就根本腾不出来时间去在惊群中抢到锁。</a></p>
-<p>如果不开启SO_REUSEPORT模式，那么即使有一个进程在处理慢请求，那么他就不会去抢accept锁，也就没有accept新连接，这样就不应影响新连接的处理。</p>
-<p>但是开启了SO_REUSEPORT后，内核没法感知你的worker是不是特别忙，只是按Hash逻辑派发连接。也就是SO_REUSEPORT会导致rt偏差更大（抖动明显一些）。<a href="https://plantegg.github.io/2020/06/05/MySQL%E7%BA%BF%E7%A8%8B%E6%B1%A0%E5%AF%BC%E8%87%B4%E7%9A%84%E5%BB%B6%E6%97%B6%E5%8D%A1%E9%A1%BF%E6%8E%92%E6%9F%A5/" target="_blank" rel="external">这跟MySQL Thread Pool导致的卡顿原理类似，多个Pool类似这里的SO_REUSEPORT。</a></p>
-<p>用图形展示大概如下：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/49d19ef1eaf13638b488ad126beb58ef.png" alt="image.png"></p>
-<p>比如中间的worker即使处理得很慢，内核还是正常派连接过来，即使其它worker空闲</p>
-<h4 id="SO-REUSEPORT另外的问题"><a href="#SO-REUSEPORT另外的问题" class="headerlink" title="SO_REUSEPORT另外的问题"></a>SO_REUSEPORT另外的问题</h4><p>在OS层面一个连接hash到了某个socket fd，但是正好这个 listen socket fd 被关了，已经被分到这个 listen socket fd 的 accept 队列上的请求会被丢掉，具体可以<a href="https://engineeringblog.yelp.com/2015/04/true-zero-downtime-haproxy-reloads.html" target="_blank" rel="external">参考</a> 和 LWN 上的 <a href="https://lwn.net/Articles/542866/" target="_blank" rel="external">comment</a></p>
-<p>从 Linux 4.5 开始引入了 SO_ATTACH_REUSEPORT_CBPF 和 SO_ATTACH_REUSEPORT_EBPF 这两个 BPF 相关的 socket option。通过巧妙的设计，应该可以避免掉建连请求被丢掉的情况。</p>
-<h3 id="EPOLLEXCLUSIVE"><a href="#EPOLLEXCLUSIVE" class="headerlink" title="EPOLLEXCLUSIVE"></a>EPOLLEXCLUSIVE</h3><p>epoll引起的accept惊群，在4.5内核中再次引入<strong>EPOLLEXCLUSIVE</strong>来解决，且需要应用层的配合，Ngnix 在 1.11.3 之后添加了NGX_EXCLUSIVE_EVENT来支持。像tengine尚不支持，所以只能在应用层面上来避免惊群，开启accept_mutex才可避免惊群。</p>
-<p>在epoll_ctl ADD描述符时设置 EPOLLEXCLUSIVE 标识。</p>
-<pre><code>epoll_ctl
-ep_insert
-ep_ptable_queue_proc
-    /* 在这里，初始化等待任务，把等待任务加入到socket等待队列的头部 */
-     * 注意，和标准accept的等待任务不同，这里并没有给等待任务设置WQ_FLAG_EXCLUSIVE。
-     */
-    init_waitqueue_func_entry(&amp;pwq-&gt;wait, ep_poll_callback);
-    /* 检查应用程序是否设置了EPOLLEXCLUSIVE标识 */
-    if (epi-&gt;event.events &amp; EPOLLEXCLUSIVE)
-        /* 新增逻辑，等待任务携带WQ_FLAG_EXCLUSIVE标识，之后只唤醒一个进程 */
-        add_wait_queue_exclusive(whead, &amp;pwq-&gt;wait);
-    else
-        /* 原来逻辑，等待任务没有WQ_FLAG_EXCLUSIVE标识，会唤醒所有等待进程 */
-        add_wait_queue(whead, &amp;pwq-&gt;wait);
-</code></pre><p>在加入listen socket的sk_sleep队列的唤醒队列里使用了 add_wait_queue_exculsive()函数，当tcp收到三次握手最后一个 ack 报文时调用sock_def_readable时，只唤醒一个等待源，从而避免‘惊群’.<br>调用栈如下：</p>
-<pre><code>//  tcp_v4_do_rcv()
-//  --&gt;tcp_child_process()
-//  ---&gt;sock_def_readable()
-//  ----&gt;wake_up_interruptible_sync_poll()
-//  -----&gt;__wake_up_sync_key()
-</code></pre><p>EPOLLEXCLUSIVE可以在单个Listen Queue对多个Worker Process的时候均衡压力，不会惊群。</p>
-<p><img src="https://blog.cloudflare.com/content/images/2017/10/worker2.png" alt=""></p>
-<p>连接从一个队列里由内核分发，不需要惊群，对worker是否忙也能感知（忙的worker就不分发连接过去）</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/9bbf15909be8d1bffd3ee1958463c041.png" alt="image.png"></p>
-<p>图中的电话机相当于一个worker，只是<strong>实际内核中空闲的worker像是在一个堆栈中（LIFO），有连接过来，worker堆栈会出栈，处理完毕又入栈，如此反复</strong>。而需要处理的消息是一个队列（FIFO），所以总会发现栈顶的几个worker做的事情更多。</p>
-<h4 id="EPOLLEXCLUSIVE-带来的问题"><a href="#EPOLLEXCLUSIVE-带来的问题" class="headerlink" title="EPOLLEXCLUSIVE 带来的问题"></a>EPOLLEXCLUSIVE 带来的问题</h4><p>下面这个case是观察发现Nginx在压力不大的情况下会导致最后几个核cpu消耗时间更多一些，如下图看到的：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/6551777f24be3da9d2b41ceb20a2b040.png" alt="image.png"></p>
-<p>这是如前面所述，所有worker像是在一个栈（LIFO）中等着任务处理，在压力不大的时候会导致连接总是在少数几个worker上（栈底的worker没什么机会出栈），如果并发任务多，导致worker栈经常空掉，这个问题就不存在了。当然最终来看EPOLLEXCLUSIVE没有产生什么实质性的不好的影响。值得推荐</p>
-<p>epoll的accept模型为LIFO，倾向于唤醒最活跃的进程。多进程场景下：默认的accept(非复用)是FIFO，进程加入到监听socket等待队列的尾部，唤醒时从头部开始唤醒；epoll的accept是LIFO，在epoll_wait时把进程加入到监听socket等待队列的头部，唤醒时从头部开始唤醒。</p>
-<p>当并发数较小时，只有最后几个进程会被唤醒，它们使用的CPU时间会远高于其它进程。当并发数较大时，所有的进程都有机会被唤醒，各个进程之间的差距不大。内核社区中关于epoll accept是使用LIFO还是RR有过讨论，在4.9内核和最新版本中使用的都是LIFO。</p>
-<p>比如这个case，压力低的worker进程和压力高的worker进程差异比较大：</p>
-<p><img src="https://blog.cloudflare.com/content/images/2017/10/sharedqueue.png" alt=""></p>
-<h3 id="比较下EPOLLEXCLUSIVE-和-SO-REUSEPORT"><a href="#比较下EPOLLEXCLUSIVE-和-SO-REUSEPORT" class="headerlink" title="比较下EPOLLEXCLUSIVE 和 SO_REUSEPORT"></a>比较下EPOLLEXCLUSIVE 和 SO_REUSEPORT</h3><p>EPOLLEXCLUSIVE 和 SO_REUSEPORT 都是在内核层面将连接分到多个worker，解决了epoll下的惊群，SO_REUSEPORT 会更均衡一些，EPOLLEXCLUSIVE在压力不大的时候会导致连接总是在少数几个worker上（但这个不会产生任何不利影响）。 SO_REUSEPORT在最坏的情况下会导致一个worker即使Hang了，OS也依然会派连接过去，这是非常致命的，所以4.5内核引入了 EPOLLEXCLUSIVE（总是给闲置等待队列的第一个worker派连接）</p>
-<p>相对 SO_REUSEPORT导致的stuck, EPOLLEXCLUSIV 还是更好接受一些。</p>
-<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://blog.csdn.net/lyztyycode/article/details/78648798" target="_blank" rel="external">Linux惊群效应详解（最详细的了吧）</a></p>
-<p><a href="https://blog.csdn.net/dog250/article/details/80837278" target="_blank" rel="external">再谈Linux epoll惊群问题的原因和解决方案</a></p>
-<p><a href="https://www.atatech.org/articles/117111" target="_blank" rel="external">epoll lifo引发的nginx “负载不均”</a> </p>
-<p><a href="https://blog.cloudflare.com/the-sad-state-of-linux-socket-balancing/" target="_blank" rel="external">Why does one NGINX worker take all the load?</a></p>
-<p><a href="https://www.atatech.org/articles/89653" target="_blank" rel="external">一次Nginx Gzip 导致的诡异健康检查失败问题调查</a> </p>
-<p><a href="https://www.atatech.org/articles/112471" target="_blank" rel="external">Socket多进程分发原理</a></p>
-<p><a href="https://blog.csdn.net/dog250/article/details/107227145" target="_blank" rel="external">从SO_REUSEPORT服务器的一个弊端看多队列服务模型</a></p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;epoll和惊群&quot;&gt;&lt;a href=&quot;#epoll和惊群&quot; class=&quot;headerlink&quot; title=&quot;epoll和惊群&quot;&gt;&lt;/a&gt;epoll和惊群&lt;/h1&gt;&lt;p&gt;本文尝试追踪不同的内核版本增加的方案来看内核是如何来尝试解决惊群问题的。以及像 SO_REU
-    
-    </summary>
-    
-      <category term="Linux" scheme="http://yoursite.com/categories/Linux/"/>
-    
-    
-      <category term="epoll" scheme="http://yoursite.com/tags/epoll/"/>
-    
-      <category term="惊群" scheme="http://yoursite.com/tags/%E6%83%8A%E7%BE%A4/"/>
-    
-      <category term="nginx" scheme="http://yoursite.com/tags/nginx/"/>
-    
-      <category term="reuseport" scheme="http://yoursite.com/tags/reuseport/"/>
-    
-      <category term="EPOLLEXCLUSIVE" scheme="http://yoursite.com/tags/EPOLLEXCLUSIVE/"/>
     
   </entry>
   

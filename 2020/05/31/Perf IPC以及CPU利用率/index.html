@@ -77,7 +77,7 @@
 <link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="perf,IPC," />
+  <meta name="keywords" content="perf,IPC,CPU,pipeline," />
 
 
 
@@ -96,7 +96,7 @@
 
 
 <meta name="description" content="Perf IPC以及CPU利用率perf 使用可以通过perf看到cpu的使用情况： $sudo perf stat -a -- sleep 10   Performance counter stats for &amp;apos;system wide&amp;apos;:   239866.330098      task-clock (msec)         #   23.985 CPUs utiliz">
-<meta name="keywords" content="perf,IPC">
+<meta name="keywords" content="perf,IPC,CPU,pipeline">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Perf IPC以及CPU利用率">
 <meta property="og:url" content="http://yoursite.com/2020/05/31/Perf IPC以及CPU利用率/index.html">
@@ -112,7 +112,7 @@
 <meta property="og:image" content="https://images.gitbook.cn/227f3af0-5075-11e9-aece-c5816949b340">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/f5728a2afb29c653a3e1bf21f4d56056.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ad19b92ccc97763aa7f78d8d1d514c84.png">
-<meta property="og:updated_time" content="2020-07-06T02:24:49.011Z">
+<meta property="og:updated_time" content="2020-08-02T12:41:18.374Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Perf IPC以及CPU利用率">
 <meta name="twitter:description" content="Perf IPC以及CPU利用率perf 使用可以通过perf看到cpu的使用情况： $sudo perf stat -a -- sleep 10   Performance counter stats for &amp;apos;system wide&amp;apos;:   239866.330098      task-clock (msec)         #   23.985 CPUs utiliz">
@@ -425,17 +425,22 @@
 <li>非流水线：</li>
 </ul>
 <p><img src="http://static.oschina.net/uploads/space/2018/0330/195430_76ME_2896894.png" alt="img"></p>
+<p>对于非流水计算机而言，上一条指令的 5 个子过程全部执行完毕后才能开始下一条指令，每隔 5 个时 钟周期才有一个输出结果。因此，图3中用了 15 个时钟周期才完成 3 条指令，每条指令平均用时 5 个时钟周期。 非流水线工作方式的控制比较简单，但部件的利用率较低，系统工作速度较慢。</p>
 <p>毫无疑问，非流水线效率很低下，5个单元同时只能有一个单元工作，每隔 5 个时 钟周期才有一个输出结果。每条指令用时5个时间周期。</p>
 <ul>
-<li>标量流水线：</li>
+<li>标量流水线, 标量（Scalar）流水计算机是<strong>只有一条指令流水线</strong>的计算机:</li>
 </ul>
 <p><img src="http://static.oschina.net/uploads/space/2018/0330/195701_ce0y_2896894.png" alt=""></p>
-<p>因此，图中仅用了 9 个时钟周期就完成了 5 条指令，每条指令平均用时 1.8 个时钟周期。</p>
+<p> 对标量流水计算机而言，上一条指令与下一条指令的 5 个子过程在时间上可以重叠执行，当流水线满 载时，每一个时钟周期就可以输出一个结果。因此，图中仅用了 9 个时钟周期就完成了 5 条指令，每条指令平均用时 1.8 个时钟周期。</p>
+<p>采用标量流水线工作方式，<strong>虽然每条指令的执行时间并未缩短，但 CPU 运行指令的总体速度却能成倍 提高</strong>。当然，作为速度提高的代价，需要增加部分硬件才能实现标量流水。</p>
 <ul>
 <li>超标量流水线：</li>
 </ul>
+<p>所谓超标量（Superscalar）流 水计算机，是指它<strong>具有两条以上的指令流水线</strong></p>
 <p><img src="http://static.oschina.net/uploads/space/2018/0330/200055_5w6G_2896894.png" alt=""></p>
-<p>图中仅用了 9 个时钟周期就完成了 10 条指令，每条指令平均用时 0.9 个时钟周期。 超标量流水计算机是时间并行技术和空间并行技术的综合应用。</p>
+<p>当流水线满载时，每一个时钟周期可以执行 2 条以上的指令。图中仅用了 9 个时钟周期就完成了 10 条指令，每条指令平均用时 0.9 个时钟周期。 超标量流水计算机是时间并行技术和空间并行技术的综合应用。</p>
+<p>在流水计算机中，指令的处理是重叠进行的，前一条指令还没有结束，第二、三条指令就陆续开始工 作。由于多条指令的重叠处理，当后继指令所需的操作数刚好是前一指令的运算结果时，便发生数据相关冲突。由于这两条指令的执行顺序直接影响到操作数读取的内容，必须等前一条指令执行完毕后才能执行后一条指令。</p>
+<p><strong>OoOE— Out-of-Order Execution 乱序执行也是在 Pentium Pro 开始引入的</strong>，它有些类似于多线程的概念。<strong>乱序执行是为了直接提升 ILP(Instruction Level Parallelism)指令级并行化的设计</strong>，在多个执行单元的超标量设计当中，一系列的执行单元可以<strong>同时运行</strong>一些<strong>没有数据关联性的若干指令</strong>，<strong>只有需要等待其他指令运算结果的数据会按照顺序执行</strong>，从而总体提升了运行效率。乱序执行引擎是一个很重要的部分，需要进行复杂的调度管理。</p>
 <h2 id="ECS和perf"><a href="#ECS和perf" class="headerlink" title="ECS和perf"></a>ECS和perf</h2><p>在ECS会采集不到 cycles等，cpu-clock、page-faults都是内核中的软事件，cycles/instructions得采集cpu的PMU数据，ECS采集不到这些。</p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/a120388ff72d712a4fd176e7cea005cf.png" alt="image.png"></p>
 <h2 id="调度"><a href="#调度" class="headerlink" title="调度"></a>调度</h2><p>NMI(non-maskable interrupt)，就是不可屏蔽的中断. NMI通常用于通知操作系统发生了无法恢复的硬件错误，也可以用于系统调试与采样，大多数服务器还提供了人工触发NMI的接口，比如NMI按钮或者iLO命令等。</p>
@@ -508,6 +513,10 @@ LEVEL4_CACHE_LINESIZE              0
             <a href="/tags/perf/" rel="tag"># perf</a>
           
             <a href="/tags/IPC/" rel="tag"># IPC</a>
+          
+            <a href="/tags/CPU/" rel="tag"># CPU</a>
+          
+            <a href="/tags/pipeline/" rel="tag"># pipeline</a>
           
         </div>
       
@@ -611,7 +620,7 @@ LEVEL4_CACHE_LINESIZE              0
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">92</span>
+                <span class="site-state-item-count">93</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -633,7 +642,7 @@ LEVEL4_CACHE_LINESIZE              0
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">188</span>
+                <span class="site-state-item-count">189</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>
