@@ -281,6 +281,602 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/05/08/就是要你懂网络--网络包的流转/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/05/08/就是要你懂网络--网络包的流转/" itemprop="url">就是要你懂网络--网络包的流转</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-05-08T11:30:03+08:00">
+                2019-05-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/05/08/就是要你懂网络--网络包的流转/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2019/05/08/就是要你懂网络--网络包的流转/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="Linux-Network-Stack"><a href="#Linux-Network-Stack" class="headerlink" title="Linux Network Stack"></a>Linux Network Stack</h1><p>一个网络包进到网卡后续如何流转，中间有哪些关键参数，有什么工具能帮忙可以看到各个环节的一些指征，怎么调整他们</p>
+<h2 id="接收流程"><a href="#接收流程" class="headerlink" title="接收流程"></a>接收流程</h2><ol>
+<li>网络包进到网卡，网卡驱动校验MAC，看是否扔掉，取决是否是混杂 promiscuous mode</li>
+<li>网卡在启动时会申请一个接收ring buffer，其条目都会指向一个skb的内存。</li>
+<li>DMA完成数据报文从网卡硬件到内存到拷贝</li>
+<li>网卡发送一个中断通知CPU。</li>
+<li>CPU执行网卡驱动注册的中断处理函数，中断处理函数只做一些必要的工作，如读取硬件状态等，并把当前该网卡挂在NAPI的链表中，</li>
+<li>Driver“触发” soft IRQ(NET_RX_SOFTIRQ 其实就是设置对应软中断的标志位) </li>
+<li>CPU中断处理函数返回后，会检查是否有软中断需要执行。因第三步设置了NET_RX_SOFTIRQ，则执行报文接收软中断。</li>
+<li>在NET_RX_SOFTIRQ软中断中，执行NAPI操作，回调第三步挂载的驱动poll函数。</li>
+<li>驱动会对interface进行poll操作，检查网卡是否有接收完毕的数据报文。</li>
+<li>将网卡中已经接收完毕的数据报文取出，继续在软中断进行后续处理。注：驱动对interface执行poll操作时，会尝试循环检查网卡是否有接收完毕的报文，直到系统设置的net.core.netdev_budget上限(默认300)，或者已经就绪报文。</li>
+<li><strong>net_rx_action</strong></li>
+<li>内核分配 sk_buff 内存</li>
+<li>内核填充 metadata: 协议等，移除 ethernet 包头信息</li>
+<li><strong>将skb 传送给内核协议栈 netif_receive_skb</strong></li>
+<li>复制 skb to taps(i.e. tcpdump)</li>
+<li>进入到由 netdev_max_backlog 控制的qdisc</li>
+<li>开始 <strong>ip_rcv</strong> 处理流程，主要处理ip协议包头相关信息</li>
+<li>调用内核 netfilter 框架(iptables PREROUTING)</li>
+<li>进入L4 protocol <strong>tcp_v4_rcv</strong></li>
+<li>找到对应的socket</li>
+<li>根据 tcp_rmem 进入接收缓冲队列</li>
+<li>内核将数据送给接收的应用</li>
+</ol>
+<h3 id="典型的接收堆栈"><a href="#典型的接收堆栈" class="headerlink" title="典型的接收堆栈"></a>典型的接收堆栈</h3><p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1557292725626-2e4b452b-8a9e-4d9f-91a6-64357fbd4e0e.png" alt="undefined"> </p>
+<h3 id="从四层协议栈来看收包流程"><a href="#从四层协议栈来看收包流程" class="headerlink" title="从四层协议栈来看收包流程"></a>从四层协议栈来看收包流程</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ddd50d2c70215d477d72734b0834410a.png" alt="image.png"></p>
+<h3 id="DMA驱动部分流程图"><a href="#DMA驱动部分流程图" class="headerlink" title="DMA驱动部分流程图"></a>DMA驱动部分流程图</h3><p>DMA是一个硬件逻辑，数据传输到系统物理内存的过程中，全程不需要CPU的干预，除了占用总线之外(期间CPU不能使用总线)，没有任何额外开销。</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ba2f1764fab3a7b3f485836e8e566ffb.png" alt="image.png"></p>
+<ol>
+<li>驱动在内存中分配一片缓冲区用来接收数据包，叫做sk_buffer;</li>
+<li>将上述缓冲区的地址和大小（即接收描述符），加入到rx ring buffer。描述符中的缓冲区地址是DMA使用的物理地址;</li>
+<li>驱动通知网卡有一个新的描述符;</li>
+<li>网卡从rx ring buffer中取出描述符，从而获知缓冲区的地址和大小;</li>
+<li>网卡收到新的数据包;</li>
+<li>网卡将新数据包通过DMA直接写到sk_buffer中。</li>
+</ol>
+<h3 id="网卡传递数据包到内核的流程图及参数"><a href="#网卡传递数据包到内核的流程图及参数" class="headerlink" title="网卡传递数据包到内核的流程图及参数"></a>网卡传递数据包到内核的流程图及参数</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/daf7318302c0e7f42fb506d6b47fdbd5.png" alt="image.png"></p>
+<h2 id="发送流程"><a href="#发送流程" class="headerlink" title="发送流程"></a>发送流程</h2><ol>
+<li>应用调 sendmsg</li>
+<li>TCP 分片 skb_buff</li>
+<li>根据 tcp_wmem 缓存需要发送的包</li>
+<li>构造TCP包头(src/dst port)</li>
+<li>ipv4 调用 tcp_write_xmit 和 tcp_transmit_skb</li>
+<li>ip_queue_xmit, 构建 ip 包头</li>
+<li>进入 netfilter 流程 nf_hook()</li>
+<li>路由流程 POST_ROUTING</li>
+<li>ip_output 分片</li>
+<li>进入L2 dev_queue_xmit</li>
+<li>填入 txqueuelen 队列</li>
+<li>进入发送 Ring Buffer tx</li>
+<li>驱动触发软中断 soft IRQ (NET_TX_SOFTIRQ)</li>
+</ol>
+<h3 id="典型的发送堆栈"><a href="#典型的发送堆栈" class="headerlink" title="典型的发送堆栈"></a>典型的发送堆栈</h3><p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1557292508719-5b5a2507-a638-4035-a47a-a8599e69f879.png" alt="undefined"> </p>
+<h3 id="从四层协议栈来看发包流程"><a href="#从四层协议栈来看发包流程" class="headerlink" title="从四层协议栈来看发包流程"></a>从四层协议栈来看发包流程</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/0126bbb59ac317337ca963ef83817159.png" alt="image.png"></p>
+<h2 id="内核相关参数"><a href="#内核相关参数" class="headerlink" title="内核相关参数"></a>内核相关参数</h2><h3 id="Ring-Buffer"><a href="#Ring-Buffer" class="headerlink" title="Ring Buffer"></a>Ring Buffer</h3><p>Ring Buffer位于NIC和IP层之间，是一个典型的FIFO（先进先出）环形队列。Ring Buffer没有包含数据本身，而是包含了指向sk_buff（socket kernel buffers）的描述符。<br>可以使用ethtool -g eth0查看当前Ring Buffer的设置：</p>
+<pre><code>$sudo ethtool -g eth0
+Ring parameters for eth0:
+Pre-set maximums:
+RX:        256
+RX Mini:    0
+RX Jumbo:    0
+TX:        256
+Current hardware settings:
+RX:        256
+RX Mini:    0
+RX Jumbo:    0
+TX:        256
+</code></pre><p>上面的例子是一个小规格的ECS，接收队列、传输队列都为256。</p>
+<pre><code>$sudo ethtool -g eth0
+Ring parameters for eth0:
+Pre-set maximums:
+RX:        4096
+RX Mini:    0
+RX Jumbo:    0
+TX:        4096
+Current hardware settings:
+RX:        4096
+RX Mini:    0
+RX Jumbo:    0
+TX:        512
+</code></pre><p>这是一台物理机，接收队列为4096，传输队列为256。接受队列已经调到了最大，传输队列还可以调大。</p>
+<h4 id="网卡各种统计数据查看"><a href="#网卡各种统计数据查看" class="headerlink" title="网卡各种统计数据查看"></a>网卡各种统计数据查看</h4><pre><code>ethtool -S eth0 | grep errors
+
+ethtool -S eth0 | grep rx_ | grep errors //查看网卡是否丢包，一般是ring buffer太小
+
+//监控
+ethtool -S eth0 | grep -e &quot;err&quot; -e &quot;drop&quot; -e &quot;over&quot; -e &quot;miss&quot; -e &quot;timeout&quot; -e &quot;reset&quot; -e &quot;restar&quot; -e &quot;collis&quot; -e &quot;over&quot; | grep -v &quot;\: 0&quot;
+</code></pre><h4 id="网卡进出队列大小调整"><a href="#网卡进出队列大小调整" class="headerlink" title="网卡进出队列大小调整"></a>网卡进出队列大小调整</h4><pre><code>//查看目前的进出队列大小
+ethtool -g eth0
+//修改进出队列
+ ethtool -G eth0 rx 8192 tx 8192
+</code></pre><p>要注意如果设置的值超过了允许的最大值，用默认的最大值，一些ECS之类的虚拟机、容器就不允许修改这个值。</p>
+<h3 id="txqueuelen"><a href="#txqueuelen" class="headerlink" title="txqueuelen"></a>txqueuelen</h3><p>ifconfig 看到的 txqueuelen 跟Ring Buffer是两个东西，IP协议下面就是 txqueuelen，txqueuelen下面才到Ring Buffer. </p>
+<p>常用的tc qdisc、netfilter就是在txqueuelen这一环节。 </p>
+<p>发送队列就是指的这个txqueuelen，和网卡关联着。 而每个Core接收队列由内核参数： net.core.netdev_max_backlog来设置</p>
+<pre><code>//当前值通过ifconfig可以查看到，修改：
+ifconfig eth0 txqueuelen 2000
+//监控
+ip -s link
+</code></pre><h3 id="Interrupt-Coalescence-IC-rx-usecs-tx-usecs-rx-frames-tx-frames-hardware-IRQ"><a href="#Interrupt-Coalescence-IC-rx-usecs-tx-usecs-rx-frames-tx-frames-hardware-IRQ" class="headerlink" title="Interrupt Coalescence (IC) - rx-usecs, tx-usecs, rx-frames, tx-frames (hardware IRQ)"></a>Interrupt Coalescence (IC) - rx-usecs, tx-usecs, rx-frames, tx-frames (hardware IRQ)</h3><p>这块目前没碰到过瓶颈</p>
+<pre><code>//检查
+ethtool -c eth0
+//修改, 
+ethtool -C eth0 rx-usecs value tx-usecs value
+//监控
+cat /proc/interrupts
+</code></pre><h3 id="ifconfig-监控指标"><a href="#ifconfig-监控指标" class="headerlink" title="ifconfig 监控指标"></a>ifconfig 监控指标</h3><ul>
+<li>RX overruns: overruns意味着数据包没到Ring Buffer就被网卡物理层给丢弃了，而CPU无法及时的处理中断是造成Ring Buffer满的原因之一，例如中断分配的不均匀。或者Ring Buffer太小导致的（很少见），overruns数量持续增加，建议增大Ring Buffer ，使用ethtool ‐G 进行设置。</li>
+<li>RX dropped: 表示数据包已经进入了Ring Buffer，但是由于内存不够等系统原因，导致在拷贝到内存的过程中被丢弃。如下四种情况导致dropped：Softnet backlog full（pfmemalloc &amp;&amp; !skb_pfmemalloc_protocol(skb)–分配内存失败）；Bad / Unintended VLAN tags；Unknown / Unregistered protocols；IPv6 frames</li>
+<li>RX errors：表示总的收包的错误数量，这包括 too-long-frames 错误，Ring Buffer 溢出错误，crc 校验错误，帧同步错误，fifo overruns 以及 missed pkg 等等。</li>
+</ul>
+<h4 id="overruns"><a href="#overruns" class="headerlink" title="overruns"></a>overruns</h4><p>当驱动处理速度跟不上网卡收包速度时，驱动来不及分配缓冲区，NIC接收到的数据包无法及时写到sk_buffer，就会产生堆积，当NIC内部缓冲区写满后，就会丢弃部分数据，引起丢包。这部分丢包为rx_fifo_errors，在 /proc/net/dev中体现为fifo字段增长，在ifconfig中体现为overruns指标增长。</p>
+<h3 id="监控指标-proc-net-softnet-stat"><a href="#监控指标-proc-net-softnet-stat" class="headerlink" title="监控指标 /proc/net/softnet_stat"></a>监控指标 /proc/net/softnet_stat</h3><h4 id="net-core-netdev-budget"><a href="#net-core-netdev-budget" class="headerlink" title="net.core.netdev_budget"></a>net.core.netdev_budget</h4><p>sysctl net.core.netdev_budget //默认300， The default value of the budget is 300. This will<br>cause the SoftIRQ process to drain 300 messages from the NIC before getting off the CPU</p>
+<p>如果 /proc/net/softnet_stat 第三列一直在增加的话需要，表示SoftIRQ 获取的CPU时间太短，来不及处理足够多的网络包，那么需要增大这个值</p>
+<p>增大和查看 net.core.netdev_budget</p>
+<pre><code>sysctl -a | grep net.core.netdev_budget
+sysctl -w net.core.netdev_budget=400 //临时性增大
+</code></pre><h4 id="netdev-max-backlog"><a href="#netdev-max-backlog" class="headerlink" title="netdev_max_backlog"></a>netdev_max_backlog</h4><p>The netdev_max_backlog is a queue within the Linux kernel where traffic is stored after reception from the NIC, but before processing by the protocol stacks (IP, TCP, etc). There is one backlog queue per CPU core. </p>
+<p>如果 /proc/net/softnet_stat 第二列一直在增加的话表示netdev backlog queue overflows. 需要增大 netdev_max_backlog</p>
+<p>增大和查看 netdev_max_backlog：</p>
+<pre><code>sysctl -a |grep netdev_max_backlog
+sysctl -w net.core.netdev_max_backlog=1024 //临时性增大
+</code></pre><p>netdev_max_backlog(接收)和txqueuelen(发送)相对应</p>
+<h3 id="TCP协议栈Buffer"><a href="#TCP协议栈Buffer" class="headerlink" title="TCP协议栈Buffer"></a>TCP协议栈Buffer</h3><pre><code>    sysctl -a | grep net.ipv4.tcp_rmem   // receive
+    sysctl -a | grep net.ipv4.tcp_wmem   // send
+    //监控
+    cat /proc/net/sockstat
+
+参考：[TCP性能优化大全](https://www.atatech.org/articles/140017)    
+</code></pre><h4 id="接收Buffer"><a href="#接收Buffer" class="headerlink" title="接收Buffer"></a>接收Buffer</h4><pre><code>$netstat -sn | egrep &quot;prune|collap&quot;; sleep 30; netstat -sn | egrep &quot;prune|collap&quot;
+17671 packets pruned from receive queue because of socket buffer overrun
+18671 packets pruned from receive queue because of socket buffer overrun
+</code></pre><p>如果 “pruning” 一直在增加很有可能是程序中调用了 setsockopt(SO_RCVBUF) 导致内核关闭了动态调整功能，或者压力大，缓存不够了。具体Case：<a href="https://blog.cloudflare.com/the-story-of-one-latency-spike/" target="_blank" rel="external">https://blog.cloudflare.com/the-story-of-one-latency-spike/</a></p>
+<h2 id="总体简略收包流程"><a href="#总体简略收包流程" class="headerlink" title="总体简略收包流程"></a>总体简略收包流程</h2><p><img src="http://img3.tbcdn.cn/L1/461/1/73d01c4c8164ae8642ff09d5d3fe0548d4162874" alt=""></p>
+<h2 id="总体简略发送包流程"><a href="#总体简略发送包流程" class="headerlink" title="总体简略发送包流程"></a>总体简略发送包流程</h2><p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1557291324544-ca69d448-08e4-46c4-9c49-8cf516fc3eaa.png" alt="undefined"> </p>
+<h2 id="案例"><a href="#案例" class="headerlink" title="案例"></a>案例</h2><h3 id="snat-dnat-宿主机port冲突，丢包"><a href="#snat-dnat-宿主机port冲突，丢包" class="headerlink" title="snat/dnat 宿主机port冲突，丢包"></a>snat/dnat 宿主机port冲突，丢包</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d42ccdb0b8f6270d8b559145c0b89c86.png" alt="image.png"></p>
+<ol>
+<li>snat 就是要把 192.168.1.10和192.168.1.11的两个连接替换成宿主机的ip:port</li>
+<li>主要是在宿主机找可用port分别给这两个连接用</li>
+<li>找可用port分两步<ul>
+<li>找到可用port</li>
+<li>将可用port写到数据库，后面做连接追踪用(conntrack)</li>
+</ul>
+</li>
+<li>上述两步不是事务，可能两个连接同时找到一个相同的可用port，但是只有第一个能写入成功，第二个fail，fail后这个包被扔掉</li>
+<li>1秒钟后被扔掉的包重传，后续正常</li>
+</ol>
+<p>症状：</p>
+<ul>
+<li>问题发生概率不高，跟压力没有关系，跟容器也没有关系，只要有snat/dnat和并发就会发生，只发生在创建连接的第一个syn包</li>
+<li>可以通过conntrack工具来检查fail的数量</li>
+<li>实际影响只是请求偶尔被拉长了1秒或者3秒</li>
+<li>snat规则创建的时候增加参数：NF_NAT_RANGE_PROTO_RANDOM_FULLY 来将冲突降低几个数量级—-可以认为修复了这个问题</li>
+</ul>
+<pre><code>sudo conntrack -L -d ip-addr
+</code></pre><p>来自：<a href="https://tech.xing.com/a-reason-for-unexplained-connection-timeouts-on-kubernetes-docker-abd041cf7e02" target="_blank" rel="external">https://tech.xing.com/a-reason-for-unexplained-connection-timeouts-on-kubernetes-docker-abd041cf7e02</a></p>
+<h3 id="容器-bridge-通过udp访问宿主机服务失败"><a href="#容器-bridge-通过udp访问宿主机服务失败" class="headerlink" title="容器(bridge)通过udp访问宿主机服务失败"></a>容器(bridge)通过udp访问宿主机服务失败</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/a067b484c593aa3a4b6a525d1f93506e.png" alt="image.png"></p>
+<p>这个案例主要是讲述回包的逻辑，如果是tcp，那么用dest ip当自己的source ip，如果是UDP，无连接状态信息，那么会根据route来选择一块网卡(上面的IP) 来当source ip</p>
+<p>来自：<a href="http://cizixs.com/2017/08/21/docker-udp-issue" target="_blank" rel="external">http://cizixs.com/2017/08/21/docker-udp-issue</a><br>     <a href="https://github.com/moby/moby/issues/15127" target="_blank" rel="external">https://github.com/moby/moby/issues/15127</a></p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="http://blog.hyfather.com/blog/2013/03/04/ifconfig/" target="_blank" rel="external">The Missing Man Page for ifconfig–关于ifconfig的种种解释</a></p>
+<p><a href="https://cloud.tencent.com/developer/article/1400834?s=original-sharing" target="_blank" rel="external">Linux数据报文的来龙去脉</a></p>
+<p><a href="https://www.atatech.org/articles/27189" target="_blank" rel="external">Linux TCP队列相关参数的总结–锋寒</a></p>
+<p><a href="https://github.com/leandromoreira/linux-network-performance-parameters" target="_blank" rel="external">linux-network-performance-parameters</a></p>
+<p><a href="https://www.cnblogs.com/fczjuever/archive/2013/04/17/3026694.html" target="_blank" rel="external">Linux之TCPIP内核参数优化</a></p>
+<p><a href="https://access.redhat.com/sites/default/files/attachments/20150325_network_performance_tuning.pdf" target="_blank" rel="external">https://access.redhat.com/sites/default/files/attachments/20150325_network_performance_tuning.pdf</a></p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/05/07/就是要你懂TCP--TCP性能优化大全/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/05/07/就是要你懂TCP--TCP性能优化大全/" itemprop="url">就是要你懂TCP--TCP性能优化大全</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-05-07T11:30:03+08:00">
+                2019-05-07
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/05/07/就是要你懂TCP--TCP性能优化大全/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2019/05/07/就是要你懂TCP--TCP性能优化大全/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="TCP性能优化大全"><a href="#TCP性能优化大全" class="headerlink" title="TCP性能优化大全"></a>TCP性能优化大全</h1><blockquote>
+<p>先从一个问题看起，客户通过专线访问云上的DRDS，专线100M，时延20ms，一个SQL查询了22M数据，结果花了大概25秒，这慢得不太正常，如果通过云上client访问云上DRDS那么1-2秒就返回了。如果通过http或者scp传输这22M的数据大概两秒钟也传送完毕了，所以这里问题的原因基本上是DRDS在这种网络条件下有性能问题，需要找出为什么。</p>
+</blockquote>
+<h2 id="抓包-tcpdump-wireshark"><a href="#抓包-tcpdump-wireshark" class="headerlink" title="抓包 tcpdump+wireshark"></a>抓包 tcpdump+wireshark</h2><p>这个查询结果22M的需要25秒，如下图（wireshark 时序图），横轴是时间纵轴是sequence number：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d188530df31712e8341f5687a960743a.png" alt="image.png"></p>
+<p>粗一看没啥问题，把这个图形放大看看</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e177d59ecb886daef5905ed80a84dfd2.png" alt="image.png"></p>
+<p>换个角度，看看窗口尺寸图形：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/7ae26e844629258de173a05d5ad595f9.png" alt="image.png"></p>
+<p>从bytes in flight也大致能算出来总的传输时间 16K*1000/20=800Kb/秒</p>
+<p>DRDS会默认设置 socketSendBuffer 为16K:</p>
+<pre><code>socket.setSendBufferSize(16*1024) //16K send buffer
+</code></pre><p>来看一下tcp包发送流程：</p>
+<p><img src="http://img.blog.csdn.net/20130718162926640?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvcnVzc2VsbF90YW8=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast" alt=""></p>
+<p>（图片来自：<a href="https://www.atatech.org/articles/9032）" target="_blank" rel="external">https://www.atatech.org/articles/9032）</a></p>
+<p><img src="http://img.blog.csdn.net/20130718163121484?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvcnVzc2VsbF90YW8=/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast" alt=""></p>
+<p>如果sendbuffer不够就会卡在上图中的第一步 sk_stream_wait_memory, 通过systemtap脚本可以验证：</p>
+<pre><code>#!/usr/bin/stap
+# Simple probe to detect when a process is waiting for more socket send
+# buffer memory. Usually means the process is doing writes larger than the
+# socket send buffer size or there is a slow receiver at the other side.
+# Increasing the socket&apos;s send buffer size might help decrease application
+# latencies, but it might also make it worse, so buyer beware.
+#
+# Typical output: timestamp in microseconds: procname(pid) event
+#
+# 1218230114875167: python(17631) blocked on full send buffer
+# 1218230114876196: python(17631) recovered from full send buffer
+# 1218230114876271: python(17631) blocked on full send buffer
+# 1218230114876479: python(17631) recovered from full send buffer
+
+probe kernel.function(&quot;sk_stream_wait_memory&quot;)
+{
+    printf(&quot;%u: %s(%d) blocked on full send buffer\n&quot;,
+        gettimeofday_us(), execname(), pid())
+}
+
+probe kernel.function(&quot;sk_stream_wait_memory&quot;).return
+{
+    printf(&quot;%u: %s(%d) recovered from full send buffer\n&quot;,
+        gettimeofday_us(), execname(), pid())
+}
+</code></pre><p>如果tcp发送buffer也就是SO_SNDBUF只有16K的话，这些包很快都发出去了，但是这16K不能立即释放出来填新的内容进去，因为tcp要保证可靠，万一中间丢包了呢。只有等到这16K中的某些ack了，才会填充一些进来然后继续发出去。由于这里rt基本是20ms，也就是16K发送完毕后，等了20ms才收到一些ack，这20ms应用、内核什么都不能做，所以就是如第二个图中的大概20ms的等待平台。这块请参考<a href="https://www.atatech.org/articles/79660" target="_blank" rel="external">这篇文章</a></p>
+<p><strong>sendbuffer相当于发送仓库的大小，仓库的货物都发走后，不能立马腾出来发新的货物，而是要等发走的获取对方确认收到了(ack)才能腾出来发新的货物, 仓库足够大了之后接下来的瓶颈就是高速公路了（带宽、拥塞窗口）</strong></p>
+<p>如果是UDP，就没有send buffer的概念，有数据统统发出去，根本不关心对方是否收到。</p>
+<h2 id="几个发送buf相关的内核参数"><a href="#几个发送buf相关的内核参数" class="headerlink" title="几个发送buf相关的内核参数"></a>几个发送buf相关的内核参数</h2><pre><code>vm.lowmem_reserve_ratio = 256   256     32
+net.core.wmem_max = 1048576
+net.core.wmem_default = 124928
+net.ipv4.tcp_wmem = 4096        16384   4194304
+net.ipv4.udp_wmem_min = 4096
+</code></pre><p>net.ipv4.tcp_wmem 默认就是16K，而且是能够动态调整的，只不过我们代码中这块的参数是很多年前从Corba中继承过来的，一直没有修改。代码中设置了这个参数后就关闭了内核的动态调整功能，所以能看到http或者scp都很快。</p>
+<p>接收buffer是有开关可以动态控制的，发送buffer没有开关默认就是开启，关闭只能在代码层面来控制</p>
+<pre><code>net.ipv4.tcp_moderate_rcvbuf
+</code></pre><h2 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h2><p>调整 socketSendBuffer 到256K，查询时间从25秒下降到了4秒多，但是比理论带宽所需要的时间略高</p>
+<p>继续查看系统 net.core.wmem_max 参数默认最大是130K，所以即使我们代码中设置256K实际使用的也是130K，调大这个系统参数后整个网络传输时间大概2秒(跟100M带宽匹配了，scp传输22M数据也要2秒），整体查询时间2.8秒。测试用的mysql client短连接，如果代码中的是长连接的话会块300-400ms（消掉了慢启动阶段），这基本上是理论上最快速度了</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/3dcfd469fe1e2f7e1d938a5289b83826.png" alt="image.png"></p>
+<p>如果指定了tcp_wmem，则net.core.wmem_default被tcp_wmem的覆盖。send Buffer在tcp_wmem的最小值和最大值之间自动调节。如果调用setsockopt()设置了socket选项SO_SNDBUF，将关闭发送端缓冲的自动调节机制，tcp_wmem将被忽略，SO_SNDBUF的最大值由net.core.wmem_max限制。</p>
+<h2 id="BDP-带宽时延积"><a href="#BDP-带宽时延积" class="headerlink" title="BDP 带宽时延积"></a>BDP 带宽时延积</h2><p>这个buf调到1M测试没有帮助，从理论计算BDP（带宽时延积） 0.02秒*(100MB/8)=250Kb  所以SO_SNDBUF为256Kb的时候基本能跑满带宽了，再大实际意义也不大了。</p>
+<p>因为BDP是250K，也就是拥塞窗口即将成为新的瓶颈，所以调大buffer没意义了。</p>
+<h2 id="用tc构造延时和带宽限制的模拟重现环境"><a href="#用tc构造延时和带宽限制的模拟重现环境" class="headerlink" title="用tc构造延时和带宽限制的模拟重现环境"></a>用tc构造延时和带宽限制的模拟重现环境</h2><pre><code>sudo tc qdisc del dev eth0 root netem delay 20ms
+sudo tc qdisc add dev eth0 root tbf rate 500kbit latency 50ms burst 15kb
+</code></pre><h2 id="这个案例的结论"><a href="#这个案例的结论" class="headerlink" title="这个案例的结论"></a>这个案例的结论</h2><p>默认情况下Linux系统会自动调整这个buf（net.ipv4.tcp_wmem）, 也就是不推荐程序中主动去设置SO_SNDBUF，除非明确知道设置的值是最优的。</p>
+<p>平时看到的一些理论在实践中用起来比较难，最开始看到抓包结果的时候比较怀疑发送、接收窗口之类的，没有直接想到send buffer上，理论跟实践的鸿沟</p>
+<p><strong>需要调整tcp_rmem 的<a href="https://blog.cloudflare.com/the-story-of-one-latency-spike/" target="_blank" rel="external">问题 Case</a></strong></p>
+<h2 id="总结下TCP跟速度相关的几个概念"><a href="#总结下TCP跟速度相关的几个概念" class="headerlink" title="总结下TCP跟速度相关的几个概念"></a>总结下TCP跟速度相关的几个概念</h2><ul>
+<li>CWND：Congestion Window，拥塞窗口，负责控制单位时间内，数据发送端的报文发送量。TCP 协议规定，一个 RTT（Round-Trip Time，往返时延，大家常说的 ping 值）时间内，数据发送端只能发送 CWND 个数据包（注意不是字节数）。TCP 协议利用 CWND/RTT 来控制速度。这个值是根据丢包动态计算出来的</li>
+<li>SS：Slow Start，慢启动阶段。TCP 刚开始传输的时候，速度是慢慢涨起来的，除非遇到丢包，否则速度会一直指数性增长（标准 TCP 协议的拥塞控制算法，例如 cubic 就是如此。很多其它拥塞控制算法或其它厂商可能修改过慢启动增长特性，未必符合指数特性）。</li>
+<li>CA：Congestion Avoid，拥塞避免阶段。当 TCP 数据发送方感知到有丢包后，会降低 CWND，此时速度会下降，CWND 再次增长时，不再像 SS 那样指数增，而是线性增（同理，标准 TCP 协议的拥塞控制算法，例如 cubic 是这样，很多其它拥塞控制算法或其它厂商可能修改过慢启动增长特性，未必符合这个特性）。</li>
+<li>ssthresh：Slow Start Threshold，慢启动阈值。当数据发送方感知到丢包时，会记录此时的 CWND，并计算合理的 ssthresh 值（ssthresh &lt;= 丢包时的 CWND），当 CWND 重新由小至大增长，直到 sshtresh 时，不再 SS 而是 CA。但因为数据确认超时（数据发送端始终收不到对端的接收确认报文），发送端会骤降 CWND 到最初始的状态。</li>
+<li>SO_SNDBUF、SO_RCVBUF 发送、接收buffer</li>
+</ul>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/1a468a5a3060792647713d3cf307c986.png" alt="image.png"></p>
+<p>上图一旦发生丢包，cwnd降到1 ssthresh降到cwnd/2,一夜回到解放前，太保守了，实际大多情况下都是公网带宽还有空余但是链路过长，非带宽不够丢包概率增大，对此没必要这么保守（tcp诞生的背景主要针对局域网、双绞线来设计，偏保守）。RTT越大的网络环境（长肥管道）这个问题越是严重，表现就是传输速度抖动非常厉害。</p>
+<p>所以改进的拥塞算法一旦发现丢包，cwnd和ssthresh降到原来的cwnd的一半。</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/e24ad7655c10a82f35879503ecabc98f.png" alt="image.png"></p>
+<h2 id="TCP性能优化点"><a href="#TCP性能优化点" class="headerlink" title="TCP性能优化点"></a>TCP性能优化点</h2><ul>
+<li>建连优化：TCP 在建立连接时，如果丢包，会进入重试，重试时间是 1s、2s、4s、8s 的指数递增间隔，缩短定时器可以让 TCP 在丢包环境建连时间更快，非常适用于高并发短连接的业务场景。</li>
+<li>首包优化：此优化其实没什么实质意义，若要说一定会有意义的话，可能就是满足一些评测标准的需要吧，例如有些客户以首包时间作为性能评判的一个依据。所谓首包时间，简单解释就是从 HTTP Client 发出 GET 请求开始计时，到收到 HTTP 响应的时间。为此，Server 端可以通过 TCP_NODELAY 让服务器先吐出 HTTP 头，再吐出实际内容（分包发送，原本是粘到一起的），来进行提速和优化。据说更有甚者先让服务器无条件返回 “HTTP/“ 这几个字符，然后再去 upstream 拿数据。这种做法在真实场景中没有任何帮助，只能欺骗一下探测者罢了，因此还没见过有直接发 “HTTP/“ 的，其实是一种作弊行为。</li>
+</ul>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/28532cb2bc6aa674be3d7693595f6f2b.png" alt="image.png"></p>
+<ul>
+<li>平滑发包：如前文所述，在 RTT 内均匀发包，规避微分时间内的流量突发，尽量避免瞬间拥塞，此处不再赘述。</li>
+<li>丢包预判：有些网络的丢包是有规律性的，例如每隔一段时间出现一次丢包，例如每次丢包都连续丢几个等，如果程序能自动发现这个规律（有些不明显），就可以针对性提前多发数据，减少重传时间、提高有效发包率。</li>
+<li>RTO 探测：如前文讲 TCP 基础时说过的，若始终收不到 ACK 报文，则需要触发 RTO 定时器。RTO 定时器一般都时间非常长，会浪费很多等待时间，而且一旦 RTO，CWND 就会骤降（标准 TCP），因此利用 Probe 提前与 RTO 去试探，可以规避由于 ACK 报文丢失而导致的速度下降问题。</li>
+<li>带宽评估：通过单位时间内收到的 ACK 或 SACK 信息可以得知客户端有效接收速率，通过这个速率可以更合理的控制发包速度。</li>
+<li>带宽争抢：有些场景（例如合租）是大家互相挤占带宽的，假如你和室友各 1Mbps 的速度看电影，会把 2Mbps 出口占满，而如果一共有 3 个人看，则每人只能分到 1/3。若此时你的流量流量达到 2Mbps，而他俩还都是 1Mbps，则你至少仍可以分到 2/(2+1+1) * 2Mbps = 1Mbps 的 50% 的带宽，甚至更多，代价就是服务器侧的出口流量加大，增加成本。（TCP 优化的本质就是用带宽换用户体验感）</li>
+<li><strong>链路质量记忆</strong>(后面有反面案例)：如果一个 Client IP 或一个 C 段 Network，若已经得知了网络质量规律（例如 CWND 多大合适，丢包规律是怎样的等），就可以在下次连接时，优先使用历史经验值，取消慢启动环节直接进入告诉发包状态，以提升客户端接收数据速率。</li>
+</ul>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/68314efb651bcb3144d4243bf0c15820.png" alt="image.png"></p>
+<p>这些经验都来自CDN @辟拾 的 <a href="https://www.atatech.org/articles/109721" target="_blank" rel="external">网络优化 - TCP 是如何做到提速 20 倍的</a></p>
+<h2 id="重要参数"><a href="#重要参数" class="headerlink" title="重要参数"></a>重要参数</h2><h3 id="net-ipv4-tcp-slow-start-after-idle"><a href="#net-ipv4-tcp-slow-start-after-idle" class="headerlink" title="net.ipv4.tcp_slow_start_after_idle"></a>net.ipv4.tcp_slow_start_after_idle</h3><p>内核协议栈参数 net.ipv4.tcp_slow_start_after_idle 默认是开启的，这个参数的用途，是为了规避 CWND 无休止增长，因此在连接不断开，但一段时间不传输数据的话，就将 CWND 收敛到 initcwnd，kernel-2.6.32 是 10，kernel-2.6.18 是 2。因此在 HTTP Connection: keep-alive 的环境下，若连续两个 GET 请求之间存在一定时间间隔，则此时服务器端会降低 CWND 到初始值，当 Client 再次发起 GET 后，服务器会重新进入慢启动流程。</p>
+<p>这种友善的保护机制，但是对于目前的网络坏境没必要这么谨慎和彬彬有礼，建议将此功能关闭，以提高长连接环境下的用户体验感。</p>
+<pre><code>sysctl net.ipv4.tcp_slow_start_after_idle=0
+</code></pre><h3 id="确认运行中每个连接-CWND-ssthresh-slow-start-threshold"><a href="#确认运行中每个连接-CWND-ssthresh-slow-start-threshold" class="headerlink" title="确认运行中每个连接 CWND/ssthresh(slow start threshold)"></a>确认运行中每个连接 CWND/ssthresh(slow start threshold)</h3><pre><code>for i in {1..1000}; do ss -i | grep -A 1 100.118.58.7 | grep ssthresh ; done
+ reno wscale:9,9 rto:233 rtt:29.171/14.585 mss:1444 cwnd:40 ssthresh:361 send 15.8Mbps lastsnd:10 lastrcv:909498308 lastack:10 pacing_rate 7.9Mbps unacked:1 rcv_space:29200
+ reno wscale:9,9 rto:230 rtt:29.237/3.534 ato:40 mss:1444 cwnd:40 ssthresh:361 send 15.8Mbps lastsnd:8 lastrcv:38 lastack:8 pacing_rate 31.6Mbps unacked:40 rcv_space:29200
+ reno wscale:9,9 rto:230 rtt:29.201/0.111 ato:40 mss:1444 cwnd:155 ssthresh:361 send 61.3Mbps lastsnd:7 lastrcv:96 lastack:8 pacing_rate 122.6Mbps unacked:151 rcv_space:29200
+ reno wscale:9,9 rto:230 rtt:29.381/0.193 ato:40 mss:1444 cwnd:362 ssthresh:361 send 142.3Mbps lastsnd:6 lastrcv:153 lastack:6 pacing_rate 284.7Mbps unacked:360 rcv_space:29200
+ reno wscale:9,9 rto:230 rtt:29.351/0.081 ato:40 mss:1444 cwnd:364 ssthresh:361 send 143.3Mbps lastsnd:5 lastrcv:211 lastack:5 pacing_rate 286.5Mbps unacked:360 rcv_space:29200
+</code></pre><h3 id="从系统cache中查看-tcp-metrics-item"><a href="#从系统cache中查看-tcp-metrics-item" class="headerlink" title="从系统cache中查看 tcp_metrics item"></a>从系统cache中查看 tcp_metrics item</h3><pre><code>$sudo ip tcp_metrics show | grep  100.118.58.7
+100.118.58.7 age 1457674.290sec tw_ts 3195267888/5752641sec ago rtt 1000us rttvar 1000us ssthresh 361 cwnd 40 metric_5 8710 metric_6 4258
+</code></pre><p>如果因为之前的网络状况等其它原因导致tcp_metrics缓存了一个非常小的ssthresh（这个值默应该非常大），ssthresh太小的话tcp的CWND指数增长阶段很快就结束，然后进入CWND+1的慢增加阶段导致整个速度感觉很慢</p>
+<pre><code>清除 tcp_metrics 
+sudo ip tcp_metrics flush all 
+
+关闭 tcp_metrics 功能
+net.ipv4.tcp_no_metrics_save = 1
+sudo ip tcp_metrics delete 100.118.58.7
+</code></pre><blockquote>
+<p>tcp_metrics会记录下之前已关闭TCP连接的状态，包括发送端CWND和ssthresh，如果之前<strong>网络有一段时间比较差或者丢包比较严重，就会导致TCP的ssthresh降低到一个很低的值</strong>，这个值在连接结束后会被tcp_metrics cache 住，在新连接建立时，即使网络状况已经恢复，依然会继承 tcp_metrics 中cache 的一个很低的ssthresh 值，对于rt很高的网络环境，新连接经历短暂的“慢启动”后(ssthresh太小)，随即进入缓慢的拥塞控制阶段（rt太高，CWND增长太慢），导致连接速度很难在短时间内上去。而后面的连接，需要很特殊的场景之下(比如，传输一个很大的文件)才能将ssthresh 再次推到一个比较高的值更新掉之前的缓存值，因此很有很能在接下来的很长一段时间，连接的速度都会处于一个很低的水平。</p>
+</blockquote>
+<h3 id="ssthresh-是如何降低的"><a href="#ssthresh-是如何降低的" class="headerlink" title="ssthresh 是如何降低的"></a>ssthresh 是如何降低的</h3><p>在网络情况较差，并且出现连续dup ack情况下，ssthresh 会设置为 cwnd/2， cwnd 设置为当前值的一半，<br>如果网络持续比较差那么ssthresh 会持续降低到一个比较低的水平，并在此连接结束后被tcp_metrics 缓存下来。下次新建连接后会使用这些值，即使当前网络状况已经恢复，但是ssthresh 依然继承一个比较低的值。</p>
+<h3 id="ssthresh-降低后为何长时间不恢复正常"><a href="#ssthresh-降低后为何长时间不恢复正常" class="headerlink" title="ssthresh 降低后为何长时间不恢复正常"></a>ssthresh 降低后为何长时间不恢复正常</h3><p>ssthresh 降低之后需要在检测到有丢包的之后才会变动，因此就需要机缘巧合才会增长到一个比较大的值。<br>此时需要有一个持续时间比较长的请求，在长时间进行拥塞避免之后在cwnd 加到一个比较大的值，而到一个比较<br>大的值之后需要有因dup ack 检测出来的丢包行为将 ssthresh 设置为 cwnd/2, 当这个连接结束后，一个<br>较大的ssthresh 值会被缓存下来，供下次新建连接使用。</p>
+<p>也就是如果ssthresh 降低之后，需要传一个非常大的文件，并且网络状况超级好一直不丢包，这样能让CWND一直慢慢稳定增长，一直到CWND达到带宽的限制后出现丢包，这个时候CWND和ssthresh降到CWND的一半那么新的比较大的ssthresh值就能被缓存下来了。</p>
+<h3 id="tcp-windows-scale"><a href="#tcp-windows-scale" class="headerlink" title="tcp windows scale"></a>tcp windows scale</h3><p>网络传输速度：单位时间内（一个 RTT）发送量（再折算到每秒），不是 CWND(Congestion Window 拥塞窗口)，而是 min(CWND, RWND)。除了数据发送端有个 CWND 以外，数据接收端还有个 RWND（Receive Window，接收窗口）。在带宽不是瓶颈的情况下，单连接上的速度极限为 MIN(cwnd, slide_windows)*1000ms/rt</p>
+<p>tcp windows scale用来协商RWND的大小，它在tcp协议中占16个位，如果通讯双方有一方不支持tcp windows scale的话，TCP Windows size 最大只能到2^16 = 65535 也就是64k</p>
+<p>如果网络rt是35ms，滑动窗口&lt;CWND，那么单连接的传输速度最大是： 64K*1000/35=1792K(1.8M)</p>
+<p>如果网络rt是30ms，滑动窗口&gt;CWND的话，传输速度：CWND<em>1500(MTU)</em>1000(ms)/rt</p>
+<p>一般通讯双方都是支持tcp windows scale的，但是如果连接中间通过了lvs，并且lvs打开了 synproxy功能的话，就会导致 tcp windows scale 无法起作用，那么传输速度就被滑动窗口限制死了（<strong>rt小的话会没那么明显</strong>）。</p>
+<h3 id="RTT越大，传输速度越慢"><a href="#RTT越大，传输速度越慢" class="headerlink" title="RTT越大，传输速度越慢"></a>RTT越大，传输速度越慢</h3><p>RTT大的话导致拥塞窗口爬升缓慢，慢启动过程持续越久。RTT越大、物理带宽越大、要传输的文件越大这个问题越明显<br>带宽B越大，RTT越大，低带宽利用率持续的时间就越久，文件传输的总时间就会越长，这是TCP慢启动的本质决定的，这是探测的代价。<br>TCP的拥塞窗口变化完全受ACK时间驱动（RTT），长肥管道对丢包更敏感，RTT越大越敏感，一旦有一个丢包就会将CWND减半进入避免拥塞阶段</p>
+<p>RTT对性能的影响关键是RTT长了后丢包的概率大，一旦丢包进入拥塞阶段就很慢了。如果一直不丢包，只是RTT长，完全可以做大增加发送窗口和接收窗口来抵消RTT的增加</p>
+<p>以上经验来自 @俞青 同学的 <a href="https://www.atatech.org/articles/109967" target="_blank" rel="external">tcp metrics 在长肥网络下引发性能问题</a></p>
+<h2 id="经典的-nagle-和-dalay-ack对性能的影响"><a href="#经典的-nagle-和-dalay-ack对性能的影响" class="headerlink" title="经典的 nagle 和 dalay ack对性能的影响"></a>经典的 nagle 和 dalay ack对性能的影响</h2><p>请参考这篇文章：<a href="https://www.atatech.org/articles/80292" target="_blank" rel="external">就是要你懂 TCP– 最经典的TCP性能问题</a></p>
+<h2 id="最后的经验"><a href="#最后的经验" class="headerlink" title="最后的经验"></a>最后的经验</h2><p><strong>抓包解千愁</strong></p>
+<hr>
+<p>就是要你懂TCP相关文章：</p>
+<p> <a href="https://www.atatech.org/articles/78858" target="_blank" rel="external">关于TCP 半连接队列和全连接队列</a></p>
+<p> <a href="https://www.atatech.org/articles/60633" target="_blank" rel="external">MSS和MTU导致的悲剧</a> </p>
+<p> <a href="https://www.atatech.org/articles/73174" target="_blank" rel="external">双11通过网络优化提升10倍性能</a></p>
+<p> <a href="https://www.atatech.org/articles/79660" target="_blank" rel="external">就是要你懂TCP的握手和挥手</a></p>
+<h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章:"></a>参考文章:</h2><p><a href="https://access.redhat.com/solutions/407743" target="_blank" rel="external">https://access.redhat.com/solutions/407743</a></p>
+<p><a href="http://www.stuartcheshire.org/papers/nagledelayedack/" target="_blank" rel="external">http://www.stuartcheshire.org/papers/nagledelayedack/</a></p>
+<p><a href="https://en.wikipedia.org/wiki/Nagle%27s_algorithm" target="_blank" rel="external">https://en.wikipedia.org/wiki/Nagle%27s_algorithm</a></p>
+<p><a href="https://en.wikipedia.org/wiki/TCP_delayed_acknowledgment" target="_blank" rel="external">https://en.wikipedia.org/wiki/TCP_delayed_acknowledgment</a></p>
+<p><a href="https://www.kernel.org/doc/Documentation/networking/ip-sysctl.txt" target="_blank" rel="external">https://www.kernel.org/doc/Documentation/networking/ip-sysctl.txt</a></p>
+<p><a href="https://www.atatech.org/articles/109721" target="_blank" rel="external">https://www.atatech.org/articles/109721</a></p>
+<p><a href="https://www.atatech.org/articles/109967" target="_blank" rel="external">https://www.atatech.org/articles/109967</a></p>
+<p><a href="https://www.atatech.org/articles/27189" target="_blank" rel="external">https://www.atatech.org/articles/27189</a> </p>
+<p><a href="https://www.atatech.org/articles/45084" target="_blank" rel="external">https://www.atatech.org/articles/45084</a></p>
+<p><a href="https://www.atatech.org/articles/9032" target="_blank" rel="external">https://www.atatech.org/articles/9032</a></p>
+<p><a href="https://blog.cloudflare.com/the-story-of-one-latency-spike/" target="_blank" rel="external">tcp_rmem case</a></p>
+<p><a href="https://www.atatech.org/articles/13203" target="_blank" rel="external">高性能网络编程7–tcp连接的内存使用</a></p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/04/21/netstat定位性能案例/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -3765,592 +4361,6 @@ nameserver 10.0.0.3
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/08/21/vxlan网络性能测试/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/08/21/vxlan网络性能测试/" itemprop="url">vxlan网络性能测试</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-08-21T16:30:03+08:00">
-                2018-08-21
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/network/" itemprop="url" rel="index">
-                    <span itemprop="name">network</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2018/08/21/vxlan网络性能测试/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2018/08/21/vxlan网络性能测试/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="vxlan网络性能测试"><a href="#vxlan网络性能测试" class="headerlink" title="vxlan网络性能测试"></a>vxlan网络性能测试</h1><hr>
-<h2 id="缘起"><a href="#缘起" class="headerlink" title="缘起"></a>缘起</h2><blockquote>
-<p>Docker集群中需要给每个容器分配一个独立的IP，同时在不同宿主机环境上的容器IP又要能够互相联通，所以需要一个overlay的网络（vlan也可以解决这个问题）</p>
-<p>overlay网络就是把容器之间的网络包重新打包在宿主机的IP包里面，传到目的容器所在的宿主机后，再把这个overlay的网络包还原成容器包交给容器</p>
-<p>这里多了一次封包解包的过程，所以性能上必然有些损耗</p>
-<p>封包解包可以在应用层（比如Flannel的UDP封装），但是需要将每个网络包从内核态复制到应用态进行封包，所以性能非常差</p>
-<p>比较新的Linux内核带了vxlan功能，也就是将网络包直接在内核态完成封包，所以性能要好很多，本文vxlan指的就是这种方式</p>
-</blockquote>
-<h2 id="本文主要是比较通过vxlan实现的overlay网络之间的性能（相对宿主机之间而言）"><a href="#本文主要是比较通过vxlan实现的overlay网络之间的性能（相对宿主机之间而言）" class="headerlink" title="本文主要是比较通过vxlan实现的overlay网络之间的性能（相对宿主机之间而言）"></a>本文主要是比较通过vxlan实现的overlay网络之间的性能（相对宿主机之间而言）</h2><h2 id="iperf3-下载和安装"><a href="#iperf3-下载和安装" class="headerlink" title="iperf3 下载和安装"></a>iperf3 下载和安装</h2><ul>
-<li>wget <a href="http://downloads.es.net/pub/iperf/iperf-3.0.6.tar.gz" target="_blank" rel="external">http://downloads.es.net/pub/iperf/iperf-3.0.6.tar.gz</a></li>
-<li>tar zxvf iperf-3.0.6.tar.gz</li>
-<li>cd iperf-3.0.6</li>
-<li>./configure</li>
-<li>make install</li>
-</ul>
-<h2 id="测试环境宿主机的基本配置情况"><a href="#测试环境宿主机的基本配置情况" class="headerlink" title="测试环境宿主机的基本配置情况"></a>测试环境宿主机的基本配置情况</h2><pre><code>conf:
-loc_node   =  e12174.bja
-loc_cpu=  2 Cores: Intel Xeon E5-2430 0 @ 2.20GHz
-loc_os =  Linux 3.10.0-327.ali2010.alios7.x86_64
-loc_qperf  =  0.4.9
-rem_node   =  e26108.bja
-rem_cpu=  2 Cores: Intel Xeon E5-2430 0 @ 2.20GHz
-rem_os =  Linux 3.10.0-327.ali2010.alios7.x86_64
-rem_qperf  =  0.4.9
-</code></pre><h3 id="容器到自身宿主机之间-跟两容器在同一宿主机，速度差不多"><a href="#容器到自身宿主机之间-跟两容器在同一宿主机，速度差不多" class="headerlink" title="容器到自身宿主机之间, 跟两容器在同一宿主机，速度差不多"></a>容器到自身宿主机之间, 跟两容器在同一宿主机，速度差不多</h3><pre><code>$iperf3 -c 192.168.6.6 
-Connecting to host 192.168.6.6, port 5201
-[  4] local 192.168.6.1 port 21112 connected to 192.168.6.6 port 5201
-[ ID] Interval   Transfer Bandwidth   Retr
-[  4]   0.00-10.00  sec  13.9 GBytes  11.9 Gbits/sec1 sender
-[  4]   0.00-10.00  sec  13.9 GBytes  11.9 Gbits/sec  receiver
-
-[ ID] Interval   Transfer Bandwidth   Retr
-[  4]   0.00-10.00  sec  14.2 GBytes  12.2 Gbits/sec  139 sender
-[  4]   0.00-10.00  sec  14.2 GBytes  12.2 Gbits/sec  receiver
-
-[ ID] Interval   Transfer Bandwidth   Retr
-[  4]   0.00-10.00  sec  13.9 GBytes  11.9 Gbits/sec   96 sender
-[  4]   0.00-10.00  sec  13.9 GBytes  11.9 Gbits/sec  receiver
-</code></pre><h3 id="从宿主机A到宿主机B上的容器"><a href="#从宿主机A到宿主机B上的容器" class="headerlink" title="从宿主机A到宿主机B上的容器"></a>从宿主机A到宿主机B上的容器</h3><pre><code>$iperf3 -c 192.168.6.6
-Connecting to host 192.168.6.6, port 5201
-[  4] local 192.168.6.1 port 47940 connected to 192.168.6.6 port 5201
-[ ID] Interval   Transfer Bandwidth   Retr
-[  4]   0.00-10.00  sec   409 MBytes   343 Mbits/sec0 sender
-[  4]   0.00-10.00  sec   405 MBytes   340 Mbits/sec  receiver
-
-[ ID] Interval   Transfer Bandwidth   Retr
-[  4]   0.00-10.00  sec   389 MBytes   326 Mbits/sec   14 sender
-[  4]   0.00-10.00  sec   386 MBytes   324 Mbits/sec  receiver
-
-[ ID] Interval   Transfer Bandwidth   Retr
-[  4]   0.00-10.00  sec   460 MBytes   386 Mbits/sec7 sender
-[  4]   0.00-10.00  sec   458 MBytes   384 Mbits/sec  receiver
-</code></pre><h3 id="两宿主机之间测试"><a href="#两宿主机之间测试" class="headerlink" title="两宿主机之间测试"></a>两宿主机之间测试</h3><pre><code>$iperf3 -c 10.125.26.108
-Connecting to host 10.125.26.108, port 5201
-[  4] local 10.125.12.174 port 24309 connected to 10.125.26.108 port 5201
-[ ID] Interval   Transfer Bandwidth   Retr
-[  4]   0.00-10.00  sec   471 MBytes   395 Mbits/sec0 sender
-[  4]   0.00-10.00  sec   469 MBytes   393 Mbits/sec  receiver
-
-[ ID] Interval   Transfer Bandwidth   Retr
-[  4]   0.00-10.00  sec   428 MBytes   359 Mbits/sec0 sender
-[  4]   0.00-10.00  sec   426 MBytes   357 Mbits/sec  receiver
-
-[ ID] Interval   Transfer Bandwidth   Retr
-[  4]   0.00-10.00  sec   430 MBytes   360 Mbits/sec0 sender
-[  4]   0.00-10.00  sec   427 MBytes   358 Mbits/sec  receiver
-</code></pre><h3 id="两容器之间（跨宿主机）"><a href="#两容器之间（跨宿主机）" class="headerlink" title="两容器之间（跨宿主机）"></a>两容器之间（跨宿主机）</h3><pre><code>$iperf3 -c 192.168.6.6
-Connecting to host 192.168.6.6, port 5201
-[  4] local 192.168.6.5 port 37719 connected to 192.168.6.6 port 5201
-[ ID] Interval   Transfer Bandwidth   Retr
-[  4]   0.00-10.00  sec   403 MBytes   338 Mbits/sec   18 sender
-[  4]   0.00-10.00  sec   401 MBytes   336 Mbits/sec  receiver
-
-[ ID] Interval   Transfer Bandwidth   Retr
-[  4]   0.00-10.00  sec   428 MBytes   359 Mbits/sec   15 sender
-[  4]   0.00-10.00  sec   425 MBytes   356 Mbits/sec  receiver
-
-[ ID] Interval   Transfer Bandwidth   Retr
-[  4]   0.00-10.00  sec   508 MBytes   426 Mbits/sec   11 sender
-[  4]   0.00-10.00  sec   506 MBytes   424 Mbits/sec  receiver
-</code></pre><h2 id="netperf-安装依赖-automake-1-14-环境无法升级，放弃"><a href="#netperf-安装依赖-automake-1-14-环境无法升级，放弃" class="headerlink" title="netperf 安装依赖 automake-1.14, 环境无法升级，放弃"></a>netperf 安装依赖 automake-1.14, 环境无法升级，放弃</h2><h2 id="qperf-测试工具"><a href="#qperf-测试工具" class="headerlink" title="qperf 测试工具"></a>qperf 测试工具</h2><ul>
-<li>sudo yum install qperf -y</li>
-</ul>
-<h3 id="两台宿主机之间"><a href="#两台宿主机之间" class="headerlink" title="两台宿主机之间"></a>两台宿主机之间</h3><pre><code>$qperf -t 10  10.125.26.108 tcp_bw tcp_lat
-tcp_bw:
-bw  =  50.5 MB/sec
-tcp_lat:
-latency  =  332 us
-</code></pre><h4 id="包的大小分别为1和128"><a href="#包的大小分别为1和128" class="headerlink" title="包的大小分别为1和128"></a>包的大小分别为1和128</h4><pre><code>$qperf  -oo msg_size:1   10.125.26.108 tcp_bw tcp_lat
-tcp_bw:
-bw  =  1.75 MB/sec
-tcp_lat:
-latency  =  428 us
-
-$qperf  -oo msg_size:128   10.125.26.108 tcp_bw tcp_lat
-tcp_bw:
-bw  =  57.8 MB/sec
-tcp_lat:
-latency  =  504 us
-</code></pre><h4 id="两台宿主机之间，包的大小从一个字节每次翻倍测试"><a href="#两台宿主机之间，包的大小从一个字节每次翻倍测试" class="headerlink" title="两台宿主机之间，包的大小从一个字节每次翻倍测试"></a>两台宿主机之间，包的大小从一个字节每次翻倍测试</h4><pre><code>$qperf  -oo msg_size:1:4K:*2 -vu  10.125.26.108 tcp_bw tcp_lat 
-tcp_bw:
-bw=  1.86 MB/sec
-msg_size  = 1 bytes
-tcp_bw:
-bw=  3.54 MB/sec
-msg_size  = 2 bytes
-tcp_bw:
-bw=  6.43 MB/sec
-msg_size  = 4 bytes
-tcp_bw:
-bw=  14.3 MB/sec
-msg_size  = 8 bytes
-tcp_bw:
-bw=  27.1 MB/sec
-msg_size  =16 bytes
-tcp_bw:
-bw=  42.3 MB/sec
-msg_size  =32 bytes
-tcp_bw:
-bw=  51.8 MB/sec
-msg_size  =64 bytes
-tcp_bw:
-bw=  49.7 MB/sec
-msg_size  =   128 bytes
-tcp_bw:
-bw=  48.2 MB/sec
-msg_size  =   256 bytes
-tcp_bw:
-bw=   58 MB/sec
-msg_size  =  512 bytes
-tcp_bw:
-bw=  54.6 MB/sec
-msg_size  = 1 KiB (1,024)
-tcp_bw:
-bw=  48.7 MB/sec
-msg_size  = 2 KiB (2,048)
-tcp_bw:
-bw=  53.6 MB/sec
-msg_size  = 4 KiB (4,096)
-tcp_lat:
-latency   =  432 us
-msg_size  =1 bytes
-tcp_lat:
-latency   =  480 us
-msg_size  =2 bytes
-tcp_lat:
-latency   =  441 us
-msg_size  =4 bytes
-tcp_lat:
-latency   =  487 us
-msg_size  =8 bytes
-tcp_lat:
-latency   =  404 us
-msg_size  =   16 bytes
-tcp_lat:
-latency   =  335 us
-msg_size  =   32 bytes
-tcp_lat:
-latency   =  338 us
-msg_size  =   64 bytes
-tcp_lat:
-latency   =  401 us
-msg_size  =  128 bytes
-tcp_lat:
-latency   =  496 us
-msg_size  =  256 bytes
-tcp_lat:
-latency   =  684 us
-msg_size  =  512 bytes
-tcp_lat:
-latency   =  534 us
-msg_size  =1 KiB (1,024)
-tcp_lat:
-latency   =  681 us
-msg_size  =2 KiB (2,048)
-tcp_lat:
-latency   =  701 us
-msg_size  =4 KiB (4,096)
-</code></pre><h3 id="两个容器之间（分别在两台宿主机上）"><a href="#两个容器之间（分别在两台宿主机上）" class="headerlink" title="两个容器之间（分别在两台宿主机上）"></a>两个容器之间（分别在两台宿主机上）</h3><pre><code>$qperf -t 10  192.168.6.6 tcp_bw tcp_lat 
-tcp_bw:
-bw  =  44.4 MB/sec
-tcp_lat:
-latency  =  512 us
-</code></pre><h4 id="包的大小分别为1和128-1"><a href="#包的大小分别为1和128-1" class="headerlink" title="包的大小分别为1和128"></a>包的大小分别为1和128</h4><pre><code>$qperf -oo msg_size:1  192.168.6.6 tcp_bw tcp_lat 
-tcp_bw:
-bw  =  1.13 MB/sec
-tcp_lat:
-latency  =  630 us
-
-$qperf -oo msg_size:128  192.168.6.6 tcp_bw tcp_lat 
-tcp_bw:
-bw  =  44.2 MB/sec
-tcp_lat:
-latency  =  526 us
-</code></pre><h4 id="两个容器之间，包的大小从一个字节每次翻倍测试"><a href="#两个容器之间，包的大小从一个字节每次翻倍测试" class="headerlink" title="两个容器之间，包的大小从一个字节每次翻倍测试"></a>两个容器之间，包的大小从一个字节每次翻倍测试</h4><pre><code>$qperf -oo msg_size:1:4K:*2  192.168.6.6 -vu tcp_bw tcp_lat 
-tcp_bw:
-bw=  1.06 MB/sec
-msg_size  = 1 bytes
-tcp_bw:
-bw=  2.29 MB/sec
-msg_size  = 2 bytes
-tcp_bw:
-bw=  3.79 MB/sec
-msg_size  = 4 bytes
-tcp_bw:
-bw=  7.66 MB/sec
-msg_size  = 8 bytes
-tcp_bw:
-bw=  14 MB/sec
-msg_size  =  16 bytes
-tcp_bw:
-bw=  24.4 MB/sec
-msg_size  =32 bytes
-tcp_bw:
-bw=  36 MB/sec
-msg_size  =  64 bytes
-tcp_bw:
-bw=  46.7 MB/sec
-msg_size  =   128 bytes
-tcp_bw:
-bw=   56 MB/sec
-msg_size  =  256 bytes
-tcp_bw:
-bw=  42.2 MB/sec
-msg_size  =   512 bytes
-tcp_bw:
-bw=  57.6 MB/sec
-msg_size  = 1 KiB (1,024)
-tcp_bw:
-bw=  52.3 MB/sec
-msg_size  = 2 KiB (2,048)
-tcp_bw:
-bw=  41.7 MB/sec
-msg_size  = 4 KiB (4,096)
-tcp_lat:
-latency   =  447 us
-msg_size  =1 bytes
-tcp_lat:
-latency   =  417 us
-msg_size  =2 bytes
-tcp_lat:
-latency   =  503 us
-msg_size  =4 bytes
-tcp_lat:
-latency   =  488 us
-msg_size  =8 bytes
-tcp_lat:
-latency   =  452 us
-msg_size  =   16 bytes
-tcp_lat:
-latency   =  537 us
-msg_size  =   32 bytes
-tcp_lat:
-latency   =  712 us
-msg_size  =   64 bytes
-tcp_lat:
-latency   =  521 us
-msg_size  =  128 bytes
-tcp_lat:
-latency   =  450 us
-msg_size  =  256 bytes
-tcp_lat:
-latency   =  442 us
-msg_size  =  512 bytes
-tcp_lat:
-latency   =  630 us
-msg_size  =1 KiB (1,024)
-tcp_lat:
-latency   =  519 us
-msg_size  =2 KiB (2,048)
-tcp_lat:
-latency   =  621 us
-msg_size  =4 KiB (4,096)
-</code></pre><p>​    </p>
-<h2 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h2><ul>
-<li>iperf3测试带宽方面vxlan网络基本和宿主机一样，没有什么损失</li>
-<li>qperf测试vxlan的带宽只相当于宿主机的60-80%</li>
-<li>qperf测试一个字节的小包vxlan的带宽只相当于宿主机的60-65%</li>
-<li>由上面的结论猜测：物理带宽更大的情况下vxlan跟宿主机的差别会扩大</li>
-</ul>
-<p><strong>qperf安装更容易； iperf3 可以多连接并发测试，可以控制包的大小、nodelay等等</strong></p>
-<h2 id="参考文章："><a href="#参考文章：" class="headerlink" title="参考文章："></a>参考文章：</h2><p><a href="https://linoxide.com/monitoring-2/install-iperf-test-network-speed-bandwidth/" target="_blank" rel="external">https://linoxide.com/monitoring-2/install-iperf-test-network-speed-bandwidth/</a></p>
-<p><a href="http://blog.yufeng.info/archives/2234" target="_blank" rel="external">http://blog.yufeng.info/archives/2234</a></p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/07/26/优酷双11全链路压测中通过Perf发现的一个SpringMVC 的性能问题/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/07/26/优酷双11全链路压测中通过Perf发现的一个SpringMVC 的性能问题/" itemprop="url">双11全链路压测中通过Perf发现的一个SpringMVC 的性能问题</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-07-26T16:30:03+08:00">
-                2018-07-26
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/troubleshooting/" itemprop="url" rel="index">
-                    <span itemprop="name">troubleshooting</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2018/07/26/优酷双11全链路压测中通过Perf发现的一个SpringMVC 的性能问题/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2018/07/26/优酷双11全链路压测中通过Perf发现的一个SpringMVC 的性能问题/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="双11全链路压测中通过Perf发现的一个SpringMVC-的性能问题"><a href="#双11全链路压测中通过Perf发现的一个SpringMVC-的性能问题" class="headerlink" title="双11全链路压测中通过Perf发现的一个SpringMVC 的性能问题"></a>双11全链路压测中通过Perf发现的一个SpringMVC 的性能问题</h1><blockquote>
-<p>在最近的全链路压测中TPS不够理想，然后通过perf 工具（perf record 采样， perf report 展示）看到(可以点击看大图)：</p>
-</blockquote>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/b5610fa7e994b1e4578d38347a1478a7" alt="screenshot"></p>
-<h2 id="再来看CPU消耗的火焰图："><a href="#再来看CPU消耗的火焰图：" class="headerlink" title="再来看CPU消耗的火焰图："></a>再来看CPU消耗的火焰图：</h2><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/d228b47200f56fbbf5aadf0da56cbf15" alt="screenshot"></p>
-<p>图中CPU的消耗占21%，不太正常。</p>
-<blockquote>
-<p>可以看到Spring框架消耗了比较多的CPU，具体原因就是在Spring MVC中会大量使用到<br>@RequestMapping<br>@PathVariable<br>带来使用上的便利</p>
-</blockquote>
-<h2 id="业务方修改代码去掉spring中的methodMapping解析后的结果（性能提升了40-）："><a href="#业务方修改代码去掉spring中的methodMapping解析后的结果（性能提升了40-）：" class="headerlink" title="业务方修改代码去掉spring中的methodMapping解析后的结果（性能提升了40%）："></a>业务方修改代码去掉spring中的methodMapping解析后的结果（性能提升了40%）：</h2><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/a97e6f1da93173055b1385eebba8e327.png" alt="screenshot.png"></p>
-<p>图中核心业务逻辑能抢到的cpu是21%（之前是15%）。spring methodMapping相关的也在火焰图中找不到了</p>
-<h3 id="Spring收到请求URL后要取出请求变量和做业务运算，具体代码-对照第一个图的调用堆栈）："><a href="#Spring收到请求URL后要取出请求变量和做业务运算，具体代码-对照第一个图的调用堆栈）：" class="headerlink" title="Spring收到请求URL后要取出请求变量和做业务运算，具体代码(对照第一个图的调用堆栈）："></a>Spring收到请求URL后要取出请求变量和做业务运算，具体代码(对照第一个图的调用堆栈）：</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line">170	public RequestMappingInfo More ...getMatchingCondition(HttpServletRequest request) &#123;</div><div class="line">171		RequestMethodsRequestCondition methods = methodsCondition.getMatchingCondition(request);</div><div class="line">172		ParamsRequestCondition params = paramsCondition.getMatchingCondition(request);</div><div class="line">173		HeadersRequestCondition headers = headersCondition.getMatchingCondition(request);</div><div class="line">174		ConsumesRequestCondition consumes = consumesCondition.getMatchingCondition(request);</div><div class="line">175		ProducesRequestCondition produces = producesCondition.getMatchingCondition(request);</div><div class="line">176</div><div class="line">177		if (methods == null || params == null || headers == null || consumes == null || produces == null) &#123;</div><div class="line">178			return null;</div><div class="line">179		&#125;</div><div class="line">180</div><div class="line">181		PatternsRequestCondition patterns = patternsCondition.getMatchingCondition(request);</div><div class="line">182		if (patterns == null) &#123;</div><div class="line">183			return null;</div><div class="line">184		&#125;</div><div class="line">185</div><div class="line">186		RequestConditionHolder custom = customConditionHolder.getMatchingCondition(request);</div><div class="line">187		if (custom == null) &#123;</div><div class="line">188			return null;</div><div class="line">189		&#125;</div><div class="line">190</div><div class="line">191		return new RequestMappingInfo(patterns, methods, params, headers, consumes, produces, custom.getCondition());</div><div class="line">192	&#125;</div></pre></td></tr></table></figure>
-<h3 id="doMatch-代码："><a href="#doMatch-代码：" class="headerlink" title="doMatch 代码："></a>doMatch 代码：</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div><div class="line">99</div><div class="line">100</div><div class="line">101</div><div class="line">102</div><div class="line">103</div><div class="line">104</div><div class="line">105</div><div class="line">106</div><div class="line">107</div><div class="line">108</div><div class="line">109</div><div class="line">110</div><div class="line">111</div><div class="line">112</div><div class="line">113</div><div class="line">114</div><div class="line">115</div><div class="line">116</div><div class="line">117</div><div class="line">118</div><div class="line">119</div><div class="line">120</div><div class="line">121</div><div class="line">122</div><div class="line">123</div><div class="line">124</div><div class="line">125</div><div class="line">126</div><div class="line">127</div></pre></td><td class="code"><pre><div class="line">96 </div><div class="line">97 	protected boolean More ...doMatch(String pattern, String path, boolean fullMatch,</div><div class="line">98 			Map&lt;String, String&gt; uriTemplateVariables) &#123;</div><div class="line">99 </div><div class="line">100		if (path.startsWith(this.pathSeparator) != pattern.startsWith(this.pathSeparator)) &#123;</div><div class="line">101			return false;</div><div class="line">102		&#125;</div><div class="line">103</div><div class="line">104		String[] pattDirs = StringUtils.tokenizeToStringArray(pattern, this.pathSeparator, this.trimTokens, true);</div><div class="line">105		String[] pathDirs = StringUtils.tokenizeToStringArray(path, this.pathSeparator, this.trimTokens, true);</div><div class="line">106</div><div class="line">107		int pattIdxStart = 0;</div><div class="line">108		int pattIdxEnd = pattDirs.length - 1;</div><div class="line">109		int pathIdxStart = 0;</div><div class="line">110		int pathIdxEnd = pathDirs.length - 1;</div><div class="line">111</div><div class="line">112		// Match all elements up to the first **</div><div class="line">113		while (pattIdxStart &lt;= pattIdxEnd &amp;&amp; pathIdxStart &lt;= pathIdxEnd) &#123;</div><div class="line">114			String patDir = pattDirs[pattIdxStart];</div><div class="line">115			if (&quot;**&quot;.equals(patDir)) &#123;</div><div class="line">116				break;</div><div class="line">117			&#125;</div><div class="line">118			if (!matchStrings(patDir, pathDirs[pathIdxStart], uriTemplateVariables)) &#123;</div><div class="line">119				return false;</div><div class="line">120			&#125;</div><div class="line">121			pattIdxStart++;</div><div class="line">122			pathIdxStart++;</div><div class="line">123		&#125;</div><div class="line">124</div><div class="line">125		if (pathIdxStart &gt; pathIdxEnd) &#123;</div><div class="line">126			// Path is exhausted, only match if rest of pattern is * or **&apos;s</div><div class="line">127			if (pattIdxStart &gt; pattIdxEnd) &#123;</div><div class="line">128				return (pattern.endsWith(this.pathSeparator) ? path.endsWith(this.pathSeparator) :</div><div class="line">129						!path.endsWith(this.pathSeparator));</div><div class="line">130			&#125;</div><div class="line">131			if (!fullMatch) &#123;</div><div class="line">132				return true;</div><div class="line">133			&#125;</div><div class="line">134			if (pattIdxStart == pattIdxEnd &amp;&amp; pattDirs[pattIdxStart].equals(&quot;*&quot;) &amp;&amp; path.endsWith(this.pathSeparator)) &#123;</div><div class="line">135				return true;</div><div class="line">136			&#125;</div><div class="line">137			for (int i = pattIdxStart; i &lt;= pattIdxEnd; i++) &#123;</div><div class="line">138				if (!pattDirs[i].equals(&quot;**&quot;)) &#123;</div><div class="line">139					return false;</div><div class="line">140				&#125;</div><div class="line">141			&#125;</div><div class="line">142			return true;</div><div class="line">143		&#125;</div><div class="line">144		else if (pattIdxStart &gt; pattIdxEnd) &#123;</div><div class="line">145			// String not exhausted, but pattern is. Failure.</div><div class="line">146			return false;</div><div class="line">147		&#125;</div><div class="line">148		else if (!fullMatch &amp;&amp; &quot;**&quot;.equals(pattDirs[pattIdxStart])) &#123;</div><div class="line">149			// Path start definitely matches due to &quot;**&quot; part in pattern.</div><div class="line">150			return true;</div><div class="line">151		&#125;</div><div class="line">152</div><div class="line">153		// up to last &apos;**&apos;</div><div class="line">154		while (pattIdxStart &lt;= pattIdxEnd &amp;&amp; pathIdxStart &lt;= pathIdxEnd) &#123;</div><div class="line">155			String patDir = pattDirs[pattIdxEnd];</div><div class="line">156			if (patDir.equals(&quot;**&quot;)) &#123;</div><div class="line">157				break;</div><div class="line">158			&#125;</div><div class="line">159			if (!matchStrings(patDir, pathDirs[pathIdxEnd], uriTemplateVariables)) &#123;</div><div class="line">160				return false;</div><div class="line">161			&#125;</div><div class="line">162			pattIdxEnd--;</div><div class="line">163			pathIdxEnd--;</div><div class="line">164		&#125;</div><div class="line">165		if (pathIdxStart &gt; pathIdxEnd) &#123;</div><div class="line">166			// String is exhausted</div><div class="line">167			for (int i = pattIdxStart; i &lt;= pattIdxEnd; i++) &#123;</div><div class="line">168				if (!pattDirs[i].equals(&quot;**&quot;)) &#123;</div><div class="line">169					return false;</div><div class="line">170				&#125;</div><div class="line">171			&#125;</div><div class="line">172			return true;</div><div class="line">173		&#125;</div><div class="line">174</div><div class="line">175		while (pattIdxStart != pattIdxEnd &amp;&amp; pathIdxStart &lt;= pathIdxEnd) &#123;</div><div class="line">176			int patIdxTmp = -1;</div><div class="line">177			for (int i = pattIdxStart + 1; i &lt;= pattIdxEnd; i++) &#123;</div><div class="line">178				if (pattDirs[i].equals(&quot;**&quot;)) &#123;</div><div class="line">179					patIdxTmp = i;</div><div class="line">180					break;</div><div class="line">181				&#125;</div><div class="line">182			&#125;</div><div class="line">183			if (patIdxTmp == pattIdxStart + 1) &#123;</div><div class="line">184				// &apos;**/**&apos; situation, so skip one</div><div class="line">185				pattIdxStart++;</div><div class="line">186				continue;</div><div class="line">187			&#125;</div><div class="line">188			// Find the pattern between padIdxStart &amp; padIdxTmp in str between</div><div class="line">189			// strIdxStart &amp; strIdxEnd</div><div class="line">190			int patLength = (patIdxTmp - pattIdxStart - 1);</div><div class="line">191			int strLength = (pathIdxEnd - pathIdxStart + 1);</div><div class="line">192			int foundIdx = -1;</div><div class="line">193</div><div class="line">194			strLoop:</div><div class="line">195			for (int i = 0; i &lt;= strLength - patLength; i++) &#123;</div><div class="line">196				for (int j = 0; j &lt; patLength; j++) &#123;</div><div class="line">197					String subPat = pattDirs[pattIdxStart + j + 1];</div><div class="line">198					String subStr = pathDirs[pathIdxStart + i + j];</div><div class="line">199					if (!matchStrings(subPat, subStr, uriTemplateVariables)) &#123;</div><div class="line">200						continue strLoop;</div><div class="line">201					&#125;</div><div class="line">202				&#125;</div><div class="line">203				foundIdx = pathIdxStart + i;</div><div class="line">204				break;</div><div class="line">205			&#125;</div><div class="line">206</div><div class="line">207			if (foundIdx == -1) &#123;</div><div class="line">208				return false;</div><div class="line">209			&#125;</div><div class="line">210</div><div class="line">211			pattIdxStart = patIdxTmp;</div><div class="line">212			pathIdxStart = foundIdx + patLength;</div><div class="line">213		&#125;</div><div class="line">214</div><div class="line">215		for (int i = pattIdxStart; i &lt;= pattIdxEnd; i++) &#123;</div><div class="line">216			if (!pattDirs[i].equals(&quot;**&quot;)) &#123;</div><div class="line">217				return false;</div><div class="line">218			&#125;</div><div class="line">219		&#125;</div><div class="line">220</div><div class="line">221		return true;</div><div class="line">222	&#125;</div></pre></td></tr></table></figure>
-<p>最后补一个找到瓶颈点后 Google到类似问题的文章，并给出了具体数据和解决方法：<a href="http://www.cnblogs.com/ucos/articles/5542012.html" target="_blank" rel="external">http://www.cnblogs.com/ucos/articles/5542012.html</a></p>
-<p>以及这篇文章中给出的优化前后对比图：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/3c61ad759ae5f44bbb2a24e4714c2ee8" alt="screenshot"></p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
@@ -4400,7 +4410,7 @@ msg_size  =4 KiB (4,096)
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">95</span>
+                <span class="site-state-item-count">97</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -4422,7 +4432,7 @@ msg_size  =4 KiB (4,096)
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">191</span>
+                <span class="site-state-item-count">192</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>

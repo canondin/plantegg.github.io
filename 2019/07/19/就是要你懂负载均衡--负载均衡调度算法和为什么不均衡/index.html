@@ -95,17 +95,17 @@
 
 
 
-<meta name="description" content="LVS 20倍的负载不均衡，原来是内核的这个Bug问题由来最近用 sysbench 做压测的时候，sysbench每次创建100个长连接，lvs后面两台RS，发现每次都是其中一台差不多95个连接，另外一台大概5个连接，不均衡的太离谱了，并且稳定重现，所以想要搞清楚为什么会出现20倍不均衡。 前面是啰嗦的基础知识部分，bug直达文章末尾 几个术语和缩写vip：Virtual IP，LVS实例IP R">
+<meta name="description" content="LVS 20倍的负载不均衡，原来是内核的这个Bug问题由来最近用 sysbench 做压测的时候，sysbench每次创建100个长连接，lvs后面两台RS（通过wlc来均衡），发现每次都是其中一台差不多95个连接，另外一台大概5个连接，不均衡得太离谱了，并且稳定重现，所以想要搞清楚为什么会出现20倍的不均衡。 前面是啰嗦的基础知识部分，bug直达文章末尾 几个术语和缩写vip：Virtual I">
 <meta name="keywords" content="Linux,network,LVS,LoadBalance,wrr,wlc">
 <meta property="og:type" content="article">
 <meta property="og:title" content="LVS 20倍的负载不均衡，原来是内核的这个Bug">
 <meta property="og:url" content="http://yoursite.com/2019/07/19/就是要你懂负载均衡--负载均衡调度算法和为什么不均衡/index.html">
 <meta property="og:site_name" content="plantegg">
-<meta property="og:description" content="LVS 20倍的负载不均衡，原来是内核的这个Bug问题由来最近用 sysbench 做压测的时候，sysbench每次创建100个长连接，lvs后面两台RS，发现每次都是其中一台差不多95个连接，另外一台大概5个连接，不均衡的太离谱了，并且稳定重现，所以想要搞清楚为什么会出现20倍不均衡。 前面是啰嗦的基础知识部分，bug直达文章末尾 几个术语和缩写vip：Virtual IP，LVS实例IP R">
-<meta property="og:updated_time" content="2020-07-16T06:53:18.268Z">
+<meta property="og:description" content="LVS 20倍的负载不均衡，原来是内核的这个Bug问题由来最近用 sysbench 做压测的时候，sysbench每次创建100个长连接，lvs后面两台RS（通过wlc来均衡），发现每次都是其中一台差不多95个连接，另外一台大概5个连接，不均衡得太离谱了，并且稳定重现，所以想要搞清楚为什么会出现20倍的不均衡。 前面是啰嗦的基础知识部分，bug直达文章末尾 几个术语和缩写vip：Virtual I">
+<meta property="og:updated_time" content="2020-08-26T10:57:01.343Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="LVS 20倍的负载不均衡，原来是内核的这个Bug">
-<meta name="twitter:description" content="LVS 20倍的负载不均衡，原来是内核的这个Bug问题由来最近用 sysbench 做压测的时候，sysbench每次创建100个长连接，lvs后面两台RS，发现每次都是其中一台差不多95个连接，另外一台大概5个连接，不均衡的太离谱了，并且稳定重现，所以想要搞清楚为什么会出现20倍不均衡。 前面是啰嗦的基础知识部分，bug直达文章末尾 几个术语和缩写vip：Virtual IP，LVS实例IP R">
+<meta name="twitter:description" content="LVS 20倍的负载不均衡，原来是内核的这个Bug问题由来最近用 sysbench 做压测的时候，sysbench每次创建100个长连接，lvs后面两台RS（通过wlc来均衡），发现每次都是其中一台差不多95个连接，另外一台大概5个连接，不均衡得太离谱了，并且稳定重现，所以想要搞清楚为什么会出现20倍的不均衡。 前面是啰嗦的基础知识部分，bug直达文章末尾 几个术语和缩写vip：Virtual I">
 
 
 
@@ -383,7 +383,7 @@
       
 
       
-        <h1 id="LVS-20倍的负载不均衡，原来是内核的这个Bug"><a href="#LVS-20倍的负载不均衡，原来是内核的这个Bug" class="headerlink" title="LVS 20倍的负载不均衡，原来是内核的这个Bug"></a>LVS 20倍的负载不均衡，原来是内核的这个Bug</h1><h2 id="问题由来"><a href="#问题由来" class="headerlink" title="问题由来"></a>问题由来</h2><p>最近用 sysbench 做压测的时候，sysbench每次创建100个长连接，lvs后面两台RS，发现每次都是其中一台差不多95个连接，另外一台大概5个连接，不均衡的太离谱了，并且稳定重现，所以想要搞清楚为什么会出现20倍不均衡。</p>
+        <h1 id="LVS-20倍的负载不均衡，原来是内核的这个Bug"><a href="#LVS-20倍的负载不均衡，原来是内核的这个Bug" class="headerlink" title="LVS 20倍的负载不均衡，原来是内核的这个Bug"></a>LVS 20倍的负载不均衡，原来是内核的这个Bug</h1><h2 id="问题由来"><a href="#问题由来" class="headerlink" title="问题由来"></a>问题由来</h2><p>最近用 sysbench 做压测的时候，sysbench每次创建100个长连接，lvs后面两台RS（通过wlc来均衡），发现每次都是其中一台差不多95个连接，另外一台大概5个连接，不均衡得太离谱了，并且稳定重现，所以想要搞清楚为什么会出现20倍的不均衡。</p>
 <p>前面是啰嗦的基础知识部分，<a href="#bug">bug直达文章末尾</a></p>
 <h2 id="几个术语和缩写"><a href="#几个术语和缩写" class="headerlink" title="几个术语和缩写"></a>几个术语和缩写</h2><pre><code>vip：Virtual IP，LVS实例IP
 RS: Real Server 后端真正提供服务的机器
@@ -593,7 +593,7 @@ ACK-FIN         ----&gt; *** ActiveConn=0 and 0 ESTABLISHED socket on realserver
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">95</span>
+                <span class="site-state-item-count">97</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -615,7 +615,7 @@ ACK-FIN         ----&gt; *** ActiveConn=0 and 0 ESTABLISHED socket on realserver
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">191</span>
+                <span class="site-state-item-count">192</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>

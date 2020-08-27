@@ -1,0 +1,843 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="Hexo, NexT" />
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="plantegg" type="application/atom+xml" />
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.1" />
+
+
+
+
+
+
+<meta name="description" content="perf   83  07/08/19 13:56:26 sudo perf record -ag -p 4759    84  07/08/19 13:56:50 ls /tmp/    85  07/08/19 13:57:06 history |tail -16    86  07/08/19 13:57:20 sudo chmod 777 perf.data    87  07/08/19">
+<meta property="og:type" content="article">
+<meta property="og:title" content="plantegg">
+<meta property="og:url" content="http://yoursite.com/2020/08/26/perf-usage/index.html">
+<meta property="og:site_name" content="plantegg">
+<meta property="og:description" content="perf   83  07/08/19 13:56:26 sudo perf record -ag -p 4759    84  07/08/19 13:56:50 ls /tmp/    85  07/08/19 13:57:06 history |tail -16    86  07/08/19 13:57:20 sudo chmod 777 perf.data    87  07/08/19">
+<meta property="og:updated_time" content="2020-08-26T10:57:01.303Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="plantegg">
+<meta name="twitter:description" content="perf   83  07/08/19 13:56:26 sudo perf record -ag -p 4759    84  07/08/19 13:56:50 ls /tmp/    85  07/08/19 13:57:06 history |tail -16    86  07/08/19 13:57:20 sudo chmod 777 perf.data    87  07/08/19">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    sidebar: {"position":"left","display":"post","offset":12,"offset_float":0,"b2t":false,"scrollpercent":false},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2020/08/26/perf-usage/"/>
+
+
+
+
+
+  <title> | plantegg</title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  
+
+  <div class="container sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">plantegg</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <h1 class="site-subtitle" itemprop="description">java tcp mysql performance network docker Linux</h1>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-categories"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/08/26/perf-usage/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline"></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-08-26T18:57:01+08:00">
+                2020-08-26
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2020/08/26/perf-usage/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2020/08/26/perf-usage/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+            <span class="post-meta-divider">|</span>
+            <span class="page-pv"><i class="fa fa-file-o"></i>
+            <span class="busuanzi-value" id="busuanzi_value_page_pv" ></span>次
+            </span>
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="perf"><a href="#perf" class="headerlink" title="perf"></a>perf</h1><pre><code>   83  07/08/19 13:56:26 sudo perf record -ag -p 4759
+   84  07/08/19 13:56:50 ls /tmp/
+   85  07/08/19 13:57:06 history |tail -16
+   86  07/08/19 13:57:20 sudo chmod 777 perf.data
+   87  07/08/19 13:57:33 perf script &gt;out.perf
+   88  07/08/19 13:59:24 ~/tools/FlameGraph-master/./stackcollapse-perf.pl ~/out.perf &gt;out.folded
+   89  07/08/19 14:01:01 ~/tools/FlameGraph-master/flamegraph.pl out.folded &gt; kernel-perf.svg
+   90  07/08/19 14:01:07 ls -lh
+   91  07/08/19 14:03:33 history
+
+
+$ sudo perf record -F 99 -a -g -- sleep 60
+</code></pre><p>　　执行这个命令将生成一个 perf.data 文件：</p>
+<p>执行sudo perf report -n可以生成报告的预览。<br>执行sudo perf report -n –stdio可以生成一个详细的报告。<br>执行sudo perf script可以 dump 出 perf.data 的内容。</p>
+<pre><code># 折叠调用栈
+$ FlameGraph/stackcollapse-perf.pl out.perf &gt; out.folded
+# 生成火焰图
+$ FlameGraph/flamegraph.pl out.folded &gt; out.svg
+</code></pre><p>perf详解： <a href="https://zhengheng.me/2015/11/12/perf-stat/" target="_blank" rel="external">https://zhengheng.me/2015/11/12/perf-stat/</a>     <a href="https://mp.weixin.qq.com/s?__biz=MzUxNjE3MTcwMg==&amp;mid=2247483755&amp;idx=1&amp;sn=5324f7e46c91739b566dfc1d0847fc4a&amp;chksm=f9aa33b2ceddbaa478729383cac89967cc515bafa472001adc4ad42fb37e3ce473eddc3b591a&amp;mpshare=1&amp;scene=1&amp;srcid=0127mp3WJ6Kd1UOQISFg3SIC#rd" target="_blank" rel="external">https://mp.weixin.qq.com/s?__biz=MzUxNjE3MTcwMg==&amp;mid=2247483755&amp;idx=1&amp;sn=5324f7e46c91739b566dfc1d0847fc4a&amp;chksm=f9aa33b2ceddbaa478729383cac89967cc515bafa472001adc4ad42fb37e3ce473eddc3b591a&amp;mpshare=1&amp;scene=1&amp;srcid=0127mp3WJ6Kd1UOQISFg3SIC#rd</a>  <strong>CPU 利用率的真实含义</strong>  cpu有很大一部分在stale状态, stale表示cpu流水线出现卡顿、不顺畅</p>
+<p>sudo perf record -g -a -e skb:kfree_skb //perf 记录丢包调用栈 然后sudo perf script 查看 （网络报文被丢弃时会调用该函数kfree_skb）</p>
+<p>perf record -e ‘skb:consume_skb’ -ag  //记录网络消耗</p>
+<p>perf probe –add tcp_sendmsg //增加监听probe  perf record -e probe:tcp_sendmsg -aR sleep 1</p>
+<p>sudo perf sched record – sleep 1 //记录cpu调度的延时</p>
+<p>sudo perf sched latency //查看</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line"><span class="meta">$</span>sudo perf stat -a -- sleep 10</div><div class="line"> Performance counter stats for 'system wide':</div><div class="line">     239866.330098      task-clock (msec)         #   23.985 CPUs utilized    /10*1000        (100.00%)</div><div class="line">            45,709      context-switches          #    0.191 K/sec                    (100.00%)</div><div class="line">             1,715      cpu-migrations            #    0.007 K/sec                    (100.00%)</div><div class="line">            79,586      page-faults               #    0.332 K/sec</div><div class="line">     3,488,525,170      cycles                    #    0.015 GHz                      (83.34%)</div><div class="line">     9,708,140,897      stalled-cycles-frontend   #  278.29% /cycles frontend cycles idle     (83.34%)</div><div class="line">     9,314,891,615      stalled-cycles-backend    #  267.02% /cycles backend  cycles idle     (66.68%)</div><div class="line">     2,292,955,367      instructions              #    0.66  insns per cycle  insn/cycles</div><div class="line">                                                 \#    4.23  stalled cycles per insn stalled-cycles-frontend/insn (83.34%)</div><div class="line">       447,584,805      branches                  #    1.866 M/sec                    (83.33%)</div><div class="line">         8,470,791      branch-misses             #    1.89% of all branches          (83.33%)</div><div class="line">     10.000830932 seconds time elapsed</div></pre></td></tr></table></figure>
+<ul>
+<li>cycles：CPU时钟周期。CPU从它的指令集(instruction set)中选择指令执行。一个指令包含以下的步骤，每个步骤由CPU的一个叫做功能单元(functional unit)的组件来进行处理，每个步骤的执行都至少需要花费一个时钟周期。</li>
+</ul>
+<ol>
+<li>指令读取(instruction fetch)</li>
+<li>指令解码(instruction decode)</li>
+<li>执行(execute)</li>
+<li>内存访问(memory access)</li>
+<li>寄存器回写(register write-back)</li>
+</ol>
+<p>五个步骤只能串行，但是可以做成pipeline提升效率，也就是第一个指令做第二步的时候，指令读取单元可以去读取下一个指令了，如果有一个指令慢就会造成stall，也就是pipeline有地方卡壳了。</p>
+<p>另外cpu可以同时有多条pipeline，这也就是理论上最大的ipc.</p>
+<p>stalled-cycles，则是指令管道未能按理想状态发挥并行作用，发生停滞的时钟周期。stalled-cycles-frontend指指令读取或解码的指令步骤，而stalled-cycles-backend则是指令执行步骤。第二列中的cycles idle其实意思跟stalled是一样的，由于指令执行停滞了，所以指令管道也就空闲了，千万不要误解为CPU的空闲率。这个数值是由stalled-cycles-frontend或stalled-cycles-backend除以上面的cycles得出的</p>
+<p>从操作系统的角度讲，os会维护一个ready queue（就绪的线程队列）。并且在某一时刻cpu只为ready queue中位于队列头部的线程服务。</p>
+<p>sleep()使当前线程进入停滞状态，所以执行sleep()的线程在指定的时间内肯定不会执行；yield()只是使当前线程重新回到可执行状态，所以执行yield()的线程有可能在进入到可执行状态后马上又被执行。</p>
+<h2 id="bcc-tools"><a href="#bcc-tools" class="headerlink" title="bcc-tools"></a>bcc-tools</h2><p>sudo /usr/share/bcc/tools/syscount -p 3057 -L -T 80</p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2020/07/03/MySQL JDBC StreamResult 和 net_write_timeout/" rel="next" title="MySQL JDBC StreamResult 和 net_write_timeout">
+                <i class="fa fa-chevron-left"></i> MySQL JDBC StreamResult 和 net_write_timeout
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2117/06/07/文章索引index/" rel="prev" title="文章索引">
+                文章索引 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/avatar.gif"
+               alt="weibo @plantegg" />
+          <p class="site-author-name" itemprop="name">weibo @plantegg</p>
+           
+              <p class="site-description motion-element" itemprop="description"></p>
+           
+        </div>
+        <nav class="site-state motion-element">
+
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">97</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-categories">
+              <a href="/categories/index.html">
+                <span class="site-state-item-count">32</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-tags">
+              <a href="/tags/index.html">
+                <span class="site-state-item-count">192</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+          <div class="feed-link motion-element">
+            <a href="/atom.xml" rel="alternate">
+              <i class="fa fa-rss"></i>
+              RSS
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#perf"><span class="nav-number">1.</span> <span class="nav-text">perf</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#bcc-tools"><span class="nav-number">1.1.</span> <span class="nav-text">bcc-tools</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+
+<div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">weibo @plantegg</span>
+</div>
+
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Muse
+  </a>
+</div>
+
+<span id="busuanzi_container_site_pv">
+    本站总访问量<span id="busuanzi_value_site_pv"></span>次
+</span>
+<span id="busuanzi_container_site_uv">
+  本站访客数<span id="busuanzi_value_site_uv"></span>人次
+</span>
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+  
+    <span class="site-uv">
+      <i class="fa fa-user"></i> 访问人数
+      <span class="busuanzi-value" id="busuanzi_value_site_uv"></span>
+      人
+    </span>
+  
+
+  
+    <span class="site-pv">
+      <i class="fa fa-eye"></i>
+      <span class="busuanzi-value" id="busuanzi_value_site_pv"></span>
+      次
+    </span>
+  
+</div>
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.1"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.1"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'http://yoursite.com/2020/08/26/perf-usage/';
+          this.page.identifier = '2020/08/26/perf-usage/';
+          this.page.title = '';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

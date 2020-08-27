@@ -433,6 +433,169 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/08/26/perf-usage/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2020/08/26/perf-usage/" itemprop="url">未命名</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-08-26T18:57:01+08:00">
+                2020-08-26
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2020/08/26/perf-usage/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2020/08/26/perf-usage/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="perf"><a href="#perf" class="headerlink" title="perf"></a>perf</h1><pre><code>   83  07/08/19 13:56:26 sudo perf record -ag -p 4759
+   84  07/08/19 13:56:50 ls /tmp/
+   85  07/08/19 13:57:06 history |tail -16
+   86  07/08/19 13:57:20 sudo chmod 777 perf.data
+   87  07/08/19 13:57:33 perf script &gt;out.perf
+   88  07/08/19 13:59:24 ~/tools/FlameGraph-master/./stackcollapse-perf.pl ~/out.perf &gt;out.folded
+   89  07/08/19 14:01:01 ~/tools/FlameGraph-master/flamegraph.pl out.folded &gt; kernel-perf.svg
+   90  07/08/19 14:01:07 ls -lh
+   91  07/08/19 14:03:33 history
+
+
+$ sudo perf record -F 99 -a -g -- sleep 60
+</code></pre><p>　　执行这个命令将生成一个 perf.data 文件：</p>
+<p>执行sudo perf report -n可以生成报告的预览。<br>执行sudo perf report -n –stdio可以生成一个详细的报告。<br>执行sudo perf script可以 dump 出 perf.data 的内容。</p>
+<pre><code># 折叠调用栈
+$ FlameGraph/stackcollapse-perf.pl out.perf &gt; out.folded
+# 生成火焰图
+$ FlameGraph/flamegraph.pl out.folded &gt; out.svg
+</code></pre><p>perf详解： <a href="https://zhengheng.me/2015/11/12/perf-stat/" target="_blank" rel="external">https://zhengheng.me/2015/11/12/perf-stat/</a>     <a href="https://mp.weixin.qq.com/s?__biz=MzUxNjE3MTcwMg==&amp;mid=2247483755&amp;idx=1&amp;sn=5324f7e46c91739b566dfc1d0847fc4a&amp;chksm=f9aa33b2ceddbaa478729383cac89967cc515bafa472001adc4ad42fb37e3ce473eddc3b591a&amp;mpshare=1&amp;scene=1&amp;srcid=0127mp3WJ6Kd1UOQISFg3SIC#rd" target="_blank" rel="external">https://mp.weixin.qq.com/s?__biz=MzUxNjE3MTcwMg==&amp;mid=2247483755&amp;idx=1&amp;sn=5324f7e46c91739b566dfc1d0847fc4a&amp;chksm=f9aa33b2ceddbaa478729383cac89967cc515bafa472001adc4ad42fb37e3ce473eddc3b591a&amp;mpshare=1&amp;scene=1&amp;srcid=0127mp3WJ6Kd1UOQISFg3SIC#rd</a>  <strong>CPU 利用率的真实含义</strong>  cpu有很大一部分在stale状态, stale表示cpu流水线出现卡顿、不顺畅</p>
+<p>sudo perf record -g -a -e skb:kfree_skb //perf 记录丢包调用栈 然后sudo perf script 查看 （网络报文被丢弃时会调用该函数kfree_skb）</p>
+<p>perf record -e ‘skb:consume_skb’ -ag  //记录网络消耗</p>
+<p>perf probe –add tcp_sendmsg //增加监听probe  perf record -e probe:tcp_sendmsg -aR sleep 1</p>
+<p>sudo perf sched record – sleep 1 //记录cpu调度的延时</p>
+<p>sudo perf sched latency //查看</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line"><span class="meta">$</span>sudo perf stat -a -- sleep 10</div><div class="line"> Performance counter stats for 'system wide':</div><div class="line">     239866.330098      task-clock (msec)         #   23.985 CPUs utilized    /10*1000        (100.00%)</div><div class="line">            45,709      context-switches          #    0.191 K/sec                    (100.00%)</div><div class="line">             1,715      cpu-migrations            #    0.007 K/sec                    (100.00%)</div><div class="line">            79,586      page-faults               #    0.332 K/sec</div><div class="line">     3,488,525,170      cycles                    #    0.015 GHz                      (83.34%)</div><div class="line">     9,708,140,897      stalled-cycles-frontend   #  278.29% /cycles frontend cycles idle     (83.34%)</div><div class="line">     9,314,891,615      stalled-cycles-backend    #  267.02% /cycles backend  cycles idle     (66.68%)</div><div class="line">     2,292,955,367      instructions              #    0.66  insns per cycle  insn/cycles</div><div class="line">                                                 \#    4.23  stalled cycles per insn stalled-cycles-frontend/insn (83.34%)</div><div class="line">       447,584,805      branches                  #    1.866 M/sec                    (83.33%)</div><div class="line">         8,470,791      branch-misses             #    1.89% of all branches          (83.33%)</div><div class="line">     10.000830932 seconds time elapsed</div></pre></td></tr></table></figure>
+<ul>
+<li>cycles：CPU时钟周期。CPU从它的指令集(instruction set)中选择指令执行。一个指令包含以下的步骤，每个步骤由CPU的一个叫做功能单元(functional unit)的组件来进行处理，每个步骤的执行都至少需要花费一个时钟周期。</li>
+</ul>
+<ol>
+<li>指令读取(instruction fetch)</li>
+<li>指令解码(instruction decode)</li>
+<li>执行(execute)</li>
+<li>内存访问(memory access)</li>
+<li>寄存器回写(register write-back)</li>
+</ol>
+<p>五个步骤只能串行，但是可以做成pipeline提升效率，也就是第一个指令做第二步的时候，指令读取单元可以去读取下一个指令了，如果有一个指令慢就会造成stall，也就是pipeline有地方卡壳了。</p>
+<p>另外cpu可以同时有多条pipeline，这也就是理论上最大的ipc.</p>
+<p>stalled-cycles，则是指令管道未能按理想状态发挥并行作用，发生停滞的时钟周期。stalled-cycles-frontend指指令读取或解码的指令步骤，而stalled-cycles-backend则是指令执行步骤。第二列中的cycles idle其实意思跟stalled是一样的，由于指令执行停滞了，所以指令管道也就空闲了，千万不要误解为CPU的空闲率。这个数值是由stalled-cycles-frontend或stalled-cycles-backend除以上面的cycles得出的</p>
+<p>从操作系统的角度讲，os会维护一个ready queue（就绪的线程队列）。并且在某一时刻cpu只为ready queue中位于队列头部的线程服务。</p>
+<p>sleep()使当前线程进入停滞状态，所以执行sleep()的线程在指定的时间内肯定不会执行；yield()只是使当前线程重新回到可执行状态，所以执行yield()的线程有可能在进入到可执行状态后马上又被执行。</p>
+<h2 id="bcc-tools"><a href="#bcc-tools" class="headerlink" title="bcc-tools"></a>bcc-tools</h2><p>sudo /usr/share/bcc/tools/syscount -p 3057 -L -T 80</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/03/MySQL JDBC StreamResult 和 net_write_timeout/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1023,9 +1186,9 @@
 <h2 id="图形化监控数据"><a href="#图形化监控数据" class="headerlink" title="图形化监控数据"></a>图形化监控数据</h2><p>捞取同一段时间内同样压力下tcprt监控数据后展示出来的图形：</p>
 <ol>
 <li>最开始正常网络情况下QPS 40K，总RT 4.1ms（含网络），业务处理时间3.9ms，两者差就是网络传输时间；</li>
-<li>突然网络变差，rtt降到了17ms，相应地QPS降到了8200，总RT 19.9ms（含网络），业务处理时间2.8ms（压力变小了）；</li>
+<li>突然网络变差，rtt从0.1ms降到了17ms，相应地QPS降到了8200，总RT 19.9ms（含网络），业务处理时间2.8ms（因为压力变小了，实际业务处理时间也快了）；</li>
 <li>接着rtt回到7ms，QPS回升到16400，总RT 9.9ms（含网络），业务处理时间2.82ms；</li>
-<li>client到tomcat丢包率为0.1%，QPS 39.5K，总RT 4.1ms（含网络），业务处理时间3.7ms. 对QPS的影响基本可以忽略；</li>
+<li>rtt恢复到0.1ms，同时client到tomcat丢包率为0.1%，QPS 39.5K，总RT 4.1ms（含网络），业务处理时间3.7ms. 对QPS的影响基本可以忽略；</li>
 <li>client到tomcat丢包率为1%，QPS 31.8K，总RT 5.08ms（含网络），业务处理时间2.87ms；</li>
 <li>tomcat到client和RDS丢包率都为1%，QPS 23.2K，总RT 7.03ms（含网络），业务处理时间4.88ms，tomcat调用RDS的rt也从2.6ms上升到了4.6ms。</li>
 </ol>
@@ -1041,6 +1204,14 @@
 <p>通过wireshark看到对应的tomcat和RDS之间的RTT数据：</p>
 <p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/949ab8a34c9bece160e8fcff8e76a2d4.png" alt="image.png"></p>
 <p>上面都是对所有数据做平均后分析所得，接下来会通过具体的一个请求来分析，同时通过tcpdump抓包来分析对应的数据（对比验证tcprt的可靠性）</p>
+<h2 id="深圳盒子慢查询定位"><a href="#深圳盒子慢查询定位" class="headerlink" title="深圳盒子慢查询定位"></a>深圳盒子慢查询定位</h2><p>这个实例没有上线manager，只能人肉分析tcprt日志，先看慢查询日志： </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$tail -10 slow.log</div><div class="line">2020-08-13 14:39:46.289 - [user=zhoubingbing,host=172.30.52.43,port=54754,schema=goodarights_base]  [TDDL] select * from tbl_wm_mcht_invoice_record where mcht_no=&apos;323967&apos; ORDER BY CREATE_TIME desc;#1070#392#111413ba1b1a2000, tddl version: 5.4.3-15844389</div></pre></td></tr></table></figure>
+<p> 慢查询对应的tcprt记录，rtt高达35ms（正常都是2ms，而且重传了3次才把response传完），所以最终SQL执行花了差不多1.3秒（慢查询中有记录，1秒多，查询结果390行数据）：</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/15731f74f91099774996302da1571a51.png" alt="image.png"></p>
+<p>从60秒汇总统计日只看，慢查询发生的时间点 丢包率确实到了 0.1%：</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/85a75f19422a838f64ec6dffb4a3837f.png" alt="image.png"></p>
+<p>总的平均时间统计，绿框是DRDS处理时间，红框是DRDS处理时间+网络传输时间，这个gap有点大（网络消耗比较高）：</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/7c45a9ab360986c7e743de9a687c9549.png" alt="image.png"></p>
 <h2 id="丢包造成rt过高"><a href="#丢包造成rt过高" class="headerlink" title="丢包造成rt过高"></a>丢包造成rt过高</h2><p>如下数据中每一行代表一个请求、响应数据，第三行和第八行总rt都比较高，超过200ms（第6列），但是server处理时间在3ms以内（最后一列）</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">                                                         总rt    重传       处理时间</div><div class="line">1593677820 311182 10.0.186.70:32610 10.0.186.97:3306 142 5885 113 0 36314730 2758</div><div class="line">1593677820 317068 10.0.186.70:32610 10.0.186.97:3306 142 214047 113 1 36314731 2791 &lt;?</div><div class="line">1593677820 533814 10.0.186.70:32610 10.0.186.97:3306 142 5905 113 0 36314732 2771</div><div class="line">1593677820 539722 10.0.186.70:32610 10.0.186.97:3306 142 5842 113 0 36314733 2714</div><div class="line">1593677820 545565 10.0.186.70:32610 10.0.186.97:3306 142 5898 113 0 36314734 2751</div><div class="line">1593677820 551464 10.0.186.70:32610 10.0.186.97:3306 142 5866 113 0 36314735 2746</div><div class="line">1593677820 557331 10.0.186.70:32610 10.0.186.97:3306 142 213762 113 1 36314736 2627 &lt;?</div><div class="line">1593677820 772815 10.0.186.70:32610 10.0.186.97:3306 142 5845 113 0 36314737 2731</div><div class="line">1593677820 778677 10.0.186.70:32610 10.0.186.97:3306 142 5868 113 0 36314738 2744</div></pre></td></tr></table></figure>
 <p>对应这个时间点的抓包，可以看到这两个慢的查询都是因为第一个response发给client后没有收到ack（网络丢包？网络延时高？） 200ms后再发一次response就收到ack。所以总的rt都超过了200ms，其它没丢包的rt都很快。另外抓包的请求和和上面tcprt记录都是全对应的，时间精度都在微秒级。</p>
@@ -2523,6 +2694,84 @@ LISTEN    0     511              *:8085           *:*
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div></pre></td><td class="code"><pre><div class="line">[aliyun@uos15 11:00 /home/aliyun]  一下88都是光口、89都是电口。</div><div class="line">$ping -c 10 10.88.88.16 //光纤</div><div class="line">PING 10.88.88.16 (10.88.88.16) 56(84) bytes of data.</div><div class="line">64 bytes from 10.88.88.16: icmp_seq=1 ttl=64 time=0.058 ms</div><div class="line">64 bytes from 10.88.88.16: icmp_seq=2 ttl=64 time=0.049 ms</div><div class="line">64 bytes from 10.88.88.16: icmp_seq=3 ttl=64 time=0.053 ms</div><div class="line">64 bytes from 10.88.88.16: icmp_seq=4 ttl=64 time=0.040 ms</div><div class="line">64 bytes from 10.88.88.16: icmp_seq=5 ttl=64 time=0.053 ms</div><div class="line">64 bytes from 10.88.88.16: icmp_seq=6 ttl=64 time=0.043 ms</div><div class="line">64 bytes from 10.88.88.16: icmp_seq=7 ttl=64 time=0.038 ms</div><div class="line">64 bytes from 10.88.88.16: icmp_seq=8 ttl=64 time=0.050 ms</div><div class="line">64 bytes from 10.88.88.16: icmp_seq=9 ttl=64 time=0.043 ms</div><div class="line">64 bytes from 10.88.88.16: icmp_seq=10 ttl=64 time=0.064 ms</div><div class="line"></div><div class="line">--- 10.88.88.16 ping statistics ---</div><div class="line">10 packets transmitted, 10 received, 0% packet loss, time 159ms</div><div class="line">rtt min/avg/max/mdev = 0.038/0.049/0.064/0.008 ms</div><div class="line"></div><div class="line">[aliyun@uos15 11:01 /home/aliyun]</div><div class="line">$ping -c 10 10.88.89.16 //电口</div><div class="line">PING 10.88.89.16 (10.88.89.16) 56(84) bytes of data.</div><div class="line">64 bytes from 10.88.89.16: icmp_seq=1 ttl=64 time=0.087 ms</div><div class="line">64 bytes from 10.88.89.16: icmp_seq=2 ttl=64 time=0.053 ms</div><div class="line">64 bytes from 10.88.89.16: icmp_seq=3 ttl=64 time=0.095 ms</div><div class="line">64 bytes from 10.88.89.16: icmp_seq=4 ttl=64 time=0.391 ms</div><div class="line">64 bytes from 10.88.89.16: icmp_seq=5 ttl=64 time=0.051 ms</div><div class="line">64 bytes from 10.88.89.16: icmp_seq=6 ttl=64 time=0.343 ms</div><div class="line">64 bytes from 10.88.89.16: icmp_seq=7 ttl=64 time=0.045 ms</div><div class="line">64 bytes from 10.88.89.16: icmp_seq=8 ttl=64 time=0.341 ms</div><div class="line">64 bytes from 10.88.89.16: icmp_seq=9 ttl=64 time=0.054 ms</div><div class="line">64 bytes from 10.88.89.16: icmp_seq=10 ttl=64 time=0.066 ms</div><div class="line"></div><div class="line">--- 10.88.89.16 ping statistics ---</div><div class="line">10 packets transmitted, 10 received, 0% packet loss, time 149ms</div><div class="line">rtt min/avg/max/mdev = 0.045/0.152/0.391/0.136 ms</div><div class="line"></div><div class="line">[aliyun@uos15 11:02 /u01]</div><div class="line">$scp uos.tar aliyun@10.88.89.16:/tmp/</div><div class="line">uos.tar                                  100% 3743MB 111.8MB/s   00:33    </div><div class="line"></div><div class="line">[aliyun@uos15 11:03 /u01]</div><div class="line">$scp uos.tar aliyun@10.88.88.16:/tmp/</div><div class="line">uos.tar                                   100% 3743MB 178.7MB/s   00:20    </div><div class="line"></div><div class="line">[aliyun@uos15 11:07 /u01]</div><div class="line">$sudo ping -f 10.88.89.16</div><div class="line">PING 10.88.89.16 (10.88.89.16) 56(84) bytes of data.</div><div class="line">--- 10.88.89.16 ping statistics ---</div><div class="line">284504 packets transmitted, 284504 received, 0% packet loss, time 702ms</div><div class="line">rtt min/avg/max/mdev = 0.019/0.040/1.014/0.013 ms, ipg/ewma 0.048/0.042 ms</div><div class="line"></div><div class="line">[aliyun@uos15 11:07 /u01]</div><div class="line">$sudo ping -f 10.88.88.16</div><div class="line">PING 10.88.88.16 (10.88.88.16) 56(84) bytes of data.</div><div class="line">--- 10.88.88.16 ping statistics ---</div><div class="line">299748 packets transmitted, 299748 received, 0% packet loss, time 242ms</div><div class="line">rtt min/avg/max/mdev = 0.012/0.016/0.406/0.006 ms, pipe 2, ipg/ewma 0.034/0.014 ms</div></pre></td></tr></table></figure>
 <p>光纤接口：</p>
 <p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b67715de1b8e143f6fc17ba574bcf0c4.png" alt="image.png" style="zoom:60%;"></p>
+<h2 id="Cache、内存、磁盘、网络的延迟比较"><a href="#Cache、内存、磁盘、网络的延迟比较" class="headerlink" title="Cache、内存、磁盘、网络的延迟比较"></a>Cache、内存、磁盘、网络的延迟比较</h2><p><a href="http://cizixs.com/2017/01/03/how-slow-is-disk-and-network" target="_blank" rel="external">假设主频2.6G的CPU，每个指令只需要 0.38ns</a> </p>
+<p>每次内存寻址需要 100ns </p>
+<p>一次 CPU 上下文切换（系统调用）需要大约 1500ns，也就是 1.5us（这个数字参考了<a href="http://blog.tsunanet.net/2010/11/how-long-does-it-take-to-make-context.html" target="_blank" rel="external">这篇文章</a>，采用的是单核 CPU 线程平均时间）</p>
+<p>SSD 随机读取耗时为 150us</p>
+<p>从内存中读取 1MB 的连续数据，耗时大约为 250us</p>
+<p>同一个数据中心网络上跑一个来回需要 0.5ms</p>
+<p>从 SSD 读取 1MB 的顺序数据，大约需要 1ms （是内存速度的四分之一）</p>
+<p>磁盘寻址时间为 10ms</p>
+<p>从磁盘读取 1MB 连续数据需要 20ms</p>
+<p>如果 CPU 访问 L1 缓存需要 1 秒，那么访问主存需要 3 分钟、从 SSD 中随机读取数据需要 3.4 天、磁盘寻道需要 2 个月，网络传输可能需要 1 年多的时间。</p>
+<p><strong>2012 年延迟数字对比表：</strong></p>
+<table>
+<thead>
+<tr>
+<th>Work</th>
+<th>Latency</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>L1 cache reference</td>
+<td>0.5 ns</td>
+</tr>
+<tr>
+<td>Branch mispredict</td>
+<td>5 ns</td>
+</tr>
+<tr>
+<td>L2 cache reference</td>
+<td>7 ns</td>
+</tr>
+<tr>
+<td>Mutex lock/unlock</td>
+<td>25 ns</td>
+</tr>
+<tr>
+<td>Main memory reference</td>
+<td>100 ns</td>
+</tr>
+<tr>
+<td>Compress 1K bytes with Zippy</td>
+<td>3,000 ns</td>
+</tr>
+<tr>
+<td>Send 1K bytes over 1 Gbps network</td>
+<td>10,000 ns</td>
+</tr>
+<tr>
+<td>Read 4K randomly from SSD*</td>
+<td>150,000 ns</td>
+</tr>
+<tr>
+<td>Read 1 MB sequentially from memory</td>
+<td>250,000 ns</td>
+</tr>
+<tr>
+<td>Round trip within same datacenter</td>
+<td>500,000 ns</td>
+</tr>
+<tr>
+<td>Read 1 MB sequentially from SSD*</td>
+<td>1,000,000 ns</td>
+</tr>
+<tr>
+<td>Disk seek</td>
+<td>10,000,000 ns</td>
+</tr>
+<tr>
+<td>Read 1 MB sequentially from disk</td>
+<td>20,000,000 ns</td>
+</tr>
+<tr>
+<td>Send packet CA-&gt;Netherlands-&gt;CA</td>
+<td>150,000,000 ns</td>
+</tr>
+</tbody>
+</table>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="http://cizixs.com/2017/01/03/how-slow-is-disk-and-network" target="_blank" rel="external">http://cizixs.com/2017/01/03/how-slow-is-disk-and-network</a></p>
 
           
         
@@ -2837,6 +3086,11 @@ Mem:          7515       1115       6400          0        189        492
 Swap:            0          0          0
 </code></pre><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/f8d944e2c7a8611384acb820c4471007.png" alt="image.png" style="zoom:80%;"></p>
 <p><strong>上图中-/+ buffers/cache: -是指userd去掉buffers/cached后真正使用掉的内存; +是指free加上buffers和cached后真正free的内存大小。</strong></p>
+<h2 id="free"><a href="#free" class="headerlink" title="free"></a>free</h2><p>free是从 /proc/meminfo 读取数据然后展示：</p>
+<blockquote>
+<p>buff/cache = Buffers + Cached + SReclaimable</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">[root@az1-drds-79 ~]# cat /proc/meminfo |egrep -i &quot;buff|cach|SReclai&quot;</div><div class="line">Buffers:          817764 kB</div><div class="line">Cached:         76629252 kB</div><div class="line">SwapCached:            0 kB</div><div class="line">SReclaimable:    7202264 kB</div><div class="line">[root@az1-drds-79 ~]# free -k</div><div class="line">             total       used       free     shared    buffers     cached</div><div class="line">Mem:      97267672   95522336    1745336          0     817764   76629352</div><div class="line">-/+ buffers/cache:   18075220   79192452</div><div class="line">Swap:            0          0          0</div></pre></td></tr></table></figure>
 <h2 id="cached过高回收"><a href="#cached过高回收" class="headerlink" title="cached过高回收"></a>cached过高回收</h2><p>回收：<br>    echo 1/2/3 &gt;/proc/sys/vm/drop_cached</p>
 <p>查看回收后：</p>
 <pre><code>cat /proc/meminfo
@@ -2867,25 +3121,24 @@ test.x86_64.rpm
 …………
            Files: 48
  Directories: 2
-    Touched Pages: 468992 (1G)
-     Elapsed: 13.274 seconds
-</code></pre><h2 id="slabtop和-proc-slabinfo"><a href="#slabtop和-proc-slabinfo" class="headerlink" title="slabtop和/proc/slabinfo"></a>slabtop和/proc/slabinfo</h2><p>slabtop和/proc/slabinfo 查看cached使用情况 主要是：pagecache（页面缓存）， dentries（目录缓存）， inodes</p>
-<h2 id="消失的内存"><a href="#消失的内存" class="headerlink" title="消失的内存"></a>消失的内存</h2><p>OS刚启动后就报内存不够了，什么都没跑就500G没了，top按内存排序没有超过0.5%的</p>
-<p>参考： <a href="https://cloud.tencent.com/developer/article/1087455" target="_blank" rel="external">https://cloud.tencent.com/developer/article/1087455</a></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div></pre></td><td class="code"><pre><div class="line">[aliyun@uos15 18:40 /u02/backup_15/leo/benchmark/run]</div><div class="line">$free -g</div><div class="line">              total        used        free      shared  buff/cache   available</div><div class="line">Mem:            503         501           1           0           0           1</div><div class="line">Swap:            15          12           3</div><div class="line"></div><div class="line">$cat /proc/meminfo </div><div class="line">MemTotal:       528031512 kB</div><div class="line">MemFree:         1469632 kB</div><div class="line">MemAvailable:          0 kB</div><div class="line">VmallocTotal:   135290290112 kB</div><div class="line">VmallocUsed:           0 kB</div><div class="line">VmallocChunk:          0 kB</div><div class="line">Percpu:            81920 kB</div><div class="line">AnonHugePages:    950272 kB</div><div class="line">ShmemHugePages:        0 kB</div><div class="line">ShmemPmdMapped:        0 kB</div><div class="line">HugePages_Total:   252557   ----- 预分配太多，一个2M，加起来刚好500G了</div><div class="line">HugePages_Free:    252557</div><div class="line">HugePages_Rsvd:        0</div><div class="line">HugePages_Surp:        0</div><div class="line">Hugepagesize:       2048 kB</div><div class="line">Hugetlb:        517236736 kB</div><div class="line"></div><div class="line">以下是一台正常的机器对比：</div><div class="line">Percpu:            41856 kB</div><div class="line">AnonHugePages:  11442176 kB</div><div class="line">ShmemHugePages:        0 kB</div><div class="line">ShmemPmdMapped:        0 kB</div><div class="line">HugePages_Total:       0            ----没有做预分配</div><div class="line">HugePages_Free:        0</div><div class="line">HugePages_Rsvd:        0</div><div class="line">HugePages_Surp:        0</div><div class="line">Hugepagesize:       2048 kB</div><div class="line">Hugetlb:               0 kB</div><div class="line"></div><div class="line">[aliyun@uos16 18:43 /home/aliyun]</div><div class="line">$free -g</div><div class="line">              total        used        free      shared  buff/cache   available</div><div class="line">Mem:            503          20         481           0           1         480</div><div class="line">Swap:            15           0          15</div><div class="line"></div><div class="line">对有问题的机器执行：</div><div class="line"># echo 1024 &gt; /proc/sys/vm/nr_hugepages</div><div class="line">可以看到内存恢复正常了 </div><div class="line">root@uos15:/u02/backup_15/leo/benchmark/run# free -g</div><div class="line">              total        used        free      shared  buff/cache   available</div><div class="line">Mem:            503          10         492           0           0         490</div><div class="line">Swap:            15          12           3</div><div class="line">root@uos15:/u02/backup_15/leo/benchmark/run# cat /proc/meminfo </div><div class="line">MemTotal:       528031512 kB</div><div class="line">MemFree:        516106832 kB</div><div class="line">MemAvailable:   514454408 kB</div><div class="line">VmallocTotal:   135290290112 kB</div><div class="line">VmallocUsed:           0 kB</div><div class="line">VmallocChunk:          0 kB</div><div class="line">Percpu:            81920 kB</div><div class="line">AnonHugePages:    313344 kB</div><div class="line">ShmemHugePages:        0 kB</div><div class="line">ShmemPmdMapped:        0 kB</div><div class="line">HugePages_Total:    1024</div><div class="line">HugePages_Free:     1024</div><div class="line">HugePages_Rsvd:        0</div><div class="line">HugePages_Surp:        0</div><div class="line">Hugepagesize:       2048 kB</div><div class="line">Hugetlb:         2097152 kB</div></pre></td></tr></table></figure>
-<h2 id="关于hugetlb"><a href="#关于hugetlb" class="headerlink" title="关于hugetlb"></a>关于hugetlb</h2><p> This is an entry in the TLB that points to a HugePage (a large/big page larger than regular 4K and predefined in size). HugePages are implemented via hugetlb entries, i.e. we can say that a HugePage is handled by a “hugetlb page entry”. The ‘hugetlb” term is also (and mostly) used synonymously with a HugePage (See Note 261889.1). In this document the term “HugePage” is going to be used but keep in mind that mostly “hugetlb” refers to the same concept.</p>
-<p> hugetlb 是TLB中指向HugePage的一个entry(通常大于4k或预定义页面大小)。 HugePage 通过hugetlb entries来实现，也可以理解为HugePage 是hugetlb page entry的一个句柄。</p>
-<p><strong>Linux下的大页分为两种类型：标准大页（Huge Pages）和透明大页（Transparent Huge Pages）</strong></p>
-<p>标准大页管理是预分配的方式，而透明大页管理则是动态分配的方式</p>
-<p>目前透明大页与传统HugePages联用会出现一些问题，导致性能问题和系统重启。Oracle 建议禁用透明大页（Transparent Huge Pages）</p>
-<p>hugetlbfs比THP要好，开thp的机器碎片化严重（不开THP会有更严重的碎片化问题），最后和没开THP一样 <a href="https://www.atatech.org/articles/152660" target="_blank" rel="external">https://www.atatech.org/articles/152660</a></p>
-<h2 id="THP"><a href="#THP" class="headerlink" title="THP"></a>THP</h2><p>在透明大页功能打开时，造成系统性能下降的主要原因可能是 <code>khugepaged</code> 守护进程。该进程会在（它认为）系统空闲时启动，扫描系统中剩余的空闲内存，并将普通 4k 页转换为大页。该操作会在内存路径中加锁，而该守护进程可能会在错误的时间启动扫描和转换大页的操作，从而影响应用性能。</p>
-<p>此外，当缺页异常(page faults)增多时，透明大页会和普通 4k 页一样，产生同步内存压缩(direct compaction)操作，以节省内存。该操作是一个同步的内存整理操作，如果应用程序会短时间分配大量内存，内存压缩操作很可能会被触发，从而会对系统性能造成风险。<a href="https://yq.aliyun.com/articles/712830" target="_blank" rel="external">https://yq.aliyun.com/articles/712830</a></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">#查看系统级别的 THP 使用情况，执行下列命令：</div><div class="line">cat /proc/meminfo  | grep AnonHugePages</div><div class="line">#类似地，查看进程级别的 THP 使用情况，执行下列命令：</div><div class="line">cat /proc/1730/smaps | grep AnonHugePages |grep -v &quot;0 kB&quot;</div></pre></td></tr></table></figure>
-<h2 id="碎片化"><a href="#碎片化" class="headerlink" title="碎片化"></a>碎片化</h2><p>内存碎片严重的话会导致系统hang很久(回收、压缩内存）</p>
-<p>尽量让系统的free多一点(比例高一点）可以调整 vm.min_free_kbytes(128G 以内 2G，256G以内 8G), 线上机器直接修改vm.min_free_kbytes<strong>会触发回收，导致系统hang住</strong> <a href="https://www.atatech.org/articles/163233" target="_blank" rel="external">https://www.atatech.org/articles/163233</a> <a href="https://www.atatech.org/articles/97130" target="_blank" rel="external">https://www.atatech.org/articles/97130</a></p>
-<p>每个zone都有自己的min low high,如下，但是单位是page, 计算案例：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div></pre></td><td class="code"><pre><div class="line">[root@jiangyi01.sqa.zmf /home/ahao.mah]</div><div class="line">#cat /proc/zoneinfo  |grep &quot;Node&quot;</div><div class="line">Node 0, zone      DMA</div><div class="line">Node 0, zone    DMA32</div><div class="line">Node 0, zone   Normal</div><div class="line">Node 1, zone   Normal</div><div class="line"></div><div class="line">[root@jiangyi01.sqa.zmf /home/ahao.mah]</div><div class="line">#cat /proc/zoneinfo  |grep &quot;Node 0, zone&quot; -A10</div><div class="line">Node 0, zone      DMA</div><div class="line">  pages free     3975</div><div class="line">        min      20</div><div class="line">        low      25</div><div class="line">        high     30</div><div class="line">        scanned  0</div><div class="line">        spanned  4095</div><div class="line">        present  3996</div><div class="line">        managed  3975</div><div class="line">    nr_free_pages 3975</div><div class="line">    nr_alloc_batch 5</div><div class="line">--</div><div class="line">Node 0, zone    DMA32</div><div class="line">  pages free     382873</div><div class="line">        min      2335</div><div class="line">        low      2918</div><div class="line">        high     3502</div><div class="line">        scanned  0</div><div class="line">        spanned  1044480</div><div class="line">        present  513024</div><div class="line">        managed  450639</div><div class="line">    nr_free_pages 382873</div><div class="line">    nr_alloc_batch 584</div><div class="line">--</div><div class="line">Node 0, zone   Normal</div><div class="line">  pages free     11105097</div><div class="line">        min      61463</div><div class="line">        low      76828</div><div class="line">        high     92194</div><div class="line">        scanned  0</div><div class="line">        spanned  12058624</div><div class="line">        present  12058624</div><div class="line">        managed  11859912</div><div class="line">    nr_free_pages 11105097</div><div class="line">    nr_alloc_batch 12344</div><div class="line">    </div><div class="line">    low = 5/4 * min</div><div class="line">high = 3/2 * min</div><div class="line"></div><div class="line">[root@jiangyi01.sqa.zmf /home/ahao.mah]</div><div class="line">#T=min;sum=0;for i in `cat /proc/zoneinfo  |grep $T | awk &apos;&#123;print $NF&#125;&apos;`;do sum=`echo &quot;$sum+$i&quot; |bc`;done;sum=`echo &quot;$sum*4/1024&quot; |bc`;echo &quot;sum=$&#123;sum&#125; MB&quot;</div><div class="line">sum=499 MB</div><div class="line"></div><div class="line">[root@jiangyi01.sqa.zmf /home/ahao.mah]</div><div class="line">#T=low;sum=0;for i in `cat /proc/zoneinfo  |grep $T | awk &apos;&#123;print $NF&#125;&apos;`;do sum=`echo &quot;$sum+$i&quot; |bc`;done;sum=`echo &quot;$sum*4/1024&quot; |bc`;echo &quot;sum=$&#123;sum&#125; MB&quot;</div><div class="line">sum=624 MB</div><div class="line"></div><div class="line">[root@jiangyi01.sqa.zmf /home/ahao.mah]</div><div class="line">#T=high;sum=0;for i in `cat /proc/zoneinfo  |grep $T | awk &apos;&#123;print $NF&#125;&apos;`;do sum=`echo &quot;$sum+$i&quot; |bc`;done;sum=`echo &quot;$sum*4/1024&quot; |bc`;echo &quot;sum=$&#123;sum&#125; MB&quot;</div><div class="line">sum=802 MB</div></pre></td></tr></table></figure>
+ Touched Pages: 468992 (1G)
+ Elapsed: 13.274 seconds
+</code></pre><h2 id="pagecache-的产生和释放"><a href="#pagecache-的产生和释放" class="headerlink" title="pagecache 的产生和释放"></a>pagecache 的产生和释放</h2><ul>
+<li>标准 I/O 是写的 (write(2)) 用户缓冲区 (Userpace Page 对应的内存)，<strong>然后再将用户缓冲区里的数据拷贝到内核缓冲区 (Pagecache Page 对应的内存)</strong>；如果是读的 (read(2)) 话则是先从内核缓冲区拷贝到用户缓冲区，再从用户缓冲区读数据，也就是 buffer 和文件内容不存在任何映射关系。</li>
+<li>对于存储映射 I/O（Memory-Mapped I/O） 而言，则是直接将 Pagecache Page 给映射到用户地址空间，用户直接读写 Pagecache Page 中内容，效率相对标准IO更高一些</li>
+</ul>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/51bf36aa14dc01e7ad309c1bb9d252e9.png" alt="image.png"></p>
+<p>当 <strong>将用户缓冲区里的数据拷贝到内核缓冲区 (Pagecache Page 对应的内存)</strong> 最容易发生缺页中断，OS需要先分配Page（应用感知到的就是卡顿了）</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d62ea00662f8342b7df3aab6b28e4cbb.png" alt="image.png">  </p>
+<ul>
+<li>Page Cache 是在应用程序读写文件的过程中产生的，所以在读写文件之前你需要留意是否还有足够的内存来分配 Page Cache；</li>
+<li>Page Cache 中的脏页很容易引起问题，你要重点注意这一块；</li>
+<li>在系统可用内存不足的时候就会回收 Page Cache 来释放出来内存，我建议你可以通过 sar 或者 /proc/vmstat 来观察这个行为从而更好的判断问题是否跟回收有关</li>
+</ul>
+<p>缺页后kswapd在短时间内回收不了足够多的 free 内存，或kswapd 还没有触发执行，操作系统就会进行内存页直接回收。这个过程中，应用会进行自旋等待直到回收的完成，从而产生巨大的延迟。</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/0a5cdeb75b7dee2068254cd4b7fe254d.png" alt=""></p>
+<p>如果page被swapped，那么恢复进内场的过程也对延迟有影响，当被匿名内存页被回收后，如果下次再访问就会产生IO的延迟。</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/740b95056dace8ae6fb3b8f58d91572e.png" alt=""></p>
 <h3 id="min-和-low的区别："><a href="#min-和-low的区别：" class="headerlink" title="min 和 low的区别："></a>min 和 low的区别：</h3><ol>
 <li>min下的内存是保留给内核使用的；当到达min，会触发内存的direct reclaim</li>
 <li>low水位比min高一些，当内存可用量小于low的时候，会触发 kswapd回收内存，当kswapd慢慢的将内存 回收到high水位，就开始继续睡眠</li>
@@ -2895,9 +3148,216 @@ test.x86_64.rpm
 <li>direct reclaim : 达到min水位线时执行</li>
 <li>kswapd reclaim : 达到low水位线时执行</li>
 </ol>
+<p>为了减少缺页中断，首先就要保证我们有足够的内存可以使用。由于Linux会尽可能多的使用free的内存，运行很久的应用free的内存是很少的。下面的图中，紫色表示已经使用的内存，白色表示尚未分配的内存。当我们的内存使用达到水位的low值的时候，kswapd就会开始回收工作，而一旦内存分配超过了mini，就会进行内存的直接回收。</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/5933cc4c28f86aa08410a8af4ff4410d.png" alt=""></p>
+<p>针对这种情况，我们需要采用预留内存的手段，系统参数vm.extra_free_kbytes就是用来做这个事情的。这个参数设置了系统预留给应用的内存，可以避免紧急需要内存时发生内存回收不及时导致的高延迟。从下面图中可以看到，通过vm.extra_free_kbytes的设置，预留内存可以让内存的申请处在一个安全的水位。<strong>需要注意的是，因为内核的优化，在3.10以上的内核版本这个参数已经被取消。</strong></p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/f55022d4eb181b92ba5d2e142ec940c8.png" alt=""></p>
+<p>或者禁止： vm.swappiness  来避免swapped来减少延迟</p>
+<h2 id="slabtop和-proc-slabinfo"><a href="#slabtop和-proc-slabinfo" class="headerlink" title="slabtop和/proc/slabinfo"></a>slabtop和/proc/slabinfo</h2><p>slabtop和/proc/slabinfo 查看cached使用情况 主要是：pagecache（页面缓存）， dentries（目录缓存）， inodes</p>
+<h2 id="消失的内存"><a href="#消失的内存" class="headerlink" title="消失的内存"></a>消失的内存</h2><p>OS刚启动后就报内存不够了，什么都没跑就500G没了，cached和buffer基本没用，纯粹就是used占用高，top按内存排序没有超过0.5%的进程</p>
+<p>参考： <a href="https://cloud.tencent.com/developer/article/1087455" target="_blank" rel="external">https://cloud.tencent.com/developer/article/1087455</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div></pre></td><td class="code"><pre><div class="line">[aliyun@uos15 18:40 /u02/backup_15/leo/benchmark/run]</div><div class="line">$free -g</div><div class="line">              total        used        free      shared  buff/cache   available</div><div class="line">Mem:            503         501           1           0           0           1</div><div class="line">Swap:            15          12           3</div><div class="line"></div><div class="line">$cat /proc/meminfo </div><div class="line">MemTotal:       528031512 kB</div><div class="line">MemFree:         1469632 kB</div><div class="line">MemAvailable:          0 kB</div><div class="line">VmallocTotal:   135290290112 kB</div><div class="line">VmallocUsed:           0 kB</div><div class="line">VmallocChunk:          0 kB</div><div class="line">Percpu:            81920 kB</div><div class="line">AnonHugePages:    950272 kB</div><div class="line">ShmemHugePages:        0 kB</div><div class="line">ShmemPmdMapped:        0 kB</div><div class="line">HugePages_Total:   252557   ----- 预分配太多，一个2M，加起来刚好500G了</div><div class="line">HugePages_Free:    252557</div><div class="line">HugePages_Rsvd:        0</div><div class="line">HugePages_Surp:        0</div><div class="line">Hugepagesize:       2048 kB</div><div class="line">Hugetlb:        517236736 kB</div><div class="line"></div><div class="line">以下是一台正常的机器对比：</div><div class="line">Percpu:            41856 kB</div><div class="line">AnonHugePages:  11442176 kB</div><div class="line">ShmemHugePages:        0 kB</div><div class="line">ShmemPmdMapped:        0 kB</div><div class="line">HugePages_Total:       0            ----没有做预分配</div><div class="line">HugePages_Free:        0</div><div class="line">HugePages_Rsvd:        0</div><div class="line">HugePages_Surp:        0</div><div class="line">Hugepagesize:       2048 kB</div><div class="line">Hugetlb:               0 kB</div><div class="line"></div><div class="line">[aliyun@uos16 18:43 /home/aliyun]</div><div class="line">$free -g</div><div class="line">              total        used        free      shared  buff/cache   available</div><div class="line">Mem:            503          20         481           0           1         480</div><div class="line">Swap:            15           0          15</div><div class="line"></div><div class="line">对有问题的机器执行：</div><div class="line"># echo 1024 &gt; /proc/sys/vm/nr_hugepages</div><div class="line">可以看到内存恢复正常了 </div><div class="line">root@uos15:/u02/backup_15/leo/benchmark/run# free -g</div><div class="line">              total        used        free      shared  buff/cache   available</div><div class="line">Mem:            503          10         492           0           0         490</div><div class="line">Swap:            15          12           3</div><div class="line">root@uos15:/u02/backup_15/leo/benchmark/run# cat /proc/meminfo </div><div class="line">MemTotal:       528031512 kB</div><div class="line">MemFree:        516106832 kB</div><div class="line">MemAvailable:   514454408 kB</div><div class="line">VmallocTotal:   135290290112 kB</div><div class="line">VmallocUsed:           0 kB</div><div class="line">VmallocChunk:          0 kB</div><div class="line">Percpu:            81920 kB</div><div class="line">AnonHugePages:    313344 kB</div><div class="line">ShmemHugePages:        0 kB</div><div class="line">ShmemPmdMapped:        0 kB</div><div class="line">HugePages_Total:    1024</div><div class="line">HugePages_Free:     1024</div><div class="line">HugePages_Rsvd:        0</div><div class="line">HugePages_Surp:        0</div><div class="line">Hugepagesize:       2048 kB</div><div class="line">Hugetlb:         2097152 kB</div></pre></td></tr></table></figure>
+<h2 id="关于hugetlb"><a href="#关于hugetlb" class="headerlink" title="关于hugetlb"></a>关于hugetlb</h2><p> This is an entry in the TLB that points to a HugePage (a large/big page larger than regular 4K and predefined in size). HugePages are implemented via hugetlb entries, i.e. we can say that a HugePage is handled by a “hugetlb page entry”. The ‘hugetlb” term is also (and mostly) used synonymously with a HugePage (See Note 261889.1). In this document the term “HugePage” is going to be used but keep in mind that mostly “hugetlb” refers to the same concept.</p>
+<p> hugetlb 是TLB中指向HugePage的一个entry(通常大于4k或预定义页面大小)。 HugePage 通过hugetlb entries来实现，也可以理解为HugePage 是hugetlb page entry的一个句柄。</p>
+<p><strong>Linux下的大页分为两种类型：标准大页（Huge Pages）和透明大页（Transparent Huge Pages）</strong></p>
+<p>标准大页管理是预分配的方式，而透明大页管理则是动态分配的方式</p>
+<p>目前透明大页与传统HugePages联用会出现一些问题，导致性能问题和系统重启。Oracle 建议禁用透明大页（Transparent Huge Pages）</p>
+<p>hugetlbfs比THP要好，开thp的机器碎片化严重（不开THP会有更严重的碎片化问题），最后和没开THP一样 <a href="https://www.atatech.org/articles/152660" target="_blank" rel="external">https://www.atatech.org/articles/152660</a></p>
+<h2 id="THP"><a href="#THP" class="headerlink" title="THP"></a>THP</h2><p>Linux kernel在2.6.38内核增加了Transparent Huge Pages (THP)特性 ，支持大内存页(2MB)分配，默认开启。当开启时可以降低fork子进程的速度，但fork之后，每个内存页从原来4KB变为2MB，会大幅增加重写期间父进程内存消耗。同时每次写命令引起的复制内存页单位放大了512倍，会拖慢写操作的执行时间，导致大量写操作慢查询。例如简单的incr命令也会出现在慢查询中。因此Redis日志中建议将此特性进行禁用。  </p>
+<p>THP 对redis、monglodb 这种cache类推荐关闭，对drds这种java应用最好打开</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">grep &quot;Huge&quot; /proc/meminfo</div><div class="line">AnonHugePages:   1286144 kB</div><div class="line">ShmemHugePages:        0 kB</div><div class="line">HugePages_Total:       0</div><div class="line">HugePages_Free:        0</div><div class="line">HugePages_Rsvd:        0</div><div class="line">HugePages_Surp:        0</div><div class="line">Hugepagesize:       2048 kB</div><div class="line">Hugetlb:               0 kB</div><div class="line">$grep -e AnonHugePages  /proc/*/smaps | awk  &apos;&#123; if($2&gt;4) print $0&#125; &apos; |  awk -F &quot;/&quot;  &apos;&#123;print $0; system(&quot;ps -fp &quot; $3)&#125; &apos;</div><div class="line"></div><div class="line">//查看pagesize（默认4K） </div><div class="line">$getconf PAGESIZE</div></pre></td></tr></table></figure>
+<p>在透明大页功能打开时，造成系统性能下降的主要原因可能是 <code>khugepaged</code> 守护进程。该进程会在（它认为）系统空闲时启动，扫描系统中剩余的空闲内存，并将普通 4k 页转换为大页。该操作会在内存路径中加锁，而该守护进程可能会在错误的时间启动扫描和转换大页的操作，从而影响应用性能。</p>
+<p>此外，当缺页异常(page faults)增多时，透明大页会和普通 4k 页一样，产生同步内存压缩(direct compaction)操作，以节省内存。该操作是一个同步的内存整理操作，如果应用程序会短时间分配大量内存，内存压缩操作很可能会被触发，从而会对系统性能造成风险。<a href="https://yq.aliyun.com/articles/712830" target="_blank" rel="external">https://yq.aliyun.com/articles/712830</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">#查看系统级别的 THP 使用情况，执行下列命令：</div><div class="line">cat /proc/meminfo  | grep AnonHugePages</div><div class="line">#类似地，查看进程级别的 THP 使用情况，执行下列命令：</div><div class="line">cat /proc/1730/smaps | grep AnonHugePages |grep -v &quot;0 kB&quot;</div></pre></td></tr></table></figure>
+<h2 id="碎片化"><a href="#碎片化" class="headerlink" title="碎片化"></a>碎片化</h2><p>内存碎片严重的话会导致系统hang很久(回收、压缩内存）</p>
+<p>尽量让系统的free多一点(比例高一点）可以调整 vm.min_free_kbytes(128G 以内 2G，256G以内 8G), 线上机器直接修改vm.min_free_kbytes<strong>会触发回收，导致系统hang住</strong> <a href="https://www.atatech.org/articles/163233" target="_blank" rel="external">https://www.atatech.org/articles/163233</a> <a href="https://www.atatech.org/articles/97130" target="_blank" rel="external">https://www.atatech.org/articles/97130</a></p>
+<p>每个zone都有自己的min low high,如下，但是单位是page, 计算案例：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div></pre></td><td class="code"><pre><div class="line">[root@jiangyi01.sqa.zmf /home/ahao.mah]</div><div class="line">#cat /proc/zoneinfo  |grep &quot;Node&quot;</div><div class="line">Node 0, zone      DMA</div><div class="line">Node 0, zone    DMA32</div><div class="line">Node 0, zone   Normal</div><div class="line">Node 1, zone   Normal</div><div class="line"></div><div class="line">[root@jiangyi01.sqa.zmf /home/ahao.mah]</div><div class="line">#cat /proc/zoneinfo  |grep &quot;Node 0, zone&quot; -A10</div><div class="line">Node 0, zone      DMA</div><div class="line">  pages free     3975</div><div class="line">        min      20</div><div class="line">        low      25</div><div class="line">        high     30</div><div class="line">        scanned  0</div><div class="line">        spanned  4095</div><div class="line">        present  3996</div><div class="line">        managed  3975</div><div class="line">    nr_free_pages 3975</div><div class="line">    nr_alloc_batch 5</div><div class="line">--</div><div class="line">Node 0, zone    DMA32</div><div class="line">  pages free     382873</div><div class="line">        min      2335</div><div class="line">        low      2918</div><div class="line">        high     3502</div><div class="line">        scanned  0</div><div class="line">        spanned  1044480</div><div class="line">        present  513024</div><div class="line">        managed  450639</div><div class="line">    nr_free_pages 382873</div><div class="line">    nr_alloc_batch 584</div><div class="line">--</div><div class="line">Node 0, zone   Normal</div><div class="line">  pages free     11105097</div><div class="line">        min      61463</div><div class="line">        low      76828</div><div class="line">        high     92194</div><div class="line">        scanned  0</div><div class="line">        spanned  12058624</div><div class="line">        present  12058624</div><div class="line">        managed  11859912</div><div class="line">    nr_free_pages 11105097</div><div class="line">    nr_alloc_batch 12344</div><div class="line">    </div><div class="line">    low = 5/4 * min</div><div class="line">high = 3/2 * min</div><div class="line"></div><div class="line">[root@jiangyi01.sqa.zmf /home/ahao.mah]</div><div class="line">#T=min;sum=0;for i in `cat /proc/zoneinfo  |grep $T | awk &apos;&#123;print $NF&#125;&apos;`;do sum=`echo &quot;$sum+$i&quot; |bc`;done;sum=`echo &quot;$sum*4/1024&quot; |bc`;echo &quot;sum=$&#123;sum&#125; MB&quot;</div><div class="line">sum=499 MB</div><div class="line"></div><div class="line">[root@jiangyi01.sqa.zmf /home/ahao.mah]</div><div class="line">#T=low;sum=0;for i in `cat /proc/zoneinfo  |grep $T | awk &apos;&#123;print $NF&#125;&apos;`;do sum=`echo &quot;$sum+$i&quot; |bc`;done;sum=`echo &quot;$sum*4/1024&quot; |bc`;echo &quot;sum=$&#123;sum&#125; MB&quot;</div><div class="line">sum=624 MB</div><div class="line"></div><div class="line">[root@jiangyi01.sqa.zmf /home/ahao.mah]</div><div class="line">#T=high;sum=0;for i in `cat /proc/zoneinfo  |grep $T | awk &apos;&#123;print $NF&#125;&apos;`;do sum=`echo &quot;$sum+$i&quot; |bc`;done;sum=`echo &quot;$sum*4/1024&quot; |bc`;echo &quot;sum=$&#123;sum&#125; MB&quot;</div><div class="line">sum=802 MB</div></pre></td></tr></table></figure>
 <h2 id="定制内存"><a href="#定制内存" class="headerlink" title="定制内存"></a>定制内存</h2><p>物理内存700多G，要求OS只能用512G：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div></pre></td><td class="code"><pre><div class="line">24条32G的内存条，总内存768G</div><div class="line"># dmidecode -t memory |grep &quot;Size: 32 GB&quot;</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">root@uos15:/etc# dmidecode -t memory |grep &quot;Size: 32 GB&quot; | wc -l</div><div class="line">24</div><div class="line"></div><div class="line"># cat /boot/grub/grub.cfg  |grep 512</div><div class="line">  linux /vmlinuz-4.19.0-arm64-server root=UUID=dbc68010-8c36-40bf-b794-271e59ff5727 ro  splash quiet console=tty video=VGA-1:1280x1024@60 mem=512G DEEPIN_GFXMODE=$DEEPIN_GFXMODE</div><div class="line">    linux /vmlinuz-4.19.0-arm64-server root=UUID=dbc68010-8c36-40bf-b794-271e59ff5727 ro  splash quiet console=tty video=VGA-1:1280x1024@60 mem=512G DEEPIN_GFXMODE=$DEEPIN_GFXMODE</div></pre></td></tr></table></figure>
 <p>​    </p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://www.atatech.org/articles/66885" target="_blank" rel="external">https://www.atatech.org/articles/66885</a></p>
+<p><a href="https://cloud.tencent.com/developer/article/1087455" target="_blank" rel="external">https://cloud.tencent.com/developer/article/1087455</a></p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/01/12/kubernetes/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2020/01/12/kubernetes/" itemprop="url">kubernetes</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-01-12T17:30:03+08:00">
+                2020-01-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/docker/" itemprop="url" rel="index">
+                    <span itemprop="name">docker</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2020/01/12/kubernetes/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2020/01/12/kubernetes/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="kubernetes"><a href="#kubernetes" class="headerlink" title="kubernetes"></a>kubernetes</h1><h2 id="部署"><a href="#部署" class="headerlink" title="部署"></a>部署</h2><p>系统参数修改</p>
+<p>docker部署</p>
+<p>kubeadm</p>
+<p><a href="https://www.kubernetes.org.cn/4256.html" target="_blank" rel="external">https://www.kubernetes.org.cn/4256.html</a> </p>
+<p><a href="https://github.com/opsnull/follow-me-install-kubernetes-cluster" target="_blank" rel="external">https://github.com/opsnull/follow-me-install-kubernetes-cluster</a></p>
+<p>镜像源被墙，可以用阿里云镜像源</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"># 配置源</div><div class="line">cat &lt;&lt;EOF &gt; /etc/yum.repos.d/kubernetes.repo</div><div class="line">[kubernetes]</div><div class="line">name=Kubernetes</div><div class="line">baseurl=https://mirrors.aliyun.com/kubernetes/yum/repos/kubernetes-el7-x86_64</div><div class="line">enabled=1</div><div class="line">gpgcheck=1</div><div class="line">repo_gpgcheck=1</div><div class="line">gpgkey=https://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg https://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg</div><div class="line">EOF</div><div class="line"></div><div class="line"># 安装</div><div class="line">yum install -y kubelet kubeadm kubectl ipvsadm</div></pre></td></tr></table></figure>
+<h2 id="初始化集群"><a href="#初始化集群" class="headerlink" title="初始化集群"></a>初始化集群</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">kubeadm init --kubernetes-version=1.18.0  --apiserver-advertise-address=192.168.0.80   --image-repository registry.aliyuncs.com/google_containers  --service-cidr=10.10.0.0/16 --pod-network-cidr=10.122.0.0/16</div><div class="line"></div><div class="line"># node join command</div><div class="line">#kubeadm token create --print-join-command</div><div class="line">kubeadm join 192.168.0.80:6443 --token 1042rl.b4qn9iuz6xv1ri7b     --discovery-token-ca-cert-hash sha256:341a4bcfde9668077ef29211c2a151fe6e9334eea8955f645698706b3bf47a49 </div><div class="line"></div><div class="line">## 查看集群配置</div><div class="line">kubectl get configmap -n kube-system kubeadm-config -o yaml</div></pre></td></tr></table></figure>
+<h2 id="apiserver高可用"><a href="#apiserver高可用" class="headerlink" title="apiserver高可用"></a>apiserver高可用</h2><p>默认只有一个apiserver，可以考虑用haproxy和keepalive来做一组apiserver的负载均衡：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">docker run -d --name kube-haproxy \</div><div class="line">-v /etc/haproxy:/usr/local/etc/haproxy:ro \</div><div class="line">-p 8443:8443 \</div><div class="line">-p 1080:1080 \</div><div class="line">--restart always \</div><div class="line">haproxy:1.7.8-alpine</div></pre></td></tr></table></figure>
+<p>haproxy配置</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div></pre></td><td class="code"><pre><div class="line">#cat /etc/haproxy/haproxy.cfg </div><div class="line">global</div><div class="line">  log 127.0.0.1 local0 err</div><div class="line">  maxconn 50000</div><div class="line">  uid 99</div><div class="line">  gid 99</div><div class="line">  #daemon</div><div class="line">  nbproc 1</div><div class="line">  pidfile haproxy.pid</div><div class="line"></div><div class="line">defaults</div><div class="line">  mode http</div><div class="line">  log 127.0.0.1 local0 err</div><div class="line">  maxconn 50000</div><div class="line">  retries 3</div><div class="line">  timeout connect 5s</div><div class="line">  timeout client 30s</div><div class="line">  timeout server 30s</div><div class="line">  timeout check 2s</div><div class="line"></div><div class="line">listen admin_stats</div><div class="line">  mode http</div><div class="line">  bind 0.0.0.0:1080</div><div class="line">  log 127.0.0.1 local0 err</div><div class="line">  stats refresh 30s</div><div class="line">  stats uri     /haproxy-status</div><div class="line">  stats realm   Haproxy\ Statistics</div><div class="line">  stats auth    will:will</div><div class="line">  stats hide-version</div><div class="line">  stats admin if TRUE</div><div class="line"></div><div class="line">frontend k8s-https</div><div class="line">  bind 0.0.0.0:8443</div><div class="line">  mode tcp</div><div class="line">  #maxconn 50000</div><div class="line">  default_backend k8s-https</div><div class="line"></div><div class="line">backend k8s-https</div><div class="line">  mode tcp</div><div class="line">  balance roundrobin</div><div class="line">  server lab1 192.168.1.81:6443 weight 1 maxconn 1000 check inter 2000 rise 2 fall 3</div><div class="line">  server lab2 192.168.1.82:6443 weight 1 maxconn 1000 check inter 2000 rise 2 fall 3</div><div class="line">  server lab3 192.168.1.83:6443 weight 1 maxconn 1000 check inter 2000 rise 2 fall 3</div></pre></td></tr></table></figure>
+<h2 id="网络"><a href="#网络" class="headerlink" title="网络"></a>网络</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml</div></pre></td></tr></table></figure>
+<h2 id="dashboard"><a href="#dashboard" class="headerlink" title="dashboard"></a>dashboard</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">kubectl apply -f  https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0-rc7/aio/deploy/recommended.yaml</div><div class="line"></div><div class="line">#暴露 dashboard 服务端口 (recommended中如果已经定义了 30000这个nodeport，所以这个命令不需要了)</div><div class="line">kubectl port-forward -n kubernetes-dashboard  svc/kubernetes-dashboard 30000:443 --address 0.0.0.0</div></pre></td></tr></table></figure>
+<p>dashboard login token：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">#kubectl describe secrets -n kubernetes-dashboard   | grep token | awk &apos;NR==3&#123;print $2&#125;&apos;</div><div class="line">eyJhbGciOiJSUzI1NiIsImtpZCI6IndRc0hiMkdpWHRwN1FObTcyeUdhOHI0eUxYLTlvODd2U0NBcU1GY0t1Sk0ifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlcm5ldGVzLWRhc2hib2FyZCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJkZWZhdWx0LXRva2VuLXRia3o5Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6ImRlZmF1bHQiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC51aWQiOiIwYzM2MzBhOS0xMjBjLTRhNmYtYjM0ZS0zM2JhMTE1OWU1OWMiLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6a3ViZXJuZXRlcy1kYXNoYm9hcmQ6ZGVmYXVsdCJ9.SP4JEw0kGDmyxrtcUC3HALq99Xr99E-tie5fk4R8odLJBAYN6HxEx80RbTSnkeSMJNApbtwXBLrp4I_w48kTkr93HJFM-oxie3RVLK_mEpZBF2JcfMk6qhfz4RjPiqmG6mGyW47mmY4kQ4fgpYSmZYR4LPJmVMw5W2zo5CGhZT8rKtgmi5_ROmYpWcd2ZUORaexePgesjjKwY19bLEXFOwdsqekwEvj1_zaJhKAehF_dBdgW9foFXkbXOX0xAC0QNnKUwKPanuFOVZDg1fhyV-eyi6c9-KoTYqZMJTqZyIzscIwruIRw0oauJypcdgi7ykxAubMQ4sWEyyFafSEYWg</div></pre></td></tr></table></figure>
+<p>dashboard 显示为空的话(留意报错信息，一般是用户权限，重新授权即可)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">kubectl delete clusterrolebinding kubernetes-dashboard</div><div class="line">kubectl create clusterrolebinding kubernetes-dashboard --clusterrole=cluster-admin --serviceaccount=kube-system:kubernetes-dashboard --user=&quot;system:serviceaccount:kubernetes-dashboard:default&quot;</div></pre></td></tr></table></figure>
+<p>其中：system:serviceaccount:kubernetes-dashboard:default 来自于报错信息中的用户名</p>
+<h2 id="prometheus"><a href="#prometheus" class="headerlink" title="prometheus"></a>prometheus</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">git clone https://github.com/coreos/kube-prometheus.git</div><div class="line">kubectl apply -f manifests/setup</div><div class="line">kubectl apply -f manifests/</div></pre></td></tr></table></figure>
+<p>暴露grafana端口：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">kubectl port-forward --address 0.0.0.0 svc/grafana -n monitoring 3000:3000</div></pre></td></tr></table></figure>
+<h2 id="部署应用"><a href="#部署应用" class="headerlink" title="部署应用"></a>部署应用</h2><h3 id="DRDS-deployment"><a href="#DRDS-deployment" class="headerlink" title="DRDS deployment"></a>DRDS deployment</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Namespace</div><div class="line">metadata:</div><div class="line">  name: drds</div><div class="line"></div><div class="line">---</div><div class="line"></div><div class="line">apiVersion: apps/v1</div><div class="line">kind: Deployment</div><div class="line">metadata:</div><div class="line">  name: drds-deployment</div><div class="line">  namespace: drds</div><div class="line">  labels:</div><div class="line">    app: drds-server</div><div class="line">spec:</div><div class="line">  # 创建2个nginx容器</div><div class="line">  replicas: 3</div><div class="line">  selector:</div><div class="line">    matchLabels:</div><div class="line">      app: drds-server</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        app: drds-server</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">      - name: drds-server</div><div class="line">        image: registry:5000/drds-image:v5_wisp_5.4.5-15940932</div><div class="line">        ports:</div><div class="line">        - containerPort: 8507</div><div class="line">        - containerPort: 8607</div><div class="line">        env:</div><div class="line">        - name: diamond_server_port</div><div class="line">          value: &quot;8100&quot;</div><div class="line">        - name: diamond_server_list</div><div class="line">          value: &quot;192.168.0.79,192.168.0.82&quot;</div><div class="line">        - name: drds_server_id</div><div class="line">          value: &quot;1&quot;</div></pre></td></tr></table></figure>
+<h3 id="DRDS-Service"><a href="#DRDS-Service" class="headerlink" title="DRDS Service"></a>DRDS Service</h3><p>每个 drds 容器会通过8507提供服务，service通过3306来为一组8507做负载均衡，这个service的3306是在cluster-ip上，外部无法访问</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Service</div><div class="line">metadata:</div><div class="line">  name: drds-service</div><div class="line">  namespace: drds</div><div class="line">spec:</div><div class="line">  selector:</div><div class="line">    app: drds-server</div><div class="line">  ports:</div><div class="line">    - protocol: TCP</div><div class="line">      port: 3306</div><div class="line">      targetPort: 8507</div></pre></td></tr></table></figure>
+<p>通过node port来访问 drds service（同时会有负载均衡）：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">kubectl port-forward --address 0.0.0.0 svc/drds-service -n drds 3306:3306</div></pre></td></tr></table></figure>
+<h3 id="部署mysql-statefulset应用"><a href="#部署mysql-statefulset应用" class="headerlink" title="部署mysql statefulset应用"></a>部署mysql statefulset应用</h3><p>一旦 PV 和 PVC 绑定后，<code>PersistentVolumeClaim</code> 绑定是排他性的，不管它们是如何绑定的。 PVC 跟 PV 绑定是一对一的映射。</p>
+<p>创建 pv controller 和pvc</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div></pre></td><td class="code"><pre><div class="line">#cat mysql-pv.yaml </div><div class="line">apiVersion: v1</div><div class="line">kind: PersistentVolume</div><div class="line">metadata:</div><div class="line">  name: simple-pv-volume</div><div class="line">  labels:</div><div class="line">    type: local</div><div class="line">spec:</div><div class="line">  storageClassName: manual</div><div class="line">  capacity:</div><div class="line">    storage: 20Gi</div><div class="line">  accessModes:</div><div class="line">    - ReadWriteOnce</div><div class="line">  hostPath:</div><div class="line">    path: &quot;/mnt/simple&quot;</div><div class="line">---</div><div class="line">apiVersion: v1</div><div class="line">kind: PersistentVolumeClaim</div><div class="line">metadata:</div><div class="line">  name: pv-claim</div><div class="line">spec:</div><div class="line">  storageClassName: manual</div><div class="line">  accessModes:</div><div class="line">    - ReadWriteOnce</div><div class="line">  resources:</div><div class="line">    requests:</div><div class="line">      storage: 20Gi</div></pre></td></tr></table></figure>
+<p>drds-pv-mysql-0 后面的mysql 会用来做存储，下面用到了三个mysql(需要三个pvc)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div></pre></td><td class="code"><pre><div class="line">#cat mysql-deployment.yaml </div><div class="line">apiVersion: v1</div><div class="line">kind: Service</div><div class="line">metadata:</div><div class="line">  name: mysql</div><div class="line">spec:</div><div class="line">  ports:</div><div class="line">  - port: 3306</div><div class="line">  selector:</div><div class="line">    app: mysql</div><div class="line">  clusterIP: None</div><div class="line">---</div><div class="line">apiVersion: apps/v1 </div><div class="line">kind: Deployment</div><div class="line">metadata:</div><div class="line">  name: mysql</div><div class="line">spec:</div><div class="line">  selector:</div><div class="line">    matchLabels:</div><div class="line">      app: mysql</div><div class="line">  strategy:</div><div class="line">    type: Recreate</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        app: mysql</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">      - image: mysql:5.7</div><div class="line">        name: mysql</div><div class="line">        env:</div><div class="line">          # Use secret in real usage</div><div class="line">        - name: MYSQL_ROOT_PASSWORD</div><div class="line">          value: &quot;123456&quot;</div><div class="line">        ports:</div><div class="line">        - containerPort: 3306</div><div class="line">          name: mysql</div><div class="line">        volumeMounts:</div><div class="line">        - name: mysql-persistent-storage</div><div class="line">          mountPath: /var/lib/mysql</div><div class="line">      volumes:</div><div class="line">      - name: mysql-persistent-storage</div><div class="line">        persistentVolumeClaim:</div><div class="line">          claimName: pv-claim</div></pre></td></tr></table></figure>
+<p>清理：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">kubectl delete deployment,svc mysql</div><div class="line">kubectl delete pvc mysql-pv-claim</div><div class="line">kubectl delete pv mysql-pv-volume</div></pre></td></tr></table></figure>
+<h2 id="配置-Pod-使用-ConfigMap"><a href="#配置-Pod-使用-ConfigMap" class="headerlink" title="配置 Pod 使用 ConfigMap"></a>配置 Pod 使用 ConfigMap</h2><p>ConfigMap 允许你将配置文件与镜像文件分离，以使容器化的应用程序具有可移植性。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">775  26/08/20 15:22:52 mkdir -p configure-pod-container/configmap/</div><div class="line">776  26/08/20 15:23:01 wget https://kubernetes.io/examples/configmap/game.properties -O configure-pod-container/configmap/game.properties</div><div class="line">777  26/08/20 15:23:04 wget https://kubernetes.io/examples/configmap/ui.properties -O configure-pod-container/configmap/ui.properties</div><div class="line">778  26/08/20 15:23:25 cat configure-pod-container/configmap/game.properties</div><div class="line">779  26/08/20 15:23:41 kubectl create configmap game-config --from-file=configure-pod-container/configmap/</div><div class="line">780  26/08/20 15:23:48 kubectl get configmaps </div><div class="line">781  26/08/20 15:23:59 kubectl describe configmaps game-config </div><div class="line">782  26/08/20 15:24:44 kubectl get configmaps game-config -o yaml</div><div class="line">783  26/08/20 15:26:31 wget https://kubernetes.io/examples/configmap/game-env-file.properties -O configure-pod-container/configmap/game-env-file.properties</div><div class="line">784  26/08/20 15:26:36 find configure-pod-container/</div><div class="line">785  26/08/20 15:26:42 cat configure-pod-container/configmap/game-env-file.properties</div><div class="line">786  26/08/20 15:27:00 kubectl create configmap game-config-env-file --from-env-file=configure-pod-container/configmap/game-env-file.properties</div><div class="line">787  26/08/20 15:28:10 kubectl get configmap -n kube-system kubeadm-config -o yaml</div><div class="line">788  26/08/20 15:28:11 kubectl get configmap game-config-env-file -o yaml</div></pre></td></tr></table></figure>
 
           
         
@@ -3664,6 +4124,8 @@ while (true) {
   }
   sched_yield();//单核CPU，或者长时间不能获取到锁，应主动休眠，让出CPU
 }
+
+//MySQL 8.0 针对PAUSE，源码中新增了spin_wait_pause_multiplier参数，来替换之前写死的循环次数。
 </code></pre><p>innodb_spin_wait_delay的默认值为6. spin 等待延迟是一个动态全局参数，您可以在MySQL选项文件（my.cnf或my.ini）中指定该参数，或者在运行时使用SET GLOBAL 来修改。在我们的MySQL配置中默认改成了30，导致了这个问题。</p>
 <h3 id="Skylake架构的8163-和-Broadwell架构-E5-2682-CPU型号的不同"><a href="#Skylake架构的8163-和-Broadwell架构-E5-2682-CPU型号的不同" class="headerlink" title="Skylake架构的8163 和 Broadwell架构 E5-2682 CPU型号的不同"></a>Skylake架构的8163 和 Broadwell架构 E5-2682 CPU型号的不同</h3><p>UT_RELAX_CPU()的汇编指令为pause，在CPU指令同步数据时进行等待的空转，<strong>在pause期间，同一个core上的HT可以执行其他指令</strong>。</p>
 <p>在Intel 64-ia-32-architectures-optimization-manual手册中提到：<br>The latency of the PAUSE instruction in prior generation microarchitectures is about 10 cycles, whereas in Skylake microarchitecture it has been extended to as many as 140 cycles.</p>
@@ -3768,6 +4230,14 @@ btr_estimate_n_rows_in_range_on_level(
                                                 estimation */
 </code></pre><p>JOIN::estimate_row_count 是优化器估计行数的调用。 CBO 需要获得扫描行数数量，计算各访问路径的代价，确定哪个访问路径更好。在 MySQL 社区版，支持索引下探 (records_in_range) 和索引 key ndv (records_in_key) 来估计行数，但默认是索引下探（文中 perf 调用栈）。本文的查询是简单查询，而 force index 固定了访问路径，所以可以忽略行数估计，跳过下探逻辑。</p>
 <p>顺便说一下， RDS MySQL 8.0 Outline 功能可以在 server 端 force index ，避免对应用代码的侵入。此外 PolarDB MySQL 里新增加了根据直方图来估计行数的功能，并且增强了直方图，可以有效应对这种场景。我们也在开发执行计划的锁定和演进功能，相信这类场景后面都可以系统化地解决掉。</p>
+<h2 id="perf-top-和-pause"><a href="#perf-top-和-pause" class="headerlink" title="perf top 和 pause"></a>perf top 和 pause</h2><p>案例：</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/864427c491497acb02d37c02cb35eeb2.png" alt="image.png"></p>
+<p>对如上两个pause指令以及一个 count++（addq），进行perf top：</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/40945b005eb9f716e429fd30be55b6d1.png" alt="image.png"></p>
+<p>可以看到第一个pasue在perf top中cycles为0，第二个为46.85%，另外一个addq也有48.83%，基本可以猜测perf top在这里数据都往后挪了一个。</p>
+<p><strong>问题总结：</strong><br> 我们知道perf top是通过读取PMU的PC寄存器来获取当前执行的指令进而根据汇编的symbol信息获得是执行的哪条指令。所以看起来CPU在执行pause指令的时候，从PMU中看到的PC值指向到了下一条指令，进而导致我们看到的这个现象。通过查阅《Intel® 64 and IA-32 Architectures Optimization Reference Manual》目前还无法得知这是CPU的一个设计缺陷还是PMU的一个bug(需要对pause指令做特殊处理)。<strong>不管怎样，这个实验证明了我们统计spin lock的CPU占比还是准确的，不会因为pause指令导致PMU采样出错导致统计信息的整体失真。只是对于指令级的CPU统计，我们能确定的就是它把pause的执行cycles 数统计到了下一条指令。</strong></p>
+<p><strong>补充说明：</strong></p>
+<p>​    <strong>经过测试，非skylake CPU也同样存在perf top会把pause(执行数cycles是10)的执行cycles数统计到下一条指令的问题，看来这是X86架构都存在的问题。</strong></p>
 <h2 id="总结分析"><a href="#总结分析" class="headerlink" title="总结分析"></a>总结分析</h2><p>CPU 架构不同Pause 指令的不同导致了 MySQL innodb_spin_wait_delay 在spin lock失败的时候delay更久，导致调用方看到了MySQL更大的rt，导致Tomcat Server上并发跑不起来，所以最终压力上不去。</p>
 <p>在长链路的排查中，细化定位是哪个节点出了问题是最难的，这里大量的时间都花在了client、slb、Tomcat节点等等有没有问题，就是因为MySQL有32个节点，他们的CPU都不高，让大家很快排除了他的嫌疑。</p>
 <p>在一开始排除MySQL嫌疑(主要是这种场景下对抖动太敏感了)后花了大量的工作在简化链路上，实际因为他们都不是瓶颈，所以没有任何效果。</p>
@@ -3784,6 +4254,7 @@ btr_estimate_n_rows_in_range_on_level(
 <p><a href="https://en.wikichip.org/w/images/e/eb/intel-ref-248966-037.pdf" target="_blank" rel="external">intel spec</a></p>
 <p><a href="https://coolshell.cn/articles/20793.html" target="_blank" rel="external">与程序员相关的CPU缓存知识</a> </p>
 <p><a href="https://mp.weixin.qq.com/s/dlKC13i9Z8wjDDiU2tig6Q" target="_blank" rel="external">Intel PAUSE指令变化影响到MySQL的性能，该如何解决？</a></p>
+<p><a href="https://www.atatech.org/articles/85549" target="_blank" rel="external">https://www.atatech.org/articles/85549</a></p>
 
           
         
@@ -4288,464 +4759,6 @@ while (1) {
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/11/06/谁动了我的TCP连接/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/11/06/谁动了我的TCP连接/" itemprop="url">就是要你懂网络--谁动了我的TCP连接</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-11-06T15:30:03+08:00">
-                2019-11-06
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/TCP/" itemprop="url" rel="index">
-                    <span itemprop="name">TCP</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/11/06/谁动了我的TCP连接/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2019/11/06/谁动了我的TCP连接/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="谁动了我的TCP连接"><a href="#谁动了我的TCP连接" class="headerlink" title="谁动了我的TCP连接"></a>谁动了我的TCP连接</h1><p>通过一个案例展示TCP连接是如何被reset的，以及identification、ttl都可以帮我们干点啥。</p>
-<h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><p>用户用navicat从自己访问云上的MySQL的时候，点开数据库总是报错（不是稳定报错，有一定的概率报错）</p>
-<h2 id="抓包"><a href="#抓包" class="headerlink" title="抓包"></a>抓包</h2><p>在 Navicat 机器上抓包如下：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/83b07725d92b9e4d3eb4a504cf83cc09.png" alt="image.png"></p>
-<p>从抓包可以清楚看到 Navicat 发送 Use Database后收到了 MySQL（来自3306端口）的Reset重接连接命令，所以连接强行中断，然后 Navicat报错了。注意图中红框中的 Identification 两次都是13052，先留下不表，这是个线索。</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/53b5dc8e0a90ed9ad641caf38399141b.png" alt="image.png"></p>
-<h2 id="MySQL-Server上抓包"><a href="#MySQL-Server上抓包" class="headerlink" title="MySQL Server上抓包"></a>MySQL Server上抓包</h2><p>特别说明下，MySQL上抓到的不是跟Navicat上抓到的同一次报错，所以报错的端口等会不一样</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/70287488290b38cd4753d9fce0bee945.png" alt="image.png"></p>
-<p>从这个图中可以清楚看到reset是从 Navicat 客户端发过来的，并且 Use Database被拦截了，没有发到MySQL上。</p>
-<p>从这里基本可以判断是客户的防火墙之类的中间设备监控到了关键字之类的触发了防火墙向两边发送了reset，导致了 Navicat 报错。</p>
-<h3 id="如果连接已经断开"><a href="#如果连接已经断开" class="headerlink" title="如果连接已经断开"></a>如果连接已经断开</h3><p>如果连接已经断开后还收到Client的请求包，因为连接在Server上是不存在的，这个时候Server收到这个包后也会发一个reset回去，这个reset的特点是identification是0.</p>
-<h2 id="到底是谁动了这个连接呢？"><a href="#到底是谁动了这个连接呢？" class="headerlink" title="到底是谁动了这个连接呢？"></a>到底是谁动了这个连接呢？</h2><h3 id="得帮客户解决问题"><a href="#得帮客户解决问题" class="headerlink" title="得帮客户解决问题"></a>得帮客户解决问题</h3><p>虽然原因很清楚，但是客户说连本地 MySQL就没这个问题，连你的云上MySQL就这样，你让我们怎么用？你们得帮我们找到是哪个设备。</p>
-<h3 id="线索一-Identification"><a href="#线索一-Identification" class="headerlink" title="线索一 Identification"></a>线索一 Identification</h3><p>还记得第一个截图中的两个相同的identification 13052吧，让我们来看看基础知识：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/eed9ba1f9ba492ed8954ae7f39e72803.png" alt="image.png"></p>
-<p>（摘自 TCP卷一），简单来说这个 identification 用来标识一个连接中的每个包，这个序号按包的个数依次递增，通信双方是两个不同的序列。</p>
-<p>所以如果这个reset是MySQL发出来的话，因为MySQL发出的前一个包的 identification 是23403，所以这个必须是23404，实际上居然是13502（而且还和Navicat发出的 Use Database包是同一个 identification），这是非常不对的。</p>
-<p>所以可以大胆猜测，这里有个中间设备收到 Use Database后触发了不放行的逻辑，于是冒充 Navicat给 MySQL Server发了reset包，src ip/src port/seq等都直接用Navicat的，identification也用Navicat的，所以 MySQL Server收到的 Reset看起来很正常（啥都是对的，没留下一点冒充的痕迹）。</p>
-<p>但是这个中间设备还要冒充MySQL Server给 Navicat 也发个reset，有点难为中间设备了，这个时候中间设备手里只有 Navicat 发出来的包， src ip/src port/seq 都比较好反过来，但是 identification 就不好糊弄了，手里只有 Navicat的，因为 Navicat和MySQL Server是两个序列的 identification，这下中间设备搞不出来MySQL Server的identification，怎么办？ 只能糊弄了，就随手用 Navicat 自己的 identification填回去了（所以看到这么个奇怪的 identification）</p>
-<p>但是这不影响实际连接被reset，也就是验证包的时候不会判断identification的正确性。</p>
-<h3 id="TTL"><a href="#TTL" class="headerlink" title="TTL"></a>TTL</h3><p>说了半天identification还是没解决问题啊，还得进一步找到是哪个机器，我们先来看一个基础知识 TTL(Time-to-Live):</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ed8c624b704b0c94da2ca76a37b39916.png" alt="image.png"></p>
-<p>然后我们再看看 Navicat收到的这个reset包的ttl是63，而正常的MySQL Server回过来的包是47，而发出的第一个包初始ttl是64，所以这里可以很清楚地看到在Navicat 下一跳发出的这个reset</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/b288a740f9f10007485e37fd339051f8.png" alt="image.png"></p>
-<p>既然是下一跳干的直接拿这个包的src mac地址，然后到内网中找这个内网设备就可以了，最终找到是一个锐捷的防火墙。</p>
-<h3 id="扩展一下"><a href="#扩展一下" class="headerlink" title="扩展一下"></a>扩展一下</h3><p>假如这里不是下一跳，而是隔了几跳发过来的reset，那么这个src mac地址就不是发reset设备的mac了，那该怎么办呢？</p>
-<p>可以根据中间的跳数(TTL)，再配合 traceroute 来找到这个设备的ip</p>
-<h2 id="slb主动reset的话"><a href="#slb主动reset的话" class="headerlink" title="slb主动reset的话"></a>slb主动reset的话</h2><p>ttl是102, identification是31415，探活reset不是这样的。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>基础知识很重要，但是知道ttl、identification到会用ttl、identification是两个不同的层次。只是看书的话未必会有很深的印象，实际也不会定会灵活使用。</p>
-<p>平时不要看那么多书，会用才是关键。</p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/31/epoll和惊群/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/10/31/epoll和惊群/" itemprop="url">epoll和惊群</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-10-31T12:30:03+08:00">
-                2019-10-31
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/10/31/epoll和惊群/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2019/10/31/epoll和惊群/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="epoll和惊群"><a href="#epoll和惊群" class="headerlink" title="epoll和惊群"></a>epoll和惊群</h1><p>本文尝试追踪不同的内核版本增加的方案来看内核是如何来尝试解决惊群问题的。以及像 SO_REUSEPORT 和EPOLLEXCLUSIVE又带来了什么小问题。</p>
-<h2 id="先上总结"><a href="#先上总结" class="headerlink" title="先上总结"></a>先上总结</h2><p>非IO复用的惊群在2.6内核就通过增加WQ_FLAG_EXCLUSIVE在内核中就行排他解决惊群了；epoll的惊群在3.10内核加了SO_REUSEPORT来解决惊群，但同时带来了不同的worker有的饥饿有的排队假死一样；4.5的内核增加EPOLLEXCLUSIVE在内核中直接将worker放在一个大queue，同时感知worker状态来派发任务更好滴解决了惊群，但是因为LIFO的机制导致在压力不大的情况下，任务主要派发给少数几个worker（能接受，压力大就会正常了）。</p>
-<h2 id="什么是惊群"><a href="#什么是惊群" class="headerlink" title="什么是惊群"></a>什么是惊群</h2><p>惊群效应也有人叫做雷鸣群体效应，惊群就是多进程（多线程）在同时阻塞等待同一个事件的时候（休眠状态），如果等待的这个事件发生，那么他就会唤醒等待的所有进程（或者线程），但是最终却只可能有一个进程（线程）获得这个事件的“控制权”，对该事件进行处理，而其他进程（线程）获取“控制权”失败，只能重新进入休眠状态，这种现象和性能浪费就叫做惊群。</p>
-<p>为了更好的理解何为惊群，举一个很简单的例子，当你往一群鸽子中间扔一粒谷子，所有的鸽子都被惊动前来抢夺这粒食物，但是最终只有一只鸽子抢到食物。这里鸽子表示进程（线程），那粒谷子就是等待处理的事件。</p>
-<h2 id="无IO复用时Accept"><a href="#无IO复用时Accept" class="headerlink" title="无IO复用时Accept"></a>无IO复用时Accept</h2><blockquote>
-<p>无IO复用的accept 不会有惊群，epoll_wait 才会。accept一定是只需要一个进程处理消息，内核可以解决。但是select、epoll就不一定了，所以内核只能唤醒所有的。</p>
-</blockquote>
-<p>在linux2.6版本以后，linux内核已经解决了accept()函数的“惊群”现象，大概的处理方式就是，当内核接收到一个客户连接后，只会唤醒等待队列上的第一个进程（线程）,所以如果服务器采用accept阻塞调用方式，在2.6的linux系统中已经没有“惊群效应”了。</p>
-<pre><code> /* nr_exclusive的值默认设为1 */
- #define wake_up_interruptible_sync_poll(x, m)              \
-    __wake_up_sync_key((x), TASK_INTERRUPTIBLE, 1, (void *) (m))
-
-tcp_v4_rcv
-tcp_v4_do_rcv
-tcp_child_process
-sock_def_readable
-wake_up_interruptible_sync_poll
-__wake_up_common
- /* 从头遍历监听socket的等待队列，唤醒等待进程，有EXCLUSIVE标识时只唤醒一个进程 */
-list_for_each_entry_safe(curr, next, &amp;q-&gt;task_list, task_list)
-    /* func最终调用try_to_wake_up，设置进程状态为TASK_RUNNING，并把进程插入CPU运行队列，来唤醒睡眠的进程 */
-    if (curr-&gt;func(curr, mode, wake_flags, key) &amp;&amp; (flags &amp; WQ_FLAG_EXCLUSIVE)  &amp;&amp;
-       !--nr_exclusive)
-       break; 
-</code></pre><p>sock中定义了几个I/O事件，当协议栈遇到这些事件时，会调用它们的处理函数。当监听socket收到新的连接时，会触发有数据可读事件，调用sock_def_readable，唤醒socket等待队列中的进程。进程被唤醒后，会执行accept的后续操作，最终返回新连接的描述符。</p>
-<p>这个socket等待队列是一个FIFO，所以最终是均衡的，也不需要惊群，有tcp connection ready的话直接让等待队列中第一个的线程出队就好了。</p>
-<p>2.6内核层面添加了一个WQ_FLAG_EXCLUSIVE标记，告诉内核进行排他性的唤醒，即唤醒一个进程后即退出唤醒的过程(适合accept，但是不适合 epoll–因为epoll除了有accept，还有其它IO事件）</p>
-<p>所以这就是大家经常看到的accept不存在惊群问题，内核10年前就解决了这个问题的场景，实际指的是非epoll下的accept 惊群。</p>
-<h2 id="epoll的Accept"><a href="#epoll的Accept" class="headerlink" title="epoll的Accept"></a>epoll的Accept</h2><p>epoll监听句柄，后续可能是accept，也有可能是其它网络IO事件，这些IO事件不一定只能由一个进程处理（很少见需要多个进程处理的），所以内核层面没直接解决epoll的惊群，交由上层应用来根据IO事件如何处理。</p>
-<pre><code>//主进程中：
-ngx_init_cycle
-ngx_open_listening_sockets
-    socket
-    bind
-    listen
-    epoll_create
-    epoll_ctl
-
-//子进程中：
-ngx_event_process_init
-ngx_prcocess_events_and_timers
-ngx_epoll_process_events
-    epoll_wait
-    rev-&gt;handler(rev) // 对于listening socket，handler是ngx_event_accept
-</code></pre><p>和标准的accept不同，使用epoll时，是在epoll_wait()返回后，发现监听socket有可读事件，才调用accept()。由于epoll_wait()是LIFO，导致多个子进程在accept新连接时，也变成了LIFO。</p>
-<pre><code>epoll_wait
-ep_poll
-    /* 创建等待任务，把等待任务加入到epfd等待队列的头部，而不是尾部 */
-    init_waitqueue_entry(&amp;wait, current) 
-    __add_wait_queue_exclusive(&amp;ep-&gt;wq, &amp;wait)
-    ...
-    __remove_wait-queue(&amp;ep-&gt;wq, &amp;wait) /* 最终从epfd等待队列中删除 */
-</code></pre><p>回调触发逻辑：</p>
-<pre><code>tcp_v4_rcv
-tcp_v4_do_rcv
-tcp_child_process
-sock_def_readable /* sock I/O 有数据可读事件 */
-wake_up_interruptible_sync_poll
-__wake_up_common
-    /* curr-&gt;func是等待任务的回调函数，在ep_insert初始化等待任务时，设置为ep_poll_callback */
-    if (curr-&gt;func(curr, mode, wake_flags, key) &amp;&amp; (flags &amp; WQ_FLAG_EXCLUSIVE)  &amp;&amp;
-        !--nr_exclusive)
-        break;
-</code></pre><p>那么这种情况下内核如何来解决惊群呢？</p>
-<h3 id="SO-REUSEPORT"><a href="#SO-REUSEPORT" class="headerlink" title="SO_REUSEPORT"></a>SO_REUSEPORT</h3><p>在3.10的内核中通过引入SO_REUSEPORT解决了这个epoll accept惊群的问题。</p>
-<p>linux man文档中一段文字描述其作用：</p>
-<blockquote>
-<p>The new socket option allows multiple sockets on the same host to bind to the same port, and is intended to improve the performance of multithreaded network server applications running on top of multicore systems.</p>
-</blockquote>
-<p>SO_REUSEPORT支持多个进程或者线程绑定到同一端口，提高服务器程序的性能，解决的问题：</p>
-<ul>
-<li>允许多个套接字 bind()/listen() 同一个TCP/UDP端口</li>
-<li>每一个线程拥有自己的服务器套接字</li>
-<li>在服务器套接字上没有了锁的竞争</li>
-<li>内核层面实现负载均衡</li>
-<li>安全层面，监听同一个端口的套接字只能位于同一个用户下面</li>
-</ul>
-<p>其核心的实现主要有三点：</p>
-<ul>
-<li>扩展 socket option，增加 SO_REUSEPORT 选项，用来设置 reuseport。</li>
-<li>修改 bind 系统调用实现，以便支持可以绑定到相同的 IP 和端口</li>
-<li>修改处理新建连接的实现，查找 listener 的时候，能够支持在监听相同 IP 和端口的多个 sock 之间均衡选择。</li>
-</ul>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/64ae30f3d1937d913f2a440d5ae3c920.png" alt="image.png"></p>
-<ul>
-<li>Nginx的accept_mutex通过抢锁来控制是否将监听套接字加入到epoll 中。监听套接字只在一个子进程的 epoll 中，当新的连接来到时，其他子进程当然不会惊醒了。通过 accept_mutex加锁性能要比reuseport差</li>
-<li>Linux内核解决了epoll_wait 惊群的问题，Nginx 1.9.1利用Linux3.10 的reuseport也能解决惊群、提升性能。</li>
-<li>内核的reuseport中相当于所有listen同一个端口的进程是一个组合，内核收包时不管查找到哪个socket，都能映射到他们所属的 reuseport 数组，再通过五元组哈希选择一个socket，这样只有这个socket队列里有数据，所以即便所有的进程都添加了epoll事件，也只有一个进程会被唤醒。</li>
-</ul>
-<h4 id="SO-REUSEPORT-带来的小问题"><a href="#SO-REUSEPORT-带来的小问题" class="headerlink" title="SO_REUSEPORT 带来的小问题"></a>SO_REUSEPORT 带来的小问题</h4><p>SO_REUSEPORT打开后，再有请求进来不再是各个进程一起去抢，而是内核通过五元组Hash来分配，所以不再会惊群了。但是可能会导致撑死或者饿死的问题，比如一个cpu一直在做一件耗时的任务（比如压缩），但是内核通过hash分配过来的时候是不知道的（抢锁就不会发生这种情况，你没空就不会去抢），以Nginx为例</p>
-<p><a href="https://www.atatech.org/articles/89653" target="_blank" rel="external">因为Nginx是ET模式，epoll要一直将事件处理完毕才能进入epoll_wait（才能响应新的请求）。带来了新的问题：如果有一个慢请求（比如gzip压缩文件需要2分钟），那么处理这个慢请求的进程在reuseport模式下还是会被内核分派到，但是这个时候他如同hang死了，新分配进来的请求无法处理。如果不是reuseport模式，他在处理慢请求就根本腾不出来时间去在惊群中抢到锁。</a></p>
-<p>如果不开启SO_REUSEPORT模式，那么即使有一个进程在处理慢请求，那么他就不会去抢accept锁，也就没有accept新连接，这样就不应影响新连接的处理。</p>
-<p>但是开启了SO_REUSEPORT后，内核没法感知你的worker是不是特别忙，只是按Hash逻辑派发连接。也就是SO_REUSEPORT会导致rt偏差更大（抖动明显一些）。<a href="https://plantegg.github.io/2020/06/05/MySQL%E7%BA%BF%E7%A8%8B%E6%B1%A0%E5%AF%BC%E8%87%B4%E7%9A%84%E5%BB%B6%E6%97%B6%E5%8D%A1%E9%A1%BF%E6%8E%92%E6%9F%A5/" target="_blank" rel="external">这跟MySQL Thread Pool导致的卡顿原理类似，多个Pool类似这里的SO_REUSEPORT。</a></p>
-<p>用图形展示大概如下：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/49d19ef1eaf13638b488ad126beb58ef.png" alt="image.png"></p>
-<p>比如中间的worker即使处理得很慢，内核还是正常派连接过来，即使其它worker空闲</p>
-<h4 id="SO-REUSEPORT另外的问题"><a href="#SO-REUSEPORT另外的问题" class="headerlink" title="SO_REUSEPORT另外的问题"></a>SO_REUSEPORT另外的问题</h4><p>在OS层面一个连接hash到了某个socket fd，但是正好这个 listen socket fd 被关了，已经被分到这个 listen socket fd 的 accept 队列上的请求会被丢掉，具体可以<a href="https://engineeringblog.yelp.com/2015/04/true-zero-downtime-haproxy-reloads.html" target="_blank" rel="external">参考</a> 和 LWN 上的 <a href="https://lwn.net/Articles/542866/" target="_blank" rel="external">comment</a></p>
-<p>从 Linux 4.5 开始引入了 SO_ATTACH_REUSEPORT_CBPF 和 SO_ATTACH_REUSEPORT_EBPF 这两个 BPF 相关的 socket option。通过巧妙的设计，应该可以避免掉建连请求被丢掉的情况。</p>
-<h3 id="EPOLLEXCLUSIVE"><a href="#EPOLLEXCLUSIVE" class="headerlink" title="EPOLLEXCLUSIVE"></a>EPOLLEXCLUSIVE</h3><p>epoll引起的accept惊群，在4.5内核中再次引入<strong>EPOLLEXCLUSIVE</strong>来解决，且需要应用层的配合，Ngnix 在 1.11.3 之后添加了NGX_EXCLUSIVE_EVENT来支持。像tengine尚不支持，所以只能在应用层面上来避免惊群，开启accept_mutex才可避免惊群。</p>
-<p>在epoll_ctl ADD描述符时设置 EPOLLEXCLUSIVE 标识。</p>
-<pre><code>epoll_ctl
-ep_insert
-ep_ptable_queue_proc
-    /* 在这里，初始化等待任务，把等待任务加入到socket等待队列的头部 */
-     * 注意，和标准accept的等待任务不同，这里并没有给等待任务设置WQ_FLAG_EXCLUSIVE。
-     */
-    init_waitqueue_func_entry(&amp;pwq-&gt;wait, ep_poll_callback);
-    /* 检查应用程序是否设置了EPOLLEXCLUSIVE标识 */
-    if (epi-&gt;event.events &amp; EPOLLEXCLUSIVE)
-        /* 新增逻辑，等待任务携带WQ_FLAG_EXCLUSIVE标识，之后只唤醒一个进程 */
-        add_wait_queue_exclusive(whead, &amp;pwq-&gt;wait);
-    else
-        /* 原来逻辑，等待任务没有WQ_FLAG_EXCLUSIVE标识，会唤醒所有等待进程 */
-        add_wait_queue(whead, &amp;pwq-&gt;wait);
-</code></pre><p>在加入listen socket的sk_sleep队列的唤醒队列里使用了 add_wait_queue_exculsive()函数，当tcp收到三次握手最后一个 ack 报文时调用sock_def_readable时，只唤醒一个等待源，从而避免‘惊群’.<br>调用栈如下：</p>
-<pre><code>//  tcp_v4_do_rcv()
-//  --&gt;tcp_child_process()
-//  ---&gt;sock_def_readable()
-//  ----&gt;wake_up_interruptible_sync_poll()
-//  -----&gt;__wake_up_sync_key()
-</code></pre><p>EPOLLEXCLUSIVE可以在单个Listen Queue对多个Worker Process的时候均衡压力，不会惊群。</p>
-<p><img src="https://blog.cloudflare.com/content/images/2017/10/worker2.png" alt=""></p>
-<p>连接从一个队列里由内核分发，不需要惊群，对worker是否忙也能感知（忙的worker就不分发连接过去）</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/9bbf15909be8d1bffd3ee1958463c041.png" alt="image.png"></p>
-<p>图中的电话机相当于一个worker，只是<strong>实际内核中空闲的worker像是在一个堆栈中（LIFO），有连接过来，worker堆栈会出栈，处理完毕又入栈，如此反复</strong>。而需要处理的消息是一个队列（FIFO），所以总会发现栈顶的几个worker做的事情更多。</p>
-<h4 id="EPOLLEXCLUSIVE-带来的问题"><a href="#EPOLLEXCLUSIVE-带来的问题" class="headerlink" title="EPOLLEXCLUSIVE 带来的问题"></a>EPOLLEXCLUSIVE 带来的问题</h4><p>下面这个case是观察发现Nginx在压力不大的情况下会导致最后几个核cpu消耗时间更多一些，如下图看到的：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/6551777f24be3da9d2b41ceb20a2b040.png" alt="image.png"></p>
-<p>这是如前面所述，所有worker像是在一个栈（LIFO）中等着任务处理，在压力不大的时候会导致连接总是在少数几个worker上（栈底的worker没什么机会出栈），如果并发任务多，导致worker栈经常空掉，这个问题就不存在了。当然最终来看EPOLLEXCLUSIVE没有产生什么实质性的不好的影响。值得推荐</p>
-<p>epoll的accept模型为LIFO，倾向于唤醒最活跃的进程。多进程场景下：默认的accept(非复用)是FIFO，进程加入到监听socket等待队列的尾部，唤醒时从头部开始唤醒；epoll的accept是LIFO，在epoll_wait时把进程加入到监听socket等待队列的头部，唤醒时从头部开始唤醒。</p>
-<p>当并发数较小时，只有最后几个进程会被唤醒，它们使用的CPU时间会远高于其它进程。当并发数较大时，所有的进程都有机会被唤醒，各个进程之间的差距不大。内核社区中关于epoll accept是使用LIFO还是RR有过讨论，在4.9内核和最新版本中使用的都是LIFO。</p>
-<p>比如这个case，压力低的worker进程和压力高的worker进程差异比较大：</p>
-<p><img src="https://blog.cloudflare.com/content/images/2017/10/sharedqueue.png" alt=""></p>
-<h3 id="比较下EPOLLEXCLUSIVE-和-SO-REUSEPORT"><a href="#比较下EPOLLEXCLUSIVE-和-SO-REUSEPORT" class="headerlink" title="比较下EPOLLEXCLUSIVE 和 SO_REUSEPORT"></a>比较下EPOLLEXCLUSIVE 和 SO_REUSEPORT</h3><p>EPOLLEXCLUSIVE 和 SO_REUSEPORT 都是在内核层面将连接分到多个worker，解决了epoll下的惊群，SO_REUSEPORT 会更均衡一些，EPOLLEXCLUSIVE在压力不大的时候会导致连接总是在少数几个worker上（但这个不会产生任何不利影响）。 SO_REUSEPORT在最坏的情况下会导致一个worker即使Hang了，OS也依然会派连接过去，这是非常致命的，所以4.5内核引入了 EPOLLEXCLUSIVE（总是给闲置等待队列的第一个worker派连接）</p>
-<p>相对 SO_REUSEPORT导致的stuck, EPOLLEXCLUSIV 还是更好接受一些。</p>
-<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://blog.csdn.net/lyztyycode/article/details/78648798" target="_blank" rel="external">Linux惊群效应详解（最详细的了吧）</a></p>
-<p><a href="https://blog.csdn.net/dog250/article/details/80837278" target="_blank" rel="external">再谈Linux epoll惊群问题的原因和解决方案</a></p>
-<p><a href="https://www.atatech.org/articles/117111" target="_blank" rel="external">epoll lifo引发的nginx “负载不均”</a> </p>
-<p><a href="https://blog.cloudflare.com/the-sad-state-of-linux-socket-balancing/" target="_blank" rel="external">Why does one NGINX worker take all the load?</a></p>
-<p><a href="https://www.atatech.org/articles/89653" target="_blank" rel="external">一次Nginx Gzip 导致的诡异健康检查失败问题调查</a> </p>
-<p><a href="https://www.atatech.org/articles/112471" target="_blank" rel="external">Socket多进程分发原理</a></p>
-<p><a href="https://blog.csdn.net/dog250/article/details/107227145" target="_blank" rel="external">从SO_REUSEPORT服务器的一个弊端看多队列服务模型</a></p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
@@ -4795,7 +4808,7 @@ ep_ptable_queue_proc
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">95</span>
+                <span class="site-state-item-count">97</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -4817,7 +4830,7 @@ ep_ptable_queue_proc
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">191</span>
+                <span class="site-state-item-count">192</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>

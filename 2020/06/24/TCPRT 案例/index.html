@@ -108,6 +108,9 @@
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/7b755c9d2f19701d1409abfd91dce4c1.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/f18f5c467cc21ead4c15a5e28bf3b8fd.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/949ab8a34c9bece160e8fcff8e76a2d4.png">
+<meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/15731f74f91099774996302da1571a51.png">
+<meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/85a75f19422a838f64ec6dffb4a3837f.png">
+<meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/7c45a9ab360986c7e743de9a687c9549.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/63da5e221c8d2d26bc25f9e50ef35779.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/88849848f07ca74e000db971e3246def.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/5265f9caf013baf662e400cd99ef2663.png">
@@ -115,7 +118,7 @@
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/3d8c092cfee6686708973760b710cd1a.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/07d3ca12864a69b622a6f69b933d9a82.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/78d2cc459976ef868fa85359b33bda5a.png">
-<meta property="og:updated_time" content="2020-08-06T03:52:28.686Z">
+<meta property="og:updated_time" content="2020-08-26T10:57:01.319Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="TCPRT 案例">
 <meta name="twitter:description" content="TCPRT 案例在分布式、微服务场景下如果rt出现问题一般都有pinpoint、Dapper、鹰眼之类的工具能帮忙分析是哪个服务慢了，但是如果是网络慢了这些工具就没有办法区分了。 TCPRT是从网络层面把整个服务的响应时间分成：网络传输时间+服务处理时间，这样一旦响应时间慢了很容易看到是网络慢了、丢包、抖动了，还是就是服务处理慢了。 如下案例都有tcpdump抓包来证明TCPRT的正确性，实际上在">
@@ -406,9 +409,9 @@
 <h2 id="图形化监控数据"><a href="#图形化监控数据" class="headerlink" title="图形化监控数据"></a>图形化监控数据</h2><p>捞取同一段时间内同样压力下tcprt监控数据后展示出来的图形：</p>
 <ol>
 <li>最开始正常网络情况下QPS 40K，总RT 4.1ms（含网络），业务处理时间3.9ms，两者差就是网络传输时间；</li>
-<li>突然网络变差，rtt降到了17ms，相应地QPS降到了8200，总RT 19.9ms（含网络），业务处理时间2.8ms（压力变小了）；</li>
+<li>突然网络变差，rtt从0.1ms降到了17ms，相应地QPS降到了8200，总RT 19.9ms（含网络），业务处理时间2.8ms（因为压力变小了，实际业务处理时间也快了）；</li>
 <li>接着rtt回到7ms，QPS回升到16400，总RT 9.9ms（含网络），业务处理时间2.82ms；</li>
-<li>client到tomcat丢包率为0.1%，QPS 39.5K，总RT 4.1ms（含网络），业务处理时间3.7ms. 对QPS的影响基本可以忽略；</li>
+<li>rtt恢复到0.1ms，同时client到tomcat丢包率为0.1%，QPS 39.5K，总RT 4.1ms（含网络），业务处理时间3.7ms. 对QPS的影响基本可以忽略；</li>
 <li>client到tomcat丢包率为1%，QPS 31.8K，总RT 5.08ms（含网络），业务处理时间2.87ms；</li>
 <li>tomcat到client和RDS丢包率都为1%，QPS 23.2K，总RT 7.03ms（含网络），业务处理时间4.88ms，tomcat调用RDS的rt也从2.6ms上升到了4.6ms。</li>
 </ol>
@@ -424,6 +427,14 @@
 <p>通过wireshark看到对应的tomcat和RDS之间的RTT数据：</p>
 <p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/949ab8a34c9bece160e8fcff8e76a2d4.png" alt="image.png"></p>
 <p>上面都是对所有数据做平均后分析所得，接下来会通过具体的一个请求来分析，同时通过tcpdump抓包来分析对应的数据（对比验证tcprt的可靠性）</p>
+<h2 id="深圳盒子慢查询定位"><a href="#深圳盒子慢查询定位" class="headerlink" title="深圳盒子慢查询定位"></a>深圳盒子慢查询定位</h2><p>这个实例没有上线manager，只能人肉分析tcprt日志，先看慢查询日志： </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$tail -10 slow.log</div><div class="line">2020-08-13 14:39:46.289 - [user=zhoubingbing,host=172.30.52.43,port=54754,schema=goodarights_base]  [TDDL] select * from tbl_wm_mcht_invoice_record where mcht_no=&apos;323967&apos; ORDER BY CREATE_TIME desc;#1070#392#111413ba1b1a2000, tddl version: 5.4.3-15844389</div></pre></td></tr></table></figure>
+<p> 慢查询对应的tcprt记录，rtt高达35ms（正常都是2ms，而且重传了3次才把response传完），所以最终SQL执行花了差不多1.3秒（慢查询中有记录，1秒多，查询结果390行数据）：</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/15731f74f91099774996302da1571a51.png" alt="image.png"></p>
+<p>从60秒汇总统计日只看，慢查询发生的时间点 丢包率确实到了 0.1%：</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/85a75f19422a838f64ec6dffb4a3837f.png" alt="image.png"></p>
+<p>总的平均时间统计，绿框是DRDS处理时间，红框是DRDS处理时间+网络传输时间，这个gap有点大（网络消耗比较高）：</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/7c45a9ab360986c7e743de9a687c9549.png" alt="image.png"></p>
 <h2 id="丢包造成rt过高"><a href="#丢包造成rt过高" class="headerlink" title="丢包造成rt过高"></a>丢包造成rt过高</h2><p>如下数据中每一行代表一个请求、响应数据，第三行和第八行总rt都比较高，超过200ms（第6列），但是server处理时间在3ms以内（最后一列）</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">                                                         总rt    重传       处理时间</div><div class="line">1593677820 311182 10.0.186.70:32610 10.0.186.97:3306 142 5885 113 0 36314730 2758</div><div class="line">1593677820 317068 10.0.186.70:32610 10.0.186.97:3306 142 214047 113 1 36314731 2791 &lt;?</div><div class="line">1593677820 533814 10.0.186.70:32610 10.0.186.97:3306 142 5905 113 0 36314732 2771</div><div class="line">1593677820 539722 10.0.186.70:32610 10.0.186.97:3306 142 5842 113 0 36314733 2714</div><div class="line">1593677820 545565 10.0.186.70:32610 10.0.186.97:3306 142 5898 113 0 36314734 2751</div><div class="line">1593677820 551464 10.0.186.70:32610 10.0.186.97:3306 142 5866 113 0 36314735 2746</div><div class="line">1593677820 557331 10.0.186.70:32610 10.0.186.97:3306 142 213762 113 1 36314736 2627 &lt;?</div><div class="line">1593677820 772815 10.0.186.70:32610 10.0.186.97:3306 142 5845 113 0 36314737 2731</div><div class="line">1593677820 778677 10.0.186.70:32610 10.0.186.97:3306 142 5868 113 0 36314738 2744</div></pre></td></tr></table></figure>
 <p>对应这个时间点的抓包，可以看到这两个慢的查询都是因为第一个response发给client后没有收到ack（网络丢包？网络延时高？） 200ms后再发一次response就收到ack。所以总的rt都超过了200ms，其它没丢包的rt都很快。另外抓包的请求和和上面tcprt记录都是全对应的，时间精度都在微秒级。</p>
@@ -596,7 +607,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">95</span>
+                <span class="site-state-item-count">97</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -618,7 +629,7 @@
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">191</span>
+                <span class="site-state-item-count">192</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>
@@ -660,7 +671,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#TCPRT-案例"><span class="nav-number">1.</span> <span class="nav-text">TCPRT 案例</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#图形化监控数据"><span class="nav-number">1.1.</span> <span class="nav-text">图形化监控数据</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#丢包造成rt过高"><span class="nav-number">1.2.</span> <span class="nav-text">丢包造成rt过高</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#丢包率对性能影响"><span class="nav-number">1.3.</span> <span class="nav-text">丢包率对性能影响</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#时延增加对数据的影响"><span class="nav-number">1.4.</span> <span class="nav-text">时延增加对数据的影响</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#delay-ack-client卡顿导致server-rt偏高"><span class="nav-number">1.5.</span> <span class="nav-text">delay ack + client卡顿导致server rt偏高</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Delay-ACK-原理解析"><span class="nav-number">1.5.1.</span> <span class="nav-text">Delay ACK 原理解析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#从tcpdump抓包来分析原因"><span class="nav-number">1.5.2.</span> <span class="nav-text">从tcpdump抓包来分析原因</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#原因总结"><span class="nav-number">1.5.3.</span> <span class="nav-text">原因总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#最后一个数据发送慢导致计时显示网络rt偏高"><span class="nav-number">1.6.</span> <span class="nav-text">最后一个数据发送慢导致计时显示网络rt偏高</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">1.7.</span> <span class="nav-text">参考资料</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#TCPRT-案例"><span class="nav-number">1.</span> <span class="nav-text">TCPRT 案例</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#图形化监控数据"><span class="nav-number">1.1.</span> <span class="nav-text">图形化监控数据</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#深圳盒子慢查询定位"><span class="nav-number">1.2.</span> <span class="nav-text">深圳盒子慢查询定位</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#丢包造成rt过高"><span class="nav-number">1.3.</span> <span class="nav-text">丢包造成rt过高</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#丢包率对性能影响"><span class="nav-number">1.4.</span> <span class="nav-text">丢包率对性能影响</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#时延增加对数据的影响"><span class="nav-number">1.5.</span> <span class="nav-text">时延增加对数据的影响</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#delay-ack-client卡顿导致server-rt偏高"><span class="nav-number">1.6.</span> <span class="nav-text">delay ack + client卡顿导致server rt偏高</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Delay-ACK-原理解析"><span class="nav-number">1.6.1.</span> <span class="nav-text">Delay ACK 原理解析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#从tcpdump抓包来分析原因"><span class="nav-number">1.6.2.</span> <span class="nav-text">从tcpdump抓包来分析原因</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#原因总结"><span class="nav-number">1.6.3.</span> <span class="nav-text">原因总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#最后一个数据发送慢导致计时显示网络rt偏高"><span class="nav-number">1.7.</span> <span class="nav-text">最后一个数据发送慢导致计时显示网络rt偏高</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">1.8.</span> <span class="nav-text">参考资料</span></a></li></ol></li></ol></div>
             
 
           </div>
