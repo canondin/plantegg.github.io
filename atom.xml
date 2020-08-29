@@ -55,165 +55,6 @@
   
   <entry>
     <title></title>
-    <link href="http://yoursite.com/2020/08/29/soft%20lockup%20kernel%20bug/"/>
-    <id>http://yoursite.com/2020/08/29/soft lockup kernel bug/</id>
-    <published>2020-08-29T09:39:11.175Z</published>
-    <updated>2019-10-25T05:15:38.082Z</updated>
-    
-    <content type="html"><![CDATA[<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/459908b71f7a269b8443ed3f0df741ea.png" alt="image.png"></p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/1b0369b4cc1298f291086baef0e25476.png" alt="image.png"></p>
-<p>tsar –load 结果，Load明显大于runq（procs_running， load大致应该是procs_running+procs_blocked+？）</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/1be8affd6ea21e623ec7d8507d6c65bd.png" alt="image.png"></p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/98e75570dba2abcfe2eb1028c8158e18.png" alt="image.png"></p>
-<h1 id="soft-lockup-kernel-bug"><a href="#soft-lockup-kernel-bug" class="headerlink" title="soft lockup kernel bug"></a>soft lockup kernel bug</h1><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/5ca76f59f07b8007a17cc58d557f7bd5.png" alt="image.png"></p>
-<p>内核软死锁（soft lockup）bug</p>
-<p>如果是用户空间的进程或线程引起的问题backtrace是不会有内容的，如果内核线程那么在soft lockup消息中会显示出backtrace信息。</p>
-<p>简单来说： 由于系统的某个驱动程序有问题导致watchdog无法收集每一个逻辑cpu运行时使用数据并抛出一个软死锁（soft lockup）错误</p>
-<p><strong>Soft lockup名称解释：所谓soft lockup就是说，这个bug没有让系统彻底死机，但是若干个进程（或者kernel thread）被锁死在了某个状态（一般在内核区域），很多情况下这个是由于内核锁的使用的问题。</strong></p>
-<p><a href="http://linuxperf.com/?p=83" target="_blank" rel="external">http://linuxperf.com/?p=83</a></p>
-<p>所谓lockup，是指某段内核代码占着CPU不放。Lockup严重的情况下会导致整个系统失去响应。Lockup有几个特点：</p>
-<ul>
-<li>首先只有内核代码才能引起lockup，因为用户代码是可以被抢占的，不可能形成lockup；</li>
-<li>其次内核代码必须处于禁止内核抢占的状态(preemption disabled)，因为Linux是可抢占式的内核，只在某些特定的代码区才禁止抢占，在这些代码区才有可能形成lockup。</li>
-</ul>
-<blockquote>
-<p>Soft lockup是指CPU被内核代码占据，以至于无法执行其它进程。检测soft lockup的原理是给每个CPU分配一个定时执行的内核线程[watchdog/x]，如果该线程在设定的期限内没有得到执行的话就意味着发生了soft lockup。</p>
-</blockquote>
-<p>Linux kernel设计了一个检测lockup的机制，称为NMI Watchdog，是利用NMI中断<strong>(Non-maskable interrupt，不可屏蔽中断，简称NMI</strong>)实现的，用NMI是因为lockup有可能发生在中断被屏蔽的状态下，这时唯一能把CPU抢下来的方法就是通过NMI，因为NMI中断是不可屏蔽的。NMI Watchdog 中包含 soft lockup detector 和 hard lockup detector，2.6之后的内核的实现方法如下。</p>
-<p>NMI Watchdog 的触发机制包括两部分：</p>
-<p>一个高精度计时器(hrtimer)，对应的中断处理例程是kernel/watchdog.c: watchdog_timer_fn()，在该例程中：</p>
-<ul>
-<li>要递增计数器hrtimer_interrupts，这个计数器供hard lockup detector用于判断CPU是否响应中断；</li>
-<li>还要唤醒[watchdog/x]内核线程，该线程的任务是更新一个时间戳；</li>
-<li>soft lock detector检查时间戳，如果超过soft lockup threshold一直未更新，说明[watchdog/x]未得到运行机会，意味着CPU被霸占，也就是发生了soft lockup。</li>
-</ul>
-<p>基于PMU的NMI perf event，当PMU的计数器溢出时会触发NMI中断，对应的中断处理例程是 kernel/watchdog.c: watchdog_overflow_callback()，hard lockup detector就在其中，它会检查上述hrtimer的中断次数(hrtimer_interrupts)是否在保持递增，如果停滞则表明hrtimer中断未得到响应，也就是发生了hard lockup。</p>
-<p>hrtimer的周期是：softlockup_thresh/5。<br>注：</p>
-<p>在2.6内核中：</p>
-<pre><code>softlockup_thresh的值等于内核参数kernel.watchdog_thresh，默认60秒；
-</code></pre><p>而到3.10内核中：<br>    内核参数kernel.watchdog_thresh名称未变，但含义变成了hard lockup threshold，默认10秒；<br>    soft lockup threshold则等于（2*kernel.watchdog_thresh），即默认20秒。</p>
-<p>在3.10内核里可以手工调整触发周期（hard lockup threshold）:</p>
-<pre><code>$sudo sysctl -a | grep watchdog_thresh
-#hard lockup threshold，默认10秒；soft lockup threshold则等于（2*kernel.watchdog_thresh），即默认20秒
-kernel.watchdog_thresh = 10 
-
-$sudo sysctl -a | grep softlockup
-kernel.softlockup_all_cpu_backtrace = 0
-kernel.softlockup_panic = 0
-
-$sudo sysctl -a | grep watchdog
-#如果为1，表示利用IO APIC的始终源；如果为2，表示利用LOCAL APIC的performance counter
-kernel.nmi_watchdog = 1 
-kernel.watchdog = 1
-kernel.watchdog_thresh = 10
-</code></pre><p><a href="https://access.redhat.com/solutions/2073603" target="_blank" rel="external">https://access.redhat.com/solutions/2073603</a><br><a href="https://bugzilla.redhat.com/show_bug.cgi?id=821594" target="_blank" rel="external">https://bugzilla.redhat.com/show_bug.cgi?id=821594</a></p>
-<p>关于NMI解释：<a href="http://blog.csdn.net/freemancqcsdn/article/details/4499100" target="_blank" rel="external">http://blog.csdn.net/freemancqcsdn/article/details/4499100</a></p>
-<h2 id="Linux-Load含义"><a href="#Linux-Load含义" class="headerlink" title="Linux Load含义"></a>Linux Load含义</h2><h3 id="uptime和top等命令都可以看到load-average指标，从左至右三个数字分别表示1分钟、5分钟、15分钟的load-average："><a href="#uptime和top等命令都可以看到load-average指标，从左至右三个数字分别表示1分钟、5分钟、15分钟的load-average：" class="headerlink" title="uptime和top等命令都可以看到load average指标，从左至右三个数字分别表示1分钟、5分钟、15分钟的load average："></a>uptime和top等命令都可以看到load average指标，从左至右三个数字分别表示1分钟、5分钟、15分钟的load average：</h3><pre><code>$ uptime
- 10:16:25 up 3 days, 19:23,  2 users,  load average: 0.00, 0.01, 0.05
-</code></pre><p>Load average的概念源自UNIX系统，虽然各家的公式不尽相同，但都是用于衡量正在使用CPU的进程数量和正在等待CPU的进程数量，一句话就是runnable processes的数量。所以load average可以作为CPU瓶颈的参考指标，如果大于CPU的数量，说明CPU可能不够用了。</p>
-<p><strong>但是，Linux上不是这样的！</strong></p>
-<p>Linux上的load average除了包括正在使用CPU的进程数量和正在等待CPU的进程数量之外，还包括uninterruptible sleep的进程数量。通常等待IO设备、等待网络的时候，进程会处于uninterruptible sleep状态。Linux设计者的逻辑是，uninterruptible sleep应该都是很短暂的，很快就会恢复运行，所以被等同于runnable。然而uninterruptible sleep即使再短暂也是sleep，何况现实世界中uninterruptible sleep未必很短暂，大量的、或长时间的uninterruptible sleep通常意味着IO设备遇到了瓶颈。众所周知，sleep状态的进程是不需要CPU的，即使所有的CPU都空闲，正在sleep的进程也是运行不了的，所以sleep进程的数量绝对不适合用作衡量CPU负载的指标，Linux把uninterruptible sleep进程算进load average的做法直接颠覆了load average的本来意义。所以在Linux系统上，load average这个指标基本失去了作用，因为你不知道它代表什么意思，当看到load average很高的时候，你不知道是runnable进程太多还是uninterruptible sleep进程太多，也就无法判断是CPU不够用还是IO设备有瓶颈。</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/7e52c04a38d5e952347623a7f3a467d1.png" alt="image.png"></p>
-<p>CentOS7 源代码中对Load计算算法的说明：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/94a879bed735e14409549dd6c2e85c90.png" alt="image.png"></p>
-<p>参考资料：<a href="https://en.wikipedia.org/wiki/Load_(computing" target="_blank" rel="external">https://en.wikipedia.org/wiki/Load_(computing</a>)</p>
-<p>“Most UNIX systems count only processes in the running (on CPU) or runnable (waiting for CPU) states. However, Linux also includes processes in uninterruptible sleep states (usually waiting for disk activity), which can lead to markedly different results if many processes remain blocked in I/O due to a busy or stalled I/O system.“</p>
-<h3 id="linux上进程有5种状态和ps工具标识进程的这5种状态码"><a href="#linux上进程有5种状态和ps工具标识进程的这5种状态码" class="headerlink" title="linux上进程有5种状态和ps工具标识进程的这5种状态码:"></a>linux上进程有5种状态和ps工具标识进程的这5种状态码:</h3><ul>
-<li>D 不可中断 uninterruptible sleep (usually IO)(收到信号不唤醒和不可运行, 进程必须等待直到有中断发生)</li>
-<li>R 运行 runnable (on run queue) (正在运行或在运行队列中等待)</li>
-<li>S 中断 sleeping (休眠中, 受阻, 在等待某个条件的形成或接受到信号)</li>
-<li>T 停止 traced or stopped 停止(进程收到SIGSTOP, SIGTSTP, SIGTTIN, SIGTTOU信号后停止运行运行)</li>
-<li>Z 僵死 a defunct (”zombie”) process 僵死(进程已终止, 但进程描述符存在, 直到父进程调用wait4()系统调用后释放)</li>
-</ul>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/6aa4c83d0b01bb503fc4a984a12ae7cb.png" alt="image.png"><br>from: <a href="https://idea.popcount.org/2012-12-11-linux-process-states/" target="_blank" rel="external">https://idea.popcount.org/2012-12-11-linux-process-states/</a></p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;p&gt;&lt;img src=&quot;http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/459908b71f7a269b8443ed3f0df741ea.png&quot; alt=&quot;image.png&quot;&gt;&lt;/p&gt;
-&lt;p&gt;&lt;img src=&quot;http
-    
-    </summary>
-    
-    
-  </entry>
-  
-  <entry>
-    <title></title>
-    <link href="http://yoursite.com/2020/08/29/wireshark-dup-ack-issue/"/>
-    <id>http://yoursite.com/2020/08/29/wireshark-dup-ack-issue/</id>
-    <published>2020-08-29T09:39:11.175Z</published>
-    <updated>2019-10-25T05:15:38.827Z</updated>
-    
-    <content type="html"><![CDATA[<h2 id="问题："><a href="#问题：" class="headerlink" title="问题："></a>问题：</h2><p>在wireshark中看到一个tcp会话中的两台机器突然一直互相发dup ack包，但是没有触发重传。每次重复ack都是间隔精确的20秒</p>
-<h2 id="如下截图："><a href="#如下截图：" class="headerlink" title="如下截图："></a>如下截图：</h2><p><img src="http://i.imgur.com/bm3W68Q.png" alt=""></p>
-<p>client都一直在回复收到2号包（ack=2）了，可是server跟傻了一样居然还发seq=1的包（按理，应该发比2大的包啊）</p>
-<h2 id="系统配置："><a href="#系统配置：" class="headerlink" title="系统配置："></a>系统配置：</h2><pre><code>net.ipv4.tcp_keepalive_time = 20
-net.ipv4.tcp_keepalive_probes = 5
-net.ipv4.tcp_keepalive_intvl = 3
-</code></pre><h2 id="原因："><a href="#原因：" class="headerlink" title="原因："></a>原因：</h2><p>抓包不全的话wireshark有缺陷，把keepalive包识别成了dup ack包，看内容这种dup ack和keepalive似乎是一样的，flags都是0x010。keep alive的定义的是后退一格(seq少1）。</p>
-<p>2、4、6、8……号包，都有一个“tcp acked unseen segment”。这个一般表示它ack的这个包，没有被抓到。Wirshark如何作出此判断呢？前面一个包是seq=1, len=0，所以正常情况下是ack = seq + len = 1，然而Wireshark看到的确是ack = 2, 它只能判断有一个seq =1, len = 1的包没有抓到。<br>dup ack也是类似道理，这些包完全符合dup ack的定义，因为“ack = ” 某个数连续多次出现了。</p>
-<p>这一切都是因为keep alive的特殊性导致的。打开66号包的tcp层（见后面的截图），可以看到它的 next sequence number = 12583，表示正常情况下server发出的下一个包应该是seq = 12583。可是在下一个包，也就是68号包中，却是seq = 12582。keep alive的定义的确是这样，即后退一格。<br>Wireshark只有在抓到数据包（66号包）和keep alive包的情况下才有可能正确识别，前面的抓包中恰好在keep alive之前丢失了数据包，所以Wireshark就蒙了。</p>
-<h2 id="构造重现"><a href="#构造重现" class="headerlink" title="构造重现"></a>构造重现</h2><p>如果用“frame.number &gt;= 68” 过滤这个包，然后File–&gt;export specified packets保存成一个新文件，再打开那个新文件，就会发现Wireshark又蒙了。本来能够正常识别的keep alive包又被错看成dup ack了，所以一旦碰到这种情况不要慌要稳</p>
-<p>下面是知识点啦</p>
-<h2 id="Keepalive"><a href="#Keepalive" class="headerlink" title="Keepalive"></a>Keepalive</h2><p>TCP报文接收方必须回复的场景：</p>
-<p>TCP携带字节数据<br>没有字节数据，携带SYN状态位<br>没有字节数据，携带FIN状态位</p>
-<p>keepalive 提取历史发送的最后一个字节，充当心跳字节数据，依然使用该字节的最初序列号。也就是前面所说的seq回退了一个</p>
-<p>对方收到后因为seq小于TCP滑动窗口的左侧，被判定为duplicated数据包，然后扔掉了，并回复一个duplicated ack</p>
-<p>所以keepalive跟duplicated本质是一回事，就看wireshark能够正确识别了。</p>
-<h2 id="Duplication-ack是指："><a href="#Duplication-ack是指：" class="headerlink" title="Duplication ack是指："></a>Duplication ack是指：</h2><p>server收到了3和8号包，但是没有收到中间的4/5/6/7，那么server就会ack 3，如果client还是继续发8/9号包，那么server会继续发dup ack 3#1 ; dup ack 3#2 来向客户端说明只收到了3号包，不要着急发后面的大包，把4/5/6/7给我发过来</p>
-<h2 id="TCP-Window-Update"><a href="#TCP-Window-Update" class="headerlink" title="TCP Window Update"></a>TCP Window Update</h2><p><img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1558941016099-bc4504f1-e9c7-4d84-85e1-a7f5c6554306.png" alt=""></p>
-<p>如上图，当接收方的tcp Window Size不足一个MSS的时候，为了避免 Silly Window Syndrome，Client不再发小包，而是发送探测包（跟keepalive一样，发一个回退一格的包，触发server ack同时server ack的时候会带过来新的window size）探测包间隔时间是200/400/800/1600……ms这样</p>
-<h2 id="正常的keep-alive-Case："><a href="#正常的keep-alive-Case：" class="headerlink" title="正常的keep-alive Case："></a>正常的keep-alive Case：</h2><p><img src="http://i.imgur.com/DsTWFZr.png" alt=""></p>
-<p>keep-alive 通过发一个比实际seq小1的包，比如server都已经 ack 12583了，client故意发一个seq 12582来标识这是一个keep-Alive包</p>
-<h2 id="Duplication-ack是指：-1"><a href="#Duplication-ack是指：-1" class="headerlink" title="Duplication ack是指："></a>Duplication ack是指：</h2><p>server收到了3和8号包，但是没有收到中间的4/5/6/7，那么server就会ack 3，如果client还是继续发8/9号包，那么server会继续发dup ack 3#1 ; dup ack 3#2 来向客户端说明只收到了3号包，不要着急发后面的大包，把4/5/6/7给我发过来</p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h2 id=&quot;问题：&quot;&gt;&lt;a href=&quot;#问题：&quot; class=&quot;headerlink&quot; title=&quot;问题：&quot;&gt;&lt;/a&gt;问题：&lt;/h2&gt;&lt;p&gt;在wireshark中看到一个tcp会话中的两台机器突然一直互相发dup ack包，但是没有触发重传。每次重复ack都是间隔精确的2
-    
-    </summary>
-    
-    
-  </entry>
-  
-  <entry>
-    <title></title>
-    <link href="http://yoursite.com/2020/08/29/%E6%96%B9%E8%88%9F%E5%B9%B3%E5%8F%B0%E9%83%A8%E7%BD%B2%E7%8E%AF%E5%A2%83%E8%A6%81%E6%B1%82/"/>
-    <id>http://yoursite.com/2020/08/29/方舟平台部署环境要求/</id>
-    <published>2020-08-29T09:39:11.175Z</published>
-    <updated>2019-10-25T05:15:39.181Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="方舟平台部署环境要求"><a href="#方舟平台部署环境要求" class="headerlink" title="方舟平台部署环境要求"></a>方舟平台部署环境要求</h1><pre><code>1.  操作系统CentOS7.2 64bit 选择标准安装（不能用最小化安装）
-2.  配置好yum源能够安装基本的软件
-3.  提供统一的NTP服务器
-4.  物理机防火墙关闭
-5.  物理机关闭selinux
-6.  每台机器hostname都不一样( 执行 hostname 查看到的)
-7.  网卡名要一样（可以都是eth0或者bond0这样的），不是随机数
-8.  Ipv4_forward 处于开启状态
-9.  提前配置好一个独立vlan（这个vlan里面除了网关其它ip都不能有其它机器在用），这个vlan要和物理机不是同一个vlan，要跟里外物理机都能连通。然后提供如下这三个信息：    
-    ​    a) 这个vlan的范围，比如：10.16.9.0/24
-    ​    b) 网关，比如10.16.9.254
-    ​    c) vlan id，比如vlan169       
-10.  物理服务器连接在交换机上的接口配置成trunk模式，允许物理机和docker的vlan通过【9和10 的配置不需要修改物理机的任何配置，在交换机上完成】  
-11.  提供MySQL 5.6及以上版本，字符集为utf8（不能是latin，忽略表名大小写）    
-12.  提供root帐号权限（部署完成后可修改）    
-13.  能够提供外网访问跳板机，可以访问OSS并将的安装包复制到本地某台机器    
-14.  物理机磁盘不小于2.4T， 数据盘做RAID10
-</code></pre>]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;方舟平台部署环境要求&quot;&gt;&lt;a href=&quot;#方舟平台部署环境要求&quot; class=&quot;headerlink&quot; title=&quot;方舟平台部署环境要求&quot;&gt;&lt;/a&gt;方舟平台部署环境要求&lt;/h1&gt;&lt;pre&gt;&lt;code&gt;1.  操作系统CentOS7.2 64bit 选择标准安装
-    
-    </summary>
-    
-    
-  </entry>
-  
-  <entry>
-    <title></title>
     <link href="http://yoursite.com/2020/08/29/%E7%AD%94%E7%96%91%E9%97%AE%E9%A2%98%E6%B1%87%E6%80%BB/"/>
     <id>http://yoursite.com/2020/08/29/答疑问题汇总/</id>
     <published>2020-08-29T09:39:11.175Z</published>
@@ -402,131 +243,6 @@ $ cat  kernel_log.0915
     
       &lt;h1 id=&quot;答疑问题汇总&quot;&gt;&lt;a href=&quot;#答疑问题汇总&quot; class=&quot;headerlink&quot; title=&quot;答疑问题汇总&quot;&gt;&lt;/a&gt;答疑问题汇总&lt;/h1&gt;&lt;hr&gt;
 &lt;h2 id=&quot;天津一网通-vxlan-网络始终不通，宿主机能抓到发出去的包，但是抓不到回复包。对端容器
-    
-    </summary>
-    
-    
-  </entry>
-  
-  <entry>
-    <title></title>
-    <link href="http://yoursite.com/2020/08/29/IT%E5%B7%A5%E7%A8%8B%E5%B8%88%E5%85%A5%E9%97%A8/"/>
-    <id>http://yoursite.com/2020/08/29/IT工程师入门/</id>
-    <published>2020-08-29T09:39:11.171Z</published>
-    <updated>2019-10-25T05:15:37.856Z</updated>
-    
-    <content type="html"><![CDATA[<p> IT新手入门</p>
-<ul>
-<li>准备一个记事本记录一些知识点（推荐NotePad++ 自动保存、自动记录上次打开记录）</li>
-<li>使用有道云笔记类似的工具记录知识点（带颜色、字体大小、URL），换工作后自动还在（多个文件下不如NotePad++ 快捷）</li>
-<li>笔记要越记越薄，完全懂了就挪走和删掉，不能什么东西都记，一定只记那些最重要的，最新的记在笔记的最前面</li>
-<li>复习了10次8次还是忘记的话就要改改学习方式了，学习的目的是理解而不是死记，死记的才容易忘记，理解了就不会忘记了</li>
-<li>碰到问题通过Google深入挖掘，每个问题的背后都是新的问题和知识点，不懂的通过上面的所说工具记录下来</li>
-<li>知识的积累非常像打怪，碰到的多了，每次都深挖吃透自然成长快</li>
-<li>纯看书和理论也是一种学习方法，但是对于大多数人不够具体，容易忘记、或者理解不了，但是碰到的具体问题就完全不一样了，通过问题来理解理论这种方式大多数人都能学懂吃透</li>
-<li>不要放过身边的任何一个经验丰富的老师，面对面总是效率最高的学习方式</li>
-<li>碰到问题你解决不了同事帮你解决后，自己单独复盘，看看别人的思路为什么能解决，你解决不了问题出现在哪里，比如你的知识点不够（大多数是这种情况，只能靠积累）或者你的思路错误、不严谨（这种情况要纠正自己的错误，训练自己的逻辑严谨），复盘后不能理解的地方拉上同事继续虚心请教这个地方为什么同事要这么想或者这么处理，然后又继续单独复盘直到全部理解整个过程</li>
-<li>理解整个过程后还没完，有没有更好的方式来解决这个问题，这个问题背后真正的逻辑、理论是什么，把这个想透了才会超越你什么的老同事</li>
-<li>珍惜每一次打了鸡血一样学习的激情，这种机会不多见，但是是最快最好的成长机会</li>
-<li>无聊没有目标的时候把前面的知识点笔记翻出来复习加深理解一下</li>
-<li>非常基础性的知识得靠自己学习，不能什么都请教别人</li>
-<li>碰到问题容易很快就放弃，去请教，请尽量坚持一下，可以试着坚持三天，每天晚上睡觉前想想方案和问题也许有意外的收获</li>
-<li>同样工作三年有的人成长快有的人基本没有成长差别就在上面</li>
-<li>使用RSS订阅器订阅一些好的技术Blog</li>
-<li>折腾翻墙访问google的能力就是解决问题、动手能力的一种体现</li>
-<li>写代码会有年龄的歧视但是解决问题的能力没有，能力的提升才是越老越值钱的基础，否则就只能失业</li>
-</ul>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;p&gt; IT新手入门&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;准备一个记事本记录一些知识点（推荐NotePad++ 自动保存、自动记录上次打开记录）&lt;/li&gt;
-&lt;li&gt;使用有道云笔记类似的工具记录知识点（带颜色、字体大小、URL），换工作后自动还在（多个文件下不如NotePad++ 快捷）&lt;/
-    
-    </summary>
-    
-    
-  </entry>
-  
-  <entry>
-    <title></title>
-    <link href="http://yoursite.com/2020/08/29/MarkDown-%E6%8A%80%E5%B7%A7/"/>
-    <id>http://yoursite.com/2020/08/29/MarkDown-技巧/</id>
-    <published>2020-08-29T09:39:11.171Z</published>
-    <updated>2020-05-05T09:45:23.916Z</updated>
-    
-    <content type="html"><![CDATA[<font face="courier">我是黑体字abc</font>
-
-<font face="courier-new">我是微软雅黑</font>
-
-<font face="微软雅黑">我是微软雅黑</font>
-
-<font face="STCAIYUN">我是华文彩云</font>
-
-<font color="blue" size="16" face="黑体">color=blue size=72 face=”黑体”</font><br><font color="red" size="16">color=red</font>
-
-
-<font color="gray" size="24">color=gray</font>
-
-<center>居中<font color="gray" size="24">color=gray</font></center>
-
-<p>Markdown本身不支持背景色设置，需要采用内置html的方式实现：借助 table, tr, td 等表格标签的 bgcolor 属性来实现背景色的功能。举例如下：</p>
-<table><tr><td bgcolor="orange">背景色是：orange</td></tr></table>
-
-
-<p>代码块：用2个以上TAB键起始的段落，会被认为是代码块（效果如下）：</p>
-<pre><code>/* We always get an MSS option.  The option bytes which will be seen in
- * normal data packets should timestamps be used, must be in the MSS
- * advertised.  But we subtract them from tp-&gt;mss_cache so that
- * calculations in tcp_sendmsg are simpler etc.  So account for this
- * fact here if necessary.  If we don&apos;t do this correctly, as a
- * receiver we won&apos;t recognize data packets as being full sized when we
- * should, and thus we won&apos;t abide by the delayed ACK rules correctly.
- * SACKs don&apos;t matter, we never delay an ACK when we have any of those
- * going out.  */
-opts-&gt;mss = tcp_advertise_mss(sk);
-remaining -= TCPOLEN_MSS_ALIGNED;
-
-if (likely(sock_net(sk)-&gt;ipv4.sysctl_tcp_timestamps &amp;&amp; !*md5)) {
-        opts-&gt;options |= OPTION_TS;
-        opts-&gt;tsval = tcp_skb_timestamp(skb) + tp-&gt;tsoffset;
-        opts-&gt;tsecr = tp-&gt;rx_opt.ts_recent;
-        remaining -= TCPOLEN_TSTAMP_ALIGNED;
-}
-</code></pre><p>颜色名列表<br>颜色名    十六进制颜色值    颜色<br>AliceBlue    #F0F8FF    rgb(240, 248, 255)<br>AntiqueWhite    #FAEBD7    rgb(250, 235, 215)<br>Aqua    #00FFFF    rgb(0, 255, 255)<br>Aquamarine    #7FFFD4    rgb(127, 255, 212)<br>Azure    #F0FFFF    rgb(240, 255, 255)<br>Beige    #F5F5DC    rgb(245, 245, 220)<br>Bisque    #FFE4C4    rgb(255, 228, 196)<br>Black    #000000    rgb(0, 0, 0)<br>BlanchedAlmond    #FFEBCD    rgb(255, 235, 205)<br>Blue    #0000FF    rgb(0, 0, 255)<br>BlueViolet    #8A2BE2    rgb(138, 43, 226)<br>Brown    #A52A2A    rgb(165, 42, 42)<br>BurlyWood    #DEB887    rgb(222, 184, 135)<br>CadetBlue    #5F9EA0    rgb(95, 158, 160)<br>Chartreuse    #7FFF00    rgb(127, 255, 0)<br>Chocolate    #D2691E    rgb(210, 105, 30)<br>Coral    #FF7F50    rgb(255, 127, 80)<br>CornflowerBlue    #6495ED    rgb(100, 149, 237)<br>Cornsilk    #FFF8DC    rgb(255, 248, 220)<br>Crimson    #DC143C    rgb(220, 20, 60)<br>Cyan    #00FFFF    rgb(0, 255, 255)<br>DarkBlue    #00008B    rgb(0, 0, 139)<br>DarkCyan    #008B8B    rgb(0, 139, 139)<br>DarkGoldenRod    #B8860B    rgb(184, 134, 11)<br>DarkGray    #A9A9A9    rgb(169, 169, 169)<br>DarkGreen    #006400    rgb(0, 100, 0)<br>DarkKhaki    #BDB76B    rgb(189, 183, 107)<br>DarkMagenta    #8B008B    rgb(139, 0, 139)<br>DarkOliveGreen    #556B2F    rgb(85, 107, 47)<br>Darkorange    #FF8C00    rgb(255, 140, 0)<br>DarkOrchid    #9932CC    rgb(153, 50, 204)<br>DarkRed    #8B0000    rgb(139, 0, 0)<br>DarkSalmon    #E9967A    rgb(233, 150, 122)<br>DarkSeaGreen    #8FBC8F    rgb(143, 188, 143)<br>DarkSlateBlue    #483D8B    rgb(72, 61, 139)<br>DarkSlateGray    #2F4F4F    rgb(47, 79, 79)<br>DarkTurquoise    #00CED1    rgb(0, 206, 209)<br>DarkViolet    #9400D3    rgb(148, 0, 211)<br>DeepPink    #FF1493    rgb(255, 20, 147)<br>DeepSkyBlue    #00BFFF    rgb(0, 191, 255)<br>DimGray    #696969    rgb(105, 105, 105)<br>DodgerBlue    #1E90FF    rgb(30, 144, 255)<br>Feldspar    #D19275    rgb(209, 146, 117)<br>FireBrick    #B22222    rgb(178, 34, 34)<br>FloralWhite    #FFFAF0    rgb(255, 250, 240)<br>ForestGreen    #228B22    rgb(34, 139, 34)<br>Fuchsia    #FF00FF    rgb(255, 0, 255)<br>Gainsboro    #DCDCDC    rgb(220, 220, 220)<br>GhostWhite    #F8F8FF    rgb(248, 248, 255)<br>Gold    #FFD700    rgb(255, 215, 0)<br>GoldenRod    #DAA520    rgb(218, 165, 32)<br>Gray    #808080    rgb(128, 128, 128)<br>Green    #008000    rgb(0, 128, 0)<br>GreenYellow    #ADFF2F    rgb(173, 255, 47)<br>HoneyDew    #F0FFF0    rgb(240, 255, 240)<br>HotPink    #FF69B4    rgb(255, 105, 180)<br>IndianRed    #CD5C5C    rgb(205, 92, 92)<br>Indigo    #4B0082    rgb(75, 0, 130)<br>Ivory    #FFFFF0    rgb(255, 255, 240)<br>Khaki    #F0E68C    rgb(240, 230, 140)<br>Lavender    #E6E6FA    rgb(230, 230, 250)<br>LavenderBlush    #FFF0F5    rgb(255, 240, 245)<br>LawnGreen    #7CFC00    rgb(124, 252, 0)<br>LemonChiffon    #FFFACD    rgb(255, 250, 205)<br>LightBlue    #ADD8E6    rgb(173, 216, 230)<br>LightCoral    #F08080    rgb(240, 128, 128)<br>LightCyan    #E0FFFF    rgb(224, 255, 255)<br>LightGoldenRodYellow    #FAFAD2    rgb(250, 250, 210)<br>LightGrey    #D3D3D3    rgb(211, 211, 211)<br>LightGreen    #90EE90    rgb(144, 238, 144)<br>LightPink    #FFB6C1    rgb(255, 182, 193)<br>LightSalmon    #FFA07A    rgb(255, 160, 122)<br>LightSeaGreen    #20B2AA    rgb(32, 178, 170)<br>LightSkyBlue    #87CEFA    rgb(135, 206, 250)<br>LightSlateBlue    #8470FF    rgb(132, 112, 255)<br>LightSlateGray    #778899    rgb(119, 136, 153)<br>LightSteelBlue    #B0C4DE    rgb(176, 196, 222)<br>LightYellow    #FFFFE0    rgb(255, 255, 224)<br>Lime    #00FF00    rgb(0, 255, 0)<br>LimeGreen    #32CD32    rgb(50, 205, 50)<br>Linen    #FAF0E6    rgb(250, 240, 230)<br>Magenta    #FF00FF    rgb(255, 0, 255)<br>Maroon    #800000    rgb(128, 0, 0)<br>MediumAquaMarine    #66CDAA    rgb(102, 205, 170)<br>MediumBlue    #0000CD    rgb(0, 0, 205)<br>MediumOrchid    #BA55D3    rgb(186, 85, 211)<br>MediumPurple    #9370D8    rgb(147, 112, 216)<br>MediumSeaGreen    #3CB371    rgb(60, 179, 113)<br>MediumSlateBlue    #7B68EE    rgb(123, 104, 238)<br>MediumSpringGreen    #00FA9A    rgb(0, 250, 154)<br>MediumTurquoise    #48D1CC    rgb(72, 209, 204)<br>MediumVioletRed    #C71585    rgb(199, 21, 133)<br>MidnightBlue    #191970    rgb(25, 25, 112)<br>MintCream    #F5FFFA    rgb(245, 255, 250)<br>MistyRose    #FFE4E1    rgb(255, 228, 225)<br>Moccasin    #FFE4B5    rgb(255, 228, 181)<br>NavajoWhite    #FFDEAD    rgb(255, 222, 173)<br>Navy    #000080    rgb(0, 0, 128)<br>OldLace    #FDF5E6    rgb(253, 245, 230)<br>Olive    #808000    rgb(128, 128, 0)<br>OliveDrab    #6B8E23    rgb(107, 142, 35)<br>Orange    #FFA500    rgb(255, 165, 0)<br>OrangeRed    #FF4500    rgb(255, 69, 0)<br>Orchid    #DA70D6    rgb(218, 112, 214)<br>PaleGoldenRod    #EEE8AA    rgb(238, 232, 170)<br>PaleGreen    #98FB98    rgb(152, 251, 152)<br>PaleTurquoise    #AFEEEE    rgb(175, 238, 238)<br>PaleVioletRed    #D87093    rgb(216, 112, 147)<br>PapayaWhip    #FFEFD5    rgb(255, 239, 213)<br>PeachPuff    #FFDAB9    rgb(255, 218, 185)<br>Peru    #CD853F    rgb(205, 133, 63)<br>Pink    #FFC0CB    rgb(255, 192, 203)<br>Plum    #DDA0DD    rgb(221, 160, 221)<br>PowderBlue    #B0E0E6    rgb(176, 224, 230)<br>Purple    #800080    rgb(128, 0, 128)<br>Red    #FF0000    rgb(255, 0, 0)<br>RosyBrown    #BC8F8F    rgb(188, 143, 143)<br>RoyalBlue    #4169E1    rgb(65, 105, 225)<br>SaddleBrown    #8B4513    rgb(139, 69, 19)<br>Salmon    #FA8072    rgb(250, 128, 114)<br>SandyBrown    #F4A460    rgb(244, 164, 96)<br>SeaGreen    #2E8B57    rgb(46, 139, 87)<br>SeaShell    #FFF5EE    rgb(255, 245, 238)<br>Sienna    #A0522D    rgb(160, 82, 45)<br>Silver    #C0C0C0    rgb(192, 192, 192)<br>SkyBlue    #87CEEB    rgb(135, 206, 235)<br>SlateBlue    #6A5ACD    rgb(106, 90, 205)<br>SlateGray    #708090    rgb(112, 128, 144)<br>Snow    #FFFAFA    rgb(255, 250, 250)<br>SpringGreen    #00FF7F    rgb(0, 255, 127)<br>SteelBlue    #4682B4    rgb(70, 130, 180)<br>Tan    #D2B48C    rgb(210, 180, 140)<br>Teal    #008080    rgb(0, 128, 128)<br>Thistle    #D8BFD8    rgb(216, 191, 216)<br>Tomato    #FF6347    rgb(255, 99, 71)<br>Turquoise    #40E0D0    rgb(64, 224, 208)<br>Violet    #EE82EE    rgb(238, 130, 238)<br>VioletRed    #D02090    rgb(208, 32, 144)<br>Wheat    #F5DEB3    rgb(245, 222, 179)<br>White    #FFFFFF    rgb(255, 255, 255)<br>WhiteSmoke    #F5F5F5    rgb(245, 245, 245)<br>Yellow    #FFFF00    rgb(255, 255, 0)<br>YellowGreen    #9ACD32    rgb(154, 205, 50)</p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;font face=&quot;courier&quot;&gt;我是黑体字abc&lt;/font&gt;
-
-&lt;font face=&quot;courier-new&quot;&gt;我是微软雅黑&lt;/font&gt;
-
-&lt;font face=&quot;微软雅黑&quot;&gt;我是微软雅黑&lt;/font&gt;
-
-&lt;font face=&quot;STCAIYUN&quot;&gt;我是华文彩云&lt;
-    
-    </summary>
-    
-    
-  </entry>
-  
-  <entry>
-    <title></title>
-    <link href="http://yoursite.com/2020/08/29/README/"/>
-    <id>http://yoursite.com/2020/08/29/README/</id>
-    <published>2020-08-29T09:39:11.171Z</published>
-    <updated>2019-10-25T05:15:17.063Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="case"><a href="#case" class="headerlink" title="case"></a>case</h1><p>case resource（img/blog)</p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;case&quot;&gt;&lt;a href=&quot;#case&quot; class=&quot;headerlink&quot; title=&quot;case&quot;&gt;&lt;/a&gt;case&lt;/h1&gt;&lt;p&gt;case resource（img/blog)&lt;/p&gt;
-
     
     </summary>
     
@@ -1122,66 +838,6 @@ poolSize:30 active(now/max):0/7 pooling(now/max):13/13 create:0 destroy:0 errors
     <summary type="html">
     
       &lt;h1 id=&quot;记一次诡异的数据库故障的排查过程&quot;&gt;&lt;a href=&quot;#记一次诡异的数据库故障的排查过程&quot; class=&quot;headerlink&quot; title=&quot;记一次诡异的数据库故障的排查过程&quot;&gt;&lt;/a&gt;记一次诡异的数据库故障的排查过程&lt;/h1&gt;&lt;p&gt;这两周遇到了一个诡异的应用数
-    
-    </summary>
-    
-    
-  </entry>
-  
-  <entry>
-    <title></title>
-    <link href="http://yoursite.com/2020/08/26/perf-usage/"/>
-    <id>http://yoursite.com/2020/08/26/perf-usage/</id>
-    <published>2020-08-26T10:57:01.303Z</published>
-    <updated>2020-08-26T10:57:01.303Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="perf"><a href="#perf" class="headerlink" title="perf"></a>perf</h1><pre><code>   83  07/08/19 13:56:26 sudo perf record -ag -p 4759
-   84  07/08/19 13:56:50 ls /tmp/
-   85  07/08/19 13:57:06 history |tail -16
-   86  07/08/19 13:57:20 sudo chmod 777 perf.data
-   87  07/08/19 13:57:33 perf script &gt;out.perf
-   88  07/08/19 13:59:24 ~/tools/FlameGraph-master/./stackcollapse-perf.pl ~/out.perf &gt;out.folded
-   89  07/08/19 14:01:01 ~/tools/FlameGraph-master/flamegraph.pl out.folded &gt; kernel-perf.svg
-   90  07/08/19 14:01:07 ls -lh
-   91  07/08/19 14:03:33 history
-
-
-$ sudo perf record -F 99 -a -g -- sleep 60
-</code></pre><p>　　执行这个命令将生成一个 perf.data 文件：</p>
-<p>执行sudo perf report -n可以生成报告的预览。<br>执行sudo perf report -n –stdio可以生成一个详细的报告。<br>执行sudo perf script可以 dump 出 perf.data 的内容。</p>
-<pre><code># 折叠调用栈
-$ FlameGraph/stackcollapse-perf.pl out.perf &gt; out.folded
-# 生成火焰图
-$ FlameGraph/flamegraph.pl out.folded &gt; out.svg
-</code></pre><p>perf详解： <a href="https://zhengheng.me/2015/11/12/perf-stat/" target="_blank" rel="external">https://zhengheng.me/2015/11/12/perf-stat/</a>     <a href="https://mp.weixin.qq.com/s?__biz=MzUxNjE3MTcwMg==&amp;mid=2247483755&amp;idx=1&amp;sn=5324f7e46c91739b566dfc1d0847fc4a&amp;chksm=f9aa33b2ceddbaa478729383cac89967cc515bafa472001adc4ad42fb37e3ce473eddc3b591a&amp;mpshare=1&amp;scene=1&amp;srcid=0127mp3WJ6Kd1UOQISFg3SIC#rd" target="_blank" rel="external">https://mp.weixin.qq.com/s?__biz=MzUxNjE3MTcwMg==&amp;mid=2247483755&amp;idx=1&amp;sn=5324f7e46c91739b566dfc1d0847fc4a&amp;chksm=f9aa33b2ceddbaa478729383cac89967cc515bafa472001adc4ad42fb37e3ce473eddc3b591a&amp;mpshare=1&amp;scene=1&amp;srcid=0127mp3WJ6Kd1UOQISFg3SIC#rd</a>  <strong>CPU 利用率的真实含义</strong>  cpu有很大一部分在stale状态, stale表示cpu流水线出现卡顿、不顺畅</p>
-<p>sudo perf record -g -a -e skb:kfree_skb //perf 记录丢包调用栈 然后sudo perf script 查看 （网络报文被丢弃时会调用该函数kfree_skb）</p>
-<p>perf record -e ‘skb:consume_skb’ -ag  //记录网络消耗</p>
-<p>perf probe –add tcp_sendmsg //增加监听probe  perf record -e probe:tcp_sendmsg -aR sleep 1</p>
-<p>sudo perf sched record – sleep 1 //记录cpu调度的延时</p>
-<p>sudo perf sched latency //查看</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line"><span class="meta">$</span>sudo perf stat -a -- sleep 10</div><div class="line"> Performance counter stats for 'system wide':</div><div class="line">     239866.330098      task-clock (msec)         #   23.985 CPUs utilized    /10*1000        (100.00%)</div><div class="line">            45,709      context-switches          #    0.191 K/sec                    (100.00%)</div><div class="line">             1,715      cpu-migrations            #    0.007 K/sec                    (100.00%)</div><div class="line">            79,586      page-faults               #    0.332 K/sec</div><div class="line">     3,488,525,170      cycles                    #    0.015 GHz                      (83.34%)</div><div class="line">     9,708,140,897      stalled-cycles-frontend   #  278.29% /cycles frontend cycles idle     (83.34%)</div><div class="line">     9,314,891,615      stalled-cycles-backend    #  267.02% /cycles backend  cycles idle     (66.68%)</div><div class="line">     2,292,955,367      instructions              #    0.66  insns per cycle  insn/cycles</div><div class="line">                                                 \#    4.23  stalled cycles per insn stalled-cycles-frontend/insn (83.34%)</div><div class="line">       447,584,805      branches                  #    1.866 M/sec                    (83.33%)</div><div class="line">         8,470,791      branch-misses             #    1.89% of all branches          (83.33%)</div><div class="line">     10.000830932 seconds time elapsed</div></pre></td></tr></table></figure>
-<ul>
-<li>cycles：CPU时钟周期。CPU从它的指令集(instruction set)中选择指令执行。一个指令包含以下的步骤，每个步骤由CPU的一个叫做功能单元(functional unit)的组件来进行处理，每个步骤的执行都至少需要花费一个时钟周期。</li>
-</ul>
-<ol>
-<li>指令读取(instruction fetch)</li>
-<li>指令解码(instruction decode)</li>
-<li>执行(execute)</li>
-<li>内存访问(memory access)</li>
-<li>寄存器回写(register write-back)</li>
-</ol>
-<p>五个步骤只能串行，但是可以做成pipeline提升效率，也就是第一个指令做第二步的时候，指令读取单元可以去读取下一个指令了，如果有一个指令慢就会造成stall，也就是pipeline有地方卡壳了。</p>
-<p>另外cpu可以同时有多条pipeline，这也就是理论上最大的ipc.</p>
-<p>stalled-cycles，则是指令管道未能按理想状态发挥并行作用，发生停滞的时钟周期。stalled-cycles-frontend指指令读取或解码的指令步骤，而stalled-cycles-backend则是指令执行步骤。第二列中的cycles idle其实意思跟stalled是一样的，由于指令执行停滞了，所以指令管道也就空闲了，千万不要误解为CPU的空闲率。这个数值是由stalled-cycles-frontend或stalled-cycles-backend除以上面的cycles得出的</p>
-<p>从操作系统的角度讲，os会维护一个ready queue（就绪的线程队列）。并且在某一时刻cpu只为ready queue中位于队列头部的线程服务。</p>
-<p>sleep()使当前线程进入停滞状态，所以执行sleep()的线程在指定的时间内肯定不会执行；yield()只是使当前线程重新回到可执行状态，所以执行yield()的线程有可能在进入到可执行状态后马上又被执行。</p>
-<h2 id="bcc-tools"><a href="#bcc-tools" class="headerlink" title="bcc-tools"></a>bcc-tools</h2><p>sudo /usr/share/bcc/tools/syscount -p 3057 -L -T 80</p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;perf&quot;&gt;&lt;a href=&quot;#perf&quot; class=&quot;headerlink&quot; title=&quot;perf&quot;&gt;&lt;/a&gt;perf&lt;/h1&gt;&lt;pre&gt;&lt;code&gt;   83  07/08/19 13:56:26 sudo perf record -ag -p 4759
-
     
     </summary>
     
@@ -1943,6 +1599,666 @@ LISTEN    0     511              *:8085           *:*
       <category term="dropped" scheme="http://yoursite.com/tags/dropped/"/>
     
       <category term="TCP queue" scheme="http://yoursite.com/tags/TCP-queue/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>10+倍性能提升全过程</title>
+    <link href="http://yoursite.com/2020/02/23/10%E5%80%8D%E6%80%A7%E8%83%BD%E6%8F%90%E5%8D%87%E5%85%A8%E8%BF%87%E7%A8%8B--2016%E5%B9%B4%E5%8F%8C11%E4%BC%98%E9%85%B7%E4%BC%9A%E5%91%98%E4%BF%83%E9%94%80%E4%BC%98%E5%8C%96%E8%BF%87%E7%A8%8B/"/>
+    <id>http://yoursite.com/2020/02/23/10倍性能提升全过程--2016年双11优酷会员促销优化过程/</id>
+    <published>2020-02-23T09:30:03.000Z</published>
+    <updated>2020-05-11T14:09:51.401Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="10-倍性能提升全过程–优酷账号绑定淘宝账号的TPS从500到5400的优化历程"><a href="#10-倍性能提升全过程–优酷账号绑定淘宝账号的TPS从500到5400的优化历程" class="headerlink" title="10+倍性能提升全过程–优酷账号绑定淘宝账号的TPS从500到5400的优化历程"></a>10+倍性能提升全过程–优酷账号绑定淘宝账号的TPS从500到5400的优化历程</h1><h2 id="背景说明"><a href="#背景说明" class="headerlink" title="背景说明"></a>背景说明</h2><blockquote>
+<p>2016年的双11在淘宝上买买买的时候，天猫和优酷土豆一起做了联合促销，在天猫双11当天购物满XXX元就赠送优酷会员，这个过程需要用户在优酷侧绑定淘宝账号(登录优酷、提供淘宝账号，优酷调用淘宝API实现两个账号绑定）和赠送会员并让会员权益生效(看收费影片、免广告等等）</p>
+<p>这里涉及到优酷的两个部门：Passport(在上海，负责登录、绑定账号，下文中的优化过程主要是Passport部分）；会员(在北京，负责赠送会员，保证权益生效）</p>
+<p>在双11活动之前，Passport的绑定账号功能一直在运行，只是没有碰到过大促销带来的挑战</p>
+</blockquote>
+<hr>
+<p>整个过程分为两大块：</p>
+<ol>
+<li>整个系统级别，包括网络和依赖服务的性能等，多从整个系统视角分析问题；</li>
+<li>但服务器内部的优化过程，将CPU从si/sy围赶us，然后在us从代码级别一举全歼。</li>
+</ol>
+<p>系统级别都是最容易被忽视但是成效最明显的，代码层面都是很细致的力气活。</p>
+<h2 id="会员部分的架构改造"><a href="#会员部分的架构改造" class="headerlink" title="会员部分的架构改造"></a>会员部分的架构改造</h2><ul>
+<li>接入中间件DRDS，让优酷的数据库支持拆分，分解MySQL压力</li>
+<li>接入中间件vipserver来支持负载均衡</li>
+<li>接入集团DRC来保障数据的高可用</li>
+<li>对业务进行改造支持Amazon的全链路压测</li>
+</ul>
+<h2 id="主要的压测过程"><a href="#主要的压测过程" class="headerlink" title="主要的压测过程"></a>主要的压测过程</h2><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/6b24a854d91aba4dcdbd4f0155683d93.png" alt="screenshot.png"></p>
+<p><strong>上图是压测过程中主要的阶段中问题和改进,主要的问题和优化过程如下：</strong></p>
+<pre><code>- docker bridge网络性能问题和网络中断si不均衡    (优化后：500-&gt;1000TPS)
+- 短连接导致的local port不够                   (优化后：1000-3000TPS)
+- 生产环境snat单核导致的网络延时增大             (优化后生产环境能达到测试环境的3000TPS)
+- Spring MVC Path带来的过高的CPU消耗           (优化后：3000-&gt;4200TPS)
+- 其他业务代码的优化(比如异常、agent等)          (优化后：4200-&gt;5400TPS)
+</code></pre><p><strong>优化过程中碰到的比如淘宝api调用次数限流等一些业务原因就不列出来了</strong></p>
+<hr>
+<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>由于用户进来后先要登录并且绑定账号，实际压力先到Passport部分，在这个过程中最开始单机TPS只能到500，经过N轮优化后基本能达到5400 TPS，下面主要是阐述这个优化过程</p>
+<h2 id="Passport部分的压力"><a href="#Passport部分的压力" class="headerlink" title="Passport部分的压力"></a>Passport部分的压力</h2><h3 id="Passport-核心服务分两个："><a href="#Passport-核心服务分两个：" class="headerlink" title="Passport 核心服务分两个："></a>Passport 核心服务分两个：</h3><ul>
+<li>Login              主要处理登录请求</li>
+<li>userservice    处理登录后的业务逻辑，比如将优酷账号和淘宝账号绑定</li>
+</ul>
+<p>为了更好地利用资源每台物理加上部署三个docker 容器，跑在不同的端口上(8081、8082、8083），通过bridge网络来互相通讯</p>
+<h3 id="Passport机器大致结构"><a href="#Passport机器大致结构" class="headerlink" title="Passport机器大致结构"></a>Passport机器大致结构</h3><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/b509b30218dd22e03149985cf5e15f8e.png" alt="screenshot.png"></p>
+<!--这里的500 TPS到5400 TPS是指登录和将优酷账号和淘宝账号绑定的TPS，也是促销活动主要的瓶颈-->
+<h3 id="userservice服务网络相关的各种问题"><a href="#userservice服务网络相关的各种问题" class="headerlink" title="userservice服务网络相关的各种问题"></a>userservice服务网络相关的各种问题</h3><hr>
+<h4 id="太多SocketConnect异常-如上图）"><a href="#太多SocketConnect异常-如上图）" class="headerlink" title="太多SocketConnect异常(如上图）"></a>太多SocketConnect异常(如上图）</h4><p>在userservice机器上通过netstat也能看到大量的SYN_SENT状态，如下图：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/99bf952b880f17243953da790ff0e710.png" alt="image.png"></p>
+<h4 id="因为docker-bridge通过nat来实现，尝试去掉docker，让tomcat直接跑在物理机上"><a href="#因为docker-bridge通过nat来实现，尝试去掉docker，让tomcat直接跑在物理机上" class="headerlink" title="因为docker bridge通过nat来实现，尝试去掉docker，让tomcat直接跑在物理机上"></a>因为docker bridge通过nat来实现，尝试去掉docker，让tomcat直接跑在物理机上</h4><p>这时SocketConnect异常不再出现<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/6ed62fd6b50ad2785e5b57687d95ad6e.png" alt="image.png"></p>
+<h4 id="从新梳理一下网络流程"><a href="#从新梳理一下网络流程" class="headerlink" title="从新梳理一下网络流程"></a>从新梳理一下网络流程</h4><p>docker(bridge)—-短连接—&gt;访问淘宝API(淘宝open api只能短连接访问），性能差，cpu都花在si上； </p>
+<p>如果 docker(bridge)—-长连接到宿主机的某个代理上(比如haproxy）—–短连接—&gt;访问淘宝API， 性能就能好一点。问题可能是短连接放大了Docker bridge网络的性能损耗</p>
+<h4 id="当时看到的cpu-si非常高，截图如下："><a href="#当时看到的cpu-si非常高，截图如下：" class="headerlink" title="当时看到的cpu si非常高，截图如下："></a>当时看到的cpu si非常高，截图如下：</h4><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/4c1eff0f925f59977e2557acff5cf03b.png" alt="image.png"></p>
+<p>去掉Docker后，性能有所提升，继续通过perf top看到内核态寻找可用的Local Port消耗了比较多的CPU，gif动态截图如下(可以点击看高清大图）：</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/fff502ca73e3112e585560ffe4a4dbf1.gif" alt="perf-top-netLocalPort-issue.gif"></p>
+<p><strong>注意图中ipv6_rcv_saddr_equal和inet_csk_get_port 总共占了30%的CPU</strong> (系统态的CPU使用率高意味着共享资源有竞争或者I/O设备之间有大量的交互。)</p>
+<p><strong>一般来说一台机器默认配置的可用 Local Port 3万多个，如果是短连接的话，一个连接释放后默认需要60秒回收，30000/60 =500 这是大概的理论TPS值【这里只考虑连同一个server IP:port 的时候】</strong></p>
+<p>这500的tps算是一个老中医的经验。不过有些系统调整过Local Port取值范围，比如从1024到65534，那么这个tps上限就是1000附近。</p>
+<p>同时观察这个时候CPU的主要花在sy上，最理想肯定是希望CPU主要用在us上，截图如下：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/05703c168e63e96821ea9f921d83712b.png" alt="image.png"></p>
+<p><strong>规则：性能优化要先把CPU从SI、SY上的消耗赶到US上去(通过架构、系统配置）；然后提升 US CPU的效率(代码级别的优化）</strong></p>
+<p>sy占用了30-50%的CPU，这太不科学了，同时通过 netstat 分析连接状态，确实看到很多TIME_WAIT：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2ae2cb8b0cb324b68ca22c48c019e029.png" alt="localportissue-time-wait.png"></p>
+<p><strong>cpu要花在us上，这部分才是我们代码吃掉的</strong></p>
+<p><strong><em>于是让PE修改了tcp相关参数：降低 tcp_max_tw_buckets和开启tcp_tw_reuse，这个时候TPS能从1000提升到3000</em></strong></p>
+<p>鼓掌，赶紧休息，迎接双11啊</p>
+<h2 id="测试环境优化到3000-TPS后上线继续压测"><a href="#测试环境优化到3000-TPS后上线继续压测" class="headerlink" title="测试环境优化到3000 TPS后上线继续压测"></a>测试环境优化到3000 TPS后上线继续压测</h2><p><strong>居然性能又回到了500，太沮丧了</strong>，其实最开始账号绑定慢，Passport这边就怀疑taobao api是不是在大压力下不稳定，一般都是认为自己没问题，有问题的一定是对方。我不觉得这有什么问题，要是知道自己有什么问题不早就优化掉了，但是这里缺乏证据支撑，也就是如果你觉得自己没有问题或者问题在对方，一定要拿出证据来(有证据那么大家可以就证据来讨论，而不是互相苍白地推诿）。</p>
+<p>这个时候Passport更加理直气壮啊，好不容易在测试环境优化到3000，怎么一调taobao api就掉到500呢，这么点压力你们就扛不住啊。 但是taobao api那边给出调用数据都是1ms以内就返回了(alimonitor监控图表–拿证据说话）。</p>
+<p>看到alimonitor给出的api响应时间图表后，我开始怀疑从优酷的机器到淘宝的机器中间链路上有瓶颈，但是需要设计方案来证明这个问题在链路上，要不各个环节都会认为自己没有问题的，问题就会卡死。但是当时Passport的开发也只能拿到Login和Userservice这两组机器的权限，中间的负载均衡、交换机都没有权限接触到。</p>
+<p>在没有证据的情况下，肯定机房、PE配合你排查的欲望基本是没有的(被坑过很多回啊，你说我的问题，结果几天配合排查下来发现还是你程序的问题，凭什么我要每次都陪你玩？），所以我要给出证明问题出现在网络链路上，然后拿着这个证据跟网络的同学一起排查。</p>
+<p>讲到这里我禁不住要插一句，在出现问题的时候，都认为自己没有问题这是正常反应，毕竟程序是看不见的，好多意料之外逻辑考虑不周全也是常见的，出现问题按照自己的逻辑自查的时候还是没有跳出之前的逻辑所以发现不了问题。但是好的程序员在问题的前面会尝试用各种手段去证明问题在哪里，而不是复读机一样我的逻辑是这样的，不可能出问题的。即使目的是证明问题在对方，只要能给出明确的证据都是负责任的，拿着证据才能理直气壮地说自己没有问题和干净地甩锅。</p>
+<p><strong>在尝试过tcpdump抓包、ping等各种手段分析后，设计了场景证明问题在中间链路上。</strong></p>
+<h3 id="设计如下三个场景证明问题在中间链路上："><a href="#设计如下三个场景证明问题在中间链路上：" class="headerlink" title="设计如下三个场景证明问题在中间链路上："></a>设计如下三个场景证明问题在中间链路上：</h3><ol>
+<li>压测的时候在userservice ping 淘宝的机器；</li>
+<li>将一台userservice机器从负载均衡上拿下来(没有压力），ping 淘宝的机器；</li>
+<li>从公网上非优酷的机器 ping 淘宝的机器；</li>
+</ol>
+<p>这个时候奇怪的事情发现了，压力一上来<strong>场景1、2</strong>的两台机器ping淘宝的rt都从30ms上升到100-150ms，<strong>场景1</strong> 的rt上升可以理解，但是<strong>场景2</strong>的rt上升不应该，同时<strong>场景3</strong>中ping淘宝在压力测试的情况下rt一直很稳定(说明压力下淘宝的机器没有问题），到此确认问题在优酷到淘宝机房的链路上有瓶颈，而且问题在优酷机房出口扛不住这么大的压力。于是从上海Passport的团队找到北京Passport的PE团队，确认在优酷调用taobao api的出口上使用了snat，PE到snat机器上看到snat只能使用单核，而且对应的核早就100%的CPU了，因为之前一直没有这么大的压力所以这个问题一直存在只是没有被发现。</p>
+<p><strong>于是PE去掉snat，再压的话 TPS稳定在3000左右</strong></p>
+<hr>
+<h2 id="到这里结束了吗？-从3000到5400TPS"><a href="#到这里结束了吗？-从3000到5400TPS" class="headerlink" title="到这里结束了吗？ 从3000到5400TPS"></a>到这里结束了吗？ 从3000到5400TPS</h2><p>优化到3000TPS的整个过程没有修改业务代码，只是通过修改系统配置、结构非常有效地把TPS提升了6倍，对于优化来说这个过程是最轻松，性价比也是非常高的。实际到这个时候也临近双11封网了，最终通过计算(机器数量*单机TPS）完全可以抗住双11的压力，所以最终双11运行的版本就是这样的。 但是有工匠精神的工程师是不会轻易放过这么好的优化场景和环境的(基线、机器、代码、工具都具备配套好了）</p>
+<p><strong>优化完环境问题后，3000TPS能把CPU US跑上去，于是再对业务代码进行优化也是可行的了</strong>。</p>
+<h3 id="进一步挖掘代码中的优化空间"><a href="#进一步挖掘代码中的优化空间" class="headerlink" title="进一步挖掘代码中的优化空间"></a>进一步挖掘代码中的优化空间</h3><p>双11前的这段封网其实是比较无聊的，于是和Passport的开发同学们一起挖掘代码中的可以优化的部分。这个过程中使用到的主要工具是这三个：火焰图、perf、perf-map-java。相关链接：<a href="http://www.brendangregg.com/perf.html" target="_blank" rel="external">http://www.brendangregg.com/perf.html</a> ; <a href="https://github.com/jrudolph/perf-map-agent" target="_blank" rel="external">https://github.com/jrudolph/perf-map-agent</a></p>
+<h3 id="通过Perf发现的一个SpringMVC-的性能问题"><a href="#通过Perf发现的一个SpringMVC-的性能问题" class="headerlink" title="通过Perf发现的一个SpringMVC 的性能问题"></a>通过Perf发现的一个SpringMVC 的性能问题</h3><p>这个问题具体参考我之前发表的优化文章<a href="http://www.atatech.org/articles/65232" title="spring mvc issue" target="_blank" rel="external">http://www.atatech.org/articles/65232</a> 。 主要是通过火焰图发现spring mapping path消耗了过多CPU的性能问题，CPU热点都在methodMapping相关部分，于是修改代码去掉spring中的methodMapping解析后性能提升了40%，TPS能从3000提升到4200.</p>
+<h3 id="著名的fillInStackTrace导致的性能问题"><a href="#著名的fillInStackTrace导致的性能问题" class="headerlink" title="著名的fillInStackTrace导致的性能问题"></a>著名的fillInStackTrace导致的性能问题</h3><p>代码中的第二个问题是我们程序中很多异常(fillInStackTrace），实际业务上没有这么多错误，应该是一些不重要的异常，不会影响结果，但是异常频率很高，对这种我们可以找到触发的地方，catch住，然后不要抛出去(也就是别触发fillInStackTrace)，打印一行error日志就行，这块也能省出10%的CPU，对应到TPS也有几百的提升。</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/36ef4b16c3c400abf6eb7e6b0fbb2f58.png" alt="screenshot.png"></p>
+<p>部分触发fillInStackTrace的场景和具体代码行(点击看高清大图）：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/7eb2cbb4afc2c7d7007c35304c95342a.png" alt="screenshot.png"></p>
+<p>对应的火焰图(点击看高清大图）：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/894bd736dd03060e89e3fa49cc98ae5e.png" alt="screenshot.png"></p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2bb7395a2cc6833c9c7587b38402a301.png" alt="screenshot.png"></p>
+<h3 id="解析useragent-代码部分的性能问题"><a href="#解析useragent-代码部分的性能问题" class="headerlink" title="解析useragent 代码部分的性能问题"></a>解析useragent 代码部分的性能问题</h3><p>整个useragent调用堆栈和cpu占用情况，做了个汇总(useragent不启用TPS能从4700提升到5400）<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/8a4a97cb74724b8baa3b90072a1914e0.png" alt="screenshot.png"></p>
+<p>实际火焰图中比较分散：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/afacc681a9550cd087838c2383be54c8.png" alt="screenshot.png"></p>
+<p><strong>最终通过对代码的优化勉勉强强将TPS从3000提升到了5400(太不容易了，改代码过程太辛苦，不如改配置来得快）</strong></p>
+<p>优化代码后压测tps可以跑到5400，截图：</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/38bb043c85c7b50007609484c7bf5698.png" alt="image.png"></p>
+<h2 id="最后再次总结整个压测过程的问题和优化历程"><a href="#最后再次总结整个压测过程的问题和优化历程" class="headerlink" title="最后再次总结整个压测过程的问题和优化历程"></a>最后再次总结整个压测过程的问题和优化历程</h2><pre><code>- docker bridge网络性能问题和网络中断si不均衡    (优化后：500-&gt;1000TPS)
+- 短连接导致的local port不够                   (优化后：1000-3000TPS）
+- 生产环境snat单核导致的网络延时增大             (优化后能达到测试环境的3000TPS）
+- Spring MVC Path带来的过高的CPU消耗           (优化后：3000-&gt;4200TPS)
+- 其他业务代码的优化(比如异常、agent等）         (优化后：4200-&gt;5400TPS)
+</code></pre><hr>
+<h5 id="整个过程得到了淘宝API、优酷会员、优酷Passport、网络、蚂蚁等众多同学的帮助，本来是计划去上海跟Passport的同学一起复盘然后再写这篇文章的，结果一直未能成行，请原谅我拖延到现在才把大家一起辛苦工作的结果整理出来，可能过程中的数据会有一些记忆上的小错误。"><a href="#整个过程得到了淘宝API、优酷会员、优酷Passport、网络、蚂蚁等众多同学的帮助，本来是计划去上海跟Passport的同学一起复盘然后再写这篇文章的，结果一直未能成行，请原谅我拖延到现在才把大家一起辛苦工作的结果整理出来，可能过程中的数据会有一些记忆上的小错误。" class="headerlink" title="整个过程得到了淘宝API、优酷会员、优酷Passport、网络、蚂蚁等众多同学的帮助，本来是计划去上海跟Passport的同学一起复盘然后再写这篇文章的，结果一直未能成行，请原谅我拖延到现在才把大家一起辛苦工作的结果整理出来，可能过程中的数据会有一些记忆上的小错误。"></a>整个过程得到了淘宝API、优酷会员、优酷Passport、网络、蚂蚁等众多同学的帮助，本来是计划去上海跟Passport的同学一起复盘然后再写这篇文章的，结果一直未能成行，请原谅我拖延到现在才把大家一起辛苦工作的结果整理出来，可能过程中的数据会有一些记忆上的小错误。</h5>]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;10-倍性能提升全过程–优酷账号绑定淘宝账号的TPS从500到5400的优化历程&quot;&gt;&lt;a href=&quot;#10-倍性能提升全过程–优酷账号绑定淘宝账号的TPS从500到5400的优化历程&quot; class=&quot;headerlink&quot; title=&quot;10+倍性能提升全过程–
+    
+    </summary>
+    
+      <category term="performance" scheme="http://yoursite.com/categories/performance/"/>
+    
+    
+      <category term="performance" scheme="http://yoursite.com/tags/performance/"/>
+    
+      <category term="tuning" scheme="http://yoursite.com/tags/tuning/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>10+倍性能提升全过程</title>
+    <link href="http://yoursite.com/2020/02/17/10+%E5%80%8D%E6%80%A7%E8%83%BD%E6%8F%90%E5%8D%87%E5%85%A8%E8%BF%87%E7%A8%8B/"/>
+    <id>http://yoursite.com/2020/02/17/10+倍性能提升全过程/</id>
+    <published>2020-02-17T09:30:03.000Z</published>
+    <updated>2020-05-15T04:58:31.892Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="10-倍性能提升全过程–优酷账号绑定淘宝账号的TPS从500到5400的优化历程"><a href="#10-倍性能提升全过程–优酷账号绑定淘宝账号的TPS从500到5400的优化历程" class="headerlink" title="10+倍性能提升全过程–优酷账号绑定淘宝账号的TPS从500到5400的优化历程"></a>10+倍性能提升全过程–优酷账号绑定淘宝账号的TPS从500到5400的优化历程</h1><h2 id="背景说明"><a href="#背景说明" class="headerlink" title="背景说明"></a>背景说明</h2><blockquote>
+<p>2016年的双11在淘宝上买买买的时候，天猫和优酷土豆一起做了联合促销，在天猫双11当天购物满XXX元就赠送优酷会员，这个过程需要用户在优酷侧绑定淘宝账号(登录优酷、提供淘宝账号，优酷调用淘宝API实现两个账号绑定）和赠送会员并让会员权益生效(看收费影片、免广告等等）</p>
+<p>这里涉及到优酷的两个部门：Passport(在上海，负责登录、绑定账号，下文中的优化过程主要是Passport部分）；会员(在北京，负责赠送会员，保证权益生效）</p>
+<p>在双11活动之前，Passport的绑定账号功能一直在运行，只是没有碰到过大促销带来的挑战</p>
+</blockquote>
+<hr>
+<p>整个过程分为两大块：</p>
+<ol>
+<li>整个系统级别，包括网络和依赖服务的性能等，多从整个系统视角分析问题；</li>
+<li>但服务器内部的优化过程，将CPU从si/sy围赶us，然后在us从代码级别一举全歼。</li>
+</ol>
+<p>系统级别都是最容易被忽视但是成效最明显的，代码层面都是很细致的力气活。</p>
+<p>整个过程都是在对业务和架构不是非常了解的情况下做出的。</p>
+<h2 id="会员部分的架构改造"><a href="#会员部分的架构改造" class="headerlink" title="会员部分的架构改造"></a>会员部分的架构改造</h2><ul>
+<li>接入中间件DRDS，让优酷的数据库支持拆分，分解MySQL压力</li>
+<li>接入中间件vipserver来支持负载均衡</li>
+<li>接入集团DRC来保障数据的高可用</li>
+<li>对业务进行改造支持Amazon的全链路压测</li>
+</ul>
+<h2 id="主要的压测过程"><a href="#主要的压测过程" class="headerlink" title="主要的压测过程"></a>主要的压测过程</h2><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/6b24a854d91aba4dcdbd4f0155683d93.png" alt="screenshot.png"></p>
+<p><strong>上图是压测过程中主要的阶段中问题和改进,主要的问题和优化过程如下：</strong></p>
+<pre><code>- docker bridge网络性能问题和网络中断si不均衡    (优化后：500-&gt;1000TPS)
+- 短连接导致的local port不够                   (优化后：1000-3000TPS)
+- 生产环境snat单核导致的网络延时增大             (优化后生产环境能达到测试环境的3000TPS)
+- Spring MVC Path带来的过高的CPU消耗           (优化后：3000-&gt;4200TPS)
+- 其他业务代码的优化(比如异常、agent等)          (优化后：4200-&gt;5400TPS)
+</code></pre><p><strong>优化过程中碰到的比如淘宝api调用次数限流等一些业务原因就不列出来了</strong></p>
+<hr>
+<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>由于用户进来后先要登录并且绑定账号，实际压力先到Passport部分，在这个过程中最开始单机TPS只能到500，经过N轮优化后基本能达到5400 TPS，下面主要是阐述这个优化过程</p>
+<h2 id="Passport部分的压力"><a href="#Passport部分的压力" class="headerlink" title="Passport部分的压力"></a>Passport部分的压力</h2><h3 id="Passport-核心服务分两个："><a href="#Passport-核心服务分两个：" class="headerlink" title="Passport 核心服务分两个："></a>Passport 核心服务分两个：</h3><ul>
+<li>Login              主要处理登录请求</li>
+<li>userservice    处理登录后的业务逻辑，比如将优酷账号和淘宝账号绑定</li>
+</ul>
+<p>为了更好地利用资源每台物理加上部署三个docker 容器，跑在不同的端口上(8081、8082、8083），通过bridge网络来互相通讯</p>
+<h3 id="Passport机器大致结构"><a href="#Passport机器大致结构" class="headerlink" title="Passport机器大致结构"></a>Passport机器大致结构</h3><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/b509b30218dd22e03149985cf5e15f8e.png" alt="screenshot.png"></p>
+<!--这里的500 TPS到5400 TPS是指登录和将优酷账号和淘宝账号绑定的TPS，也是促销活动主要的瓶颈-->
+<h3 id="userservice服务网络相关的各种问题"><a href="#userservice服务网络相关的各种问题" class="headerlink" title="userservice服务网络相关的各种问题"></a>userservice服务网络相关的各种问题</h3><hr>
+<h4 id="太多SocketConnect异常-如上图）"><a href="#太多SocketConnect异常-如上图）" class="headerlink" title="太多SocketConnect异常(如上图）"></a>太多SocketConnect异常(如上图）</h4><p>在userservice机器上通过netstat也能看到大量的SYN_SENT状态，如下图：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/99bf952b880f17243953da790ff0e710.png" alt="image.png"></p>
+<h4 id="因为docker-bridge通过nat来实现，尝试去掉docker，让tomcat直接跑在物理机上"><a href="#因为docker-bridge通过nat来实现，尝试去掉docker，让tomcat直接跑在物理机上" class="headerlink" title="因为docker bridge通过nat来实现，尝试去掉docker，让tomcat直接跑在物理机上"></a>因为docker bridge通过nat来实现，尝试去掉docker，让tomcat直接跑在物理机上</h4><p>这时SocketConnect异常不再出现<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/6ed62fd6b50ad2785e5b57687d95ad6e.png" alt="image.png"></p>
+<h4 id="从新梳理一下网络流程"><a href="#从新梳理一下网络流程" class="headerlink" title="从新梳理一下网络流程"></a>从新梳理一下网络流程</h4><p>docker(bridge)—-短连接—&gt;访问淘宝API(淘宝open api只能短连接访问），性能差，cpu都花在si上； </p>
+<p>如果 docker(bridge)—-长连接到宿主机的某个代理上(比如haproxy）—–短连接—&gt;访问淘宝API， 性能就能好一点。问题可能是短连接放大了Docker bridge网络的性能损耗</p>
+<h4 id="当时看到的cpu-si非常高，截图如下："><a href="#当时看到的cpu-si非常高，截图如下：" class="headerlink" title="当时看到的cpu si非常高，截图如下："></a>当时看到的cpu si非常高，截图如下：</h4><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/4c1eff0f925f59977e2557acff5cf03b.png" alt="image.png"></p>
+<p>去掉Docker后，性能有所提升，继续通过perf top看到内核态寻找可用的Local Port消耗了比较多的CPU，gif动态截图如下(可以点击看高清大图）：</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/fff502ca73e3112e585560ffe4a4dbf1.gif" alt="perf-top-netLocalPort-issue.gif"></p>
+<p><strong>注意图中ipv6_rcv_saddr_equal和inet_csk_get_port 总共占了30%的CPU</strong> (系统态的CPU使用率高意味着共享资源有竞争或者I/O设备之间有大量的交互。)</p>
+<p><strong>一般来说一台机器默认配置的可用 Local Port 3万多个，如果是短连接的话，一个连接释放后默认需要60秒回收，30000/60 =500 这是大概的理论TPS值【这里只考虑连同一个server IP:port 的时候】</strong></p>
+<p>这500的tps算是一个老中医的经验。不过有些系统调整过Local Port取值范围，比如从1024到65534，那么这个tps上限就是1000附近。</p>
+<p>同时观察这个时候CPU的主要花在sy上，最理想肯定是希望CPU主要用在us上，截图如下：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/05703c168e63e96821ea9f921d83712b.png" alt="image.png"></p>
+<p><strong>规则：性能优化要先把CPU从SI、SY上的消耗赶到US上去(通过架构、系统配置）；然后提升 US CPU的效率(代码级别的优化）</strong></p>
+<p>sy占用了30-50%的CPU，这太不科学了，同时通过 netstat 分析连接状态，确实看到很多TIME_WAIT：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2ae2cb8b0cb324b68ca22c48c019e029.png" alt="localportissue-time-wait.png"></p>
+<p><strong>cpu要花在us上，这部分才是我们代码吃掉的</strong></p>
+<p><strong><em>于是让PE修改了tcp相关参数：降低 tcp_max_tw_buckets和开启tcp_tw_reuse，这个时候TPS能从1000提升到3000</em></strong></p>
+<p>鼓掌，赶紧休息，迎接双11啊</p>
+<h2 id="测试环境优化到3000-TPS后上线继续压测"><a href="#测试环境优化到3000-TPS后上线继续压测" class="headerlink" title="测试环境优化到3000 TPS后上线继续压测"></a>测试环境优化到3000 TPS后上线继续压测</h2><p><strong>居然性能又回到了500，太沮丧了</strong>，其实最开始账号绑定慢，Passport这边就怀疑taobao api是不是在大压力下不稳定，一般都是认为自己没问题，有问题的一定是对方。我不觉得这有什么问题，要是知道自己有什么问题不早就优化掉了，但是这里缺乏证据支撑，也就是如果你觉得自己没有问题或者问题在对方，一定要拿出证据来(有证据那么大家可以就证据来讨论，而不是互相苍白地推诿）。</p>
+<p>这个时候Passport更加理直气壮啊，好不容易在测试环境优化到3000，怎么一调taobao api就掉到500呢，这么点压力你们就扛不住啊。 但是taobao api那边给出调用数据都是1ms以内就返回了(alimonitor监控图表–拿证据说话）。</p>
+<p>看到alimonitor给出的api响应时间图表后，我开始怀疑从优酷的机器到淘宝的机器中间链路上有瓶颈，但是需要设计方案来证明这个问题在链路上，要不各个环节都会认为自己没有问题的，问题就会卡死。但是当时Passport的开发也只能拿到Login和Userservice这两组机器的权限，中间的负载均衡、交换机都没有权限接触到。</p>
+<p>在没有证据的情况下，肯定机房、PE配合你排查的欲望基本是没有的(被坑过很多回啊，你说我的问题，结果几天配合排查下来发现还是你程序的问题，凭什么我要每次都陪你玩？），所以我要给出证明问题出现在网络链路上，然后拿着这个证据跟网络的同学一起排查。</p>
+<p>讲到这里我禁不住要插一句，在出现问题的时候，都认为自己没有问题这是正常反应，毕竟程序是看不见的，好多意料之外逻辑考虑不周全也是常见的，出现问题按照自己的逻辑自查的时候还是没有跳出之前的逻辑所以发现不了问题。但是好的程序员在问题的前面会尝试用各种手段去证明问题在哪里，而不是复读机一样我的逻辑是这样的，不可能出问题的。即使目的是证明问题在对方，只要能给出明确的证据都是负责任的，拿着证据才能理直气壮地说自己没有问题和干净地甩锅。</p>
+<p><strong>在尝试过tcpdump抓包、ping等各种手段分析后，设计了场景证明问题在中间链路上。</strong></p>
+<h3 id="设计如下三个场景证明问题在中间链路上："><a href="#设计如下三个场景证明问题在中间链路上：" class="headerlink" title="设计如下三个场景证明问题在中间链路上："></a>设计如下三个场景证明问题在中间链路上：</h3><ol>
+<li>压测的时候在userservice ping 淘宝的机器；</li>
+<li>将一台userservice机器从负载均衡上拿下来(没有压力），ping 淘宝的机器；</li>
+<li>从公网上非优酷的机器 ping 淘宝的机器；</li>
+</ol>
+<p>这个时候奇怪的事情发现了，压力一上来<strong>场景1、2</strong>的两台机器ping淘宝的rt都从30ms上升到100-150ms，<strong>场景1</strong> 的rt上升可以理解，但是<strong>场景2</strong>的rt上升不应该，同时<strong>场景3</strong>中ping淘宝在压力测试的情况下rt一直很稳定(说明压力下淘宝的机器没有问题），到此确认问题在优酷到淘宝机房的链路上有瓶颈，而且问题在优酷机房出口扛不住这么大的压力。于是从上海Passport的团队找到北京Passport的PE团队，确认在优酷调用taobao api的出口上使用了snat，PE到snat机器上看到snat只能使用单核，而且对应的核早就100%的CPU了，因为之前一直没有这么大的压力所以这个问题一直存在只是没有被发现。</p>
+<p><strong>于是PE去掉snat，再压的话 TPS稳定在3000左右</strong></p>
+<hr>
+<h2 id="到这里结束了吗？-从3000到5400TPS"><a href="#到这里结束了吗？-从3000到5400TPS" class="headerlink" title="到这里结束了吗？ 从3000到5400TPS"></a>到这里结束了吗？ 从3000到5400TPS</h2><p>优化到3000TPS的整个过程没有修改业务代码，只是通过修改系统配置、结构非常有效地把TPS提升了6倍，对于优化来说这个过程是最轻松，性价比也是非常高的。实际到这个时候也临近双11封网了，最终通过计算(机器数量*单机TPS）完全可以抗住双11的压力，所以最终双11运行的版本就是这样的。 但是有工匠精神的工程师是不会轻易放过这么好的优化场景和环境的(基线、机器、代码、工具都具备配套好了）</p>
+<p><strong>优化完环境问题后，3000TPS能把CPU US跑上去，于是再对业务代码进行优化也是可行的了</strong>。</p>
+<h3 id="进一步挖掘代码中的优化空间"><a href="#进一步挖掘代码中的优化空间" class="headerlink" title="进一步挖掘代码中的优化空间"></a>进一步挖掘代码中的优化空间</h3><p>双11前的这段封网其实是比较无聊的，于是和Passport的开发同学们一起挖掘代码中的可以优化的部分。这个过程中使用到的主要工具是这三个：火焰图、perf、perf-map-java。相关链接：<a href="http://www.brendangregg.com/perf.html" target="_blank" rel="external">http://www.brendangregg.com/perf.html</a> ; <a href="https://github.com/jrudolph/perf-map-agent" target="_blank" rel="external">https://github.com/jrudolph/perf-map-agent</a></p>
+<h3 id="通过Perf发现的一个SpringMVC-的性能问题"><a href="#通过Perf发现的一个SpringMVC-的性能问题" class="headerlink" title="通过Perf发现的一个SpringMVC 的性能问题"></a>通过Perf发现的一个SpringMVC 的性能问题</h3><p>这个问题具体参考我之前发表的优化文章<a href="http://www.atatech.org/articles/65232" title="spring mvc issue" target="_blank" rel="external">http://www.atatech.org/articles/65232</a> 。 主要是通过火焰图发现spring mapping path消耗了过多CPU的性能问题，CPU热点都在methodMapping相关部分，于是修改代码去掉spring中的methodMapping解析后性能提升了40%，TPS能从3000提升到4200.</p>
+<h3 id="著名的fillInStackTrace导致的性能问题"><a href="#著名的fillInStackTrace导致的性能问题" class="headerlink" title="著名的fillInStackTrace导致的性能问题"></a>著名的fillInStackTrace导致的性能问题</h3><p>代码中的第二个问题是我们程序中很多异常(fillInStackTrace），实际业务上没有这么多错误，应该是一些不重要的异常，不会影响结果，但是异常频率很高，对这种我们可以找到触发的地方，catch住，然后不要抛出去(也就是别触发fillInStackTrace)，打印一行error日志就行，这块也能省出10%的CPU，对应到TPS也有几百的提升。</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/36ef4b16c3c400abf6eb7e6b0fbb2f58.png" alt="screenshot.png"></p>
+<p>部分触发fillInStackTrace的场景和具体代码行(点击看高清大图）：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/7eb2cbb4afc2c7d7007c35304c95342a.png" alt="screenshot.png"></p>
+<p>对应的火焰图(点击看高清大图）：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/894bd736dd03060e89e3fa49cc98ae5e.png" alt="screenshot.png"></p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2bb7395a2cc6833c9c7587b38402a301.png" alt="screenshot.png"></p>
+<h3 id="解析useragent-代码部分的性能问题"><a href="#解析useragent-代码部分的性能问题" class="headerlink" title="解析useragent 代码部分的性能问题"></a>解析useragent 代码部分的性能问题</h3><p>整个useragent调用堆栈和cpu占用情况，做了个汇总(useragent不启用TPS能从4700提升到5400）<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/8a4a97cb74724b8baa3b90072a1914e0.png" alt="screenshot.png"></p>
+<p>实际火焰图中比较分散：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/afacc681a9550cd087838c2383be54c8.png" alt="screenshot.png"></p>
+<p><strong>最终通过对代码的优化勉勉强强将TPS从3000提升到了5400(太不容易了，改代码过程太辛苦，不如改配置来得快）</strong></p>
+<p>优化代码后压测tps可以跑到5400，截图：</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/38bb043c85c7b50007609484c7bf5698.png" alt="image.png"></p>
+<h2 id="最后再次总结整个压测过程的问题和优化历程"><a href="#最后再次总结整个压测过程的问题和优化历程" class="headerlink" title="最后再次总结整个压测过程的问题和优化历程"></a>最后再次总结整个压测过程的问题和优化历程</h2><pre><code>- docker bridge网络性能问题和网络中断si不均衡    (优化后：500-&gt;1000TPS)
+- 短连接导致的local port不够                   (优化后：1000-3000TPS）
+- 生产环境snat单核导致的网络延时增大             (优化后能达到测试环境的3000TPS）
+- Spring MVC Path带来的过高的CPU消耗           (优化后：3000-&gt;4200TPS)
+- 其他业务代码的优化(比如异常、agent等）         (优化后：4200-&gt;5400TPS)
+</code></pre><hr>
+<h5 id="整个过程得到了淘宝API、优酷会员、优酷Passport、网络、蚂蚁等众多同学的帮助，本来是计划去上海跟Passport的同学一起复盘然后再写这篇文章的，结果一直未能成行，请原谅我拖延到现在才把大家一起辛苦工作的结果整理出来，可能过程中的数据会有一些记忆上的小错误。"><a href="#整个过程得到了淘宝API、优酷会员、优酷Passport、网络、蚂蚁等众多同学的帮助，本来是计划去上海跟Passport的同学一起复盘然后再写这篇文章的，结果一直未能成行，请原谅我拖延到现在才把大家一起辛苦工作的结果整理出来，可能过程中的数据会有一些记忆上的小错误。" class="headerlink" title="整个过程得到了淘宝API、优酷会员、优酷Passport、网络、蚂蚁等众多同学的帮助，本来是计划去上海跟Passport的同学一起复盘然后再写这篇文章的，结果一直未能成行，请原谅我拖延到现在才把大家一起辛苦工作的结果整理出来，可能过程中的数据会有一些记忆上的小错误。"></a>整个过程得到了淘宝API、优酷会员、优酷Passport、网络、蚂蚁等众多同学的帮助，本来是计划去上海跟Passport的同学一起复盘然后再写这篇文章的，结果一直未能成行，请原谅我拖延到现在才把大家一起辛苦工作的结果整理出来，可能过程中的数据会有一些记忆上的小错误。</h5>]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;10-倍性能提升全过程–优酷账号绑定淘宝账号的TPS从500到5400的优化历程&quot;&gt;&lt;a href=&quot;#10-倍性能提升全过程–优酷账号绑定淘宝账号的TPS从500到5400的优化历程&quot; class=&quot;headerlink&quot; title=&quot;10+倍性能提升全过程–
+    
+    </summary>
+    
+      <category term="performance" scheme="http://yoursite.com/categories/performance/"/>
+    
+    
+      <category term="performance" scheme="http://yoursite.com/tags/performance/"/>
+    
+      <category term="tuning" scheme="http://yoursite.com/tags/tuning/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>TCP相关参数解释</title>
+    <link href="http://yoursite.com/2020/01/26/TCP%E7%9B%B8%E5%85%B3%E5%8F%82%E6%95%B0%E8%A7%A3%E9%87%8A/"/>
+    <id>http://yoursite.com/2020/01/26/TCP相关参数解释/</id>
+    <published>2020-01-26T09:30:03.000Z</published>
+    <updated>2020-07-16T06:27:33.953Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="TCP相关参数解释"><a href="#TCP相关参数解释" class="headerlink" title="TCP相关参数解释"></a>TCP相关参数解释</h1><p>读懂TCP参数前得先搞清楚内核中出现的HZ、Tick、Jiffies三个值是什么意思</p>
+<h2 id="HZ"><a href="#HZ" class="headerlink" title="HZ"></a>HZ</h2><p>它可以理解为1s，所以120*HZ就是120秒，HZ/5就是200ms。</p>
+<p>HZ表示CPU一秒种发出多少次时间中断–IRQ-0，Linux中通常用HZ来做时间片的计算（<a href="http://blog.csdn.net/bdc995/article/details/4144031" target="_blank" rel="external">参考</a>）。</p>
+<p>这个值在内核编译的时候可设定100、250、300或1000，一般设置的是1000</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">#cat /boot/config-`uname -r` |grep &apos;CONFIG_HZ=&apos;</div><div class="line">CONFIG_HZ=1000 //一般默认1000, Linux核心每隔固定周期会发出timer interrupt (IRQ 0)，HZ是用来定义</div><div class="line">每一秒有几次timer interrupts。举例来说，HZ为1000，代表每秒有1000次timer interrupts</div></pre></td></tr></table></figure>
+<p>HZ的设定：<br>#make menuconfig<br>processor type and features—&gt;Timer frequency (250 HZ)—&gt;</p>
+<p>HZ的不同值会影响timer （节拍）中断的频率</p>
+<h2 id="Tick"><a href="#Tick" class="headerlink" title="Tick"></a>Tick</h2><p>Tick是HZ的倒数，意即timer interrupt每发生一次中断的时间。如HZ为250时，tick为4毫秒(millisecond)。</p>
+<h2 id="Jiffies"><a href="#Jiffies" class="headerlink" title="Jiffies"></a>Jiffies</h2><p>Jiffies为Linux核心变数(32位元变数，unsigned long)，它被用来纪录系统自开几以来，已经过多少的tick。每发生一次timer interrupt，Jiffies变数会被加一。值得注意的是，Jiffies于系统开机时，并非初始化成零，而是被设为-300*HZ (arch/i386/kernel/time.c)，即代表系统于开机五分钟后，jiffies便会溢位。那溢出怎么办?事实上，Linux核心定义几个macro(timer_after、time_after_eq、time_before与time_before_eq)，即便是溢位，也能藉由这几个macro正确地取得jiffies的内容。</p>
+<p>另外，80x86架构定义一个与jiffies相关的变数jiffies_64 ，此变数64位元，要等到此变数溢位可能要好几百万年。因此要等到溢位这刻发生应该很难吧。那如何经由jiffies_64取得jiffies呢?事实上，jiffies被对应至jiffies_64最低的32位元。因此，经由jiffies_64可以完全不理会溢位的问题便能取得jiffies。</p>
+<h2 id="数据取自于4-19内核代码中的-include-net-tcp-h"><a href="#数据取自于4-19内核代码中的-include-net-tcp-h" class="headerlink" title="数据取自于4.19内核代码中的 include/net/tcp.h"></a>数据取自于4.19内核代码中的 include/net/tcp.h</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div></pre></td><td class="code"><pre><div class="line">//rto的定义，不让修改，到每个ip的rt都不一样，必须通过rtt计算所得 </div><div class="line">#define TCP_RTO_MAX     ((unsigned)(120*HZ))</div><div class="line">#define TCP_RTO_MIN     ((unsigned)(HZ/5)) //在rt很小的环境中计算下来RTO基本等于TCP_RTO_MIN，</div><div class="line"></div><div class="line">/* Maximal number of ACKs sent quickly to accelerate slow-start. */</div><div class="line">#define TCP_MAX_QUICKACKS       16U //默认前16个ack必须quick ack来加速慢启动</div><div class="line"></div><div class="line">//默认delay ack不能超过200ms</div><div class="line">#define TCP_DELACK_MAX  ((unsigned)(HZ/5))      /* maximal time to delay before sending an ACK */</div><div class="line">#if HZ &gt;= 100</div><div class="line">//默认 delay ack 40ms，不能修改和关闭</div><div class="line">#define TCP_DELACK_MIN  ((unsigned)(HZ/25))     /* minimal time to delay before sending an ACK */</div><div class="line">#define TCP_ATO_MIN     ((unsigned)(HZ/25))</div><div class="line">#else</div><div class="line">#define TCP_DELACK_MIN  4U</div><div class="line">#define TCP_ATO_MIN     4U</div><div class="line">#endif</div><div class="line"></div><div class="line">#define TCP_SYNQ_INTERVAL       (HZ/5)  /* Period of SYNACK timer */</div><div class="line">#define TCP_KEEPALIVE_TIME      (120*60*HZ)     /* two hours */</div><div class="line">#define TCP_KEEPALIVE_PROBES    9               /* Max of 9 keepalive probes    */</div><div class="line">#define TCP_KEEPALIVE_INTVL     (75*HZ)</div><div class="line"></div><div class="line">/* cwnd init 默认大小是10个拥塞窗口，也可以通过sysctl_tcp_init_cwnd来设置，要求内核编译的时候支持*/</div><div class="line">#if IS_ENABLED(CONFIG_TCP_INIT_CWND_PROC)</div><div class="line">extern u32 sysctl_tcp_init_cwnd;</div><div class="line">/* TCP_INIT_CWND is rvalue */</div><div class="line">#define TCP_INIT_CWND           (sysctl_tcp_init_cwnd + 0)</div><div class="line">#else</div><div class="line">/* TCP initial congestion window as per rfc6928 */</div><div class="line">#define TCP_INIT_CWND           10</div><div class="line">#endif</div><div class="line"></div><div class="line">/* Flags in tp-&gt;nonagle 默认nagle算法关闭的*/</div><div class="line">#define TCP_NAGLE_OFF           1       /* Nagle&apos;s algo is disabled */</div><div class="line">#define TCP_NAGLE_CORK          2       /* Socket is corked         */</div><div class="line">#define TCP_NAGLE_PUSH          4       /* Cork is overridden for already queued data */</div><div class="line"></div><div class="line"></div><div class="line">#define TCP_TIMEWAIT_LEN (60*HZ) /* how long to wait to destroy TIME-WAIT</div><div class="line">                                  * state, about 60 seconds     */</div><div class="line">                                  </div><div class="line">#define TCP_SYN_RETRIES  6      /* This is how many retries are done</div><div class="line">                                 * when active opening a connection.</div><div class="line">                                 * RFC1122 says the minimum retry MUST</div><div class="line">                                 * be at least 180secs.  Nevertheless</div><div class="line">                                 * this value is corresponding to</div><div class="line">                                 * 63secs of retransmission with the</div><div class="line">                                 * current initial RTO.</div><div class="line">                                 */</div><div class="line"></div><div class="line">#define TCP_SYNACK_RETRIES 5    /* This is how may retries are done</div><div class="line">                                 * when passive opening a connection.</div><div class="line">                                 * This is corresponding to 31secs of</div><div class="line">                                 * retransmission with the current</div><div class="line">                                 * initial RTO.</div><div class="line">                                 */</div></pre></td></tr></table></figure>
+<p>即使RTT很小（比如0.8ms），但是因为RTO有下限，最小必须是200ms，所以这是RTT再小也白搭；RTO最小值是内核编译是决定的，socket程序中无法修改，Linux TCP也没有任何参数可以改变这个值。</p>
+<p>rto不能设置，而是根据到不同server的rtt计算得到</p>
+<h3 id="delay-ack"><a href="#delay-ack" class="headerlink" title="delay ack"></a>delay ack</h3><p>正常情况下ack可以quick ack也可以delay ack，redhat在sysctl中可以设置这两个值</p>
+<blockquote>
+<p>/proc/sys/net/ipv4/tcp_ato_min</p>
+</blockquote>
+<p>默认都是推荐delay ack的，一定要修改成quick ack的话（3.10.0-327之后的内核版本）：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">$sudo ip route show</div><div class="line">default via 10.0.207.253 dev eth0 proto dhcp src 10.0.200.23 metric 1024</div><div class="line">10.0.192.0/20 dev eth0 proto kernel scope link src 10.0.200.23</div><div class="line">10.0.207.253 dev eth0 proto dhcp scope link src 10.0.200.23 metric 1024</div><div class="line"></div><div class="line">$sudo ip route change default via 10.0.207.253  dev eth0 proto dhcp src 10.0.200.23 metric 1024 quickack 1</div><div class="line"></div><div class="line">$sudo ip route show</div><div class="line">default via 10.0.207.253 dev eth0 proto dhcp src 10.0.200.23 metric 1024 quickack 1</div><div class="line">10.0.192.0/20 dev eth0 proto kernel scope link src 10.0.200.23</div><div class="line">10.0.207.253 dev eth0 proto dhcp scope link src 10.0.200.23 metric 1024</div></pre></td></tr></table></figure>
+<p>默认开启delay ack的抓包情况如下，可以清晰地看到有几个40ms的ack</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/7f4590cccf73fd672268dbf0e6a1b309.png" alt="image.png"></p>
+<p>第一个40ms 的ack对应的包， 3306收到 update请求后没有ack，而是等了40ms update也没结束，就ack了</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b06d3148450fc24fa26b2a9cdfe07831.png" alt="image.png"></p>
+<p>同样的机器，执行quick ack后的抓包</p>
+<blockquote>
+<p>sudo ip route change default via 10.0.207.253  dev eth0 proto dhcp src 10.0.200.23 metric 1024 quickack 1</p>
+</blockquote>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/9fba9819e769494bc09a2a11245e4769.png" alt="image.png"></p>
+<p><strong>同样场景下，改成quick ack后基本所有的ack都在0.02ms内发出去了。</strong></p>
+<p>比较奇怪的是在delay ack情况下不是每个空ack都等了40ms，这么多包只看到4个delay了40ms，其它的基本都在1ms内就以空包就行ack了。</p>
+<p>将 quick ack去掉后再次抓包仍然抓到了很多的40ms的ack。</p>
+<p>Java中setNoDelay是指关掉nagle算法，但是delay ack还是存在的。</p>
+<p>C代码中关闭的话：At the application level with the <code>TCP_QUICKACK</code> socket option. See <code>man 7 tcp</code> for further details. This option needs to be set with <code>setsockopt()</code> after each operation of TCP on a given socket</p>
+<p>连接刚建立前16个包一定是quick ack的，目的是加快慢启动</p>
+<p>一旦后面进入延迟ACK模式后，<a href="https://www.cnblogs.com/lshs/p/6038635.html" target="_blank" rel="external">如果接收的还没有回复ACK确认的报文总大小超过88bytes的时候就会立即回复ACK报文</a>。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://access.redhat.com/solutions/407743" target="_blank" rel="external">https://access.redhat.com/solutions/407743</a></p>
+<p><a href="https://www.cnblogs.com/lshs/p/6038635.html" target="_blank" rel="external">https://www.cnblogs.com/lshs/p/6038635.html</a></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;TCP相关参数解释&quot;&gt;&lt;a href=&quot;#TCP相关参数解释&quot; class=&quot;headerlink&quot; title=&quot;TCP相关参数解释&quot;&gt;&lt;/a&gt;TCP相关参数解释&lt;/h1&gt;&lt;p&gt;读懂TCP参数前得先搞清楚内核中出现的HZ、Tick、Jiffies三个值是什么意思
+    
+    </summary>
+    
+      <category term="TCP" scheme="http://yoursite.com/categories/TCP/"/>
+    
+    
+      <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
+    
+      <category term="network" scheme="http://yoursite.com/tags/network/"/>
+    
+      <category term="TCP" scheme="http://yoursite.com/tags/TCP/"/>
+    
+      <category term="参数" scheme="http://yoursite.com/tags/%E5%8F%82%E6%95%B0/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>ssd/san/sas  磁盘 光纤性能比较</title>
+    <link href="http://yoursite.com/2020/01/25/ssd%20san%E5%92%8Csas%20%E7%A3%81%E7%9B%98%E6%80%A7%E8%83%BD%E6%AF%94%E8%BE%83/"/>
+    <id>http://yoursite.com/2020/01/25/ssd san和sas 磁盘性能比较/</id>
+    <published>2020-01-25T09:30:03.000Z</published>
+    <updated>2020-08-26T10:57:01.311Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="ssd-san-sas-磁盘-光纤性能比较"><a href="#ssd-san-sas-磁盘-光纤性能比较" class="headerlink" title="ssd/san/sas 磁盘 光纤性能比较"></a>ssd/san/sas 磁盘 光纤性能比较</h1><p>正好有机会用到一个san存储设备，跑了一把性能数据，记录一下</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d57a004c846e193126ca01398e394319.png" alt="image.png"></p>
+<p>所使用的测试命令：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">fio -ioengine=libaio -bs=4k -direct=1 -thread -rw=randwrite -size=1000G -filename=/data/fio.test -name=&quot;EBS 4K randwrite test&quot; -iodepth=64 -runtime=60</div></pre></td></tr></table></figure>
+<p>ssd（Solid State Drive）和san的比较是在同一台物理机上，所以排除了其他因素的干扰。</p>
+<p>简要的结论：</p>
+<ul>
+<li><p>本地ssd性能最好、sas机械盘(RAID10)性能最差</p>
+</li>
+<li><p>san存储走特定的光纤网络，不是走tcp的san（至少从网卡看不到san的流量），性能居中</p>
+</li>
+<li><p>从rt来看 ssd:san:sas 大概是 1:3:15</p>
+</li>
+<li><p>san比本地sas机械盘性能要好，这也许取决于san的网络传输性能和san存储中的设备（比如用的ssd而不是机械盘）</p>
+</li>
+</ul>
+<h2 id="NVMe-SSD-和-HDD的性能比较"><a href="#NVMe-SSD-和-HDD的性能比较" class="headerlink" title="NVMe SSD 和 HDD的性能比较"></a>NVMe SSD 和 HDD的性能比较</h2><p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d64a0f78ebf471ac69d447ecb46d90f1.png" alt="image.png"></p>
+<p>表中性能差异比上面测试还要大，SSD 的随机 IO 延迟比传统硬盘快百倍以上，一般在微妙级别；IO 带宽也高很多倍，可以达到每秒几个 GB；随机 IOPS 更是快了上千倍，可以达到几十万。</p>
+<p><strong>HDD只有一个磁头，并发没有意义，但是SSD支持高并发写入读取。SSD没有磁头、不需要旋转，所以随机读取和顺序读取基本没有差别。</strong></p>
+<h2 id="SSD-的性能特性和机制"><a href="#SSD-的性能特性和机制" class="headerlink" title="SSD 的性能特性和机制"></a>SSD 的性能特性和机制</h2><p>SSD 的内部工作方式和 HDD 大相径庭，我们先了解几个概念。</p>
+<p><strong>单元（Cell）、页面（Page）、块（Block）</strong>。当今的主流 SSD 是基于 NAND 的，它将数字位存储在单元中。每个 SSD 单元可以存储一位或多位。对单元的每次擦除都会降低单元的寿命，所以单元只能承受一定数量的擦除。单元存储的位数越多，制造成本就越少，SSD 的容量也就越大，但是耐久性（擦除次数）也会降低。</p>
+<p>一个页面包括很多单元，典型的页面大小是 4KB，页面也是要读写的最小存储单元。SSD 上没有“重写”操作，不像 HDD 可以直接对任何字节重写覆盖。一个页面一旦写入内容后就不能进行部分重写，必须和其它相邻页面一起被整体擦除重置。</p>
+<p>多个页面组合成块。一个块的典型大小为 512KB 或 1MB，也就是大约 128 或 256 页。<strong>块是擦除的基本单位，每次擦除都是整个块内的所有页面都被重置。</strong></p>
+<p><strong>擦除速度相对很慢，通常为几毫秒</strong>。所以对同步的 IO，发出 IO 的应用程序可能会因为块的擦除，而经历很大的写入延迟。为了尽量地减少这样的场景，保持空闲块的阈值对于快速的写响应是很有必要的。SSD 的垃圾回收（GC）的目的就在于此。GC 可以回收用过的块，这样可以确保以后的页写入可以快速分配到一个全新的页。</p>
+<h3 id="写入放大（Write-Amplification-or-WA"><a href="#写入放大（Write-Amplification-or-WA" class="headerlink" title="写入放大（Write Amplification, or WA)"></a>写入放大（Write Amplification, or WA)</h3><p>这是 SSD 相对于 HDD 的一个缺点，即实际写入 SSD 的物理数据量，有可能是应用层写入数据量的多倍。一方面，页级别的写入需要移动已有的数据来腾空页面。另一方面，GC 的操作也会移动用户数据来进行块级别的擦除。所以对 SSD 真正的写操作的数据可能比实际写的数据量大，这就是写入放大。一块 SSD 只能进行有限的擦除次数，也称为编程 / 擦除（P/E）周期，所以写入放大效用会缩短 SSD 的寿命。</p>
+<h3 id="耗损平衡-Wear-Leveling"><a href="#耗损平衡-Wear-Leveling" class="headerlink" title="耗损平衡 (Wear Leveling)"></a>耗损平衡 (Wear Leveling)</h3><p>对每一个块而言，一旦达到最大数量，该块就会死亡。对于 SLC 块，P/E 周期的典型数目是十万次；对于 MLC 块，P/E 周期的数目是一万；而对于 TLC 块，则可能是几千。为了确保 SSD 的容量和性能，我们需要在擦除次数上保持平衡，SSD 控制器具有这种“耗损平衡”机制可以实现这一目标。在损耗平衡期间，数据在各个块之间移动，以实现均衡的损耗，这种机制也会对前面讲的写入放大推波助澜。</p>
+<h2 id="光纤和网线的性能差异"><a href="#光纤和网线的性能差异" class="headerlink" title="光纤和网线的性能差异"></a>光纤和网线的性能差异</h2><p>以下都是在4.19内核的UOS，光纤交换机为锐捷，服务器是华为鲲鹏920</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/553e1c5fff2dd04a668434f0da4f9d90.png" alt="image.png"></p>
+<p>光纤稳定性好很多，平均rt是网线的三分之一，最大值则是网线的十分之一. 光纤的带宽大约是网线的1.5倍</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div></pre></td><td class="code"><pre><div class="line">[aliyun@uos15 11:00 /home/aliyun]  一下88都是光口、89都是电口。</div><div class="line">$ping -c 10 10.88.88.16 //光纤</div><div class="line">PING 10.88.88.16 (10.88.88.16) 56(84) bytes of data.</div><div class="line">64 bytes from 10.88.88.16: icmp_seq=1 ttl=64 time=0.058 ms</div><div class="line">64 bytes from 10.88.88.16: icmp_seq=2 ttl=64 time=0.049 ms</div><div class="line">64 bytes from 10.88.88.16: icmp_seq=3 ttl=64 time=0.053 ms</div><div class="line">64 bytes from 10.88.88.16: icmp_seq=4 ttl=64 time=0.040 ms</div><div class="line">64 bytes from 10.88.88.16: icmp_seq=5 ttl=64 time=0.053 ms</div><div class="line">64 bytes from 10.88.88.16: icmp_seq=6 ttl=64 time=0.043 ms</div><div class="line">64 bytes from 10.88.88.16: icmp_seq=7 ttl=64 time=0.038 ms</div><div class="line">64 bytes from 10.88.88.16: icmp_seq=8 ttl=64 time=0.050 ms</div><div class="line">64 bytes from 10.88.88.16: icmp_seq=9 ttl=64 time=0.043 ms</div><div class="line">64 bytes from 10.88.88.16: icmp_seq=10 ttl=64 time=0.064 ms</div><div class="line"></div><div class="line">--- 10.88.88.16 ping statistics ---</div><div class="line">10 packets transmitted, 10 received, 0% packet loss, time 159ms</div><div class="line">rtt min/avg/max/mdev = 0.038/0.049/0.064/0.008 ms</div><div class="line"></div><div class="line">[aliyun@uos15 11:01 /home/aliyun]</div><div class="line">$ping -c 10 10.88.89.16 //电口</div><div class="line">PING 10.88.89.16 (10.88.89.16) 56(84) bytes of data.</div><div class="line">64 bytes from 10.88.89.16: icmp_seq=1 ttl=64 time=0.087 ms</div><div class="line">64 bytes from 10.88.89.16: icmp_seq=2 ttl=64 time=0.053 ms</div><div class="line">64 bytes from 10.88.89.16: icmp_seq=3 ttl=64 time=0.095 ms</div><div class="line">64 bytes from 10.88.89.16: icmp_seq=4 ttl=64 time=0.391 ms</div><div class="line">64 bytes from 10.88.89.16: icmp_seq=5 ttl=64 time=0.051 ms</div><div class="line">64 bytes from 10.88.89.16: icmp_seq=6 ttl=64 time=0.343 ms</div><div class="line">64 bytes from 10.88.89.16: icmp_seq=7 ttl=64 time=0.045 ms</div><div class="line">64 bytes from 10.88.89.16: icmp_seq=8 ttl=64 time=0.341 ms</div><div class="line">64 bytes from 10.88.89.16: icmp_seq=9 ttl=64 time=0.054 ms</div><div class="line">64 bytes from 10.88.89.16: icmp_seq=10 ttl=64 time=0.066 ms</div><div class="line"></div><div class="line">--- 10.88.89.16 ping statistics ---</div><div class="line">10 packets transmitted, 10 received, 0% packet loss, time 149ms</div><div class="line">rtt min/avg/max/mdev = 0.045/0.152/0.391/0.136 ms</div><div class="line"></div><div class="line">[aliyun@uos15 11:02 /u01]</div><div class="line">$scp uos.tar aliyun@10.88.89.16:/tmp/</div><div class="line">uos.tar                                  100% 3743MB 111.8MB/s   00:33    </div><div class="line"></div><div class="line">[aliyun@uos15 11:03 /u01]</div><div class="line">$scp uos.tar aliyun@10.88.88.16:/tmp/</div><div class="line">uos.tar                                   100% 3743MB 178.7MB/s   00:20    </div><div class="line"></div><div class="line">[aliyun@uos15 11:07 /u01]</div><div class="line">$sudo ping -f 10.88.89.16</div><div class="line">PING 10.88.89.16 (10.88.89.16) 56(84) bytes of data.</div><div class="line">--- 10.88.89.16 ping statistics ---</div><div class="line">284504 packets transmitted, 284504 received, 0% packet loss, time 702ms</div><div class="line">rtt min/avg/max/mdev = 0.019/0.040/1.014/0.013 ms, ipg/ewma 0.048/0.042 ms</div><div class="line"></div><div class="line">[aliyun@uos15 11:07 /u01]</div><div class="line">$sudo ping -f 10.88.88.16</div><div class="line">PING 10.88.88.16 (10.88.88.16) 56(84) bytes of data.</div><div class="line">--- 10.88.88.16 ping statistics ---</div><div class="line">299748 packets transmitted, 299748 received, 0% packet loss, time 242ms</div><div class="line">rtt min/avg/max/mdev = 0.012/0.016/0.406/0.006 ms, pipe 2, ipg/ewma 0.034/0.014 ms</div></pre></td></tr></table></figure>
+<p>光纤接口：</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b67715de1b8e143f6fc17ba574bcf0c4.png" alt="image.png" style="zoom:60%;"></p>
+<h2 id="Cache、内存、磁盘、网络的延迟比较"><a href="#Cache、内存、磁盘、网络的延迟比较" class="headerlink" title="Cache、内存、磁盘、网络的延迟比较"></a>Cache、内存、磁盘、网络的延迟比较</h2><p><a href="http://cizixs.com/2017/01/03/how-slow-is-disk-and-network" target="_blank" rel="external">假设主频2.6G的CPU，每个指令只需要 0.38ns</a> </p>
+<p>每次内存寻址需要 100ns </p>
+<p>一次 CPU 上下文切换（系统调用）需要大约 1500ns，也就是 1.5us（这个数字参考了<a href="http://blog.tsunanet.net/2010/11/how-long-does-it-take-to-make-context.html" target="_blank" rel="external">这篇文章</a>，采用的是单核 CPU 线程平均时间）</p>
+<p>SSD 随机读取耗时为 150us</p>
+<p>从内存中读取 1MB 的连续数据，耗时大约为 250us</p>
+<p>同一个数据中心网络上跑一个来回需要 0.5ms</p>
+<p>从 SSD 读取 1MB 的顺序数据，大约需要 1ms （是内存速度的四分之一）</p>
+<p>磁盘寻址时间为 10ms</p>
+<p>从磁盘读取 1MB 连续数据需要 20ms</p>
+<p>如果 CPU 访问 L1 缓存需要 1 秒，那么访问主存需要 3 分钟、从 SSD 中随机读取数据需要 3.4 天、磁盘寻道需要 2 个月，网络传输可能需要 1 年多的时间。</p>
+<p><strong>2012 年延迟数字对比表：</strong></p>
+<table>
+<thead>
+<tr>
+<th>Work</th>
+<th>Latency</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>L1 cache reference</td>
+<td>0.5 ns</td>
+</tr>
+<tr>
+<td>Branch mispredict</td>
+<td>5 ns</td>
+</tr>
+<tr>
+<td>L2 cache reference</td>
+<td>7 ns</td>
+</tr>
+<tr>
+<td>Mutex lock/unlock</td>
+<td>25 ns</td>
+</tr>
+<tr>
+<td>Main memory reference</td>
+<td>100 ns</td>
+</tr>
+<tr>
+<td>Compress 1K bytes with Zippy</td>
+<td>3,000 ns</td>
+</tr>
+<tr>
+<td>Send 1K bytes over 1 Gbps network</td>
+<td>10,000 ns</td>
+</tr>
+<tr>
+<td>Read 4K randomly from SSD*</td>
+<td>150,000 ns</td>
+</tr>
+<tr>
+<td>Read 1 MB sequentially from memory</td>
+<td>250,000 ns</td>
+</tr>
+<tr>
+<td>Round trip within same datacenter</td>
+<td>500,000 ns</td>
+</tr>
+<tr>
+<td>Read 1 MB sequentially from SSD*</td>
+<td>1,000,000 ns</td>
+</tr>
+<tr>
+<td>Disk seek</td>
+<td>10,000,000 ns</td>
+</tr>
+<tr>
+<td>Read 1 MB sequentially from disk</td>
+<td>20,000,000 ns</td>
+</tr>
+<tr>
+<td>Send packet CA-&gt;Netherlands-&gt;CA</td>
+<td>150,000,000 ns</td>
+</tr>
+</tbody>
+</table>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="http://cizixs.com/2017/01/03/how-slow-is-disk-and-network" target="_blank" rel="external">http://cizixs.com/2017/01/03/how-slow-is-disk-and-network</a></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;ssd-san-sas-磁盘-光纤性能比较&quot;&gt;&lt;a href=&quot;#ssd-san-sas-磁盘-光纤性能比较&quot; class=&quot;headerlink&quot; title=&quot;ssd/san/sas 磁盘 光纤性能比较&quot;&gt;&lt;/a&gt;ssd/san/sas 磁盘 光纤性能比较&lt;/
+    
+    </summary>
+    
+      <category term="performance" scheme="http://yoursite.com/categories/performance/"/>
+    
+    
+      <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
+    
+      <category term="磁盘性能" scheme="http://yoursite.com/tags/%E7%A3%81%E7%9B%98%E6%80%A7%E8%83%BD/"/>
+    
+      <category term="san" scheme="http://yoursite.com/tags/san/"/>
+    
+      <category term="光纤" scheme="http://yoursite.com/tags/%E5%85%89%E7%BA%A4/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>如何制作本地yum repository</title>
+    <link href="http://yoursite.com/2020/01/24/%E5%A6%82%E4%BD%95%E5%88%B6%E4%BD%9C%E6%9C%AC%E5%9C%B0yum%20repository/"/>
+    <id>http://yoursite.com/2020/01/24/如何制作本地yum repository/</id>
+    <published>2020-01-24T09:30:03.000Z</published>
+    <updated>2020-07-28T01:44:55.916Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="如何制作本地yum-repository"><a href="#如何制作本地yum-repository" class="headerlink" title="如何制作本地yum repository"></a>如何制作本地yum repository</h1><p>某些情况下在没有外网的环境需要安装一些软件，但是软件依赖比较多，那么可以提前将所有依赖下载到本地，然后将他们制作成一个yum repo，安装的时候就会自动将依赖包都安装好。</p>
+<h2 id="收集所有rpm包"><a href="#收集所有rpm包" class="headerlink" title="收集所有rpm包"></a>收集所有rpm包</h2><p>创建一个文件夹，比如 Yum，将收集到的所有rpm包放在里面，比如安装ansible和docker需要的依赖文件：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">-rwxr-xr-x 1 root root  73K 7月  12 14:22 audit-libs-python-2.8.4-4.el7.x86_64.rpm</div><div class="line">-rwxr-xr-x 1 root root 295K 7月  12 14:22 checkpolicy-2.5-8.el7.x86_64.rpm</div><div class="line">-rwxr-xr-x 1 root root  23M 7月  12 14:22 containerd.io-1.2.2-3.el7.x86_64.rpm</div><div class="line">-rwxr-xr-x 1 root root  26K 7月  12 14:22 container-selinux-2.9-4.el7.noarch.rpm</div><div class="line">-rwxr-xr-x 1 root root  37K 7月  12 14:22 container-selinux-2.74-1.el7.noarch.rpm</div><div class="line">-rwxr-xr-x 1 root root  14M 7月  12 14:22 docker-ce-cli-18.09.0-3.el7.x86_64.rpm</div><div class="line">-rwxr-xr-x 1 root root  29K 7月  12 14:22 docker-ce-selinux-17.03.2.ce-1.el7.centos.noarch.rpm</div><div class="line">-r-xr-xr-x 1 root root  22K 7月  12 14:23 sshpass-1.06-2.el7.x86_64.rpm</div><div class="line">-r-xr-xr-x 1 root root  22K 7月  12 14:23 sshpass-1.06-1.el7.x86_64.rpm</div><div class="line">-r-xr-xr-x 1 root root 154K 7月  12 14:23 PyYAML-3.10-11.el7.x86_64.rpm</div><div class="line">-r-xr-xr-x 1 root root  29K 7月  12 14:23 python-six-1.9.0-2.el7.noarch.rpm</div><div class="line">-r-xr-xr-x 1 root root 397K 7月  12 14:23 python-setuptools-0.9.8-7.el7.noarch.rpm</div></pre></td></tr></table></figure>
+<p>收集方法：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">//先安装yum工具</div><div class="line">yum install yum-utils -y</div><div class="line">//将 ansible 依赖包都下载下来</div><div class="line">repoquery -R --resolve --recursive ansible | xargs -r yumdownloader --destdir=/tmp/ansible</div><div class="line">//将ansible rpm自己下载回来</div><div class="line">yumdownloader --destdir=/tmp/ansible --resolve ansible</div><div class="line">//验证一下依赖关系是完整的</div><div class="line">//repotrack ansible</div></pre></td></tr></table></figure>
+<h2 id="创建仓库索引"><a href="#创建仓库索引" class="headerlink" title="创建仓库索引"></a>创建仓库索引</h2><p>需要安装工具 createrepo：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"># createrepo ./yum/</div><div class="line">Spawning worker 0 with 6 pkgs</div><div class="line">Spawning worker 1 with 6 pkgs</div><div class="line">Spawning worker 23 with 5 pkgs</div><div class="line">Workers Finished</div><div class="line">Saving Primary metadata</div><div class="line">Saving file lists metadata</div><div class="line">Saving other metadata</div><div class="line">Generating sqlite DBs</div><div class="line">Sqlite DBs complete</div></pre></td></tr></table></figure>
+<p>会在yum文件夹下生成一个索引文件夹 repodata</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">drwxr-xr-x 2 root root 4.0K 7月  12 14:25 repodata</div><div class="line">[root@az1-drds-79 yum]# ls repodata/</div><div class="line">5e15c62fec1fe43c6025ecf4d370d632f4b3f607500016e045ad94b70f87bac3-filelists.xml.gz</div><div class="line">7a314396d6e90532c5c534567f9bd34eee94c3f8945fc2191b225b2861ace2b6-other.xml.gz</div><div class="line">ce9dce19f6b426b8856747b01d51ceaa2e744b6bbd5fbc68733aa3195f724590-primary.xml.gz</div><div class="line">ee33b7d79e32fe6ad813af92a778a0ec8e5cc2dfdc9b16d0be8cff6a13e80d99-filelists.sqlite.bz2</div><div class="line">f7e8177e7207a4ff94bade329a0f6b572a72e21da106dd9144f8b1cdf0489cab-primary.sqlite.bz2</div><div class="line">ff52e1f1859790a7b573d2708b02404eb8b29aa4b0c337bda83af75b305bfb36-other.sqlite.bz2</div><div class="line">repomd.xml</div></pre></td></tr></table></figure>
+<h2 id="生成iso镜像文件"><a href="#生成iso镜像文件" class="headerlink" title="生成iso镜像文件"></a>生成iso镜像文件</h2><p>非必要步骤，如果需要带到客户环境可以先生成iso，不过不够灵活。</p>
+<p>也可以不用生成iso，直接在drds.repo中指定 createrepo 的目录也可以，记得要先执行 yum clean all和yum update </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">#mkisofs -r -o docker_ansible.iso ./yum/</div><div class="line">I: -input-charset not specified, using utf-8 (detected in locale settings)</div><div class="line">Using PYTHO000.RPM;1 for  /python-httplib2-0.7.7-3.el7.noarch.rpm (python-httplib2-0.9.1-3.el7.noarch.rpm)</div><div class="line">Using MARIA006.RPM;1 for  /mariadb-5.5.56-2.el7.x86_64.rpm (mariadb-libs-5.5.56-2.el7.x86_64.rpm)</div><div class="line">Using LIBTO001.RPM;1 for  /libtomcrypt-1.17-25.el7.x86_64.rpm (libtomcrypt-1.17-26.el7.x86_64.rpm)</div><div class="line">  6.11% done, estimate finish Sun Jul 12 14:26:47 2020</div><div class="line"> 97.60% done, estimate finish Sun Jul 12 14:26:48 2020</div><div class="line">Total translation table size: 0</div><div class="line">Total rockridge attributes bytes: 14838</div><div class="line">Total directory bytes: 2048</div><div class="line">Path table size(bytes): 26</div><div class="line">Max brk space used 21000</div><div class="line">81981 extents written (160 MB)</div></pre></td></tr></table></figure>
+<h2 id="将-生成的-iso挂载到目标机器上"><a href="#将-生成的-iso挂载到目标机器上" class="headerlink" title="将 生成的 iso挂载到目标机器上"></a>将 生成的 iso挂载到目标机器上</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"># mkdir /mnt/iso</div><div class="line"># mount ./docker_ansible.iso /mnt/iso</div><div class="line">mount: /dev/loop0 is write-protected, mounting read-only</div></pre></td></tr></table></figure>
+<h2 id="配置本地-yum-源"><a href="#配置本地-yum-源" class="headerlink" title="配置本地 yum 源"></a>配置本地 yum 源</h2><p>yum repository不是必须要求iso挂载，直接指向rpm文件夹（必须要有 createrepo 建立索引了）也可以</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"># cat /etc/yum.repos.d/drds.repo </div><div class="line">[drds]</div><div class="line">name=drds Extra Packages for Enterprise Linux 7 - $basearch</div><div class="line">enabled=1</div><div class="line">failovermethod=priority</div><div class="line">baseurl=file:///mnt/repo #baseurl=http://192.168.1.91:8000/ 本地内网</div><div class="line">priority=1  #添加priority=1，数字越小优先级越高，也可以修改网络源的priority的值</div><div class="line">gpgcheck=0</div><div class="line">#gpgkey=file:///mnt/cdrom/RPM-GPG-KEY-CentOS-5    #注：这个你cd /mnt/cdrom/可以看到这个key，这里仅仅是个例子， 因为gpgcheck是0 ，所以gpgkey不需要了</div></pre></td></tr></table></figure>
+<p>到此就可以在没有网络环境的机器上直接：yum install ansible docker -y 了 </p>
+<h2 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h2><p>测试的话可以指定repo 源： yum install ansible –enablerepo=drds （drds 优先级最高）</p>
+<p>本地会cache一些rpm的版本信息，可以执行 yum clean all 得到一个干净的测试环境</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">yum clean all</div><div class="line">yum list</div><div class="line">yum deplist ansible</div></pre></td></tr></table></figure>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;如何制作本地yum-repository&quot;&gt;&lt;a href=&quot;#如何制作本地yum-repository&quot; class=&quot;headerlink&quot; title=&quot;如何制作本地yum repository&quot;&gt;&lt;/a&gt;如何制作本地yum repository&lt;/h1&gt;&lt;
+    
+    </summary>
+    
+      <category term="Linux" scheme="http://yoursite.com/categories/Linux/"/>
+    
+    
+      <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
+    
+      <category term="yum" scheme="http://yoursite.com/tags/yum/"/>
+    
+      <category term="iso" scheme="http://yoursite.com/tags/iso/"/>
+    
+      <category term="createrepo" scheme="http://yoursite.com/tags/createrepo/"/>
+    
+      <category term="yum-utils" scheme="http://yoursite.com/tags/yum-utils/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Linux 内存问题汇总</title>
+    <link href="http://yoursite.com/2020/01/15/Linux%20%E5%86%85%E5%AD%98%E9%97%AE%E9%A2%98%E6%B1%87%E6%80%BB/"/>
+    <id>http://yoursite.com/2020/01/15/Linux 内存问题汇总/</id>
+    <published>2020-01-15T08:30:03.000Z</published>
+    <updated>2020-08-26T10:57:01.287Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="Linux-内存问题汇总"><a href="#Linux-内存问题汇总" class="headerlink" title="Linux 内存问题汇总"></a>Linux 内存问题汇总</h1><h2 id="内存使用观察"><a href="#内存使用观察" class="headerlink" title="内存使用观察"></a>内存使用观察</h2><pre><code># free -m
+         total       used       free     shared    buffers     cached
+Mem:          7515       1115       6400          0        189        492
+-/+ buffers/cache:        432       7082
+Swap:            0          0          0
+</code></pre><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/f8d944e2c7a8611384acb820c4471007.png" alt="image.png" style="zoom:80%;"></p>
+<p><strong>上图中-/+ buffers/cache: -是指userd去掉buffers/cached后真正使用掉的内存; +是指free加上buffers和cached后真正free的内存大小。</strong></p>
+<h2 id="free"><a href="#free" class="headerlink" title="free"></a>free</h2><p>free是从 /proc/meminfo 读取数据然后展示：</p>
+<blockquote>
+<p>buff/cache = Buffers + Cached + SReclaimable</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">[root@az1-drds-79 ~]# cat /proc/meminfo |egrep -i &quot;buff|cach|SReclai&quot;</div><div class="line">Buffers:          817764 kB</div><div class="line">Cached:         76629252 kB</div><div class="line">SwapCached:            0 kB</div><div class="line">SReclaimable:    7202264 kB</div><div class="line">[root@az1-drds-79 ~]# free -k</div><div class="line">             total       used       free     shared    buffers     cached</div><div class="line">Mem:      97267672   95522336    1745336          0     817764   76629352</div><div class="line">-/+ buffers/cache:   18075220   79192452</div><div class="line">Swap:            0          0          0</div></pre></td></tr></table></figure>
+<h2 id="cached过高回收"><a href="#cached过高回收" class="headerlink" title="cached过高回收"></a>cached过高回收</h2><p>回收：<br>    echo 1/2/3 &gt;/proc/sys/vm/drop_cached</p>
+<p>查看回收后：</p>
+<pre><code>cat /proc/meminfo
+</code></pre><h2 id="还有很多cached无法回收"><a href="#还有很多cached无法回收" class="headerlink" title="还有很多cached无法回收"></a>还有很多cached无法回收</h2><p>可能是正打开的文件占用了cached，比如 vim 打开了一个巨大的文件；比如 mount的 tmpfs； 比如 journald 日志等等</p>
+<h3 id="通过vmtouch-查看"><a href="#通过vmtouch-查看" class="headerlink" title="通过vmtouch 查看"></a>通过<a href="https://hoytech.com/vmtouch/" target="_blank" rel="external">vmtouch</a> 查看</h3><pre><code># vmtouch -v test.x86_64.rpm 
+test.x86_64.rpm
+[OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO] 10988/10988
+
+           Files: 1
+     Directories: 0
+  Resident Pages: 10988/10988  42M/42M  100%
+         Elapsed: 0.000594 seconds
+
+# ls -lh test.x86_64.rpm
+-rw-r--r-- 1 root root 43M 10月  8 14:11 test.x86_64.rpm
+</code></pre><p>如上，表示整个文件 test.x86_64.rpm 都被cached了，回收的话执行：</p>
+<pre><code>vmtouch -e test.x86_64.rpm // 或者： echo 3 &gt;/proc/sys/vm/drop_cached
+</code></pre><h3 id="遍历某个目录下的所有文件被cached了多少"><a href="#遍历某个目录下的所有文件被cached了多少" class="headerlink" title="遍历某个目录下的所有文件被cached了多少"></a>遍历某个目录下的所有文件被cached了多少</h3><pre><code># vmtouch -vt /var/log/journal/
+/var/log/journal/20190829214900434421844640356160/user-1000@ad408d9cb9d94f9f93f2c2396c26b542-000000000011ba49-00059979e0926f43.journal
+[OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO] 4096/4096
+/var/log/journal/20190829214900434421844640356160/system@782ec314565e436b900454c59655247c-0000000000152f41-00059b2c88eb4344.journal
+[OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO] 14336/14336
+/var/log/journal/20190829214900434421844640356160/user-1000@ad408d9cb9d94f9f93f2c2396c26b542-00000000000f2181-000598335fcd492f.journal
+[OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO] 4096/4096
+/var/log/journal/20190829214900434421844640356160/system@782ec314565e436b900454c59655247c-0000000000129aea-000599e83996db80.journal
+[OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO] 14336/14336
+/var/log/journal/20190829214900434421844640356160/user-1000@ad408d9cb9d94f9f93f2c2396c26b542-000000000009f171-000595a722ead670.journal
+…………
+           Files: 48
+ Directories: 2
+ Touched Pages: 468992 (1G)
+ Elapsed: 13.274 seconds
+</code></pre><h2 id="pagecache-的产生和释放"><a href="#pagecache-的产生和释放" class="headerlink" title="pagecache 的产生和释放"></a>pagecache 的产生和释放</h2><ul>
+<li>标准 I/O 是写的 (write(2)) 用户缓冲区 (Userpace Page 对应的内存)，<strong>然后再将用户缓冲区里的数据拷贝到内核缓冲区 (Pagecache Page 对应的内存)</strong>；如果是读的 (read(2)) 话则是先从内核缓冲区拷贝到用户缓冲区，再从用户缓冲区读数据，也就是 buffer 和文件内容不存在任何映射关系。</li>
+<li>对于存储映射 I/O（Memory-Mapped I/O） 而言，则是直接将 Pagecache Page 给映射到用户地址空间，用户直接读写 Pagecache Page 中内容，效率相对标准IO更高一些</li>
+</ul>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/51bf36aa14dc01e7ad309c1bb9d252e9.png" alt="image.png"></p>
+<p>当 <strong>将用户缓冲区里的数据拷贝到内核缓冲区 (Pagecache Page 对应的内存)</strong> 最容易发生缺页中断，OS需要先分配Page（应用感知到的就是卡顿了）</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d62ea00662f8342b7df3aab6b28e4cbb.png" alt="image.png">  </p>
+<ul>
+<li>Page Cache 是在应用程序读写文件的过程中产生的，所以在读写文件之前你需要留意是否还有足够的内存来分配 Page Cache；</li>
+<li>Page Cache 中的脏页很容易引起问题，你要重点注意这一块；</li>
+<li>在系统可用内存不足的时候就会回收 Page Cache 来释放出来内存，我建议你可以通过 sar 或者 /proc/vmstat 来观察这个行为从而更好的判断问题是否跟回收有关</li>
+</ul>
+<p>缺页后kswapd在短时间内回收不了足够多的 free 内存，或kswapd 还没有触发执行，操作系统就会进行内存页直接回收。这个过程中，应用会进行自旋等待直到回收的完成，从而产生巨大的延迟。</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/0a5cdeb75b7dee2068254cd4b7fe254d.png" alt=""></p>
+<p>如果page被swapped，那么恢复进内场的过程也对延迟有影响，当被匿名内存页被回收后，如果下次再访问就会产生IO的延迟。</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/740b95056dace8ae6fb3b8f58d91572e.png" alt=""></p>
+<h3 id="min-和-low的区别："><a href="#min-和-low的区别：" class="headerlink" title="min 和 low的区别："></a>min 和 low的区别：</h3><ol>
+<li>min下的内存是保留给内核使用的；当到达min，会触发内存的direct reclaim</li>
+<li>low水位比min高一些，当内存可用量小于low的时候，会触发 kswapd回收内存，当kswapd慢慢的将内存 回收到high水位，就开始继续睡眠</li>
+</ol>
+<h3 id="内存回收方式"><a href="#内存回收方式" class="headerlink" title="内存回收方式"></a>内存回收方式</h3><p>内存回收方式有两种，主要对应low ，min</p>
+<ol>
+<li>direct reclaim : 达到min水位线时执行</li>
+<li>kswapd reclaim : 达到low水位线时执行</li>
+</ol>
+<p>为了减少缺页中断，首先就要保证我们有足够的内存可以使用。由于Linux会尽可能多的使用free的内存，运行很久的应用free的内存是很少的。下面的图中，紫色表示已经使用的内存，白色表示尚未分配的内存。当我们的内存使用达到水位的low值的时候，kswapd就会开始回收工作，而一旦内存分配超过了mini，就会进行内存的直接回收。</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/5933cc4c28f86aa08410a8af4ff4410d.png" alt=""></p>
+<p>针对这种情况，我们需要采用预留内存的手段，系统参数vm.extra_free_kbytes就是用来做这个事情的。这个参数设置了系统预留给应用的内存，可以避免紧急需要内存时发生内存回收不及时导致的高延迟。从下面图中可以看到，通过vm.extra_free_kbytes的设置，预留内存可以让内存的申请处在一个安全的水位。<strong>需要注意的是，因为内核的优化，在3.10以上的内核版本这个参数已经被取消。</strong></p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/f55022d4eb181b92ba5d2e142ec940c8.png" alt=""></p>
+<p>或者禁止： vm.swappiness  来避免swapped来减少延迟</p>
+<h2 id="slabtop和-proc-slabinfo"><a href="#slabtop和-proc-slabinfo" class="headerlink" title="slabtop和/proc/slabinfo"></a>slabtop和/proc/slabinfo</h2><p>slabtop和/proc/slabinfo 查看cached使用情况 主要是：pagecache（页面缓存）， dentries（目录缓存）， inodes</p>
+<h2 id="消失的内存"><a href="#消失的内存" class="headerlink" title="消失的内存"></a>消失的内存</h2><p>OS刚启动后就报内存不够了，什么都没跑就500G没了，cached和buffer基本没用，纯粹就是used占用高，top按内存排序没有超过0.5%的进程</p>
+<p>参考： <a href="https://cloud.tencent.com/developer/article/1087455" target="_blank" rel="external">https://cloud.tencent.com/developer/article/1087455</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div></pre></td><td class="code"><pre><div class="line">[aliyun@uos15 18:40 /u02/backup_15/leo/benchmark/run]</div><div class="line">$free -g</div><div class="line">              total        used        free      shared  buff/cache   available</div><div class="line">Mem:            503         501           1           0           0           1</div><div class="line">Swap:            15          12           3</div><div class="line"></div><div class="line">$cat /proc/meminfo </div><div class="line">MemTotal:       528031512 kB</div><div class="line">MemFree:         1469632 kB</div><div class="line">MemAvailable:          0 kB</div><div class="line">VmallocTotal:   135290290112 kB</div><div class="line">VmallocUsed:           0 kB</div><div class="line">VmallocChunk:          0 kB</div><div class="line">Percpu:            81920 kB</div><div class="line">AnonHugePages:    950272 kB</div><div class="line">ShmemHugePages:        0 kB</div><div class="line">ShmemPmdMapped:        0 kB</div><div class="line">HugePages_Total:   252557   ----- 预分配太多，一个2M，加起来刚好500G了</div><div class="line">HugePages_Free:    252557</div><div class="line">HugePages_Rsvd:        0</div><div class="line">HugePages_Surp:        0</div><div class="line">Hugepagesize:       2048 kB</div><div class="line">Hugetlb:        517236736 kB</div><div class="line"></div><div class="line">以下是一台正常的机器对比：</div><div class="line">Percpu:            41856 kB</div><div class="line">AnonHugePages:  11442176 kB</div><div class="line">ShmemHugePages:        0 kB</div><div class="line">ShmemPmdMapped:        0 kB</div><div class="line">HugePages_Total:       0            ----没有做预分配</div><div class="line">HugePages_Free:        0</div><div class="line">HugePages_Rsvd:        0</div><div class="line">HugePages_Surp:        0</div><div class="line">Hugepagesize:       2048 kB</div><div class="line">Hugetlb:               0 kB</div><div class="line"></div><div class="line">[aliyun@uos16 18:43 /home/aliyun]</div><div class="line">$free -g</div><div class="line">              total        used        free      shared  buff/cache   available</div><div class="line">Mem:            503          20         481           0           1         480</div><div class="line">Swap:            15           0          15</div><div class="line"></div><div class="line">对有问题的机器执行：</div><div class="line"># echo 1024 &gt; /proc/sys/vm/nr_hugepages</div><div class="line">可以看到内存恢复正常了 </div><div class="line">root@uos15:/u02/backup_15/leo/benchmark/run# free -g</div><div class="line">              total        used        free      shared  buff/cache   available</div><div class="line">Mem:            503          10         492           0           0         490</div><div class="line">Swap:            15          12           3</div><div class="line">root@uos15:/u02/backup_15/leo/benchmark/run# cat /proc/meminfo </div><div class="line">MemTotal:       528031512 kB</div><div class="line">MemFree:        516106832 kB</div><div class="line">MemAvailable:   514454408 kB</div><div class="line">VmallocTotal:   135290290112 kB</div><div class="line">VmallocUsed:           0 kB</div><div class="line">VmallocChunk:          0 kB</div><div class="line">Percpu:            81920 kB</div><div class="line">AnonHugePages:    313344 kB</div><div class="line">ShmemHugePages:        0 kB</div><div class="line">ShmemPmdMapped:        0 kB</div><div class="line">HugePages_Total:    1024</div><div class="line">HugePages_Free:     1024</div><div class="line">HugePages_Rsvd:        0</div><div class="line">HugePages_Surp:        0</div><div class="line">Hugepagesize:       2048 kB</div><div class="line">Hugetlb:         2097152 kB</div></pre></td></tr></table></figure>
+<h2 id="关于hugetlb"><a href="#关于hugetlb" class="headerlink" title="关于hugetlb"></a>关于hugetlb</h2><p> This is an entry in the TLB that points to a HugePage (a large/big page larger than regular 4K and predefined in size). HugePages are implemented via hugetlb entries, i.e. we can say that a HugePage is handled by a “hugetlb page entry”. The ‘hugetlb” term is also (and mostly) used synonymously with a HugePage (See Note 261889.1). In this document the term “HugePage” is going to be used but keep in mind that mostly “hugetlb” refers to the same concept.</p>
+<p> hugetlb 是TLB中指向HugePage的一个entry(通常大于4k或预定义页面大小)。 HugePage 通过hugetlb entries来实现，也可以理解为HugePage 是hugetlb page entry的一个句柄。</p>
+<p><strong>Linux下的大页分为两种类型：标准大页（Huge Pages）和透明大页（Transparent Huge Pages）</strong></p>
+<p>标准大页管理是预分配的方式，而透明大页管理则是动态分配的方式</p>
+<p>目前透明大页与传统HugePages联用会出现一些问题，导致性能问题和系统重启。Oracle 建议禁用透明大页（Transparent Huge Pages）</p>
+<p>hugetlbfs比THP要好，开thp的机器碎片化严重（不开THP会有更严重的碎片化问题），最后和没开THP一样 <a href="https://www.atatech.org/articles/152660" target="_blank" rel="external">https://www.atatech.org/articles/152660</a></p>
+<h2 id="THP"><a href="#THP" class="headerlink" title="THP"></a>THP</h2><p>Linux kernel在2.6.38内核增加了Transparent Huge Pages (THP)特性 ，支持大内存页(2MB)分配，默认开启。当开启时可以降低fork子进程的速度，但fork之后，每个内存页从原来4KB变为2MB，会大幅增加重写期间父进程内存消耗。同时每次写命令引起的复制内存页单位放大了512倍，会拖慢写操作的执行时间，导致大量写操作慢查询。例如简单的incr命令也会出现在慢查询中。因此Redis日志中建议将此特性进行禁用。  </p>
+<p>THP 对redis、monglodb 这种cache类推荐关闭，对drds这种java应用最好打开</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">grep &quot;Huge&quot; /proc/meminfo</div><div class="line">AnonHugePages:   1286144 kB</div><div class="line">ShmemHugePages:        0 kB</div><div class="line">HugePages_Total:       0</div><div class="line">HugePages_Free:        0</div><div class="line">HugePages_Rsvd:        0</div><div class="line">HugePages_Surp:        0</div><div class="line">Hugepagesize:       2048 kB</div><div class="line">Hugetlb:               0 kB</div><div class="line">$grep -e AnonHugePages  /proc/*/smaps | awk  &apos;&#123; if($2&gt;4) print $0&#125; &apos; |  awk -F &quot;/&quot;  &apos;&#123;print $0; system(&quot;ps -fp &quot; $3)&#125; &apos;</div><div class="line"></div><div class="line">//查看pagesize（默认4K） </div><div class="line">$getconf PAGESIZE</div></pre></td></tr></table></figure>
+<p>在透明大页功能打开时，造成系统性能下降的主要原因可能是 <code>khugepaged</code> 守护进程。该进程会在（它认为）系统空闲时启动，扫描系统中剩余的空闲内存，并将普通 4k 页转换为大页。该操作会在内存路径中加锁，而该守护进程可能会在错误的时间启动扫描和转换大页的操作，从而影响应用性能。</p>
+<p>此外，当缺页异常(page faults)增多时，透明大页会和普通 4k 页一样，产生同步内存压缩(direct compaction)操作，以节省内存。该操作是一个同步的内存整理操作，如果应用程序会短时间分配大量内存，内存压缩操作很可能会被触发，从而会对系统性能造成风险。<a href="https://yq.aliyun.com/articles/712830" target="_blank" rel="external">https://yq.aliyun.com/articles/712830</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">#查看系统级别的 THP 使用情况，执行下列命令：</div><div class="line">cat /proc/meminfo  | grep AnonHugePages</div><div class="line">#类似地，查看进程级别的 THP 使用情况，执行下列命令：</div><div class="line">cat /proc/1730/smaps | grep AnonHugePages |grep -v &quot;0 kB&quot;</div></pre></td></tr></table></figure>
+<h2 id="碎片化"><a href="#碎片化" class="headerlink" title="碎片化"></a>碎片化</h2><p>内存碎片严重的话会导致系统hang很久(回收、压缩内存）</p>
+<p>尽量让系统的free多一点(比例高一点）可以调整 vm.min_free_kbytes(128G 以内 2G，256G以内 8G), 线上机器直接修改vm.min_free_kbytes<strong>会触发回收，导致系统hang住</strong> <a href="https://www.atatech.org/articles/163233" target="_blank" rel="external">https://www.atatech.org/articles/163233</a> <a href="https://www.atatech.org/articles/97130" target="_blank" rel="external">https://www.atatech.org/articles/97130</a></p>
+<p>每个zone都有自己的min low high,如下，但是单位是page, 计算案例：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div></pre></td><td class="code"><pre><div class="line">[root@jiangyi01.sqa.zmf /home/ahao.mah]</div><div class="line">#cat /proc/zoneinfo  |grep &quot;Node&quot;</div><div class="line">Node 0, zone      DMA</div><div class="line">Node 0, zone    DMA32</div><div class="line">Node 0, zone   Normal</div><div class="line">Node 1, zone   Normal</div><div class="line"></div><div class="line">[root@jiangyi01.sqa.zmf /home/ahao.mah]</div><div class="line">#cat /proc/zoneinfo  |grep &quot;Node 0, zone&quot; -A10</div><div class="line">Node 0, zone      DMA</div><div class="line">  pages free     3975</div><div class="line">        min      20</div><div class="line">        low      25</div><div class="line">        high     30</div><div class="line">        scanned  0</div><div class="line">        spanned  4095</div><div class="line">        present  3996</div><div class="line">        managed  3975</div><div class="line">    nr_free_pages 3975</div><div class="line">    nr_alloc_batch 5</div><div class="line">--</div><div class="line">Node 0, zone    DMA32</div><div class="line">  pages free     382873</div><div class="line">        min      2335</div><div class="line">        low      2918</div><div class="line">        high     3502</div><div class="line">        scanned  0</div><div class="line">        spanned  1044480</div><div class="line">        present  513024</div><div class="line">        managed  450639</div><div class="line">    nr_free_pages 382873</div><div class="line">    nr_alloc_batch 584</div><div class="line">--</div><div class="line">Node 0, zone   Normal</div><div class="line">  pages free     11105097</div><div class="line">        min      61463</div><div class="line">        low      76828</div><div class="line">        high     92194</div><div class="line">        scanned  0</div><div class="line">        spanned  12058624</div><div class="line">        present  12058624</div><div class="line">        managed  11859912</div><div class="line">    nr_free_pages 11105097</div><div class="line">    nr_alloc_batch 12344</div><div class="line">    </div><div class="line">    low = 5/4 * min</div><div class="line">high = 3/2 * min</div><div class="line"></div><div class="line">[root@jiangyi01.sqa.zmf /home/ahao.mah]</div><div class="line">#T=min;sum=0;for i in `cat /proc/zoneinfo  |grep $T | awk &apos;&#123;print $NF&#125;&apos;`;do sum=`echo &quot;$sum+$i&quot; |bc`;done;sum=`echo &quot;$sum*4/1024&quot; |bc`;echo &quot;sum=$&#123;sum&#125; MB&quot;</div><div class="line">sum=499 MB</div><div class="line"></div><div class="line">[root@jiangyi01.sqa.zmf /home/ahao.mah]</div><div class="line">#T=low;sum=0;for i in `cat /proc/zoneinfo  |grep $T | awk &apos;&#123;print $NF&#125;&apos;`;do sum=`echo &quot;$sum+$i&quot; |bc`;done;sum=`echo &quot;$sum*4/1024&quot; |bc`;echo &quot;sum=$&#123;sum&#125; MB&quot;</div><div class="line">sum=624 MB</div><div class="line"></div><div class="line">[root@jiangyi01.sqa.zmf /home/ahao.mah]</div><div class="line">#T=high;sum=0;for i in `cat /proc/zoneinfo  |grep $T | awk &apos;&#123;print $NF&#125;&apos;`;do sum=`echo &quot;$sum+$i&quot; |bc`;done;sum=`echo &quot;$sum*4/1024&quot; |bc`;echo &quot;sum=$&#123;sum&#125; MB&quot;</div><div class="line">sum=802 MB</div></pre></td></tr></table></figure>
+<h2 id="定制内存"><a href="#定制内存" class="headerlink" title="定制内存"></a>定制内存</h2><p>物理内存700多G，要求OS只能用512G：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div></pre></td><td class="code"><pre><div class="line">24条32G的内存条，总内存768G</div><div class="line"># dmidecode -t memory |grep &quot;Size: 32 GB&quot;</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">root@uos15:/etc# dmidecode -t memory |grep &quot;Size: 32 GB&quot; | wc -l</div><div class="line">24</div><div class="line"></div><div class="line"># cat /boot/grub/grub.cfg  |grep 512</div><div class="line">  linux /vmlinuz-4.19.0-arm64-server root=UUID=dbc68010-8c36-40bf-b794-271e59ff5727 ro  splash quiet console=tty video=VGA-1:1280x1024@60 mem=512G DEEPIN_GFXMODE=$DEEPIN_GFXMODE</div><div class="line">    linux /vmlinuz-4.19.0-arm64-server root=UUID=dbc68010-8c36-40bf-b794-271e59ff5727 ro  splash quiet console=tty video=VGA-1:1280x1024@60 mem=512G DEEPIN_GFXMODE=$DEEPIN_GFXMODE</div></pre></td></tr></table></figure>
+<p>​    </p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://www.atatech.org/articles/66885" target="_blank" rel="external">https://www.atatech.org/articles/66885</a></p>
+<p><a href="https://cloud.tencent.com/developer/article/1087455" target="_blank" rel="external">https://cloud.tencent.com/developer/article/1087455</a></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;Linux-内存问题汇总&quot;&gt;&lt;a href=&quot;#Linux-内存问题汇总&quot; class=&quot;headerlink&quot; title=&quot;Linux 内存问题汇总&quot;&gt;&lt;/a&gt;Linux 内存问题汇总&lt;/h1&gt;&lt;h2 id=&quot;内存使用观察&quot;&gt;&lt;a href=&quot;#内存使用观察&quot;
+    
+    </summary>
+    
+      <category term="Linux" scheme="http://yoursite.com/categories/Linux/"/>
+    
+    
+      <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
+    
+      <category term="free" scheme="http://yoursite.com/tags/free/"/>
+    
+      <category term="Memory" scheme="http://yoursite.com/tags/Memory/"/>
+    
+      <category term="vmtouch" scheme="http://yoursite.com/tags/vmtouch/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>kubernetes</title>
+    <link href="http://yoursite.com/2020/01/12/kubernetes/"/>
+    <id>http://yoursite.com/2020/01/12/kubernetes/</id>
+    <published>2020-01-12T09:30:03.000Z</published>
+    <updated>2020-08-28T10:52:01.364Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="kubernetes"><a href="#kubernetes" class="headerlink" title="kubernetes"></a>kubernetes</h1><h2 id="部署"><a href="#部署" class="headerlink" title="部署"></a>部署</h2><p>系统参数修改</p>
+<p>docker部署</p>
+<p>kubeadm</p>
+<p><a href="https://www.kubernetes.org.cn/4256.html" target="_blank" rel="external">https://www.kubernetes.org.cn/4256.html</a> </p>
+<p><a href="https://github.com/opsnull/follow-me-install-kubernetes-cluster" target="_blank" rel="external">https://github.com/opsnull/follow-me-install-kubernetes-cluster</a></p>
+<p>镜像源被墙，可以用阿里云镜像源</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"># 配置源</div><div class="line">cat &lt;&lt;EOF &gt; /etc/yum.repos.d/kubernetes.repo</div><div class="line">[kubernetes]</div><div class="line">name=Kubernetes</div><div class="line">baseurl=https://mirrors.aliyun.com/kubernetes/yum/repos/kubernetes-el7-x86_64</div><div class="line">enabled=1</div><div class="line">gpgcheck=1</div><div class="line">repo_gpgcheck=1</div><div class="line">gpgkey=https://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg https://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg</div><div class="line">EOF</div><div class="line"></div><div class="line"># 安装</div><div class="line">yum install -y kubelet kubeadm kubectl ipvsadm</div></pre></td></tr></table></figure>
+<h2 id="初始化集群"><a href="#初始化集群" class="headerlink" title="初始化集群"></a>初始化集群</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">kubeadm init --kubernetes-version=1.18.0  --apiserver-advertise-address=192.168.0.80   --image-repository registry.aliyuncs.com/google_containers  --service-cidr=10.10.0.0/16 --pod-network-cidr=10.122.0.0/16</div><div class="line"></div><div class="line"># node join command</div><div class="line">#kubeadm token create --print-join-command</div><div class="line">kubeadm join 192.168.0.80:6443 --token 1042rl.b4qn9iuz6xv1ri7b     --discovery-token-ca-cert-hash sha256:341a4bcfde9668077ef29211c2a151fe6e9334eea8955f645698706b3bf47a49 </div><div class="line"></div><div class="line">## 查看集群配置</div><div class="line">kubectl get configmap -n kube-system kubeadm-config -o yaml</div></pre></td></tr></table></figure>
+<h2 id="apiserver高可用"><a href="#apiserver高可用" class="headerlink" title="apiserver高可用"></a>apiserver高可用</h2><p>默认只有一个apiserver，可以考虑用haproxy和keepalive来做一组apiserver的负载均衡：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">docker run -d --name kube-haproxy \</div><div class="line">-v /etc/haproxy:/usr/local/etc/haproxy:ro \</div><div class="line">-p 8443:8443 \</div><div class="line">-p 1080:1080 \</div><div class="line">--restart always \</div><div class="line">haproxy:1.7.8-alpine</div></pre></td></tr></table></figure>
+<p>haproxy配置</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div></pre></td><td class="code"><pre><div class="line">#cat /etc/haproxy/haproxy.cfg </div><div class="line">global</div><div class="line">  log 127.0.0.1 local0 err</div><div class="line">  maxconn 50000</div><div class="line">  uid 99</div><div class="line">  gid 99</div><div class="line">  #daemon</div><div class="line">  nbproc 1</div><div class="line">  pidfile haproxy.pid</div><div class="line"></div><div class="line">defaults</div><div class="line">  mode http</div><div class="line">  log 127.0.0.1 local0 err</div><div class="line">  maxconn 50000</div><div class="line">  retries 3</div><div class="line">  timeout connect 5s</div><div class="line">  timeout client 30s</div><div class="line">  timeout server 30s</div><div class="line">  timeout check 2s</div><div class="line"></div><div class="line">listen admin_stats</div><div class="line">  mode http</div><div class="line">  bind 0.0.0.0:1080</div><div class="line">  log 127.0.0.1 local0 err</div><div class="line">  stats refresh 30s</div><div class="line">  stats uri     /haproxy-status</div><div class="line">  stats realm   Haproxy\ Statistics</div><div class="line">  stats auth    will:will</div><div class="line">  stats hide-version</div><div class="line">  stats admin if TRUE</div><div class="line"></div><div class="line">frontend k8s-https</div><div class="line">  bind 0.0.0.0:8443</div><div class="line">  mode tcp</div><div class="line">  #maxconn 50000</div><div class="line">  default_backend k8s-https</div><div class="line"></div><div class="line">backend k8s-https</div><div class="line">  mode tcp</div><div class="line">  balance roundrobin</div><div class="line">  server lab1 192.168.1.81:6443 weight 1 maxconn 1000 check inter 2000 rise 2 fall 3</div><div class="line">  server lab2 192.168.1.82:6443 weight 1 maxconn 1000 check inter 2000 rise 2 fall 3</div><div class="line">  server lab3 192.168.1.83:6443 weight 1 maxconn 1000 check inter 2000 rise 2 fall 3</div></pre></td></tr></table></figure>
+<h2 id="网络"><a href="#网络" class="headerlink" title="网络"></a>网络</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml</div><div class="line"></div><div class="line">#或者老版本的calico</div><div class="line">curl https://docs.projectcalico.org/v3.15/manifests/calico.yaml -o calico.yaml</div></pre></td></tr></table></figure>
+<h2 id="dashboard"><a href="#dashboard" class="headerlink" title="dashboard"></a>dashboard</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">kubectl apply -f  https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0-rc7/aio/deploy/recommended.yaml</div><div class="line"></div><div class="line">#暴露 dashboard 服务端口 (recommended中如果已经定义了 30000这个nodeport，所以这个命令不需要了)</div><div class="line">kubectl port-forward -n kubernetes-dashboard  svc/kubernetes-dashboard 30000:443 --address 0.0.0.0</div></pre></td></tr></table></figure>
+<p>dashboard login token：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">#kubectl describe secrets -n kubernetes-dashboard   | grep token | awk &apos;NR==3&#123;print $2&#125;&apos;</div><div class="line">eyJhbGciOiJSUzI1NiIsImtpZCI6IndRc0hiMkdpWHRwN1FObTcyeUdhOHI0eUxYLTlvODd2U0NBcU1GY0t1Sk0ifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlcm5ldGVzLWRhc2hib2FyZCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJkZWZhdWx0LXRva2VuLXRia3o5Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6ImRlZmF1bHQiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC51aWQiOiIwYzM2MzBhOS0xMjBjLTRhNmYtYjM0ZS0zM2JhMTE1OWU1OWMiLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6a3ViZXJuZXRlcy1kYXNoYm9hcmQ6ZGVmYXVsdCJ9.SP4JEw0kGDmyxrtcUC3HALq99Xr99E-tie5fk4R8odLJBAYN6HxEx80RbTSnkeSMJNApbtwXBLrp4I_w48kTkr93HJFM-oxie3RVLK_mEpZBF2JcfMk6qhfz4RjPiqmG6mGyW47mmY4kQ4fgpYSmZYR4LPJmVMw5W2zo5CGhZT8rKtgmi5_ROmYpWcd2ZUORaexePgesjjKwY19bLEXFOwdsqekwEvj1_zaJhKAehF_dBdgW9foFXkbXOX0xAC0QNnKUwKPanuFOVZDg1fhyV-eyi6c9-KoTYqZMJTqZyIzscIwruIRw0oauJypcdgi7ykxAubMQ4sWEyyFafSEYWg</div></pre></td></tr></table></figure>
+<p>dashboard 显示为空的话(留意报错信息，一般是用户权限，重新授权即可)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">kubectl delete clusterrolebinding kubernetes-dashboard</div><div class="line">kubectl create clusterrolebinding kubernetes-dashboard --clusterrole=cluster-admin --serviceaccount=kube-system:kubernetes-dashboard --user=&quot;system:serviceaccount:kubernetes-dashboard:default&quot;</div></pre></td></tr></table></figure>
+<p>其中：system:serviceaccount:kubernetes-dashboard:default 来自于报错信息中的用户名</p>
+<h2 id="prometheus"><a href="#prometheus" class="headerlink" title="prometheus"></a>prometheus</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">git clone https://github.com/coreos/kube-prometheus.git</div><div class="line">kubectl apply -f manifests/setup</div><div class="line">kubectl apply -f manifests/</div></pre></td></tr></table></figure>
+<p>暴露grafana端口：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">kubectl port-forward --address 0.0.0.0 svc/grafana -n monitoring 3000:3000</div></pre></td></tr></table></figure>
+<h2 id="部署应用"><a href="#部署应用" class="headerlink" title="部署应用"></a>部署应用</h2><h3 id="DRDS-deployment"><a href="#DRDS-deployment" class="headerlink" title="DRDS deployment"></a>DRDS deployment</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Namespace</div><div class="line">metadata:</div><div class="line">  name: drds</div><div class="line"></div><div class="line">---</div><div class="line"></div><div class="line">apiVersion: apps/v1</div><div class="line">kind: Deployment</div><div class="line">metadata:</div><div class="line">  name: drds-deployment</div><div class="line">  namespace: drds</div><div class="line">  labels:</div><div class="line">    app: drds-server</div><div class="line">spec:</div><div class="line">  # 创建2个nginx容器</div><div class="line">  replicas: 3</div><div class="line">  selector:</div><div class="line">    matchLabels:</div><div class="line">      app: drds-server</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        app: drds-server</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">      - name: drds-server</div><div class="line">        image: registry:5000/drds-image:v5_wisp_5.4.5-15940932</div><div class="line">        ports:</div><div class="line">        - containerPort: 8507</div><div class="line">        - containerPort: 8607</div><div class="line">        env:</div><div class="line">        - name: diamond_server_port</div><div class="line">          value: &quot;8100&quot;</div><div class="line">        - name: diamond_server_list</div><div class="line">          value: &quot;192.168.0.79,192.168.0.82&quot;</div><div class="line">        - name: drds_server_id</div><div class="line">          value: &quot;1&quot;</div></pre></td></tr></table></figure>
+<h3 id="DRDS-Service"><a href="#DRDS-Service" class="headerlink" title="DRDS Service"></a>DRDS Service</h3><p>每个 drds 容器会通过8507提供服务，service通过3306来为一组8507做负载均衡，这个service的3306是在cluster-ip上，外部无法访问</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Service</div><div class="line">metadata:</div><div class="line">  name: drds-service</div><div class="line">  namespace: drds</div><div class="line">spec:</div><div class="line">  selector:</div><div class="line">    app: drds-server</div><div class="line">  ports:</div><div class="line">    - protocol: TCP</div><div class="line">      port: 3306</div><div class="line">      targetPort: 8507</div></pre></td></tr></table></figure>
+<p>通过node port来访问 drds service（同时会有负载均衡）：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">kubectl port-forward --address 0.0.0.0 svc/drds-service -n drds 3306:3306</div></pre></td></tr></table></figure>
+<h3 id="部署mysql-statefulset应用"><a href="#部署mysql-statefulset应用" class="headerlink" title="部署mysql statefulset应用"></a>部署mysql statefulset应用</h3><p>一旦 PV 和 PVC 绑定后，<code>PersistentVolumeClaim</code> 绑定是排他性的，不管它们是如何绑定的。 PVC 跟 PV 绑定是一对一的映射。</p>
+<p>创建 pv controller 和pvc</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div></pre></td><td class="code"><pre><div class="line">#cat mysql-pv.yaml </div><div class="line">apiVersion: v1</div><div class="line">kind: PersistentVolume</div><div class="line">metadata:</div><div class="line">  name: simple-pv-volume</div><div class="line">  labels:</div><div class="line">    type: local</div><div class="line">spec:</div><div class="line">  storageClassName: manual</div><div class="line">  capacity:</div><div class="line">    storage: 20Gi</div><div class="line">  accessModes:</div><div class="line">    - ReadWriteOnce</div><div class="line">  hostPath:</div><div class="line">    path: &quot;/mnt/simple&quot;</div><div class="line">---</div><div class="line">apiVersion: v1</div><div class="line">kind: PersistentVolumeClaim</div><div class="line">metadata:</div><div class="line">  name: pv-claim</div><div class="line">spec:</div><div class="line">  storageClassName: manual</div><div class="line">  accessModes:</div><div class="line">    - ReadWriteOnce</div><div class="line">  resources:</div><div class="line">    requests:</div><div class="line">      storage: 20Gi</div></pre></td></tr></table></figure>
+<p>drds-pv-mysql-0 后面的mysql 会用来做存储，下面用到了三个mysql(需要三个pvc)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div></pre></td><td class="code"><pre><div class="line">#cat mysql-deployment.yaml </div><div class="line">apiVersion: v1</div><div class="line">kind: Service</div><div class="line">metadata:</div><div class="line">  name: mysql</div><div class="line">spec:</div><div class="line">  ports:</div><div class="line">  - port: 3306</div><div class="line">  selector:</div><div class="line">    app: mysql</div><div class="line">  clusterIP: None</div><div class="line">---</div><div class="line">apiVersion: apps/v1 </div><div class="line">kind: Deployment</div><div class="line">metadata:</div><div class="line">  name: mysql</div><div class="line">spec:</div><div class="line">  selector:</div><div class="line">    matchLabels:</div><div class="line">      app: mysql</div><div class="line">  strategy:</div><div class="line">    type: Recreate</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        app: mysql</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">      - image: mysql:5.7</div><div class="line">        name: mysql</div><div class="line">        env:</div><div class="line">          # Use secret in real usage</div><div class="line">        - name: MYSQL_ROOT_PASSWORD</div><div class="line">          value: &quot;123456&quot;</div><div class="line">        ports:</div><div class="line">        - containerPort: 3306</div><div class="line">          name: mysql</div><div class="line">        volumeMounts:</div><div class="line">        - name: mysql-persistent-storage</div><div class="line">          mountPath: /var/lib/mysql</div><div class="line">      volumes:</div><div class="line">      - name: mysql-persistent-storage</div><div class="line">        persistentVolumeClaim:</div><div class="line">          claimName: pv-claim</div></pre></td></tr></table></figure>
+<p>清理：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">kubectl delete deployment,svc mysql</div><div class="line">kubectl delete pvc mysql-pv-claim</div><div class="line">kubectl delete pv mysql-pv-volume</div></pre></td></tr></table></figure>
+<h2 id="配置-Pod-使用-ConfigMap"><a href="#配置-Pod-使用-ConfigMap" class="headerlink" title="配置 Pod 使用 ConfigMap"></a>配置 Pod 使用 ConfigMap</h2><p>ConfigMap 允许你将配置文件与镜像文件分离，以使容器化的应用程序具有可移植性。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">775  26/08/20 15:22:52 mkdir -p configure-pod-container/configmap/</div><div class="line">776  26/08/20 15:23:01 wget https://kubernetes.io/examples/configmap/game.properties -O configure-pod-container/configmap/game.properties</div><div class="line">777  26/08/20 15:23:04 wget https://kubernetes.io/examples/configmap/ui.properties -O configure-pod-container/configmap/ui.properties</div><div class="line">778  26/08/20 15:23:25 cat configure-pod-container/configmap/game.properties</div><div class="line">779  26/08/20 15:23:41 kubectl create configmap game-config --from-file=configure-pod-container/configmap/</div><div class="line">780  26/08/20 15:23:48 kubectl get configmaps </div><div class="line">781  26/08/20 15:23:59 kubectl describe configmaps game-config </div><div class="line">782  26/08/20 15:24:44 kubectl get configmaps game-config -o yaml</div><div class="line">783  26/08/20 15:26:31 wget https://kubernetes.io/examples/configmap/game-env-file.properties -O configure-pod-container/configmap/game-env-file.properties</div><div class="line">784  26/08/20 15:26:36 find configure-pod-container/</div><div class="line">785  26/08/20 15:26:42 cat configure-pod-container/configmap/game-env-file.properties</div><div class="line">786  26/08/20 15:27:00 kubectl create configmap game-config-env-file --from-env-file=configure-pod-container/configmap/game-env-file.properties</div><div class="line">787  26/08/20 15:28:10 kubectl get configmap -n kube-system kubeadm-config -o yaml</div><div class="line">788  26/08/20 15:28:11 kubectl get configmap game-config-env-file -o yaml</div></pre></td></tr></table></figure>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;kubernetes&quot;&gt;&lt;a href=&quot;#kubernetes&quot; class=&quot;headerlink&quot; title=&quot;kubernetes&quot;&gt;&lt;/a&gt;kubernetes&lt;/h1&gt;&lt;h2 id=&quot;部署&quot;&gt;&lt;a href=&quot;#部署&quot; class=&quot;headerli
+    
+    </summary>
+    
+      <category term="docker" scheme="http://yoursite.com/categories/docker/"/>
+    
+    
+      <category term="docker" scheme="http://yoursite.com/tags/docker/"/>
+    
+      <category term="kubernetes" scheme="http://yoursite.com/tags/kubernetes/"/>
     
   </entry>
   
