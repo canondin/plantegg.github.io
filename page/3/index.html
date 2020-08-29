@@ -281,1052 +281,6 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/06/09/就是要你懂DNS--一文搞懂域名解析相关问题/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/06/09/就是要你懂DNS--一文搞懂域名解析相关问题/" itemprop="url">就是要你懂DNS--一文搞懂域名解析相关问题</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-06-09T10:30:03+08:00">
-                2019-06-09
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/dns/" itemprop="url" rel="index">
-                    <span itemprop="name">dns</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/06/09/就是要你懂DNS--一文搞懂域名解析相关问题/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2019/06/09/就是要你懂DNS--一文搞懂域名解析相关问题/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="一文搞懂域名解析相关问题"><a href="#一文搞懂域名解析相关问题" class="headerlink" title="一文搞懂域名解析相关问题"></a>一文搞懂域名解析相关问题</h1><blockquote>
-<p>本文希望通过一篇文章解决所有域名解析中相关的问题</p>
-</blockquote>
-<h2 id="Linux下域名解析流程"><a href="#Linux下域名解析流程" class="headerlink" title="Linux下域名解析流程"></a>Linux下域名解析流程</h2><ul>
-<li>DNS域名解析的时候先根据 /etc/host.conf、/etc/nsswitch.conf 配置的顺序进行dns解析（name service switch），一般是这样配置：hosts: files dns 【files代表 /etc/hosts ； dns 代表 /etc/resolv.conf】(<strong>ping是这个流程，但是nslookup和dig不是</strong>)</li>
-<li>如果本地有DNS Client Cache，先走Cache查询，所以有时候看不到DNS网络包。Linux下nscd可以做这个cache，Windows下有 ipconfig /displaydns ipconfig /flushdns </li>
-<li>如果 /etc/resolv.conf 中配置了多个nameserver，默认使用第一个，只有第一个失败【如53端口不响应、查不到域名后再用后面的nameserver顶上】</li>
-</ul>
-<h2 id="Linux下域名解析流程需要注意的地方"><a href="#Linux下域名解析流程需要注意的地方" class="headerlink" title="Linux下域名解析流程需要注意的地方"></a>Linux下域名解析流程需要注意的地方</h2><ul>
-<li>如果 /etc/resolv.conf 中配置了rotate，那么多个nameserver轮流使用. <a href="https://access.redhat.com/solutions/1426263" target="_blank" rel="external">但是因为底层库的原因用了rotate 会触发nameserver排序的时候第二个总是排在第一位</a></li>
-<li>如果被解析的域名不是以 “.” 结尾,那么解释失败后还会尝试resolv.conf中search追加到后面，<a href="https://access.redhat.com/solutions/58028" target="_blank" rel="external">resolv.conf最多支持6个search域</a></li>
-<li>ping调用的是glibc的 gethostbyname() 函数流程–背后是NameServiceSwitch，nslookup不是.所以你会经常看到其中一个可以另一个不可以，那么就要按第一部分讲解的流程来排查了。</li>
-</ul>
-<h2 id="Linux下域名解析诊断工具"><a href="#Linux下域名解析诊断工具" class="headerlink" title="Linux下域名解析诊断工具"></a>Linux下域名解析诊断工具</h2><ul>
-<li>ping</li>
-<li>nslookup (nslookup domain @dns-server-ip)</li>
-<li>dig (dig +trace domain)</li>
-<li>tcpdump (tcpdump -i eth0 host server-ip and port 53 and udp)</li>
-<li>strace</li>
-</ul>
-<h3 id="案例"><a href="#案例" class="headerlink" title="案例"></a>案例</h3><pre><code>[ren@vb 08:50 /home/ren]
-$head -2 /etc/hosts
-127.0.0.1　 test.unknow.host
-127.0.0.1   test.localhost
-
-[ren@vb 08:50 /home/ren]
-$ping test.unknow.host
-ping: unknown host test.unknow.host
-
-[ren@vb 08:50 /home/ren]
-$ping -c 1 test.localhost
-PING test.localhost (127.0.0.1) 56(84) bytes of data.
-64 bytes from test.localhost (127.0.0.1): icmp_seq=1 ttl=64 time=0.016 ms
-
---- test.localhost ping statistics ---
-1 packets transmitted, 1 received, 0% packet loss, time 0ms
-rtt min/avg/max/mdev = 0.016/0.016/0.016/0.000 ms
-
-[ren@vb 08:50 /home/ren]
-$
-</code></pre><p>向 /etc/hosts 中添加了一条test.unknow.host, 然后无法解析到。</p>
-<p>为什么 test.unknow.host 没法解析到？<br>可能有哪些因素导致这种现象？</p>
-<p>尝试 ping -c 1 test.localhost 的目的是做什么？</p>
-<p>看完前面的理论我的猜测是两种可能导致这种情况：</p>
-<ul>
-<li>/etc/hosts 没有启用</li>
-<li>有本地缓存记录了一个unknow host记录</li>
-</ul>
-<h4 id="验证"><a href="#验证" class="headerlink" title="验证"></a>验证</h4><pre><code>ping -c 1 test.localhost
-</code></pre><p>可以通，说明 /etc/hosts 是在起作用的，毕竟如果别人求助你，你不能给他讲一堆理论，让他挨个去检查，所以最好验证 /etc/hosts 在起作用的方法是往其中添加一条新纪录，然后验证一下</p>
-<p>那接下来只能看本地有没有启动 nscd 这样的缓存了，见后发现也没有，这个时候就可以上 strace 追踪ping的流程了</p>
-<p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1560992498945-66445687-3184-4c7d-9fbd-764552025041.png" alt="undefined"> </p>
-<p>从上图可以清晰地看到读取了 /etc/host.conf, 然后读了 /etc/hosts, 再然后读取到我们添加的那条记录，似乎没问题，仔细看这应该是 ip地址后面带的是一个中文字符的空格，这就是问题所在。</p>
-<p>到这里可能的情况要追加第三种了：</p>
-<ul>
-<li>/etc/hosts 中添加的记录没生效(比如中文符号）</li>
-</ul>
-<h2 id="微服务下的域名解析、负载均衡"><a href="#微服务下的域名解析、负载均衡" class="headerlink" title="微服务下的域名解析、负载均衡"></a>微服务下的域名解析、负载均衡</h2><p>微服务中多个服务之间一般都是通过一个vip或者域名之类的来做服务发现和负载均衡、弹性伸缩，所以这里也需要域名解析（一个微服务申请一个域名）</p>
-<h3 id="域名解析通过jar、lib包"><a href="#域名解析通过jar、lib包" class="headerlink" title="域名解析通过jar、lib包"></a>域名解析通过jar、lib包</h3><p>基本与上面的逻辑没什么关系，jar包会去通过特定的协议联系server，解析出域名对应的多个ip、机房、权重等</p>
-<h3 id="域名解析通过dns-server"><a href="#域名解析通过dns-server" class="headerlink" title="域名解析通过dns server"></a>域名解析通过dns server</h3><p>跟前面介绍逻辑一致，一般是/etc/resolv.conf中配置的第一个nameserver负责解析微服务的域名，解析不到的（如baidu.com)再转发给上一级通用的dns server，解析到了说明是微服务自定义的域名，就可以返回来了</p>
-<p>如果这种情况下/etc/resolv.conf中配置的第一个nameserver是127.0.0.1,意味着本地跑了一个dns server, 这个服务使用dns协议监听本地udp 53端口</p>
-<p>验证方式： nslookup 域名 @127.0.0.1 看看能否解析到你想要的地址</p>
-<h2 id="kubernetes-和-docker中的域名解析"><a href="#kubernetes-和-docker中的域名解析" class="headerlink" title="kubernetes 和 docker中的域名解析"></a>kubernetes 和 docker中的域名解析</h2><p>一般是通过iptables配置转发规则来实现，这种用iptables和tcpdump基本都可以看清楚。如果是集群内部的话可以通过CoreDNS来实现，通过K8S动态向CoreDNS增删域名，增删ip，所以这种域名肯定只能在k8s集群内部使用</p>
-<h3 id="参考文章："><a href="#参考文章：" class="headerlink" title="参考文章："></a>参考文章：</h3><p><a href="http://blog.bruceding.com/516.html" target="_blank" rel="external">GO DNS 原理解析</a></p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/06/02/史上最全 SSH 暗黑技巧详解--收藏保平安/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/06/02/史上最全 SSH 暗黑技巧详解--收藏保平安/" itemprop="url">史上最全 SSH 暗黑技巧详解--收藏保平安</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-06-02T17:30:03+08:00">
-                2019-06-02
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/SSH/" itemprop="url" rel="index">
-                    <span itemprop="name">SSH</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/06/02/史上最全 SSH 暗黑技巧详解--收藏保平安/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2019/06/02/史上最全 SSH 暗黑技巧详解--收藏保平安/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="史上最全-SSH-暗黑技巧详解–收藏保平安"><a href="#史上最全-SSH-暗黑技巧详解–收藏保平安" class="headerlink" title="史上最全 SSH 暗黑技巧详解–收藏保平安"></a>史上最全 SSH 暗黑技巧详解–收藏保平安</h1><p>我见过太多的老鸟、新手对ssh 基本只限于 ssh到远程机器，实际这个命令我们一天要用很多次，但是对它的了解太少了，他的强大远远超出你的想象。当于你也许会说够用就够了，确实没错，但是你考虑过效率没有，或者还有哪些脑洞大开的功能会让你爱死他，这些功能又仅仅是一行命令就够了。</p>
-<p>来，让我们一起走一遍，看看会不会让你大开眼界</p>
-<h2 id="本文试图解决的问题："><a href="#本文试图解决的问题：" class="headerlink" title="本文试图解决的问题："></a>本文试图解决的问题：</h2><ul>
-<li>如何通过ssh命令科学上网</li>
-<li>docker 镜像、golang仓库总是被墙怎么办</li>
-<li>公司跳板机要输入动态token，太麻烦了，如何省略掉这个token；</li>
-<li>比如多机房总是要走跳板机，如何绕过跳板机直连； </li>
-<li>我的开发测试机器如何免打通、免密码、直达；</li>
-<li>如何访问隔离环境中的Web服务 – 将隔离环境中的web端口映射到本地</li>
-<li>如何让隔离环境的机器用上yum、apt</li>
-<li>如何将服务器的图形界面映射到本地(类似vnc的作用)</li>
-<li>ssh如何调试诊断，这才是终极技能……</li>
-</ul>
-<h2 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h2><ul>
-<li>ssh是指的openSSH 命令工具</li>
-<li>本文仅适用于各种Linux、MacOS，Windows的话各种可视化工具都可以复制session、配置tunnel来实现类似功能。</li>
-<li>如果文章中提到的文件、文件夹不存在可以直接创建出来。</li>
-<li>所有配置都是在你的笔记本上（相当于ssh client上，只有日常跳板机免登如要在日常跳板机上配置一下）</li>
-</ul>
-<h2 id="科学上网"><a href="#科学上网" class="headerlink" title="科学上网"></a>科学上网</h2><p>有时候风声比较紧的话公司的网络加速会关闭，这个时候科学上网还得靠自己，一行ssh命令来科学上网:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">nohup ssh -qTfnN -D 127.0.0.1:38080 root@1.1.1.1 &quot;vmstat 10&quot; 2&gt;&amp;1 &gt;/dev/null &amp;</div></pre></td></tr></table></figure>
-<p>上面的 1.1.1.1 是你在境外的一台服务器，已经做好了免密登陆（免密见后面，要不你每次还得输一下密码），这句话的意思就是在本地启动一个38080的端口，上面收到的任何东西都会转发给 1.1.1.1:22（做了ssh加密），1.1.1.1:22 会解密收到的东西，然后把他们转发给google之类的网站（比如你要访问的是google），结果依然通过原路返回</p>
-<p>127.0.0.1:38080  socks5 就是要填入到你的浏览器中的代理服务器，什么都不需要装，非常简单</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/e4a2fdad5b04542dc657b96e195a2b45.png" alt="image.png"></p>
-<p>原理图如下(灰色矩形框就是你本地ssh命令，ssh 线就是在穿墙， 国外服务器就是命令中的1.1.1.1)：<br><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1561367815573-0b793473-67fa-4edc-ae58-04e7c4c51b87.png" alt="undefined"> </p>
-<h3 id="科学上网之http特殊代理"><a href="#科学上网之http特殊代理" class="headerlink" title="科学上网之http特殊代理"></a>科学上网之http特殊代理</h3><p>前面所说的代理是socks5代理，一般浏览器都有插件支持，但是比如你的docker（或者其他程序）需要通过http去拉取镜像就会出现如下错误：</p>
-<pre><code>Sending build context to Docker daemon 8.704 kB
-Step 1 : FROM k8s.gcr.io/kube-cross:v1.10.1-1
-Get https://k8s.gcr.io/v1/_ping: dial tcp 108.177.125.82:443: i/o timeout
-</code></pre><p><a href="https://www.atatech.org/articles/102153" target="_blank" rel="external">如果是git这样的应用内部可以配置socks5和http代理服务器，请参考另外一篇文章</a>，但是有些应用就不能配置了，当然最终通过ssh大法还是可以解决这个问题：</p>
-<pre><code>sudo ssh -L 443:108.177.125.82:443 root@1.1.1.1 //在本地监听443，转发给远程108.177.125.82的443端口
-</code></pre><p>然后再在 /etc/hosts 中将域名 k8s.gcr.io 指向 127.0.0.1， 那么本来要访问 k8s.gcr.io:443的，变成了访问本地 127.0.0.1:443 而 127.0.0.1:443 又通过ssh重定向到了 108.177.125.82:443 这样就实现了http代理或者说这种特殊情况下的科学上网。</p>
-<p>当然网上也有socks5代理转http代理的，很麻烦，我没有实验成功，上面这个方案不需要装任何东西，但是每个访问目标都要这样处理，好在这种情况不多</p>
-<h2 id="内部堡垒机、跳板机都需要密码-动态码，太复杂了，怎么解？"><a href="#内部堡垒机、跳板机都需要密码-动态码，太复杂了，怎么解？" class="headerlink" title="内部堡垒机、跳板机都需要密码+动态码，太复杂了，怎么解？"></a>内部堡垒机、跳板机都需要密码+动态码，太复杂了，怎么解？</h2><pre><code>ren@ren-VirtualBox:~$ cat ~/.ssh/config 
-#reuse the same connection --关键配置
-ControlMaster auto
-ControlPath ~/tmp/ssh_mux_%h_%p_%r
-
-#查了下ControlPersist是在OpenSSH5.6加入的，5.3还不支持
-#不支持的话直接把这行删了，不影响功能
-#keep one connection in 72hour
-#ControlPersist 72h
-#复用连接的配置到这里，后面的配置与复用无关
-
-#其它也很有用的配置
-GSSAPIAuthentication=no
-StrictHostKeyChecking=no
-TCPKeepAlive=yes
-CheckHostIP=no
-# &quot;ServerAliveInterval [seconds]&quot; configuration in the SSH configuration so that your ssh client sends a &quot;dummy packet&quot; on a regular interval so that the router thinks that the connection is active even if it&apos;s particularly quiet
-ServerAliveInterval=15
-#ServerAliveCountMax=6
-ForwardAgent=yes
-
-UserKnownHostsFile /dev/null
-</code></pre><p>在你的ssh配置文件增加上述参数，意味着72小时内登录同一台跳板机只有第一次需要输入密码，以后都是重用之前的连接，所以也就不再需要输入密码了。</p>
-<p>加了如上参数后的登录过程就有这样的东东(默认没有，这是debug信息)：   </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">debug1: setting up multiplex master socket</div><div class="line">debug3: muxserver_listen: temporary control path   /home/ren/tmp/ssh_mux_10.16.*.*_22_corp.86g3C34vy36tvCtn</div><div class="line">debug2: fd 3 setting O_NONBLOCK</div><div class="line">debug3: fd 3 is O_NONBLOCK</div><div class="line">debug3: fd 3 is O_NONBLOCK</div><div class="line">debug1: channel 0: new [/home/ren/tmp/ssh_mux_10.16.*.*_22_corp]</div><div class="line">debug3: muxserver_listen: mux listener channel 0 fd 3</div><div class="line">debug1: control_persist_detach: backgrounding master process</div><div class="line">debug2: control_persist_detach: background process is 15154</div><div class="line">debug2: fd 3 setting O_NONBLOCK</div><div class="line">debug1: forking to background</div><div class="line">debug1: Entering interactive session.</div><div class="line">debug2: set_control_persist_exit_time: schedule exit in 259200 seconds</div><div class="line">debug1: multiplexing control connection</div></pre></td></tr></table></figure>
-<p> /home/ren/tmp/ssh_mux_10.16.<em>.</em>_22_corp 这个就是保存好的socket，下次可以重用，免密码。 in 259200 seconds 对应 72小时</p>
-<p>看动画过程，注意过程中都是通过 -vvv 来看到ssh的debug信息<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/43c4e0b4ad0f6aa5cb76a7008e53e4cd.gif" alt="ssh-demo.gif"></p>
-<h2 id="我有很多不同机房（或者说不同客户）的机器都需要跳板机来登录，能一次直接ssh上去吗？"><a href="#我有很多不同机房（或者说不同客户）的机器都需要跳板机来登录，能一次直接ssh上去吗？" class="headerlink" title="我有很多不同机房（或者说不同客户）的机器都需要跳板机来登录，能一次直接ssh上去吗？"></a>我有很多不同机房（或者说不同客户）的机器都需要跳板机来登录，能一次直接ssh上去吗？</h2><p>比如有一批客户机房的机器IP都是192.168.<em>.</em>, 然后需要走跳板机100.10.1.2才能访问到，那么我希望以后<strong>在笔记本上直接 ssh 192.168.1.5 就能直接连上</strong></p>
-<pre><code>$ cat /etc/ssh/ssh_config
-
-Host 192.168.*.*
-ProxyCommand ssh -l ali-renxijun 100.10.1.2 exec /usr/bin/nc %h %p
-</code></pre><p>上面配置的意思是执行 ssh 192.168.1.5的时候命中规则 Host 192.168.<em>.</em> 所以执行 ProxyCommand 先连上跳板机再通过跳板机连向192.168.1.5 。这样在你的笔记本上就跟192.168.<em>.</em> 的机器仿佛在一起，ssh可以上去，但是ping不通这个192.168.1.5的ip</p>
-<p><strong>划重点：公司的线上跳板机做了特殊限制，限制了这个技能。日常环境跳板机支持这个功能</strong></p>
-<p>比如我的跳板配置：</p>
-<pre><code>#到美国的机器用美国的跳板机速度更快
-Host 10.74.*
-ProxyCommand ssh -l user us.jump exec /bin/nc %h %p 2&gt;/dev/null
-#到中国的机器用中国的跳板机速度更快
-Host 10.70.*
-ProxyCommand ssh -l user cn.jump exec /bin/nc %h %p 2&gt;/dev/null
-
-Host 192.168.0.*
-ProxyCommand ssh -l user 1.1.1.1 exec /usr/bin/nc %h %p
-</code></pre><p>其实我的配置文件里面还有很多规则，懒得一个个隐藏IP了，这些规则是可以重复匹配的</p>
-<p>来看一个例子<br>    ren@ren-VirtualBox:/$ ping -c 1 10.16.1.<em><br>        PING 10.16.1.</em> (10.16.1.<em>) 56(84) bytes of data.^C<br>    — 10.16.1.</em> ping statistics —<br>    1 packets transmitted, 0 received, 100% packet loss, time 0ms</p>
-<pre><code>ren@ren-VirtualBox:~$ ssh -l corp 10.16.1.* -vvv
-OpenSSH_6.7p1 Ubuntu-5ubuntu1, OpenSSL 1.0.1f 6 Jan 2014
-debug1: Reading configuration data /home/ren/.ssh/config
-debug1: Reading configuration data /etc/ssh/ssh_config
-debug1: /etc/ssh/ssh_config line 28: Applying options for *
-debug1: /etc/ssh/ssh_config line 44: Applying options for 10.16.*.*
-debug1: /etc/ssh/ssh_config line 68: Applying options for *
-debug1: auto-mux: Trying existing master
-debug1: Control socket &quot;/home/ren/tmp/ssh_mux_10.16.1.*_22_corp&quot; does not exist
-debug1: Executing proxy command: exec ssh -l corp 139.*.*.* exec /usr/bin/nc 10.16.1.* 22
-</code></pre><p>本来我的笔记本跟 10.16.1.<em> 是不通的(ping 不通），但是ssh可以直接连上，实际ssh登录过程中自动走跳板机139.</em>.<em>.</em> 就连上了</p>
-<p>-vvv 参数是debug，把ssh登录过程的日志全部打印出来。 </p>
-<h2 id="ssh-免打通、免登陆跳板机、免密码直接访问日常环境机器"><a href="#ssh-免打通、免登陆跳板机、免密码直接访问日常环境机器" class="headerlink" title="ssh 免打通、免登陆跳板机、免密码直接访问日常环境机器"></a>ssh 免打通、免登陆跳板机、免密码直接访问日常环境机器</h2><p>先来看效果图：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/0d6bc0800b3dc8b8988f6cb7ab410010.gif" alt="ssh_docker.gif"></p>
-<h3 id="实现过程："><a href="#实现过程：" class="headerlink" title="实现过程："></a>实现过程：</h3><ol>
-<li>先ssh到线上跳板机：login1.cm10.<em>**</em></li>
-<li>复制 ~/.ssh/id_dsa.pub 和 ~/.ssh/id_dsa到你的笔记本的~/.ssh/ 下</li>
-<li>复制 ~/.ssh/id_dsa.pub 和 ~/.ssh/id_dsa到日常跳板机（ login1.et2sqa.<em>*</em> ）的~/.ssh/ 下</li>
-<li>日常跳板机上：echo “eval `keychain –eval id_dsa`“ &gt;&gt;~/.bash_profile</li>
-<li>设置这两个文件权限为600</li>
-<li>在你笔记本的 /etc/ssh/ssh_config 中增加如下两行配置 </li>
-</ol>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">Host 11.239.*.*</div><div class="line">ProxyCommand ssh -l xijun.rxj login1.et2sqa.**** exec /usr/bin/nc %h %p</div></pre></td></tr></table></figure>
-<p><strong>第一次需要输入你的域账户密码，只要你的域账户密码不改以后永远不需要再次输入了。另外你需要在kfc上申请过机器的访问权限，kfc帮你打通了免密登陆，不仅仅是Docker，t4也默认打通了账号</strong><br>这个技能基本综合了前面所有技巧，综合性比较强，需要点时间配合-vvv慢慢理解消化</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/b4e460a501c21eac1e4104b9324910d3.png" alt="image.png"></p>
-<h2 id="将隔离环境中的web端口映射到本地"><a href="#将隔离环境中的web端口映射到本地" class="headerlink" title="将隔离环境中的web端口映射到本地"></a>将隔离环境中的web端口映射到本地</h2><p>远程机器部署了WEB Server，需要通过浏览器来访问这个WEB服务，但是server在隔离环境中，只能通过ssh访问到。一般来说会在隔离环境中部署一个windows机器，通过这个windows机器来访问到这个web server。</p>
-<p>现在我们试着用ssh来实现本地浏览器直接访问到这个隔离环境中的WEB Server。</p>
-<p>假设web server是：10.149.1.132:8083， ssh账号是：aliyun</p>
-<p>先配置好本地直接 ssh aliyun@10.149.1.132 （参考前面的 ProxyCommand配置过程，最好是免密也配置好），然后在你的笔记本上执行：</p>
-<pre><code>ssh -CNfL 0.0.0.0:8088:10.149.1.132:8083 aliyun@10.149.1.132
-</code></pre><p>或者：(root@100.67.210.73 -p 54900 是可达132的代理服务器)</p>
-<pre><code>ssh -CNfL 0.0.0.0:8089:10.149.1.132:8083 root@100.67.210.73 -p 54900
-</code></pre><p>这表示在本地启动一个8088的端口，将这个8088端口映射到10.149.1.132的8083端口上，用的ssh账号是aliyun</p>
-<p>然后在笔记本上的浏览器中输入： 127.0.0.1：8088 就看到了如下界面：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/1acbd09b4b45dbd478ddabc0e001a15e.png" alt="image.png"></p>
-<p>反过来，<strong>也可以让隔离环境机器通过代理上网，比如安装yum</strong></p>
-<h2 id="为什么有时候ssh-比较慢，比如总是需要30秒钟后才能正常登录"><a href="#为什么有时候ssh-比较慢，比如总是需要30秒钟后才能正常登录" class="headerlink" title="为什么有时候ssh 比较慢，比如总是需要30秒钟后才能正常登录"></a>为什么有时候ssh 比较慢，比如总是需要30秒钟后才能正常登录</h2><p>先了解如下知识点，在 ~/.ssh/config 配置文件中：</p>
-<pre><code>GSSAPIAuthentication=no
-</code></pre><p>禁掉 GSSAPI认证，GSSAPIAuthentication是个什么鬼东西请自行 Google(多一次没必要的授权认证过程，然后等待超时)。 这里要理解ssh登录的时候有很多种认证方式（公钥、密码等等），具体怎么调试请记住强大的命令参数 ssh -vvv 上面讲到的技巧都能通过 -vvv 看到具体过程。</p>
-<p>比如我第一次碰到ssh 比较慢总是需要30秒后才登录，不能忍受，于是登录的时候加上 -vvv明显看到控制台停在了：GSSAPIAuthentication 然后Google了一下，禁掉就好了</p>
-<p>当然还有去掉每次ssh都需要先输入yes</p>
-<h2 id="批量打通所有机器之间的ssh登录免密码"><a href="#批量打通所有机器之间的ssh登录免密码" class="headerlink" title="批量打通所有机器之间的ssh登录免密码"></a>批量打通所有机器之间的ssh登录免密码</h2><p><strong>Expect在集团是禁止的，我只用于打通我自己通过docker创建的容器</strong></p>
-<p>ssh免密码的原理是将本机的pub key复制到目标机器的 ~/.ssh/authorized_keys 里面。可以手工复制粘贴，也可以 ssh-copy-id 等</p>
-<p>如果有100台机器，互相两两打通还是比较费事（大概需要100*99次copy key）。 下面通过 expect 来解决输入密码，然后配合shell脚本来批量解决这个问题。</p>
-<p><img src="http://i.imgur.com/S9jLW7B.png" alt=""></p>
-<p>这个脚本需要四个参数：目标IP、用户名、密码、home目录，也就是ssh到一台机器的时候帮我们自动填上yes，和密码，这样就不需要人肉一个个输入了。</p>
-<p>再在外面写一个循环对每个IP执行如下操作：</p>
-<p><img src="http://i.imgur.com/4SZcnvc.png" alt=""></p>
-<p>if代码部分检查本机~/.ssh/下有没有id_rsa.pub，也就是是否以前生成过密钥对，没生成的话就帮忙生成一次。</p>
-<p>for循环部分一次把生成的密钥对和authorized_keys复制到所有机器上，这样所有机器之间都不需要输入密码就能互相登陆了（当然本机也不需要输入密码登录所有机器）</p>
-<p>最后一行代码： </p>
-<pre><code>ssh $user@$n &quot;hostname -i&quot;
-</code></pre><p>验证一下没有输密码是否能成功ssh上去。</p>
-<p><strong>思考一下，为什么这么做就可以打通两两之间的免密码登录，这里没有把所有机器的pub key复制到其他所有机器上去啊</strong></p>
-<blockquote>
-<p>答案：其实这个脚本做了一个取巧投机的事，那就是让所有机器共享一套公钥、私钥。<br>有时候我也会把我的windows笔记本和我专用的某台虚拟机共享一套秘钥，这样任何新申请的机器打通一次账号就可以在两台机器上随便登录。请保护好自己的私钥</p>
-</blockquote>
-<p>如果免密写入 authorized_keys 成功，但是通过ssh pubkey认证的时候还是有可能失败，这是因为pubkey认证要求：</p>
-<ul>
-<li>authorized_keys  文件权限要对</li>
-<li>.ssh 文件夹权限要对</li>
-<li>/home/user 文件夹权限要对 —-这个容易忽视掉</li>
-</ul>
-<h2 id="留个作业：第一次ssh某台机器的时候总是出来一个警告，需要yes确认才能往下走，怎么干掉他？"><a href="#留个作业：第一次ssh某台机器的时候总是出来一个警告，需要yes确认才能往下走，怎么干掉他？" class="headerlink" title="留个作业：第一次ssh某台机器的时候总是出来一个警告，需要yes确认才能往下走，怎么干掉他？"></a>留个作业：第一次ssh某台机器的时候总是出来一个警告，需要yes确认才能往下走，怎么干掉他？</h2><blockquote>
-<p>StrictHostKeyChecking=no<br>UserKnownHostsFile=/dev/null</p>
-</blockquote>
-<p>如果按照文章操作不work，推荐就近问身边的同学。问我的话请cat 配置文件  然后把ssh -vvv user@ip (user、ip请替换成你的），再截图发给我。**</p>
-<p>测试成功的同学也请留言说下什么os、版本，以及openssl版本，我被问崩溃了</p>
-<hr>
-<p><strong>这里只是帮大家入门了解ssh，掌握好这些配置文件和-vvv后有好多好玩的可以去挖掘，同时也请在留言中说出你的黑技能</strong></p>
-<h2 id="调试ssh–终极大招，好多问题我都是debug发现的"><a href="#调试ssh–终极大招，好多问题我都是debug发现的" class="headerlink" title="调试ssh–终极大招，好多问题我都是debug发现的"></a>调试ssh–终极大招，好多问题我都是debug发现的</h2><ul>
-<li>客户端增加参数 -vvv 会把所有流程在控制台显示出来。卡在哪个环节；密码不对还是key不对一看就知道</li>
-<li>server端还可以：/usr/sbin/sshd -ddd -p 2222 在2222端口对sshd进行debug，看输出信息验证为什么pub key不能login等</li>
-</ul>
-<h2 id="ssh-config-参考配置"><a href="#ssh-config-参考配置" class="headerlink" title="~/.ssh/config 参考配置"></a>~/.ssh/config 参考配置</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line">#GSSAPIAuthentication=no</div><div class="line">StrictHostKeyChecking=no</div><div class="line">#TCPKeepAlive=yes</div><div class="line">CheckHostIP=no</div><div class="line"># &quot;ServerAliveInterval [seconds]&quot; configuration in the SSH configuration so that your ssh client sends a &quot;dummy packet&quot; on a regular interval so that the router thinks that the connection is active even if it&apos;s particularly quiet</div><div class="line">ServerAliveInterval=15</div><div class="line">#ServerAliveCountMax=6</div><div class="line">ForwardAgent=yes</div><div class="line"></div><div class="line">UserKnownHostsFile /dev/null</div><div class="line"></div><div class="line">#reuse the same connection</div><div class="line">ControlMaster auto</div><div class="line">ControlPath ~/tmp/ssh_mux_%h_%p_%r</div><div class="line"></div><div class="line">#keep one connection in 72hour</div><div class="line">ControlPersist 72h</div></pre></td></tr></table></figure>
-<h2 id="etc-ssh-ssh-config-参考配置"><a href="#etc-ssh-ssh-config-参考配置" class="headerlink" title="/etc/ssh/ssh_config 参考配置"></a>/etc/ssh/ssh_config 参考配置</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div></pre></td><td class="code"><pre><div class="line">Host *</div><div class="line">Protocol 2</div><div class="line">ServerAliveInterval 30</div><div class="line">User admin</div><div class="line"></div><div class="line">host 10.10.55.*</div><div class="line">ProxyCommand ssh -l admin admin.jump  exec /usr/bin/nc %h %p</div><div class="line"></div><div class="line"># uos is a hostname</div><div class="line">Host 10.10.1.13* 192.168.2.133 uos</div><div class="line">ProxyCommand ssh -l root -p 54900 1.1.1.1 exec /usr/bin/nc %h %p</div><div class="line"></div><div class="line">#debug for git proxy</div><div class="line">Host github.com</div><div class="line">#    LogLevel DEBUG3</div><div class="line">#    ProxyCommand ssh  -l root gfw.jump exec /usr/bin/nc %h %p</div><div class="line">#    ProxyCommand ssh -oProxyCommand=&apos;ssh -l admin gfw.jump:22&apos; -l root gfw.jump2 exec /usr/bin/nc %h %p</div><div class="line"></div><div class="line"></div><div class="line">ForwardAgent yes</div><div class="line">ForwardX11 yes</div><div class="line">ForwardX11Trusted yes</div><div class="line"></div><div class="line">    SendEnv LANG LC_*</div><div class="line">    HashKnownHosts yes</div><div class="line">    GSSAPIAuthentication no</div><div class="line">    GSSAPIDelegateCredentials no</div><div class="line">    Compression yes</div></pre></td></tr></table></figure>
-<h2 id="参考资料："><a href="#参考资料：" class="headerlink" title="参考资料："></a>参考资料：</h2><p><a href="http://docs.corp-inc.com/pages/editpage.action?pageId=203555361" target="_blank" rel="external">http://docs.corp-inc.com/pages/editpage.action?pageId=203555361</a><br><a href="https://wiki.archlinux.org/index.php/SSH_keys_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87" target="_blank" rel="external">https://wiki.archlinux.org/index.php/SSH_keys_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87</a>)</p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/05/26/MySQL知识体系的三驾马车/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/05/26/MySQL知识体系的三驾马车/" itemprop="url">MySQL知识体系的三驾马车</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-05-26T17:30:03+08:00">
-                2019-05-26
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/MySQL/" itemprop="url" rel="index">
-                    <span itemprop="name">MySQL</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/05/26/MySQL知识体系的三驾马车/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2019/05/26/MySQL知识体系的三驾马车/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="MySQL知识体系的三驾马车"><a href="#MySQL知识体系的三驾马车" class="headerlink" title="MySQL知识体系的三驾马车"></a>MySQL知识体系的三驾马车</h1><p>在我看来要掌握好MySQL的话要理解好这三个东西：</p>
-<ul>
-<li>索引（B+树）</li>
-<li>日志（WAL）</li>
-<li>事务(可见性)</li>
-</ul>
-<p>索引决定了查询的性能，也是用户感知到的数据库的关键所在，日常使用过程中抱怨最多的就是查询太慢了；</p>
-<p>而日志是一个数据库的灵魂，他决定了数据库为什么可靠，还要保证性能，核心原理就是将随机写转换成顺序写；</p>
-<p>事务则是数据库的皇冠。</p>
-<h2 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h2><p>索引主要是解决查询性能的问题，数据一般都是写少查多，而且要满足各种查，所以使用数据库过程中最常见的问题就是索引的优化。</p>
-<p>MySQL选择B+树来当索引的数据结构，是因为B+树的树干只有索引，能使得索引保持比较小，更容易加载到内存中；数据全部放在B+树的叶节点上，整个叶节点又是个有序双向链表，这样非常合适区间查找。</p>
-<p>如果用平衡二叉树当索引，想象一下一棵 100 万节点的平衡二叉树，树高 20。一次查询可能需要访问 20 个数据块。在机械硬盘时代，从磁盘随机读一个数据块需要 10 ms 左右的寻址时间。也就是说，对于一个 100 万行的表，如果使用二叉树来存储，单独访问一个行可能需要 20 个 10 ms 的时间，这个查询可真够慢的</p>
-<p>对比一下 InnoDB 的一个整数字段B+数索引为例，B+树的杈数一般是 1200。这棵树高是 4 的时候，就可以存 1200 的 3 次方个值，这已经 17 亿了。考虑到树根的数据块总是在内存中的，一个 10 亿行的表上一个整数字段的索引，查找一个值最多只需要访问 3 次磁盘。其实，树的第二层也有很大概率在内存中，那么访问磁盘的平均次数就更少了。</p>
-<p>明确以下几点：</p>
-<ul>
-<li>B+树是N叉树，以一个整数字段索引来看，N基本等于1200。数据库里的树高一般在2-4层。</li>
-<li>索引的树根节点一定在内存中，第二层大概率也在内存，再下层基本都是在磁盘中。</li>
-<li>每往下读一层就要进行一次磁盘IO。 从B+树的检索过程如下图所示： </li>
-</ul>
-<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/87f90b5535714486f4e0c86982b54141.png" alt="image.png"></p>
-<p>每往下读一层就会进行一次磁盘IO，然后会一次性读取一些连续的数据放入内存中。</p>
-<p>一个22.1G容量的表， 只需要高度为3的B+树就能存储，如果拓展到4层，可以存放25T的容量。但主要占内存的部分是叶子节点中的整行数据，非叶子节点全部加载到内存只需要18.8M。</p>
-<h3 id="联合索引"><a href="#联合索引" class="headerlink" title="联合索引"></a>联合索引</h3><p>对于多个查询条件的复杂查询要正确建立多列的联合索引来尽可能多地命中多个查询条件，过滤性好的列要放在联合索引的前面。</p>
-<p>MySQL一个查询只能用一个索引。</p>
-<h3 id="索引下推-index-condition-pushdown"><a href="#索引下推-index-condition-pushdown" class="headerlink" title="索引下推(index condition pushdown )"></a>索引下推(index condition pushdown )</h3><p>对于多个where条件的话，如果索引只能命中一个，剩下的那个条件过滤还是会通过回表来获取到后判断是否符合，但是MySQL5.6后，如果剩下的那个条件在联合索引上（但是因为第一个条件是模糊查询，没法用全联合索引），会将这个条件下推到索引判断上，来减少回表次数。这叫<strong>索引下推优化(index condition pushdown )</strong></p>
-<h3 id="覆盖索引"><a href="#覆盖索引" class="headerlink" title="覆盖索引"></a>覆盖索引</h3><p>要查询的列(select后面的列)如果都在索引上，那么这个查询的最终结果都可以直接从索引上读取到，这样读一次索引（数据小、顺序读）性能非常好。否则的话需要回表去获取别的列</p>
-<p>前缀索引用不上覆盖索引对查询性能的优化，每次索引命中可能需要做一次回表，确认完整列值</p>
-<h3 id="回表"><a href="#回表" class="headerlink" title="回表"></a>回表</h3><p>select <em> from table order by id limit  150000,10 这样limit后偏移很大一个值的查询，会因为<em>*回表</em></em>导致非常慢。</p>
-<p>这是因为根据id列上索引去查询过滤，但是select *要求查所有列的内容，但是索引上只有id的数据，所以导致每次对id索引进行过滤都要求去回表（根据id到表空间取到这个id行所有列的值），每一行都要回表导致这里出现了150000+10次随机磁盘读。</p>
-<p>可以通过先用一个子查询(select <strong>id</strong> from order by id limit  150000,10)，子查询中只查id列，而id的值都在索引上，用上了<strong>覆盖索引</strong>来避免回表。</p>
-<p>先查到这10个id(扫描行数还是150000+10， 这里的limit因为有deleted记录、每行大小不一样等因素影响，没法一次跳到150000处。但是这次扫描150000行的时候不需要回表，所以速度快多了)，然后再跟整个表做jion（join的时候只需要对这10个id行进行回表），来提升性能。</p>
-<h3 id="索引的一些其它知识点"><a href="#索引的一些其它知识点" class="headerlink" title="索引的一些其它知识点"></a>索引的一些其它知识点</h3><p>多用自增主键是因为自增主键保证的是主键一直是增加的，也就是不会在索引中间插入，这样的话避免的索引页的分裂(代价很高)</p>
-<p>写数据除了记录redo-log之外在内存中还会在内存（change buffer）中记录下修改后的数据，这样再次修改、读取的话不需要从磁盘读取数据，非唯一索引才能用上change buffer，因为唯一索引一定需要读磁盘验证唯一性，既然读过磁盘这个change buffer的意义就不大了。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">mysql&gt; insert into t(id,k) values(id1,k1),(id2,k2);//假设k1页在buffer中，k2不在</div></pre></td></tr></table></figure>
-<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d1c817af83ba09c6ee6da2eca87af6d3.png" alt="image.png"></p>
-<h2 id="日志"><a href="#日志" class="headerlink" title="日志"></a>日志</h2><p>数据库的关键瓶颈在于写，因为每次更新都要落盘防止丢数据，而磁盘最怕的就是随机写。</p>
-<h3 id="Write-Ahead-logging（WAL）"><a href="#Write-Ahead-logging（WAL）" class="headerlink" title="Write-Ahead logging（WAL）"></a>Write-Ahead logging（WAL）</h3><p>写磁盘前先写日志，这样不用担心丢数据问题，写日志又是一个顺序写,性能比随机写好多了，这样将性能很差的随机写转换成了顺序写。然后每过一段时间将这些日志合并后真正写入到表空间，这次是随机写，但是有机会将多个写合并成一个，比如多个写在同一个Page上。</p>
-<p>这是数据库优化的关键。</p>
-<h3 id="bin-log"><a href="#bin-log" class="headerlink" title="bin-log"></a>bin-log</h3><p>MySQL Server用来记录执行修改数据的SQL，Replication基本就是复制并重放这个日志。有statement、row和混合模式三种</p>
-<h3 id="redo-log"><a href="#redo-log" class="headerlink" title="redo-log"></a>redo-log</h3><p>INNODB引擎用来保证事务的完整性，也就是crash-safe。MySQL 默认是保证不了不丢数据的，如果写了表空间还没来得及写bin-log就会造成主从数据不一致；或者在事务中需要执行多个SQL，bin-log保证不了完整性。</p>
-<p>而在redo-log中任何修改都会先记录到redo-log中，即使断电MySQL重启后也会先检查redo-log将redo-log中记录了但是没有提交到表空间的数据进行提交（刷脏）</p>
-<p>redo-log和bin-log的比较：</p>
-<ul>
-<li>redo log 是 InnoDB 引擎特有的；binlog 是 MySQL 的 Server 层实现的，所有引擎都可以使用。redo-log保证了crash-safe的问题，binlog只能用于归档，保证不了safe。</li>
-<li>redo log 是物理日志，记录的是“在某个数据页上做了什么修改”；binlog 是逻辑日志，记录的是这个语句的原始逻辑，比如“给 ID=2 这一行的 c 字段加 1 ”。</li>
-<li>redo log 是循环写的，空间固定会用完；binlog 是可以追加写入的。“追加写”是指 binlog 文件写到一定大小后会切换到下一个，并不会覆盖以前的日志。</li>
-</ul>
-<p>redo-log中记录的是对页的操作，而不是修改后的数据页，buffer pool（或者说change buffer）中记录的才是数据页。正常刷脏是指的将change buffer中的脏页刷到磁盘，如果没来得及刷脏就崩溃了，那么就只能从redo-log来将没有刷盘的操作再执行一次让他们真正落盘</p>
-<p>只有当commit（非两阶段的commit）的时候才会真正把redo-log写到磁盘上。</p>
-<h3 id="binlog和redo-log一致性的保证"><a href="#binlog和redo-log一致性的保证" class="headerlink" title="binlog和redo-log一致性的保证"></a>binlog和redo-log一致性的保证</h3><p>bin-log和redo-log的一致性是通过两阶段提交来保证的，两阶段提交过程中prepare是非常重的，prepare一定会持久化（日志），记录如何commit和rollback，一旦prepare成功就一定能commit和rollback，如果其他节点commit后崩溃，恢复后会有一个协商过程，其它节点发现崩溃节点已经commit，所以会跟随commit；如果崩溃节点还没有prepare那么其它节点只能rollback。</p>
-<p>实际崩溃后恢复时MySQL是这样保证redo-log和bin-log的完整性的：</p>
-<ol>
-<li>如果redo-log里面的事务是完整的，也就是有了commit标识，那么直接提交</li>
-<li>如果redo-log里面事务只有完整的prepare，则去检查事务对应的binlog是否完整<ol>
-<li>如果binlog完整则提交事务</li>
-<li>如果不完整则回滚事务</li>
-</ol>
-</li>
-<li>redo-log和binlog有一个共同的数据字段叫XID将他们关联起来</li>
-</ol>
-<h3 id="刷脏"><a href="#刷脏" class="headerlink" title="刷脏"></a>刷脏</h3><p>在内存中修改了，已经写入到redo-log中，但是还没来得及写入表空间的数据叫做脏页，MySQL过一段时间就需要刷脏，刷脏最容易造成MySQL的卡顿。</p>
-<ul>
-<li>redo-log写满后，系统会停止所有更新操作，把checkpoint向前推进也就是将数据写入到表空间。</li>
-<li>系统内存不够，也需要将内存中的脏页释放，释放前需要先刷入到表空间。</li>
-<li>系统空闲的时候也会趁机刷脏</li>
-</ul>
-<p>在 MySQL 5.5 及以前的版本，<strong>回滚日志是跟数据字典一起放在 ibdata 文件里的</strong>，即使长事务最终提交，回滚段被清理，文件也不会变小。我见过数据只有 20GB，而回滚段有 200GB 的库。最终只好为了清理回滚段，重建整个库。</p>
-<p>长事务意味着系统里面会存在很老的事务视图。由于这些事务随时可能访问数据库里面的任何数据，所以这个事务提交之前，数据库里面它可能用到的回滚记录都必须保留，这就会导致大量占用存储空间。除了对回滚段的影响，长事务还占用锁资源，也可能拖垮整个库，这个我们会在后面讲锁的时候展开</p>
-<h2 id="事务"><a href="#事务" class="headerlink" title="事务"></a>事务</h2><h3 id="可见性"><a href="#可见性" class="headerlink" title="可见性"></a>可见性</h3><p>是基于事务的隔离级别而言的，常用的事务的隔离级别有可重复读RR（Repeatable Read，MySQL默认的事务隔离级别）和读已提交RC（Read Committed）。</p>
-<h3 id="可重复读"><a href="#可重复读" class="headerlink" title="可重复读"></a>可重复读</h3><p>读已提交：A事务能读到B事务已经commit了的结果，即使B事务开始时间晚于A事务</p>
-<p>重复读的定义：一个事务启动的时候，能够看到所有已经提交的事务结果。但是之后，这个事务执行期间，其他事务的更新对它不可见。</p>
-<p>指的是在一个事务中先后两次读到的结果是一样的，当然这两次读的中间自己没有修改这个数据，如果自己修改了就是当前读了。</p>
-<p>如果两次读过程中，有一个别的事务修改了数据并提交了，第二次读到的还是别的事务修改前的数据，也就是这个修改后的数据不可见，因为别的事务在本事务之后。</p>
-<p>如果一个在本事务启动之后的事务已经提交了，本事务会读到最新的数据，但是因为隔离级别的设置，会要求MySQL判断这个数据不可见，这样只能按照undo-log去反推修改前的数据，如果有很多这样的已经提交的事务，那么需要反推很多次，也会造成卡顿。</p>
-<p>总结下，可见性的关键在于两个事务开始的先后关系：</p>
-<ul>
-<li>如果是可重复读RR（Repeatable Read），后开始的事务提交的结果对前面的事务<strong>不</strong>可见</li>
-<li>如果是读已提交RC（Read Committed），后开始的事务提交的结果对前面的事务可见</li>
-</ul>
-<h3 id="当前读"><a href="#当前读" class="headerlink" title="当前读"></a>当前读</h3><p>更新数据都是先读后写的，而这个读，只能读当前的值，称为“当前读”（current read）。除了 update 语句外，select 语句如果加锁，也是当前读。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>理解好索引是程序员是否掌握数据库的最关键知识点，理解好索引才会写出更高效的SQL，避免慢查询搞死MySQL。</p>
-<p>对日志的理解可以看到一个数据库为了提升性能（刷磁盘的瓶颈）采取的各种手段。也是最重要的一些设计思想所在。</p>
-<p>事务则是数据库皇冠。</p>
-<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://explainextended.com/2009/10/23/mysql-order-by-limit-performance-late-row-lookups/" target="_blank" rel="external">https://explainextended.com/2009/10/23/mysql-order-by-limit-performance-late-row-lookups/</a> 回表</p>
-<p><a href="https://stackoverflow.com/questions/1243952/how-can-i-speed-up-a-mysql-query-with-a-large-offset-in-the-limit-clause" target="_blank" rel="external">https://stackoverflow.com/questions/1243952/how-can-i-speed-up-a-mysql-query-with-a-large-offset-in-the-limit-clause</a></p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/05/24/网络包的流转/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/05/24/网络包的流转/" itemprop="url">Linux Network Stack</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-05-24T17:30:03+08:00">
-                2019-05-24
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/network/" itemprop="url" rel="index">
-                    <span itemprop="name">network</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/05/24/网络包的流转/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2019/05/24/网络包的流转/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="Linux-Network-Stack"><a href="#Linux-Network-Stack" class="headerlink" title="Linux Network Stack"></a>Linux Network Stack</h1><p>一个网络包进到网卡后续如何流转，中间有哪些关键参数，有什么工具能帮忙可以看到各个环节的一些指征，怎么调整他们</p>
-<h2 id="接收流程"><a href="#接收流程" class="headerlink" title="接收流程"></a>接收流程</h2><ol>
-<li>网络包进到网卡，网卡驱动校验MAC，看是否扔掉，取决是否是混杂 promiscuous mode</li>
-<li>网卡在启动时会申请一个接收ring buffer，其条目都会指向一个skb的内存。</li>
-<li>DMA完成数据报文从网卡硬件到内存到拷贝</li>
-<li>网卡发送一个中断通知CPU。</li>
-<li>CPU执行网卡驱动注册的中断处理函数，中断处理函数只做一些必要的工作，如读取硬件状态等，并把当前该网卡挂在NAPI的链表中，</li>
-<li>Driver“触发” soft IRQ(NET_RX_SOFTIRQ 其实就是设置对应软中断的标志位) </li>
-<li>CPU中断处理函数返回后，会检查是否有软中断需要执行。因第三步设置了NET_RX_SOFTIRQ，则执行报文接收软中断。</li>
-<li>在NET_RX_SOFTIRQ软中断中，执行NAPI操作，回调第三步挂载的驱动poll函数。</li>
-<li>驱动会对interface进行poll操作，检查网卡是否有接收完毕的数据报文。</li>
-<li>将网卡中已经接收完毕的数据报文取出，继续在软中断进行后续处理。注：驱动对interface执行poll操作时，会尝试循环检查网卡是否有接收完毕的报文，直到系统设置的net.core.netdev_budget上限(默认300)，或者已经就绪报文。</li>
-<li><strong>net_rx_action</strong></li>
-<li>内核分配 sk_buff 内存</li>
-<li>内核填充 metadata: 协议等，移除 ethernet 包头信息</li>
-<li><strong>将skb 传送给内核协议栈 netif_receive_skb</strong></li>
-<li>复制 skb to taps(i.e. tcpdump)</li>
-<li>进入到由 netdev_max_backlog 控制的qdisc</li>
-<li>开始 <strong>ip_rcv</strong> 处理流程，主要处理ip协议包头相关信息</li>
-<li>调用内核 netfilter 框架(iptables PREROUTING)</li>
-<li>进入L4 protocol <strong>tcp_v4_rcv</strong></li>
-<li>找到对应的socket</li>
-<li>根据 tcp_rmem 进入接收缓冲队列</li>
-<li>内核将数据送给接收的应用</li>
-</ol>
-<h3 id="典型的接收堆栈"><a href="#典型的接收堆栈" class="headerlink" title="典型的接收堆栈"></a>典型的接收堆栈</h3><p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1557292725626-2e4b452b-8a9e-4d9f-91a6-64357fbd4e0e.png" alt="undefined"> </p>
-<h3 id="从四层协议栈来看收包流程"><a href="#从四层协议栈来看收包流程" class="headerlink" title="从四层协议栈来看收包流程"></a>从四层协议栈来看收包流程</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ddd50d2c70215d477d72734b0834410a.png" alt="image.png"></p>
-<h3 id="DMA驱动部分流程图"><a href="#DMA驱动部分流程图" class="headerlink" title="DMA驱动部分流程图"></a>DMA驱动部分流程图</h3><p>DMA是一个硬件逻辑，数据传输到系统物理内存的过程中，全程不需要CPU的干预，除了占用总线之外(期间CPU不能使用总线)，没有任何额外开销。</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ba2f1764fab3a7b3f485836e8e566ffb.png" alt="image.png"></p>
-<ol>
-<li>驱动在内存中分配一片缓冲区用来接收数据包，叫做sk_buffer;</li>
-<li>将上述缓冲区的地址和大小（即接收描述符），加入到rx ring buffer。描述符中的缓冲区地址是DMA使用的物理地址;</li>
-<li>驱动通知网卡有一个新的描述符;</li>
-<li>网卡从rx ring buffer中取出描述符，从而获知缓冲区的地址和大小;</li>
-<li>网卡收到新的数据包;</li>
-<li>网卡将新数据包通过DMA直接写到sk_buffer中。</li>
-</ol>
-<h3 id="网卡传递数据包到内核的流程图及参数"><a href="#网卡传递数据包到内核的流程图及参数" class="headerlink" title="网卡传递数据包到内核的流程图及参数"></a>网卡传递数据包到内核的流程图及参数</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/daf7318302c0e7f42fb506d6b47fdbd5.png" alt="image.png"></p>
-<h2 id="发送流程"><a href="#发送流程" class="headerlink" title="发送流程"></a>发送流程</h2><ol>
-<li>应用调 sendmsg</li>
-<li>TCP 分片 skb_buff</li>
-<li>根据 tcp_wmem 缓存需要发送的包</li>
-<li>构造TCP包头(src/dst port)</li>
-<li>ipv4 调用 tcp_write_xmit 和 tcp_transmit_skb</li>
-<li>ip_queue_xmit, 构建 ip 包头</li>
-<li>进入 netfilter 流程 nf_hook()</li>
-<li>路由流程 POST_ROUTING</li>
-<li>ip_output 分片</li>
-<li>进入L2 dev_queue_xmit</li>
-<li>填入 txqueuelen 队列</li>
-<li>进入发送 Ring Buffer tx</li>
-<li>驱动触发软中断 soft IRQ (NET_TX_SOFTIRQ)</li>
-</ol>
-<h3 id="典型的发送堆栈"><a href="#典型的发送堆栈" class="headerlink" title="典型的发送堆栈"></a>典型的发送堆栈</h3><p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1557292508719-5b5a2507-a638-4035-a47a-a8599e69f879.png" alt="undefined"> </p>
-<h3 id="从四层协议栈来看发包流程"><a href="#从四层协议栈来看发包流程" class="headerlink" title="从四层协议栈来看发包流程"></a>从四层协议栈来看发包流程</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/0126bbb59ac317337ca963ef83817159.png" alt="image.png"></p>
-<h2 id="内核相关参数"><a href="#内核相关参数" class="headerlink" title="内核相关参数"></a>内核相关参数</h2><h3 id="Ring-Buffer"><a href="#Ring-Buffer" class="headerlink" title="Ring Buffer"></a>Ring Buffer</h3><p>Ring Buffer位于NIC和IP层之间，是一个典型的FIFO（先进先出）环形队列。Ring Buffer没有包含数据本身，而是包含了指向sk_buff（socket kernel buffers）的描述符。<br>可以使用ethtool -g eth0查看当前Ring Buffer的设置：</p>
-<pre><code>$sudo ethtool -g eth0
-Ring parameters for eth0:
-Pre-set maximums:
-RX:        256
-RX Mini:    0
-RX Jumbo:    0
-TX:        256
-Current hardware settings:
-RX:        256
-RX Mini:    0
-RX Jumbo:    0
-TX:        256
-</code></pre><p>上面的例子是一个小规格的ECS，接收队列、传输队列都为256。</p>
-<pre><code>$sudo ethtool -g eth0
-Ring parameters for eth0:
-Pre-set maximums:
-RX:        4096
-RX Mini:    0
-RX Jumbo:    0
-TX:        4096
-Current hardware settings:
-RX:        4096
-RX Mini:    0
-RX Jumbo:    0
-TX:        512
-</code></pre><p>这是一台物理机，接收队列为4096，传输队列为256。接受队列已经调到了最大，传输队列还可以调大。</p>
-<h4 id="网卡各种统计数据查看"><a href="#网卡各种统计数据查看" class="headerlink" title="网卡各种统计数据查看"></a>网卡各种统计数据查看</h4><pre><code>ethtool -S eth0 | grep errors
-
-ethtool -S eth0 | grep rx_ | grep errors //查看网卡是否丢包，一般是ring buffer太小
-
-//监控
-ethtool -S eth0 | grep -e &quot;err&quot; -e &quot;drop&quot; -e &quot;over&quot; -e &quot;miss&quot; -e &quot;timeout&quot; -e &quot;reset&quot; -e &quot;restar&quot; -e &quot;collis&quot; -e &quot;over&quot; | grep -v &quot;\: 0&quot;
-</code></pre><h4 id="网卡进出队列大小调整"><a href="#网卡进出队列大小调整" class="headerlink" title="网卡进出队列大小调整"></a>网卡进出队列大小调整</h4><pre><code>//查看目前的进出队列大小
-ethtool -g eth0
-//修改进出队列
- ethtool -G eth0 rx 8192 tx 8192
-</code></pre><p>要注意如果设置的值超过了允许的最大值，用默认的最大值，一些ECS之类的虚拟机、容器就不允许修改这个值。</p>
-<h3 id="txqueuelen"><a href="#txqueuelen" class="headerlink" title="txqueuelen"></a>txqueuelen</h3><p>ifconfig 看到的 txqueuelen 跟Ring Buffer是两个东西，IP协议下面就是 txqueuelen，txqueuelen下面才到Ring Buffer. </p>
-<p>常用的tc qdisc、netfilter就是在txqueuelen这一环节。 </p>
-<p>发送队列就是指的这个txqueuelen，和网卡关联着。 而每个Core接收队列由内核参数： net.core.netdev_max_backlog来设置</p>
-<pre><code>//当前值通过ifconfig可以查看到，修改：
-ifconfig eth0 txqueuelen 2000
-//监控
-ip -s link
-</code></pre><h3 id="Interrupt-Coalescence-IC-rx-usecs-tx-usecs-rx-frames-tx-frames-hardware-IRQ"><a href="#Interrupt-Coalescence-IC-rx-usecs-tx-usecs-rx-frames-tx-frames-hardware-IRQ" class="headerlink" title="Interrupt Coalescence (IC) - rx-usecs, tx-usecs, rx-frames, tx-frames (hardware IRQ)"></a>Interrupt Coalescence (IC) - rx-usecs, tx-usecs, rx-frames, tx-frames (hardware IRQ)</h3><p>这块目前没碰到过瓶颈</p>
-<pre><code>//检查
-ethtool -c eth0
-//修改, 
-ethtool -C eth0 rx-usecs value tx-usecs value
-//监控
-cat /proc/interrupts
-</code></pre><h3 id="ifconfig-监控指标"><a href="#ifconfig-监控指标" class="headerlink" title="ifconfig 监控指标"></a>ifconfig 监控指标</h3><ul>
-<li>RX overruns: overruns意味着数据包没到Ring Buffer就被网卡物理层给丢弃了，而CPU无法及时的处理中断是造成Ring Buffer满的原因之一，例如中断分配的不均匀。或者Ring Buffer太小导致的（很少见），overruns数量持续增加，建议增大Ring Buffer ，使用ethtool ‐G 进行设置。</li>
-<li>RX dropped: 表示数据包已经进入了Ring Buffer，但是由于内存不够等系统原因，导致在拷贝到内存的过程中被丢弃。如下四种情况导致dropped：Softnet backlog full（pfmemalloc &amp;&amp; !skb_pfmemalloc_protocol(skb)–分配内存失败）；Bad / Unintended VLAN tags；Unknown / Unregistered protocols；IPv6 frames</li>
-<li>RX errors：表示总的收包的错误数量，这包括 too-long-frames 错误，Ring Buffer 溢出错误，crc 校验错误，帧同步错误，fifo overruns 以及 missed pkg 等等。</li>
-</ul>
-<h4 id="overruns"><a href="#overruns" class="headerlink" title="overruns"></a>overruns</h4><p>当驱动处理速度跟不上网卡收包速度时，驱动来不及分配缓冲区，NIC接收到的数据包无法及时写到sk_buffer，就会产生堆积，当NIC内部缓冲区写满后，就会丢弃部分数据，引起丢包。这部分丢包为rx_fifo_errors，在 /proc/net/dev中体现为fifo字段增长，在ifconfig中体现为overruns指标增长。</p>
-<h3 id="监控指标-proc-net-softnet-stat"><a href="#监控指标-proc-net-softnet-stat" class="headerlink" title="监控指标 /proc/net/softnet_stat"></a>监控指标 /proc/net/softnet_stat</h3><h4 id="net-core-netdev-budget"><a href="#net-core-netdev-budget" class="headerlink" title="net.core.netdev_budget"></a>net.core.netdev_budget</h4><p>sysctl net.core.netdev_budget //默认300， The default value of the budget is 300. This will<br>cause the SoftIRQ process to drain 300 messages from the NIC before getting off the CPU</p>
-<p>如果 /proc/net/softnet_stat 第三列一直在增加的话需要，表示SoftIRQ 获取的CPU时间太短，来不及处理足够多的网络包，那么需要增大这个值</p>
-<p>增大和查看 net.core.netdev_budget</p>
-<pre><code>sysctl -a | grep net.core.netdev_budget
-sysctl -w net.core.netdev_budget=400 //临时性增大
-</code></pre><h4 id="netdev-max-backlog"><a href="#netdev-max-backlog" class="headerlink" title="netdev_max_backlog"></a>netdev_max_backlog</h4><p>The netdev_max_backlog is a queue within the Linux kernel where traffic is stored after reception from the NIC, but before processing by the protocol stacks (IP, TCP, etc). There is one backlog queue per CPU core. </p>
-<p>如果 /proc/net/softnet_stat 第二列一直在增加的话表示netdev backlog queue overflows. 需要增大 netdev_max_backlog</p>
-<p>增大和查看 netdev_max_backlog：</p>
-<pre><code>sysctl -a |grep netdev_max_backlog
-sysctl -w net.core.netdev_max_backlog=1024 //临时性增大
-</code></pre><p>netdev_max_backlog(接收)和txqueuelen(发送)相对应 </p>
-<h3 id="TCP协议栈Buffer"><a href="#TCP协议栈Buffer" class="headerlink" title="TCP协议栈Buffer"></a>TCP协议栈Buffer</h3><pre><code>    sysctl -a | grep net.ipv4.tcp_rmem   // receive
-    sysctl -a | grep net.ipv4.tcp_wmem   // send
-    //监控
-    cat /proc/net/sockstat
-
-参考：[TCP性能优化大全](https://www.atatech.org/articles/140017)    
-</code></pre><h4 id="接收Buffer"><a href="#接收Buffer" class="headerlink" title="接收Buffer"></a>接收Buffer</h4><pre><code>$netstat -sn | egrep &quot;prune|collap&quot;; sleep 30; netstat -sn | egrep &quot;prune|collap&quot;
-17671 packets pruned from receive queue because of socket buffer overrun
-18671 packets pruned from receive queue because of socket buffer overrun
-</code></pre><p>如果 “pruning” 一直在增加很有可能是程序中调用了 setsockopt(SO_RCVBUF) 导致内核关闭了动态调整功能，或者压力大，缓存不够了。具体Case：<a href="https://blog.cloudflare.com/the-story-of-one-latency-spike/" target="_blank" rel="external">https://blog.cloudflare.com/the-story-of-one-latency-spike/</a></p>
-<h2 id="总体简略收包流程"><a href="#总体简略收包流程" class="headerlink" title="总体简略收包流程"></a>总体简略收包流程</h2><p><img src="http://img3.tbcdn.cn/L1/461/1/73d01c4c8164ae8642ff09d5d3fe0548d4162874" alt=""></p>
-<h2 id="总体简略发送包流程"><a href="#总体简略发送包流程" class="headerlink" title="总体简略发送包流程"></a>总体简略发送包流程</h2><p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1557291324544-ca69d448-08e4-46c4-9c49-8cf516fc3eaa.png" alt="undefined"> </p>
-<h2 id="案例"><a href="#案例" class="headerlink" title="案例"></a>案例</h2><h3 id="snat-dnat-宿主机port冲突，丢包"><a href="#snat-dnat-宿主机port冲突，丢包" class="headerlink" title="snat/dnat 宿主机port冲突，丢包"></a>snat/dnat 宿主机port冲突，丢包</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d42ccdb0b8f6270d8b559145c0b89c86.png" alt="image.png"></p>
-<ol>
-<li>snat 就是要把 192.168.1.10和192.168.1.11的两个连接替换成宿主机的ip:port</li>
-<li>主要是在宿主机找可用port分别给这两个连接用</li>
-<li>找可用port分两步<ul>
-<li>找到可用port</li>
-<li>将可用port写到数据库，后面做连接追踪用(conntrack)</li>
-</ul>
-</li>
-<li>上述两步不是事务，可能两个连接同时找到一个相同的可用port，但是只有第一个能写入成功，第二个fail，fail后这个包被扔掉</li>
-<li>1秒钟后被扔掉的包重传，后续正常</li>
-</ol>
-<p>症状：</p>
-<ul>
-<li>问题发生概率不高，跟压力没有关系，跟容器也没有关系，只要有snat/dnat和并发就会发生，只发生在创建连接的第一个syn包</li>
-<li>可以通过conntrack工具来检查fail的数量</li>
-<li>实际影响只是请求偶尔被拉长了1秒或者3秒</li>
-<li>snat规则创建的时候增加参数：NF_NAT_RANGE_PROTO_RANDOM_FULLY 来将冲突降低几个数量级—-可以认为修复了这个问题</li>
-</ul>
-<pre><code>sudo conntrack -L -d ip-addr
-</code></pre><p>来自：<a href="https://tech.xing.com/a-reason-for-unexplained-connection-timeouts-on-kubernetes-docker-abd041cf7e02" target="_blank" rel="external">https://tech.xing.com/a-reason-for-unexplained-connection-timeouts-on-kubernetes-docker-abd041cf7e02</a></p>
-<h3 id="容器-bridge-通过udp访问宿主机服务失败"><a href="#容器-bridge-通过udp访问宿主机服务失败" class="headerlink" title="容器(bridge)通过udp访问宿主机服务失败"></a>容器(bridge)通过udp访问宿主机服务失败</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/a067b484c593aa3a4b6a525d1f93506e.png" alt="image.png"></p>
-<p>这个案例主要是讲述回包的逻辑，如果是tcp，那么用dest ip当自己的source ip，如果是UDP，无连接状态信息，那么会根据route来选择一块网卡(上面的IP) 来当source ip</p>
-<p>来自：<a href="http://cizixs.com/2017/08/21/docker-udp-issue" target="_blank" rel="external">http://cizixs.com/2017/08/21/docker-udp-issue</a><br>     <a href="https://github.com/moby/moby/issues/15127" target="_blank" rel="external">https://github.com/moby/moby/issues/15127</a></p>
-<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="http://blog.hyfather.com/blog/2013/03/04/ifconfig/" target="_blank" rel="external">The Missing Man Page for ifconfig–关于ifconfig的种种解释</a></p>
-<p><a href="https://cloud.tencent.com/developer/article/1400834?s=original-sharing" target="_blank" rel="external">Linux数据报文的来龙去脉</a></p>
-<p><a href="https://www.atatech.org/articles/27189" target="_blank" rel="external">Linux TCP队列相关参数的总结–锋寒</a></p>
-<p><a href="https://github.com/leandromoreira/linux-network-performance-parameters" target="_blank" rel="external">linux-network-performance-parameters</a></p>
-<p><a href="https://www.cnblogs.com/fczjuever/archive/2013/04/17/3026694.html" target="_blank" rel="external">Linux之TCPIP内核参数优化</a></p>
-<p><a href="https://access.redhat.com/sites/default/files/attachments/20150325_network_performance_tuning.pdf" target="_blank" rel="external">https://access.redhat.com/sites/default/files/attachments/20150325_network_performance_tuning.pdf</a></p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/05/15/网络通不通是个大问题--半夜鸡叫/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -4775,6 +3729,641 @@ end
 
 
     
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/08/26/优酷一台应用服务器无法访问部分drds-server/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/08/26/优酷一台应用服务器无法访问部分drds-server/" itemprop="url">部分机器网络不通</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-08-26T16:30:03+08:00">
+                2018-08-26
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/troubleshooting/" itemprop="url" rel="index">
+                    <span itemprop="name">troubleshooting</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/08/26/优酷一台应用服务器无法访问部分drds-server/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2018/08/26/优酷一台应用服务器无法访问部分drds-server/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="部分机器网络不通"><a href="#部分机器网络不通" class="headerlink" title="部分机器网络不通"></a>部分机器网络不通</h1><h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>应用机器： 10.100.10.201 这台机器抛502异常比较多，进一步诊断发现 ping youku.tddl.tbsite.net 的时候解析到 10.100.53.15/16就不通</p>
+<p>直接ping 10.100.53.15/16 也不通，经过诊断发现是交换机上记录了两个 10.100.10.201的mac地址导致网络不通。</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/9deff3045e3213df81c3ad785cfddefa.gif" alt="youku-mac-ip.gif"></p>
+<p><strong>上图是不通的IP，下图是正常IP</strong></p>
+<p>经过调查发现是土豆业务也用了10.100.10.201这个IP导致交换机的ARP mac table冲突，土豆删除这个IP后故障就恢复了。</p>
+<h3 id="当时交换机上发现的两条记录："><a href="#当时交换机上发现的两条记录：" class="headerlink" title="当时交换机上发现的两条记录："></a>当时交换机上发现的两条记录：</h3><pre><code>00:18:51:38:b1:cd 10.100.10.201 
+8c:dc:d4:b3:af:14 10.100.10.201
+</code></pre>
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/08/26/关于TCP连接的KeepAlive和reset/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/08/26/关于TCP连接的KeepAlive和reset/" itemprop="url">关于TCP连接的Keepalive和reset</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-08-26T16:30:03+08:00">
+                2018-08-26
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/TCP/" itemprop="url" rel="index">
+                    <span itemprop="name">TCP</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/08/26/关于TCP连接的KeepAlive和reset/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2018/08/26/关于TCP连接的KeepAlive和reset/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="关于TCP连接的Keepalive和reset"><a href="#关于TCP连接的Keepalive和reset" class="headerlink" title="关于TCP连接的Keepalive和reset"></a>关于TCP连接的Keepalive和reset</h1><p>先来看一个现象</p>
+<pre><code>Server: socat -dd tcp-listen:2000,keepalive,keepidle=10,keepcnt=2,reuseaddr,keepintvl=1 -
+Client: socat -dd - tcp:localhost:2000,keepalive,keepidle=10,keepcnt=2,keepintvl=1
+Drop Connection (Unplug Cable, Shut down Link(WiFi/Interface)): sudo iptables -A INPUT -p tcp --dport 2000 -j DROP
+</code></pre><p>server监听在2000端口，支持keepalive， client连接上server后每隔10秒发送一个keepalive包，一旦keepalive包得不对对方的响应，每隔1秒继续发送keepalive, 重试两次，如果一直得不到对方的响应那么这个时候client主动发送一个reset包，那么在client这边这个socket就断开了。server上会一直傻傻的等知道真正要发送数据了才抛异常。</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/90d1c4919d86764242ab726b4c69f006.png" alt="image.png"></p>
+<p>假如client上层是一个Java应用的连接池，那么这个socket断开后Java能感知吗？</p>
+<p><a href="https://stackoverflow.com/questions/10240694/java-socket-api-how-to-tell-if-a-connection-has-been-closed" target="_blank" rel="external">https://stackoverflow.com/questions/10240694/java-socket-api-how-to-tell-if-a-connection-has-been-closed</a></p>
+<p>Java对Socket的控制比较弱，比如只能指定是否keepalive，不能用特定的keepalive参数(intvl/cnt等），除非走JNI，不推荐。</p>
+<p>如下图（dup ack其实都是keepalive包，这是因为没有抓到握手包导致wireshark识别错误而已）<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/c2893e5ad89ee450c61a370ec7bf6f06.png" alt="image.png"></p>
+<p>如上图，client 21512在多次keepalive server都不响应后，发送了reset断开这个连接（server没收到），server以为还连着，这个时候当server正常发数据给client，如果防火墙还在就丢掉，server不停滴重传，如果防火墙不在，那么对方os收到这个包后知道21512这个端口对应的连接已经关闭了，再次发送reset给server，这时候server抛异常，中断这个连接。</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/78427c329e72d526aa8908942409f092.png" alt="image.png"></p>
+<p>os层面目前看起来除了用socket去读数据感知到内核已经reset了连接外也没什么好办法检测到。</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/08/25/如何徒手撕Bug/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/08/25/如何徒手撕Bug/" itemprop="url">如何徒手撕Bug</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-08-25T16:30:03+08:00">
+                2018-08-25
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/troubleshooting/" itemprop="url" rel="index">
+                    <span itemprop="name">troubleshooting</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/08/25/如何徒手撕Bug/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2018/08/25/如何徒手撕Bug/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="如何徒手撕Bug"><a href="#如何徒手撕Bug" class="headerlink" title="如何徒手撕Bug"></a>如何徒手撕Bug</h1><p>经常碰到bug，如果有源代码，或者源代码比较简单一般通过bug现象结合读源代码，基本能比较快解决掉。但是有些时候源代码过于复杂，比如linux kernel，比如 docker，复杂的另一方面是没法比较清晰地去理清源代码的结构。</p>
+<p>所以不到万不得已不要碰积极复杂的源代码</p>
+<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>docker daemon重启，上面有几十个容器，重启后daemon基本上卡死不动了。 docker ps/exec 都没有任何响应，同时能看到很多这样的进程：</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/ed7f275935b32c7fd5fef3e0caf2eb0c.png" alt="image.png"></p>
+<p>这个进程是docker daemon在启动的时候去设置每个容器的iptables，来实现dns解析。</p>
+<p>这个时候执行 sudo iptables -L 也告诉你有其他应用锁死iptables了：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/901fd2057fb3b32ff79dc5a29c9cdd67.png" alt="image.png"></p>
+<pre><code>$sudo fuser /run/xtables.lock 
+/run/xtables.lock:1203  5544 10161 14451 14482 14503 14511 14530 14576 14602 14617 14637 14659 14664 14680 14698 14706 14752 14757 14777 14807 14815 14826 14834 14858 14872 14889 14915 14972 14973 14979 14991 15006 15031 15067 15076 15104 15127 15155 15176 15178 15179 15180 16506 17656 17657 17660 21904 21910 24174 28424 29741 29839 29847 30018 32418 32424 32743 33056 33335 59949 64006
+</code></pre><p>通过上面的命令基本可以看到哪些进程在等iptables这个锁，之所以有这么多进程在等这个锁，应该是拿到锁的进程执行比较慢所以导致后面的进程拿不到锁，卡在这里</p>
+<h2 id="跟踪具体拿到锁的进程"><a href="#跟踪具体拿到锁的进程" class="headerlink" title="跟踪具体拿到锁的进程"></a>跟踪具体拿到锁的进程</h2><pre><code>$sudo lsof  /run/xtables.lock | grep 3rW
+iptables 36057 root3rW  REG   0,190 48341 /run/xtables.lock
+</code></pre><p>通过strace这个拿到锁的进程可以看到：</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/27d266ab8fd492f009fb7047d9337518.png" alt="image.png"></p>
+<p>发现在这个配置容器dns的进程同时还在执行一些dns查询任务（容器发起了dns查询），但是这个时候dns还没配置好，所以这个查询会超时</p>
+<p>看看物理机上的dns服务器配置：</p>
+<pre><code>$cat /etc/resolv.conf   
+options timeout:2 attempts:2   
+nameserver 10.0.0.1  
+nameserver 10.0.0.2
+nameserver 10.0.0.3
+</code></pre><p>尝试将 timeout 改到20秒、1秒分别验证一下，发现如果timeout改到20秒strace这里也会卡20秒，如果是1秒（这个时候attempts改成1，后面两个dns去掉），那么整体没有感知到任何卡顿，就是所有iptables修改的进程都很快执行完毕了</p>
+<h2 id="strace某个等锁的进程，拿到锁后非常快"><a href="#strace某个等锁的进程，拿到锁后非常快" class="headerlink" title="strace某个等锁的进程，拿到锁后非常快"></a>strace某个等锁的进程，拿到锁后非常快</h2><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/25ab3e2385e08e8e23eeb1309d949839.png" alt="image.png"></p>
+<p>拿到锁后如果这个时候没有收到 dns 查询，那么很快iptables修改完毕，也不会导致卡住</p>
+<h2 id="我的分析"><a href="#我的分析" class="headerlink" title="我的分析"></a>我的分析</h2><p>docker启动的时候要修改每个容器的dns（iptables规则），如果这个时候又收到了dns查询，但是查询的时候dns还没配置好，所以只能等待dns默认超时，等到超时完了再往后执行修改dns动作然后释放iptables锁。这里会发生恶性循环，导致dns修改时占用iptables的时间非常长，进而看着像把物理机iptables锁死，同时docker daemon不响应任何请求。</p>
+<p>这应该是docker daemon实现上的小bug，也就是改iptables这里没加锁，如果修改dns的时候同时收到了dns查询，要是让查询等锁的话就不至于出现这种恶性循环</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>其实这个问题还是挺容易出现的，daemon重启，上面有很多容器，容器里面的任务启动的时候都要做dns解析，这个时候daemon还在修改dns，冲进来很多dns查询的话会导致修改进程变慢</p>
+<p>这也跟物理机的 /etc/resolv.conf 配置有关</p>
+<p>暂时先只留一个dns server，同时把timeout改成1秒（似乎没法改成比1秒更小），同时 attempts:1 ，也就是加快dns查询的失败，当然这会导致应用启动的时候dns解析失败，最终还是需要从docker的源代码修复这个问题。</p>
+<p>解决过程中无数次想放弃，但是反复在那里strace，正是看到了有dns和没有dns查询的两个strace才想清楚这个问题，感谢自己的坚持和很多同事的帮助，手撕的过程中必然有很多不理解的东西，需要请教同事</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/08/24/性能优化，从老中医到科学理论指导/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/08/24/性能优化，从老中医到科学理论指导/" itemprop="url">性能优化，从老中医到科学理论指导</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-08-24T16:30:03+08:00">
+                2018-08-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/performance/" itemprop="url" rel="index">
+                    <span itemprop="name">performance</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/08/24/性能优化，从老中医到科学理论指导/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2018/08/24/性能优化，从老中医到科学理论指导/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="性能优化，从老中医到科学理论指导"><a href="#性能优化，从老中医到科学理论指导" class="headerlink" title="性能优化，从老中医到科学理论指导"></a>性能优化，从老中医到科学理论指导</h1><p>最佳线程数量</p>
+<p>单线程压测，总rt(total)，下游依赖rt(IO), rt(CPU)=rt(total)-rt(IO)</p>
+<p>最佳线程数量 rt(total)/rt(cpu)</p>
+<p>维持住rt</p>
+<h2 id="思路严谨"><a href="#思路严谨" class="headerlink" title="思路严谨"></a>思路严谨</h2><p>最难讲清楚</p>
+<h2 id="老中医经验不可缺少"><a href="#老中医经验不可缺少" class="headerlink" title="老中医经验不可缺少"></a>老中医经验不可缺少</h2><p>量变到质变</p>
+<h2 id="找瓶颈，先干掉瓶颈才能优化其它"><a href="#找瓶颈，先干掉瓶颈才能优化其它" class="headerlink" title="找瓶颈，先干掉瓶颈才能优化其它"></a>找瓶颈，先干掉瓶颈才能优化其它</h2><p>没有找到瓶颈，所做的其它优化会看不出效果，误入歧途，瞎蒙</p>
+<h2 id="全栈能力，一文钱难倒英雄好汉"><a href="#全栈能力，一文钱难倒英雄好汉" class="headerlink" title="全栈能力，一文钱难倒英雄好汉"></a>全栈能力，一文钱难倒英雄好汉</h2><p>因为关键是找瓶颈，作为java程序员如果只能看jstack、jstat可能发现的不是瓶颈</p>
+<h2 id="案列"><a href="#案列" class="headerlink" title="案列"></a>案列</h2><p><a href="https://www.atatech.org/articles/73174" target="_blank" rel="external">https://www.atatech.org/articles/73174</a></p>
+<p>cpu utilization<br><img src="http://www.brendangregg.com/blog/images/2017/cpubusystalledidle.png" alt=""></p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
   </section>
 
   
@@ -4824,7 +4413,7 @@ end
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">99</span>
+                <span class="site-state-item-count">95</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>

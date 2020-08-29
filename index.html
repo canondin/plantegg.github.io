@@ -732,1015 +732,6 @@ $ cat  kernel_log.0915
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/08/29/btrace/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2020/08/29/btrace/" itemprop="url">未命名</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-08-29T17:39:11+08:00">
-                2020-08-29
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2020/08/29/btrace/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2020/08/29/btrace/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="btrace-startup"><a href="#btrace-startup" class="headerlink" title="btrace startup"></a>btrace startup</h1><p>直接下载安装 <a href="https://github.com/jbachorik/btrace/releases/tag/v1.3.4" target="_blank" rel="external">github release</a> 即可。或者从oss下载：</p>
-<pre><code>osscmd get oss://fzpackages/ark/btrace-bin-1.3.4.zip ./btrace-bin-1.3.4.zip
-</code></pre><p>解压后即可直接运行(8817是目标进程pid)： </p>
-<pre><code>./bin/btrace 8817 ./BTraceNew.java
-</code></pre><p>BTraceNew.java 代码如下：</p>
-<pre><code>import com.sun.btrace.annotations.*;
-import static com.sun.btrace.BTraceUtils.*;
-import com.sun.btrace.BTraceUtils;
-import com.sun.btrace.BTraceUtils.Strings;
-
-import java.net.*;
-import java.lang.reflect.Field;
-
-@BTrace
-public class BTraceNew {
-
-@OnMethod(clazz=&quot;java.lang.StackTraceElement&quot;, method=&quot;&lt;init&gt;&quot;)
-public static void onCreateInit(@Self Object me) {
-      println(&quot;\n==== init ====&quot;);
-      BTraceUtils.println(BTraceUtils.timestamp() );
-      BTraceUtils.println(BTraceUtils.Time.millis() );
-      println(concat(&quot;Socket closing:&quot;, str(me)));
-      println(concat(&quot;thread: &quot;, str(currentThread())));
-      printFields(me);
-      jstack();
-}
-
-//    @OnMethod(clazz = &quot;java.lang.Throwable&quot;, method=&quot;&lt;init&gt;&quot;)
-//    @OnMethod(clazz=&quot;java.lang.StackTraceElement&quot;, method=&quot;/.*/&quot;)
-public static void onCreateNew(@Self Object me) {
-      println(&quot;\n==== call new ====&quot;);
-      BTraceUtils.println(BTraceUtils.timestamp() );
-      BTraceUtils.println(BTraceUtils.Time.millis() );
-      println(concat(&quot;Socket closing:&quot;, str(me)));
-      println(concat(&quot;thread: &quot;, str(currentThread())));
-      printFields(me);
-      jstack();
-}
-
-@OnMethod(clazz=&quot;+java.net.Socket&quot;, method=&quot;close&quot;)
-public static void onSocketClose(@Self Object me) {
-      println(&quot;\n==== java.net.Socket#close ====&quot;);
-      BTraceUtils.println(BTraceUtils.timestamp() );
-      BTraceUtils.println(BTraceUtils.Time.millis() );
-      println(concat(&quot;Socket closing:&quot;, str(me)));
-      println(concat(&quot;thread: &quot;, str(currentThread())));
-      printFields(me);
-      jstack();
-}
-
-}
-</code></pre><h2 id="btrace代码自动生成工具"><a href="#btrace代码自动生成工具" class="headerlink" title="btrace代码自动生成工具"></a>btrace代码自动生成工具</h2><p><a href="https://btrace.org/btrace/" target="_blank" rel="external">https://btrace.org/btrace/</a></p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/08/29/tcprt/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2020/08/29/tcprt/" itemprop="url">未命名</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-08-29T17:39:11+08:00">
-                2020-08-29
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2020/08/29/tcprt/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2020/08/29/tcprt/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>from：<a href="http://baike.corp.taobao.com/index.php/CS_RD/CDN/AppAccelerate/tcprt" target="_blank" rel="external">http://baike.corp.taobao.com/index.php/CS_RD/CDN/AppAccelerate/tcprt</a></p>
-<p>最新文档：<br><a href="http://gitlab.alibaba-inc.com/alicdn/netOpt-doc/tcprt/tcprt-wiki.md" target="_blank" rel="external">http://gitlab.alibaba-inc.com/alicdn/netOpt-doc/tcprt/tcprt-wiki.md</a> </p>
-<h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><p>1 TCPRT介绍<br>1.1 TCPRT的实现原理<br>1.2 日志信息介绍<br>2 部署和使用<br>3 Q&amp;A</p>
-<h3 id="TCPRT介绍"><a href="#TCPRT介绍" class="headerlink" title="TCPRT介绍"></a>TCPRT介绍</h3><p>TCPRT是一个面向web的从tcp层的角度监控和分析网络服务质量和网络覆盖的超轻量级的分析工具； TCPRT在单机进出流量超过10G，单机4w qps的情况下， cpu消耗不超过1%； 经过不断的演化，TCPRT现在具有两个功能： 1.网络服务质量的实时监控；包括 用户的请求文件的平均响应时间（rt），平均服务器响应时间（servertime），平均时延rtt，平均丢包率 等； 2.详细的网络服务质量数据采集：包括用户访问的每一条请求的响应时间（rt），服务器响应时间（servertime），时延rtt，丢包率等；</p>
-<p>其中 rt的含义是指从 服务器接收到请求到服务器发送给用户的数据包全部被确认所花费的时间；</p>
-<blockquote>
-<p>servertime的含义是 从服务器接收到请求到服务器发送第一个数据包的时间；   （如果请求的是小文件，这个时间==应用服务器的rt）</p>
-</blockquote>
-<p><strong>目前增加了一版新架构实现的TCPRT，在功能上增加了域名粒度的实时访问数据。即可以查看一个周期内访问某个特定域名的rt,servertime rtt 等数据，并且方便更新。</strong></p>
-<h3 id="TCPRT的实现原理"><a href="#TCPRT的实现原理" class="headerlink" title="TCPRT的实现原理"></a>TCPRT的实现原理</h3><p>tcprt采集的是主要有两方面的数据，一方面是用户下载文件实际所需要的时间，在现在的情况下，对于web用户来说，每个请求都是串行的每个请求下载完以后，才会有下一个请求，所以，我们只需要记录请求到达服务器的时间和发送的所有数据被确认的时间，就能知道这个请求用户实际上花了多长时间去下载， 后续如果pipeline 普及的话，很抱歉，基于网络四层的统计方法都要失效；另一方面是网络覆盖的数据，主要包括丢包个数、发送的有效数据、rtt（数据包一来一回的时间）；</p>
-<p>tcprt利用的是内核的拥塞控制模块来采集数据的，tcp协议栈处理过程中，在很多特殊事件会调用拥塞控制模块，拥塞控制模块的处理函数又可以拿到这个连接的所有信息（sock），这里面包含了丢包、rtt等信息，因此 tcprt不需要做任何的分析工作，只需要采集数据即可；</p>
-<p>同时，触发 拥塞控制模块的事件中，又包括了几个我们需要的时间点，包括请求到达， 第一个数据包发送，连接关闭；所以我们只需要做简单的if判断就能够获取服务质量相关的数据；</p>
-<p><strong>新架构TCPRT 是在tcp 协议栈处理过程的几个地方添加了钩子，通过在钩子中做 rt 等数据的采集即可，所以只有特定的内核才能支持。实现域名粒度的数据采集是通过对TCP数据包进行分析，获取其域名并在内核使用hash 链表进行数据的统计。</strong></p>
-<h3 id="日志信息介绍"><a href="#日志信息介绍" class="headerlink" title="日志信息介绍"></a>日志信息介绍</h3><p>tcprt会输出两种类型的日志</p>
-<ul>
-<li>实时的监控数据， tcprt会把实时的监控日志打印到 /sys/kernel/debug/rt-network-real* 中，日志格式如下所示：</li>
-</ul>
-<p>1379387910 all 80 332 5 55 80 2 27340 101712</p>
-<p>时间 所有域名 端口 rt servertime 丢包率 rtt 失败率 平均文件大小 这段时间内的访问次数；</p>
-<ul>
-<li>详细的用户访问日志 tcprt把用户详细日志打印到 /sys/kernel/debug/rt-network-logs,访问的结果分为三类， 访问成功，访问失败、没有数据输出，分别对应的日志 第一位为 r w n 如果用户访问成功 ，打出的日志格式如下：</li>
-</ul>
-<p>r 1379063895 171.214.168.205:12486 80 24185 637 71 0 1 175 1024</p>
-<p>访问成功 时间 ip：port 服务器访问端口 文件大小 rt rtt 重传包个数 连接的第n个请求 首字节 mss</p>
-<p>w 1379063952 111.227.56.204:52025 80 174240 13134 88 11 28 6 0 2880</p>
-<p>访问失败 时间 ip:port 服务器访问端口 被确认的文件大小 总下载时间 rtt 初始窗口 丢包个数 连接的第n个请求 首字节时间 总发送的文件大小</p>
-<p>n 1379063952 111.227.56.204:52025 80 1 2000</p>
-<p>访问没有数据返回 时间 ip：port 服务器访问端口 连接的第n个请求 等待时间</p>
-<h2 id="新架构TCPRT-的日志格式"><a href="#新架构TCPRT-的日志格式" class="headerlink" title="新架构TCPRT 的日志格式"></a>新架构TCPRT 的日志格式</h2><ol>
-<li><p>实时的监控数据， tcprt会把实时的监控日志打印到 /sys/kernel/debug/tcp-watch-real<em> 中，下面的日志都是一个周期内（比如一分钟）的平均值<br>输出到/sys/kernel/debug/tcp-watch-real</em>文件中：<br>(1)基于端口的日志格式如下所示：<br>1379387910 all-new 80 332 5 55 80 2 27340 101712 0 0<br>时间 所有域名 端口 rt servertime 丢包率 rtt 失败率 平均文件大小 这段时间内的访问次数 https 建连时间 https 响应时间<br>(2)基于域名的日志格式如下所示：<br>1408327819 gdz03.md.alicdn.com 21 13 0 0 0 0 1 0 20182 32 1<br>时间 域名 RT 首字节时间 上传时间 https建连 https响应 丢包率 rtt 失败率 每个请求的平均文件大小 这段时间内请求个数 连接个数 平均建连时间 首播时间<br>输出到/sys/kernel/debug/tcp-watch-back<em>文件中：<br>(3) 回源到C段的 日志格式<br>1408329123 140.205.134 0 136 693 136<br>时间 IP 前三段 总重传个数 总包个数 总rtt时间 总rtt个数（总连接个数）<br>输出到/sys/kernel/debug/tcp-watch-front</em>文件中：<br>（4）从L2输出到L1的C段日志格式<br>1408329123 140.205.134 0 136 693 136<br>时间 IP 前三段 总重传个数 总包个数 总rtt时间 总rtt个数（总连接个数）</p>
-</li>
-<li><p>详细的用户访问日志 tcprt把用户详细日志打印到 /sys/kernel/debug/tcp-watch-log*,访问的结果分为五类， 访问成功、访问失败、没有数据输出、每连接数据统计、回源数据，分别对应的日志 第一位为 r_new w_new n_new c_new back如果用户访问成功 ，打出的日志格式如下：<br>(1)r_new 1408283588 img02.taobaocdn.com 115.238.23.16:34375 81 77480 145 1 0 8 57 0 112 1448<br>访问成功 时间 请求域名 ip：port 服务器访问端口 下载文件大小 rt rtt 重传包个数 连接的第n个请求 首字节时间 上传时间 上传文件大小 mss<br>更新：<br>r_new 1484190246 192.168.122.118 192.168.122.77:56966 80 1048854 14 1 0 1 3 0 115 1460 1048854 14 3 0 1<br>访问成功 时间 请求域名 ip：port 服务器访问端口 下载文件大小 rt rtt 重传包个数 连接的第n个请求 首字节时间 上传时间 上传文件大小 mss 连接建立到目前发送数据量 纯数据发送时间 首播时间 空等时间总和 tos<br>(2) w_new 1379063952 img02.taobaocdn.com 111.227.56.204:52025 80 1740 13134 88 11 2 6 0 112 2880<br>访问失败 时间 请求域名ip:port 服务器访问端口 被确认的文件大小 总下载时间 rtt 重传包个数 连接的第n个请求 首字节时间 上传时间 上传文件大小 已发送未确认文件大小<br>更新： w_new 1486624545 cdn.hc.org 115.238.23.194:22086 443 0 5 0 0 2 5 40 174 294 129 6 0 0 2021 1<br>访问失败 请求域名ip:port 服务器访问端口 被确认的文件大小 总下载时间 rtt 重传包个数 连接的第n个请求 首字节时间 上传时间 上传文件大小 已发送未确认文件大小 连接建立以来确认的字节数 纯数据发送时间 首播时间 空等时间 写缓存排队字节量 tos<br>$1 w_new 访问失败<br>$2 1486624545 时间<br>$3 cdn.hc.org 域名<br>$4 115.238.23.194:22086 ip:port<br>$5 443 服务器访问端口<br>$6 0 被确认文件大小<br>$7 5 总下载时间<br>$8 0 rtt<br>$9 0 重传包个数<br>$10 2 连接的第n个请求<br>$11 5 首字节时间<br>$12 40 上传时间<br>$13 174 上传文件大小<br>$14 294 已发送未确认文件大小<br>$15 129 连接建立以来确认的字节数<br>$16 6 纯数据发送时间<br>$17 0 首播时间<br>$18 0 空等时间<br>$19 2021 写缓存排队字节量<br>$20 1 tos<br>(3)n_new 1379063952 img02.taobaocdn.com 111.227.56.204:52025 80 1 4 200 2000<br>访问没有数据返回 时间 请求域名 ip:port 服务器访问端口 连接的第n个请求 上传时间 上传文件大小 等待时间<br>(4)c_new 1408327083 cdn.hc.org 115.238.23.16:40323 81 193 0 0 1 57 6 0 0 1448<br>连接数据 时间 访问域名 ip:port 服务器访问端口 下载文件大小 重传个数 rtt 请求个数 上传数据大小 建连时间 https建连时间 https响应时间 mss<br>更新：<br>c_new 1484190246 192.168.122.118 192.168.122.77:56966 80 1048854 0 1 1 116 0 0 0 1460 14 1<br>连接数据 时间 访问域名 ip:port 服务器访问端口 下载文件大小 重传个数 rtt 请求个数 上传数据大小 建连时间 https建连时间 https响应时间 mss 纯数据发送时间 tos<br>(5)back 1408327455 140.205.134.10:80 33484 290 0 5 1452<br>回源请求 时间 ip:port 请求端口 发送大小 重传个数 rtt mss</p>
-</li>
-<li>/proc/tcp_rt_file 中是基于域名的实时首字节展示<br>1408327819 total_statis 1061629323 81324204<br>统计开始时间 所有请求的统计 总首字节时间 总请求数<br>1408327819 cb.alimama.cn 2268 1463<br>统计开始时间 域名 总首字节时间 总请求数<br>部署和使用<br>安装： sudo yum install t-cdn-tcprt -b test</li>
-</ol>
-<p>开启： /etc/init.d/tcprt start</p>
-<p>停止： /etc/init.d/tcprt stop</p>
-<p>老版本使用方案：</p>
-<p>启动后，请根据你所属的网络和应用配置如下参数：</p>
-<p>1）机器是否在 fullnat后面： /sys/module/tcp_rt_base/parameters/nat 如果在fullnat 后面 建议设成1；</p>
-<p>echo 1 &gt; /sys/module/tcp_rt_base/parameters/nat</p>
-<p>如果不在fullnat 后面要设成0 否者的话取不到数据</p>
-<p>echo 0 &gt; /sys/module/tcp_rt_base/parameters/nat</p>
-<p>2）你需要监听的端口，tcprt现在支持 最多3个端口的监控， /sys/module/tcp_rt_statis/parameters/port_nummber 设置 需要监控的端口数 /sys/module/tcp_rt_statis/parameters/port0（1、2） 为需要监控的端口 比如，我需要监控 80 81 82 3个端口，那么可以这么设置</p>
-<p>echo 80 &gt; /sys/module/tcp_rt_statis/parameters/port0</p>
-<p>echo 81 &gt; /sys/module/tcp_rt_statis/parameters/port1</p>
-<p>echo 82 &gt; /sys/module/tcp_rt_statis/parameters/port2</p>
-<p>echo 3 &gt; /sys/module/tcp_rt_statis/parameters/port_nummber</p>
-<p>3) 数据采集的间隔： /sys/module/tcp_rt_statis/parameters/check_interval 如果你希望 1分钟统计一次</p>
-<p>echo 60 &gt; /sys/module/tcp_rt_statis/parameters/check_interval</p>
-<p>建议不要低于1分钟</p>
-<p>以上配置都需要sudo 权限；</p>
-<p>tcprt提供了两个配置范例，分别用于cdn和源站 /usr/local/tcprt/cdn.sh</p>
-<p>echo 0 &gt; /sys/module/tcp_rt_base/parameters/nat</p>
-<p>echo 60 &gt; /sys/module/tcp_rt_statis/parameters/check_interval</p>
-<p>/usr/local/tcprt/source.sh</p>
-<p>echo 1 &gt; /sys/module/tcp_rt_base/parameters/nat</p>
-<p>echo 300 &gt; /sys/module/tcp_rt_statis/parameters/check_interval</p>
-<p>/usr/local/tcprt/tcp_rt_a_log_copy.sh &gt; /dev/null 2&gt;&amp;1 &amp; /usr/local/tcprt/tcp_rt_a_real_copy.sh &gt; /dev/null 2&gt;&amp;1 &amp;</p>
-<p>tcprt 还提供了两个日志采集的范例脚本 分别在： /usr/local/tcprt/tcp_rt_a_log_copy.sh /usr/local/tcprt/tcp_rt_a_real_copy.sh 分别是 详细日志和实时监控日志的采集脚本； 如果单机的qps数很高， 强烈建议不要用/usr/local/tcprt/tcp_rt_a_log_copy.sh 采集实时日志； 日志采集的数据会把数据存到 /home/admin/logs/tcprt/ 目录下 实时监控日志 会存到/home/admin/logs/tcp_rt/tcp_rt.statis文件里；</p>
-<p>新版本使用方案：<br>你需要监听的端口，tcprt现在支持 最多6个端口的监控，假如需要监听80 443 81 三个端口可以执行<br>echo 80,443,81 &gt;/sys/module/tcp_watch/parameters/port_arr<br>日志的采集可以直接使用<br>cat /sys/kernel/debug/tcp-watch-log<em> &gt; logfile ,<br>cat /sys/kernel/debug/tcp-watch-real</em> &gt; realfile<br>tcp-watch-log<em> tcp-watch-real</em>中的数据只能读取一次，读取后不存在了。</p>
-<h3 id="Q-amp-A"><a href="#Q-amp-A" class="headerlink" title="Q&amp;A"></a>Q&amp;A</h3><ol>
-<li><p>setsockopt(c-&gt;fd, IPPROTO_TCP, TCP_DOMAIN, peer-&gt;host.data, peer-&gt;host.len); 失败</p>
-<p>1）检查uname -r，是不是2.6.32-220.23.2.ali878.tcp1.34.el6.x86_64或2.6.32-220.23.2.ali878.tcp1.54.el6.x86_64，如果不是，则不是常规部署的cdn tcpkernel。</p>
-<pre><code>tcprt需适配这两个特定内核版本。其余版本的支持情况，需要人工check。         
-</code></pre><p>2）setDOMAIN需要tcprt hotfix版本的支持。检查t-cdn-tcprt版本，是不是最新的，否则更新。  </p>
-<pre><code>http://rpm.corp.taobao.com/find.php?q=t-cdn-tcprt，找test/最先版的。部署和使用: http://baike.corp.taobao.com/index.php/CS_RD/CDN/AppAccelerate/tcprt。    
-</code></pre><p>3）检查配置端口。  </p>
-</li>
-<li><p>tcprt采集的rtt</p>
-<p>tcprt采集以请求为单位，rtt是该次请求中，出现过的最小rtt值。 </p>
-</li>
-</ol>
-<h2 id="TCP-RT-log"><a href="#TCP-RT-log" class="headerlink" title="TCP RT log"></a>TCP RT log</h2><pre><code>V5 R 1575428543 880110 172.18.34.6:48414 10.81.212.8:3306 0.0.0.0 172.18.34.8:3306:392396 11 1471 1 0 4 1296 0 37 0 1460
-V5 R 1575428543 880977 172.18.34.6:48422 10.81.212.8:3306 0.0.0.0 172.18.34.8:3306:392396 98 621 1 0 0 451 0 0 0 1460
-V5 R 1575428543 877650 172.18.34.6:48410 10.81.212.8:3306 0.0.0.0 172.18.34.8:3306:392396 11 4180 1 0 3 4013 0 21 0 1460
-V5 R 1575428543 881614 172.18.34.6:48422 10.81.212.8:3306 0.0.0.0 172.18.34.8:3306:392396 11 993 1 0 1 813 0 99 0 1460
-V5 R 1575428543 881832 172.18.34.6:48410 10.81.212.8:3306 0.0.0.0 172.18.34.8:3306:392396 11 843 1 0 4 664 0 39 0 1460
-V5 R 1575428543 881582 172.18.34.6:48414 10.81.212.8:3306 0.0.0.0 172.18.34.8:3306:392396 11 1272 1 0 5 1097 0 21 0 1460
-V5 R 1575428543 881576 172.18.34.6:48416 10.81.212.8:3306 0.0.0.0 172.18.34.8:3306:392396 11 4434 1 0 4 4265 0 37 0 1460
-V5 R 1575428543 882855 172.18.34.6:48414 10.81.212.8:3306 0.0.0.0 172.18.34.8:3306:392396 11 3369 1 0 6 3175 0 39 0 1460
-V5 R 1575428543 886012 172.18.34.6:48416 10.81.212.8:3306 0.0.0.0 172.18.34.8:3306:392396 11 575 1 0 5 402 0 21 0 1460
-V5 R 1575428543 879994 172.18.34.6:48418 10.81.212.8:3306 0.0.0.0 172.18.34.8:3306:392396 1506 6698 1 0 2 6523 0 919 0 1460
-V5 R 1575428543 886731 172.18.34.6:48418 10.81.212.8:3306 0.0.0.0 172.18.34.8:3306:392396 11 1140 1 0 3 955 0 19 0 1460
-V5 R 1575428543 886436 172.18.34.6:48424 10.81.212.8:3306 0.0.0.0 172.18.34.8:3306:392396 98 1573 0 0 0 1410 0 0 0 1460
-V5 R 1575428543 887872 172.18.34.6:48418 10.81.212.8:3306 0.0.0.0 172.18.34.8:3306:392396 11 401 1 0 4 230 0 37 0 1460
-V5 R 1575428543 886588 172.18.34.6:48416 10.81.212.8:3306 0.0.0.0 172.18.34.8:3306:392396 11 1918 1 0 6 1734 0 39 0 1460
-V5 R 1575428543 888024 172.18.34.6:48424 10.81.212.8:3306 0.0.0.0 172.18.34.8:3306:392396 11 1007 0 0 1 816 0 99 0 1460
-V5 R 1575428543 882609 172.18.34.6:48422 10.81.212.8:3306 0.0.0.0 172.18.34.8:3306:392396 1506 6388 1 0 2 6199 0 919 0 1460
-V5 R 1575428543 889038 172.18.34.6:48422 10.81.212.8:3306 0.0.0.0 172.18.34.8:3306:392396 11 536 1 0 3 361 0 19 0 1460
-V5 R 1575428543 889575 172.18.34.6:48422 10.81.212.8:3306 0.0.0.0 172.18.34.8:3306:392396 11 291 1 0 4 119 0 37 0 1460
-V5 R 1575428543 889867 172.18.34.6:48422 10.81.212.8:3306 0.0.0.0 172.18.34.8:3306:392396 11 325 1 0 5 156 0 21 0 1460
-V5 R 1575428543 888275 172.18.34.6:48418 10.81.212.8:3306 0.0.0.0 172.18.34.8:3306:392396 11 1953 1 0 5 1778 0 21 0 1460
-V5 R 1575428543 889986 172.18.34.6:48428 10.81.212.8:3306 0.0.0.0 172.18.34.8:3306:392396 98 311 0 0 0 145 0 0 0 1460
-V5 R 1575428543 890193 172.18.34.6:48422 10.81.212.8:3306 0.0.0.0 172.18.34.8:3306:392396 11 593 1 0 6 399 0 39 0 1460
-V5 R 1575428543 890230 172.18.34.6:48418 10.81.212.8:3306 0.0.0.0 172.18.34.8:3306:392396 11 2046 1 0 6 1855 0 39 0 1460
-V5 R 1575428543 889032 172.18.34.6:48424 10.81.212.8:3306 0.0.0.0 172.18.34.8:3306:392396 1506 5406 0 0 2 5251 0 919 0 1460
-</code></pre><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/c6389d75e8469fc75e5005d0311c9524.png" alt="image.png"></p>
-<p>格式<a href="https://www.atatech.org/articles/68880" target="_blank" rel="external">说明</a></p>
-<p>DebugFS，顾名思义，是一种用于内核调试的虚拟文件系统，内核开发者通过debugfs和用户空间交换数据。类似的虚拟文件系统还有procfs和sysfs等，这几种虚拟文件系统都并不实际存储在硬盘上，而是Linux内核运行起来后才建立起来。</p>
-<p>通常情况下，最常用的内核调试手段是printk。但printk并不是所有情况都好用，比如打印的数据可能过多，我们真正关心的数据在大量的输出里不是那么一目了然；或者我们在调试时可能需要修改某些内核变量，这种情况下printk就无能为力，而如果为了修改某个值重新编译内核或者驱动又过于低效，此时就需要一个临时的文件系统可以把我们需要关心的数据映射到用户空间。在过去，procfs可以实现这个目的，到了2.6时代，新引入的sysfs也同样可以实现，但不论是procfs或是sysfs，用它们来实现某些debug的需求，似乎偏离了它们创建的本意。比如procfs，其目的是反映进程的状态信息；而sysfs主要用于Linux设备模型。不论是procfs或是sysfs的接口应该保持相对稳定，因为用户态程序很可能会依赖它们。当然，如果我们只是临时借用procfs或者sysfs来作debug之用，在代码发布之前将相关调试代码删除也无不可。但如果相关的调试借口要在相当长的一段时间内存在于内核之中，就不太适合放在procfs和sysfs里了。故此，debugfs应运而生。</p>
-<p>[toc]<br>原版链接: <a href="http://baike.corp.taobao.com/index.php/CS_RD/CDN/AppAccelerate/tcprt" target="_blank" rel="external">http://baike.corp.taobao.com/index.php/CS_RD/CDN/AppAccelerate/tcprt</a>  </p>
-<h1 id="TCPRT介绍-1"><a href="#TCPRT介绍-1" class="headerlink" title="TCPRT介绍"></a>TCPRT介绍</h1><p>TCPRT是一个面向web的从tcp层的角度监控和分析网络服务质量和网络覆盖的超轻量级的分析工具；<br>TCPRT在单机进出流量超过10G，单机4w qps的情况下， cpu消耗不超过1%；<br>经过不断的演化，TCPRT现在具有两个功能：<br>1.网络服务质量的实时监控；包括 用户的请求文件的平均响应时间（rt），平均服务器响应时间（servertime），平均时延rtt，平均丢包率 等；<br>2.详细的网络服务质量数据采集：包括用户访问的每一条请求的响应时间（rt），服务器响应时间（servertime），时延rtt，丢包率等；  </p>
-<p>其中 rt的含义是指从 服务器接收到请求到服务器发送给用户的数据包全部被确认所花费的时间；<br>servertime的含义是 从服务器接收到请求到服务器发送第一个数据包的时间；   （如果请求的是小文件，这个时间==应用服务器的rt）    </p>
-<p><strong>目前增加了一版新架构实现的TCPRT，在功能上增加了域名粒度的实时访问数据。即可以查看一个周期内访问某个特定域名的rt,servertime rtt 等数据，并且方便更新。</strong></p>
-<h2 id="1-TCPRT的实现原理"><a href="#1-TCPRT的实现原理" class="headerlink" title="1. TCPRT的实现原理"></a>1. TCPRT的实现原理</h2><p>tcprt采集的是主要有两方面的数据  </p>
-<p>一方面是用户下载文件实际所需要的时间，<br>在现在的情况下，对于web用户来说，每个请求都是串行的每个请求下载完以后，<br>才会有下一个请求，所以，我们只需要记录请求到达服务器的时间和发送的所有数据被确认的时间，<br>就能知道这个请求用户实际上花了多长时间去下载，<br>后续如果pipeline 普及的话，很抱歉，基于网络四层的统计方法都要失效；    </p>
-<p>另一方面是网络覆盖的数据，主要包括丢包个数、发送的有效数据、rtt（数据包一来一回的时间）；<br>tcprt利用的是内核的拥塞控制模块来采集数据的，tcp协议栈处理过程中，<br>在很多特殊事件会调用拥塞控制模块，拥塞控制模块的处理函数又可以拿到这个连接的所有信息（sock），<br>这里面包含了丢包、rtt等信息，因此 tcprt不需要做任何的分析工作，只需要采集数据即可；<br>同时，触发 拥塞控制模块的事件中，又包括了几个我们需要的时间点，包括请求到达，<br>第一个数据包发送，连接关闭；所以我们只需要做简单的if判断就能够获取服务质量相关的数据；    </p>
-<p><strong>新架构TCPRT 是在tcp 协议栈处理过程的几个地方添加了钩子，通过在钩子中做 rt 等数据的采集即可，<br>所以只有特定的内核才能支持。实现域名粒度的数据采集是通过对TCP数据包进行分析，获取其域名并在内核使用hash 链表进行数据的统计。</strong>  </p>
-<h2 id="2-日志信息介绍"><a href="#2-日志信息介绍" class="headerlink" title="2. 日志信息介绍"></a>2. 日志信息介绍</h2><h3 id="2-1-原始版本"><a href="#2-1-原始版本" class="headerlink" title="2.1 原始版本"></a>2.1 原始版本</h3><p>tcprt会输出两种类型的日志  </p>
-<ul>
-<li><p>2.1.1 实时的监控数据<br>tcprt会把实时的监控日志打印到 /sys/kernel/debug/rt-network-real* 中，日志格式如下所示：  </p>
- <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">1379387910 all 80 332 5 55 80 2 27340 101712  </div><div class="line">时间 所有域名 端口 rt servertime 丢包率 rtt 失败率 平均文件大小 这段时间内的访问次数；</div></pre></td></tr></table></figure>
-</li>
-</ul>
-<p><strong>该日志，tsar还在用。</strong>    </p>
-<p>~~2.详细的用户访问日志 tcprt把用户详细日志打印到 /sys/kernel/debug/rt-network-logs,    ~~  </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">访问的结果分为三类， 访问成功，访问失败、没有数据输出，分别对应的日志 第一位为 r w n 如果用户访问成功 ，打出的日志格式如下：  </div><div class="line">r 1379063895 171.214.168.205:12486 80 24185 637 71 0 1 175 1024</div><div class="line">访问成功 时间 ip：port 服务器访问端口 文件大小 rt rtt 重传包个数 连接的第n个请求 首字节 mss</div><div class="line">w 1379063952 111.227.56.204:52025 80 174240 13134 88 11 28 6 0 2880</div><div class="line">访问失败 时间 ip:port 服务器访问端口 被确认的文件大小 总下载时间 rtt 初始窗口 丢包个数 连接的第n个请求 首字节时间 总发送的文件大小</div><div class="line">n 1379063952 111.227.56.204:52025 80 1 2000</div><div class="line">访问没有数据返回 时间 ip：port 服务器访问端口 连接的第n个请求 等待时间</div></pre></td></tr></table></figure>
-<h3 id="2-2-新架构TCPRT的日志格式"><a href="#2-2-新架构TCPRT的日志格式" class="headerlink" title="2.2 新架构TCPRT的日志格式"></a>2.2 新架构TCPRT的日志格式</h3><h4 id="2-2-1-实时的监控数据"><a href="#2-2-1-实时的监控数据" class="headerlink" title="2.2.1 实时的监控数据"></a>2.2.1 实时的监控数据</h4><p>tcprt会把实时的监控日志打印到 /sys/kernel/debug/tcp-watch-real* 中，下面的日志都是一个周期内（比如一分钟）的平均值  </p>
-<h5 id="2-2-1-1-输出到-sys-kernel-debug-tcp-watch-real-文件中"><a href="#2-2-1-1-输出到-sys-kernel-debug-tcp-watch-real-文件中" class="headerlink" title="2.2.1.1 输出到/sys/kernel/debug/tcp-watch-real*文件中"></a>2.2.1.1 输出到/sys/kernel/debug/tcp-watch-real*文件中</h5><p><strong>这份文件，tengine读，采集给heka，到天眼业务状态的外网丢包率和内网丢包率页面。</strong>  </p>
-<ul>
-<li>2.2.1.1.1 基于端口的日志格式如下所示  </li>
-</ul>
-<pre><code><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">1379387910 all-new 80 332 5 55 80 2 27340 101712 0 0 23 120</div><div class="line">时间 所有域名 端口 rt servertime 丢包率 rtt 失败率 平均文件大小 这段时间内的访问次数 https 建连时间 https 响应时间 srtt(毫秒) rtt方差(毫秒)</div></pre></td></tr></table></figure>
-</code></pre><ul>
-<li>2.2.1.1.2 基于域名的日志格式如下所示  </li>
-</ul>
-<pre><code><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">1408327819 gdz03.md.alicdn.com 21 13 0 0 0 0 1 0 20182 32 1 23 120</div><div class="line">时间 域名 RT 首字节时间 上传时间 https建连 https响应 丢包率 rtt 失败率 每个请求的平均文件大小 这段时间内请求个数 连接个数 平均建连时间 首播时间 srtt(毫秒) rtt方差(毫秒)</div></pre></td></tr></table></figure>
-</code></pre><h5 id="2-2-1-2-输出到-sys-kernel-debug-tcp-watch-back-文件中"><a href="#2-2-1-2-输出到-sys-kernel-debug-tcp-watch-back-文件中" class="headerlink" title="2.2.1.2 输出到/sys/kernel/debug/tcp-watch-back*文件中"></a>2.2.1.2 输出到/sys/kernel/debug/tcp-watch-back*文件中</h5><ul>
-<li>2.2.1.2.1 回源到C段的 日志格式  </li>
-</ul>
-<pre><code><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">1408329123 140.205.134 0 136 693 136 </div><div class="line">时间 IP 前三段 总重传个数 总包个数 总rtt时间 总rtt个数（总连接个数）</div></pre></td></tr></table></figure>
-</code></pre><h5 id="2-2-1-3-输出到-sys-kernel-debug-tcp-watch-front-文件中"><a href="#2-2-1-3-输出到-sys-kernel-debug-tcp-watch-front-文件中" class="headerlink" title="2.2.1.3 输出到/sys/kernel/debug/tcp-watch-front*文件中"></a>2.2.1.3 输出到/sys/kernel/debug/tcp-watch-front*文件中</h5><ul>
-<li>2.2.1.3.1 从L2输出到L1的C段日志格式  </li>
-</ul>
-<pre><code><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">1408329123 140.205.134 0 136 693 136</div><div class="line">时间 IP 前三段 总重传个数 总包个数 总rtt时间 总rtt个数（总连接个数）</div></pre></td></tr></table></figure>
-</code></pre><h4 id="2-2-2-详细的用户访问日志"><a href="#2-2-2-详细的用户访问日志" class="headerlink" title="2.2.2 详细的用户访问日志"></a>2.2.2 详细的用户访问日志</h4><p>tcprt把用户详细日志打印到 /sys/kernel/debug/tcp-watch-log*,访问的结果分为五类，<br>访问成功、访问失败、没有数据输出、每连接数据统计、回源数据，<br>分别对应的日志 第一位为 r_new w_new n_new c_new back如果用户访问成功 ，打出的日志格式如下：  </p>
-<ul>
-<li>2.2.2.1 r_new 访问成功  </li>
-</ul>
-<pre><code><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">r_new 1408283588 img02.taobaocdn.com 115.238.23.16:34375 81 77480 145 1 0 8 57 0 112 1448</div><div class="line">访问成功 时间 请求域名 ip：port 服务器访问端口 下载文件大小 rt rtt 重传包个数 连接的第n个请求 首字节时间 上传时间 上传文件大小 mss</div><div class="line">更新：</div><div class="line">r_new 1484190246 192.168.122.118 192.168.122.77:56966 80 1048854 14 1 0 1 3 0 115 1460 1048854 14 3 0 1 </div><div class="line">访问成功 时间 请求域名 ip：port 服务器访问端口 下载文件大小 rt rtt 重传包个数 连接的第n个请求 首字节时间 上传时间 上传文件大小 mss 连接建立到目前发送数据量 纯数据发送时间 首播时间 空等时间总和 tos</div></pre></td></tr></table></figure>
-</code></pre><ul>
-<li>2.2.2.2 w_new 访问失败   </li>
-</ul>
-<pre><code><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div></pre></td><td class="code"><pre><div class="line">w_new 1379063952 img02.taobaocdn.com 111.227.56.204:52025 80 1740 13134 88 11 2 6 0 112 2880</div><div class="line">访问失败 时间 请求域名ip:port 服务器访问端口 被确认的文件大小 总下载时间 rtt 重传包个数 连接的第n个请求 首字节时间 上传时间 上传文件大小 已发送未确认文件大小</div><div class="line">更新： </div><div class="line">w_new 1486624545 cdn.hc.org 115.238.23.194:22086 443 0 5 0 0 2 5 40 174 294 129 6 0 0 2021 1 </div><div class="line">访问失败 请求域名ip:port 服务器访问端口 被确认的文件大小 总下载时间 rtt 重传包个数 连接的第n个请求 首字节时间 上传时间 上传文件大小 已发送未确认文件大小 连接建立以来确认的字节数 纯数据发送时间 首播时间 空等时间 写缓存排队字节量 tos </div><div class="line">$1 w_new 访问失败 </div><div class="line">$2 1486624545 时间 </div><div class="line">$3 cdn.hc.org 域名 </div><div class="line">$4 115.238.23.194:22086 ip:port </div><div class="line">$5 443 服务器访问端口 </div><div class="line">$6 0 被确认文件大小 </div><div class="line">$7 5 总下载时间 </div><div class="line">$8 0 rtt </div><div class="line">$9 0 重传包个数 </div><div class="line">$10 2 连接的第n个请求 </div><div class="line">$11 5 首字节时间 </div><div class="line">$12 40 上传时间 </div><div class="line">$13 174 上传文件大小 </div><div class="line">$14 294 已发送未确认文件大小 </div><div class="line">$15 129 连接建立以来确认的字节数 </div><div class="line">$16 6 纯数据发送时间 </div><div class="line">$17 0 首播时间 </div><div class="line">$18 0 空等时间 </div><div class="line">$19 2021 写缓存排队字节量 </div><div class="line">$20 1 tos</div></pre></td></tr></table></figure>
-</code></pre><ul>
-<li>2.2.2.3 n_new 访问没有数据返回  </li>
-</ul>
-<pre><code><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">n_new 1379063952 img02.taobaocdn.com 111.227.56.204:52025 80 1 4 200 2000</div><div class="line">访问没有数据返回 时间 请求域名 ip:port 服务器访问端口 连接的第n个请求 上传时间 上传文件大小 等待时间</div></pre></td></tr></table></figure>
-</code></pre><ul>
-<li>2.2.2.4 c_new 建连数据  </li>
-</ul>
-<pre><code><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">c_new 1408327083 cdn.hc.org 115.238.23.16:40323 81 193 0 0 1 57 6 0 0 1448</div><div class="line">连接数据 时间 访问域名 ip:port 服务器访问端口 下载文件大小 重传个数 rtt 请求个数 上传数据大小 建连时间 https建连时间 https响应时间 mss</div><div class="line">更新：</div><div class="line">c_new 1484190246 192.168.122.118 192.168.122.77:56966 80 1048854 0 1 1 116 0 0 0 1460 14 1 </div><div class="line">连接数据 时间 访问域名 ip:port 服务器访问端口 下载文件大小 重传个数 rtt 请求个数 上传数据大小 建连时间 https建连时间 https响应时间 mss 纯数据发送时间 tos</div></pre></td></tr></table></figure>
-</code></pre><ul>
-<li>2.2.2.5 back 回源请求   </li>
-</ul>
-<pre><code><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">back 1408327455 140.205.134.10:80 33484 290 0 5 1452</div><div class="line">回源请求 时间 ip:port 请求端口 发送大小 重传个数 rtt mss</div></pre></td></tr></table></figure>
-</code></pre><h4 id="2-2-3-proc-tcp-rt-file中是基于域名的实时首字节展示"><a href="#2-2-3-proc-tcp-rt-file中是基于域名的实时首字节展示" class="headerlink" title="2.2.3 /proc/tcp_rt_file中是基于域名的实时首字节展示"></a>2.2.3 /proc/tcp_rt_file中是基于域名的实时首字节展示</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">1408327819 total_statis 1061629323 81324204</div><div class="line">统计开始时间 所有请求的统计 总首字节时间 总请求数 </div><div class="line">1408327819 cb.alimama.cn 2268 1463</div><div class="line">统计开始时间 域名 总首字节时间 总请求数</div></pre></td></tr></table></figure>
-<h3 id="2-3-支持主动查询的日志格式"><a href="#2-3-支持主动查询的日志格式" class="headerlink" title="2.3 支持主动查询的日志格式"></a>2.3 支持主动查询的日志格式</h3><h4 id="2-3-1-支持方式"><a href="#2-3-1-支持方式" class="headerlink" title="2.3.1 支持方式"></a>2.3.1 支持方式</h4><p>提供getsockopt接口，参数level＝SOL_TCP, optionname＝TCP_OPT_TCPRT,数据定义如下：  </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div></pre></td><td class="code"><pre><div class="line">#ifndef SOL_TCP</div><div class="line">#define SOL_TCP 6</div><div class="line">#endif</div><div class="line"></div><div class="line">#define TCP_OPT_TCPRT 21</div><div class="line"></div><div class="line">struct tcprt_info &#123;</div><div class="line">    __u32	tcpi_srtt;                    /* 当前协议栈计算出的平滑rtt */</div><div class="line">	__u32	tcpi_send_bytes;              /* 发送数据大小(byte), 区间值，每调用一次，都表示和上次调用间隔这段区间的发送数据大小（不包含重传数据）*/</div><div class="line">	__u32	tcpi_retrans_segs;            /* 重传包数，区间值，每调用一次，都表示和上次调用间隔这段区间的重传包数 */</div><div class="line">	__u32	tcpi_snd_mss;                 /* 发送端的tcp mss */</div><div class="line">	__u32	tcpi_wmem_queued;             /* 发送队列总大小(byte)，包含发送队列中skb负荷大小，以及sk_buff、sk_shared_info结构体、协议头的额外开销 */</div><div class="line">	__u32	tcpi_rcv_nxt;                 /* 本端希望接收的下一个字节序 */</div><div class="line">	__u32	tcpi_selective_rcvseq0;       /* tp-&gt;selective_acks[0].end_seq */</div><div class="line">	__u32	tcpi_min_cwnd;                /* 调用区间内的最小拥塞窗口 */</div><div class="line">	__u32	tcpi_min_wnd;                 /* 调用区间内的最小对端接收窗口	*/</div><div class="line">	__u32	tcpi_max_inflight;            /* 调用区间内的最大发送但未确认包数 */</div><div class="line">	</div><div class="line">	__u8	tcpi_max_backoff;             /* 调用区间内发生的 RTO 最大退避次数 */</div><div class="line">	__u8	tcpi_backoff;                 /* 最近一次发生的 RTO 退避次数*/</div><div class="line">	__u8	tcpi_state;                   /* 当前tcp 栈的状态机 */</div><div class="line">	__u8	tcpi_ca_state;                /* 当前tcp 栈的拥塞状态机 */</div><div class="line">	</div><div class="line">	__u8	tcpi_probes;                  /* 当前正在发生零窗口探测的次数 */</div><div class="line">	__u8	tcpi_retransmits;             /* 当前重传定时器正在触发的次数 */</div><div class="line">	__u8	tcpi_options;                 /* tcp 会话协商的tcp 选项 */</div><div class="line">	__u8	tcpi_snd_wscale : 4, tcpi_rcv_wscale : 4;  /* 发送端，接收端通告的 ws 大小 */</div><div class="line"></div><div class="line">    __u16	tcpi_pad;</div><div class="line">	__u16	tcpi_rinit_maxmss;            /* tcp 会话协商的对端初始最大 mss */</div><div class="line">	__u32	tcpi_rinit_maxrwnd;           /* tcp 会话协商的对端初始最大接收窗口*/</div><div class="line"></div><div class="line">	__u32	tcpi_cwnd;                   /* 当前协议栈的拥塞窗口 */</div><div class="line">	__u32	tcpi_snd_wnd;                /* 当前协议栈的对端接收窗口 */</div><div class="line">	__u32	tcpi_inflight;               /* 当前发送未确认包的数目 */</div><div class="line">	__u32	tcpi_srttvar;                /* 最近采样的 rtt 平均偏差， 用来衡量 rtt 的抖动*/</div><div class="line">	__u32	tcpi_max_srttvar;            /* 采样周期内的最大 mdev */</div><div class="line">	__u32	tcpi_minrtt;                 /* 全局最小采样rtt */</div><div class="line"></div><div class="line">	__u32	tcpi_minsrtt;                /* 调用区间内的最小平滑rtt */</div><div class="line">	__u32	tcpi_min_rto;                /* 调用区间内的最小 rto */</div><div class="line">	__u32	tcpi_max_rto;                /* 调用区间内的最大 rto */</div><div class="line"></div><div class="line">	__u32	tcpi_max_wnd;	             /* 调用区间内的最大期望接收窗口	*/</div><div class="line">	__u32	tcpi_min_rewnd;              /* 调用区间内的最小剩余对端可用接收窗口 */</div><div class="line">	__u32	tcpi_max_rewnd;              /* 调用区间内的最大剩余对端可用接收窗口 */</div><div class="line">	__u32	tcpi_min_recwnd;             /* 调用区间内的最小剩余发送窗口 */</div><div class="line">	__u32	tcpi_max_recwnd;             /* 调用区间内的最大剩余发送窗口 */</div><div class="line">	__u32	tcpi_min_sendq_bytes;        /* 调用区间内发送队列排队的数据包大小(bytes) */</div><div class="line">	</div><div class="line">	__u32	tcpi_sample_intv;	         /* 采样间隔 */</div><div class="line">	__u32	tcpi_delivery_rate;          /* 调用区间内的发送速率 */</div><div class="line">	__u32	tcpi_ack_bytes;              /* 调用区间内对端累积确认的字节数 */</div><div class="line"></div><div class="line">&#125;;</div></pre></td></tr></table></figure>
-<h4 id="2-3-2-使用示例"><a href="#2-3-2-使用示例" class="headerlink" title="2.3.2 使用示例"></a>2.3.2 使用示例</h4><p>每次调用返回前次调用到现在的统计数据，使用示例：  </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">int fd;</div><div class="line">struct tcprt_info info;</div><div class="line">unsigned optlen = sizeof(info);</div><div class="line">int ret;</div><div class="line">fd = socket(PF_INET, SOCK_STREAM, 0);</div><div class="line">ret = getsockopt(fd, SOL_TCP, TCP_OPT_TCPRT, &amp;info, &amp;optlen);</div><div class="line">if(ret &lt; 0)&#123;</div><div class="line">    fprintf(stderr, &quot;getsockopt return %d\n&quot;, ret);</div><div class="line">    return ret;</div><div class="line">&#125;</div><div class="line"></div><div class="line">注意：</div><div class="line">1. 每调用一次getsockopt，该sk相关的tcprt测量值，都会重新赋值一次 ！这个接口是用来获取区间值的！  </div><div class="line">2. 线上端口配置，默认配置 1935 1936 1937 80端口，目前只允许出现在live_port_arr配置项，否则会影响采集数据的其它逻辑 ！</div><div class="line">3. live_port_arr 最大配置端口数 10个，配置文件/etc/tcp_watch.conf;如果需要配置增加端口，可联系网络团队支持</div></pre></td></tr></table></figure>
-<p>在tengine中，可以使用上述方式来获取网络监控数据   </p>
-<h2 id="3-部署和使用"><a href="#3-部署和使用" class="headerlink" title="3. 部署和使用"></a>3. 部署和使用</h2><p>安装： sudo yum install t-cdn-tcprt -b test<br>开启： /etc/init.d/tcprt start<br>停止： /etc/init.d/tcprt stop  </p>
-<h3 id="3-1-老版本使用方案"><a href="#3-1-老版本使用方案" class="headerlink" title="3.1 老版本使用方案"></a>3.1 老版本使用方案</h3><p>启动后，请根据你所属的网络和应用配置如下参数：</p>
-<ul>
-<li><p>3.1.1 机器是否在 fullnat后面：<br>/sys/module/tcp_rt_base/parameters/nat 如果在fullnat 后面 建议设成1；<br>echo 1 &gt; /sys/module/tcp_rt_base/parameters/nat<br>如果不在fullnat 后面要设成0 否者的话取不到数据<br>echo 0 &gt; /sys/module/tcp_rt_base/parameters/nat  </p>
-</li>
-<li><p>3.1.2 你需要监听的端口，tcprt现在支持 最多3个端口的监控， </p>
-</li>
-</ul>
-<pre><code><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">/sys/module/tcp_rt_statis/parameters/port_nummber 设置 需要监控的端口数 </div><div class="line">/sys/module/tcp_rt_statis/parameters/port0（1、2） 为需要监控的端口</div></pre></td></tr></table></figure>
-</code></pre><p>比如，我需要监控 80 81 82 3个端口，那么可以这么设置  </p>
-<pre><code><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">echo 80 &gt; /sys/module/tcp_rt_statis/parameters/port0</div><div class="line">echo 81 &gt; /sys/module/tcp_rt_statis/parameters/port1</div><div class="line">echo 82 &gt; /sys/module/tcp_rt_statis/parameters/port2</div><div class="line">echo 3 &gt; /sys/module/tcp_rt_statis/parameters/port_nummber</div></pre></td></tr></table></figure>
-</code></pre><ul>
-<li>3.1.3 数据采集的间隔：   </li>
-</ul>
-<pre><code><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">/sys/module/tcp_rt_statis/parameters/check_interval 如果你希望 1分钟统计一次</div><div class="line">echo 60 &gt; /sys/module/tcp_rt_statis/parameters/check_interval</div></pre></td></tr></table></figure>
-
-
-建议不要低于1分钟    
-</code></pre><p><strong>以上配置都需要sudo 权限；</strong>  </p>
-<ul>
-<li>3.1.4 tcprt提供了两个配置范例<br>分别用于cdn和源站   </li>
-</ul>
-<pre><code><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">/usr/local/tcprt/cdn.sh</div><div class="line">echo 0 &gt; /sys/module/tcp_rt_base/parameters/nat</div><div class="line">echo 60 &gt; /sys/module/tcp_rt_statis/parameters/check_interval</div></pre></td></tr></table></figure>
-
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">/usr/local/tcprt/source.sh</div><div class="line">echo 1 &gt; /sys/module/tcp_rt_base/parameters/nat</div><div class="line">echo 300 &gt; /sys/module/tcp_rt_statis/parameters/check_interval</div><div class="line">/usr/local/tcprt/tcp_rt_a_log_copy.sh &gt; /dev/null 2&gt;&amp;1 &amp;   </div><div class="line">/usr/local/tcprt/tcp_rt_a_real_copy.sh &gt; /dev/null 2&gt;&amp;1 &amp;</div></pre></td></tr></table></figure>
-</code></pre><p>tcprt 还提供了两个日志采集的范例脚本 分别在：<br>/usr/local/tcprt/tcp_rt_a_log_copy.sh /usr/local/tcprt/tcp_rt_a_real_copy.sh<br>分别是 详细日志和实时监控日志的采集脚本；<br>如果单机的qps数很高， 强烈建议不要用/usr/local/tcprt/tcp_rt_a_log_copy.sh 采集实时日志；<br>日志采集的数据会把数据存到 /home/admin/logs/tcprt/ 目录下 实时监控日志 会存到/home/admin/logs/tcp_rt/tcp_rt.statis文件里；</p>
-<h3 id="3-2-新版本使用方案"><a href="#3-2-新版本使用方案" class="headerlink" title="3.2 新版本使用方案"></a>3.2 新版本使用方案</h3><p>你需要监听的端口，tcprt现在支持 最多6个端口的监控，假如需要监听80 443 81 三个端口可以执行</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">echo 80,443,81 &gt;/sys/module/tcp_watch/parameters/port_arr</div></pre></td></tr></table></figure>
-<p>日志的采集可以直接使用  </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">cat /sys/kernel/debug/tcp-watch-log* &gt; logfile , </div><div class="line">cat /sys/kernel/debug/tcp-watch-real* &gt; realfile</div></pre></td></tr></table></figure>
-<p>tcp-watch-log* tcp-watch-real*中的数据只能读取一次，读取后不存在了。  </p>
-<h1 id="4-Q-amp-A"><a href="#4-Q-amp-A" class="headerlink" title="4. Q&amp;A"></a>4. Q&amp;A</h1><ul>
-<li>4.1 setsockopt(c-&gt;fd, IPPROTO_TCP, TCP_DOMAIN, peer-&gt;host.data, peer-&gt;host.len); 失败  </li>
-</ul>
-<pre><code><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">1）检查uname -r，是不是2.6.32-220.23.2.ali878.tcp1.34.el6.x86_64或2.6.32-220.23.2.ali878.tcp1.54.el6.x86_64，如果不是，则不是常规部署的cdn tcpkernel。</div><div class="line">      tcprt需适配这两个特定内核版本。其余版本的支持情况，需要人工check。         </div><div class="line">2）setDOMAIN需要tcprt hotfix版本的支持。检查t-cdn-tcprt版本，是不是最新的，否则更新。  </div><div class="line">      http://rpm.corp.taobao.com/find.php?q=t-cdn-tcprt，找test/最先版的。  </div><div class="line">      部署和使用: http://baike.corp.taobao.com/index.php/CS_RD/CDN/AppAccelerate/tcprt。    </div><div class="line">3）检查配置端口。</div></pre></td></tr></table></figure>
-</code></pre><ul>
-<li>4.2 tcprt采集的rtt  </li>
-</ul>
-<pre><code><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">tcprt采集以请求为单位，rtt是该次请求中，出现过的最小rtt值。</div></pre></td></tr></table></figure>
-</code></pre>
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/08/29/傅盛认知三部曲完整版：人与人最大的差别是认知/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2020/08/29/傅盛认知三部曲完整版：人与人最大的差别是认知/" itemprop="url">未命名</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-08-29T17:39:11+08:00">
-                2020-08-29
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2020/08/29/傅盛认知三部曲完整版：人与人最大的差别是认知/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2020/08/29/傅盛认知三部曲完整版：人与人最大的差别是认知/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>在今天这样一个急剧变化的时代，每一个行业的认知都在迅速更新迭代，跨界也越来越普遍。</p>
-<p>谁能正确建立和升级认知，谁就能脱颖而出。猎豹 CEO 傅盛他将认知梳理为三部曲：成长就是认知升级；管理本质就是认知管理；战略就是格局+破局。</p>
-<p>认知升级：坚信大趋势，对外求教，活在当下、面向未来。认知管理：学会逆向思考，分清优先级。战略升级：建立行业格局，养成格局和破局结合的思维习惯。</p>
-<p>我们将三部曲整合，希望能够成体系地输出有价值的内容，愿大家能够从中有所启发。</p>
-<p>文 | 傅盛  授权发布</p>
-<h2 id="一、所谓成长就是认知升级"><a href="#一、所谓成长就是认知升级" class="headerlink" title="一、所谓成长就是认知升级"></a>一、所谓成长就是认知升级</h2><p>我一直在思索，怎么才能让一家公司更快地成长？一个人怎么才能从一群人的竞争当中脱颖而出？</p>
-<h3 id="1、人的四种认知状态"><a href="#1、人的四种认知状态" class="headerlink" title="1、人的四种认知状态"></a>1、人的四种认知状态</h3><p>最近我看了一幅图，我在其上加了一个数字注脚。</p>
-<p><img src="https://private-alipayobjects.alipay.com/alipay-rmsdeploy-image/skylark/png/109/71fdf2e5260360e3.png" alt="71fdf2e5260360e3.png"> </p>
-<p>这是一个人认知的四种状态——“不知道自己不知道”，“知道自己不知道”，“知道自己知道”和“不知道自己知道”，也是人的四种境界。我将其简单翻译为：</p>
-<p>不知道自己不知道——以为自己什么都知道，自以为是的认知状态。<br>知道自己不知道——有敬畏之心，开始空杯心态，准备丰富自己的认知。<br>知道自己知道——抓住了事情的规律，提升了自己的认知。<br>不知道自己知道——永远保持空杯心态，认知的最高境界。</p>
-<p>现在我终于意识到，人和人根本的区别就在于这四种状态。更可怕的是，95%的人都处在第一个状态，甚至更多。这也就是为什么碌碌无为的人是大多数。视而不见，只会失去升级的可能性。只有自我否定，保持空杯心态，一个人才有可能真正成长，实现跨越。</p>
-<p>今天，我们处在一个大拐弯的时代，每一个行业的认知都在迅速叠加，跨界越来越普遍。如果不保持这种“自我否定”的认知状态，很难完成对快速变化的行业的认知。</p>
-<h3 id="2、人和人最大的差别是认知"><a href="#2、人和人最大的差别是认知" class="headerlink" title="2、人和人最大的差别是认知"></a>2、人和人最大的差别是认知</h3><p>认知，几乎是人和人之间唯一的本质差别。技能的差别是可量化的，技能再多累加，也就是熟练工种。而认知的差别是本质的，是不可量化的。—-<strong>解读：技能指的是具体知识点，认知指的是道理原理本质，从道理、原理可以举一反三知道很多技能。但是一般人只看原理是没有体感的，无法从原理衍生出技能，恰恰是技能先得有几个，然后由技能引申出来原理和知识点，这样叫融会贯通。99%的人要通过技能来帮助理解原理和知识点。</strong></p>
-<p>记得在香港约过一次马云喝茶，他几乎不用电子邮件，当时我就琢磨，他为什么能去指挥那么大一个帝国？后来发现，他在不断观察行业变化，从变化里找关键切入点，找资源和人配合。</p>
-<p>人和人比拼的，是对一件事情的理解和对行业的洞察。执行很重要，但执行本质是为了实践认知。</p>
-<p>有时候，我也会鉴古通今地去琢磨，为什么鸦片战争时期，大清帝国输那么惨？简单说，一群怀揣现代物理学认知的人，打败了另一群信奉四书五经认知的人。其实就是两种不同认知的较量。</p>
-<h3 id="3、认知升级的两个误区"><a href="#3、认知升级的两个误区" class="headerlink" title="3、认知升级的两个误区"></a>3、认知升级的两个误区</h3><p>真正的认知需要通过行动展现，行动一旦缺失，认知容易陷入误区。我总结了两个可能遇到的误区，未必全面，抛砖引玉：</p>
-<p><strong>误区一：以为自己知道，远远不如以为自己不知道</strong></p>
-<p>自以为是，是自我认知升级的死敌。回想奇虎当年搜索没干过百度，老周一度总结为不小心把公司卖了，百度没卖。他没想到，当时李彦宏对搜索的认知远高于他。老周不愿打硬仗，不愿打重型战役，不愿搞大研发，不相信算法。那时候卖，本质上是打不下去了。可他不这么认为。</p>
-<p>自我否定，就是假设自己无知，是自我认知升级的唯一路径。不做痛苦的自我否定，认知上不了一个新台阶。即使正确信息摆在面前，你也会视而不见。这基本是区别英雄和凡人唯一的机会了。</p>
-<p><strong>误区二：以为自己认为重要和真的认为重要，往往不是一回事</strong></p>
-<p>有一个词叫自我迷惑。自认为觉得很重要，但根本没把它转化成真正的行动。</p>
-<p>我最大的反思就是对头条的理解。两年多前，我说头条就是移动端的搜索。我的反思是什么？我当时认为挺重要的，一直到15年四季度，我才开始召集人马，着手海外头条的业务。</p>
-<p>这是认知里经常出现的一个误区：以为自己认为很重要和真的认为很重要，往往不是一回事。</p>
-<p>不行动的认知，就是伪认知。炫耀自己知道，有什么用？一个浪潮打过来，认知就没了，如同没有。真正的认知，必须知行结合。</p>
-<h3 id="4、认知升级的三剂解药"><a href="#4、认知升级的三剂解药" class="headerlink" title="4、认知升级的三剂解药"></a>4、认知升级的三剂解药</h3><p>把一件事情转化成行动，难度之大。认知到行动，中间有巨大损耗。我给认知升级开了三剂解药：</p>
-<p><strong>解药一：坚信大趋势</strong></p>
-<p>想法要立刻转为行动。坚信大趋势，坚信这家公司的各种认知决定。不要简单的批判，你一定要相信那些行业领头人。他们拿到的信息肯定比你多，处理信息的能力比你强，他们的认知不是现阶段的你所能赶得上的。不理解，就执行，在执行中理解。</p>
-<p>盲目坚信，立即行动，在行动中形成认知。不要怕死，早死早超生。去年，我想出做机器人的决定，几乎没人认为可行。我就想，先去找人，坚信趋势，立即行动。那种情况，不做，更没有机会，只能是大量时间的损耗。</p>
-<p>不行动，是最糟糕的。行动，才有可能证伪。坐而论道，没有意义。</p>
-<p><strong>解药二：对外求教，不做井底之蛙</strong></p>
-<p>有一个对外求教的心态，非常重要。对外求教，是为了扩展你的视野。要找到带路党，吃过猪肉不一样。他们比你强不是他们聪明，而是有着你不知道的认知。</p>
-<p>当年我和徐鸣做可牛影像，我们的口号是我们来了。我们的技术水平，做过的客户端体验，见啥灭啥。我们来这个行业了，谁还活得下去？结果，美图秀秀把我们打得内心都快崩溃了。</p>
-<p>这是我们特别容易陷入的一种状态：以自我为中心，不向外看。面对新事物，很多人甚至连尝试和对外沟通的欲望都没有。完全不知道外面发生什么。</p>
-<p>强调一点：认知理解与聪明度无关。只有从认知角度，而不从聪明角度，去理解这个世界，理解所在行业，你才会有更多不一样的认知，才能看到更多别人看不到以及顽固不愿去理解的机会。</p>
-<p>越是处在绝路的团队，越是往外看得多。</p>
-<p><strong>解药三：活在当下，面向未来</strong></p>
-<p>活在当下，恐惧时，想想错了又如何？多错才有机会对。这是我给自己的一个思维训练。当你面对一些事情，想想最坏的结果是什么？想完你会发现，最坏结果与你内心的恐惧，根本不在一个量级。</p>
-<p>恐惧就是恐惧本身。不肯尝试的本质是不敢面对所谓失败。但，这个失败的后果是什么？很少有人认真思考过。其实绝大部分失败是没有后果的。</p>
-<p>再就是面向未来，纠结时，想想五年后会怎样？会不会被淘汰掉？如果五年后，你跟这个时代已形同陌路，这才是最可怕的。行业变化之快，超出我们想象。</p>
-<p><strong>所谓成长就是认知升级</strong></p>
-<p>所谓成长，并不来自于所谓的位高权重，不来自于所谓的财富积累，也不来自于你掌握的某一个单项技能。</p>
-<p>行业里有很多这样的人。比如史玉柱。最惨时，欠了一屁股债，什么都没有。靠一个脑白金，重新崛起。因为他在整个营销上的认知水平，领先了一个时代。即便失去所有财富，甚至所有队伍，就凭他对营销的理解，也是那个时代无人可望其项背的。只要他活着，随时可翻身。</p>
-<p>绝境当中，他真正拥有的核心武器，根本不是资源，而是认知。</p>
-<p>想想腾讯这些年的发展。3Q大战前，腾讯讲花瓣策略——我的花朵上长出很多花瓣，每个花瓣都能干掉你。这种态势，使得腾讯在每个领域都不得不与当时各个领域最先进的认知打，非常困难；3Q大战后，腾讯的策略改为生态链。第一个投资的就是猎豹，接着又投了一批公司。</p>
-<p>结果如何呢？腾讯市值从300亿美金涨到了今天的2000多亿美金。《福布斯》杂志曾经做了一个年龄在四十岁以下的四十位中国商业精英年度排行榜“40 Under 40”，第一位是刘强东，其次是王小川、我、姚劲波。马化腾当时留言说，前五个当中，四个都跟我有关系，很荣幸。</p>
-<p>此后，我一直思考，其实马化腾通过投资形成的生态系，帮助他建立了足够的行业认知。因为，当他投资了这些公司之后，他就不是在跟一个普通的产品经理聊了，而是跟刘强东聊电商，跟王小川聊搜索，跟猎豹聊国际化。</p>
-<p>所以，腾讯用这样一种开放的生态策略，本质拿到的不是投资挣来的钱，而是投资挣来的认知。它和大家建立友好的关系，怎么会不知道出行市场的规模、方向和目标呢？怎么会不知道国际化有哪些机会呢？核心就在于行业认知。</p>
-<p>回顾360崛起给我带来了什么？简单说，就是让我拿到行业最一手的认知——一种对于安全行业，对于客户端软件，对于互联网怎么颠覆一个行业的认知。</p>
-<p>离开360时，我的前东家只给了我1块钱，但朋友安慰说，没关系，你积累的认知，别人都拿不走，将来所有东西都会还给你。我就带着一个认知，走上了茫茫创业人海。</p>
-<p>就因为这么一个小小的认知。</p>
-<p>我才能那么坚决做Clean Master。没人知道APP全球化怎么做，好多单词也不认识，没做过商业。当时几乎对所谓国际化，对美国市场一无所知的情况下，做了All in Clean Master的决定。就因为有那样的认知。</p>
-<p>因为我就信一点——360单点撬动一个行业的事情，在我面前真真切切发生过，而我就是亲历者。</p>
-<p><strong>所谓成长，就来自于认知。</strong></p>
-<p>有时候，想起这个时代，我脑海常浮现一个历史典故——煮酒论英雄。两人坐在那，一个指点群雄，一个一味谦恭。</p>
-<p>问天下英雄是谁？曹操说唯使君与操耳，刘备吓得筷子都掉了。纵然天下各种人物拥有千军万马，但曹操真正顾忌的却是这个正在种菜的刘备。虽然刘备寄人篱下，内心却是匡扶汉室的认知。</p>
-<p>后面的历史走向也正如以上的认知讨论一样。天下大势，何其复杂；即便如此，也能简化到最关键的点，即关键人的关键认知。</p>
-<p>而认知的本质就是做决定。人和人一旦产生认知差别，就会做出完全不一样的决定。而这些决定，就是你和这些人最大的区别。你拥有的资源、兵力，都不重要，核心是你脑海里的大图和你认知的能力。</p>
-<p>单点也好，势能也好，猎豹能有一点成绩，本质是在移动互联网巨大红利增长之下，做了一个未必那么关键但很正确的决定。那个时候，我们开了先河。但这个认知，不足以支撑我们变成一家卓越而伟大的公司。我们依然需要认知升级。而猎豹和我在过去一年获得的最大财富，就是开始了认知升级。</p>
-<p>我开始思考一句话：一个人卓越，造就不了一家卓越的公司；一群人卓越，才能造就一家卓越的公司。而卓越的核心是一家公司和一群人的认知升级，否则不可能真的上新台阶。</p>
-<p>只会陷入死循环：认知不统一，事情推不动。推不动的本质是大家没有建立对这件事重要性的认知。看不见也罢，顽固拒绝也罢，都不可怕。最可怕的是，我们不知道“我们不知道”。</p>
-<p>如果一个人，不断想学习，想了解，去反思；空杯心态，放下恐惧，不拒绝改变。认知升级，其实也就是捅破那层窗户纸。成长如是。</p>
-<h2 id="二、管理本质就是认知管理"><a href="#二、管理本质就是认知管理" class="headerlink" title="二、管理本质就是认知管理"></a>二、管理本质就是认知管理</h2><p>我曾经讲过管理三段论——目标、路径、资源。找到一个目标，想清楚路径，再投入资源。</p>
-<p>但它有一个大前提叫——有判断力。没有判断力，搞错了目标，路径切不进去，资源就调不动。而这种判断力的本质，就是认知。</p>
-<p>这个时代，管理不是执行管理，不是组织结构管理，而是你比别人更理解一件事情。管理的本质就是一种认知管理。</p>
-<p>领导力的核心不是所谓的高情商，而是在大格局下构建对整个行业的认知体系，用大趋势做出正确的判断和聪明的决策。</p>
-<p>在这个大的认知体系下，管理又可被细化为“信息、时间、人”三个维度：怎样利用“信息”做出正确的决定，怎样通过抓关键让“时间”更高效，怎样运用简化管理“人”。</p>
-<p>我总结了“一体两翼”和“三个管理维度”，逐步解答以上问题。</p>
-<h3 id="一体：构建领导者的认知体系"><a href="#一体：构建领导者的认知体系" class="headerlink" title="一体：构建领导者的认知体系"></a>一体：构建领导者的认知体系</h3><p>一个优秀的领导，必须在核心点上拥有覆盖队伍的认知体系。一个人的认知要大于一个队伍，大于一群人。这样的领导，才有真正存在的价值。</p>
-<p>我跟腾讯总裁刘炽平交流，他说，互联网特别像一部武侠史，一群人打不过一个武林高手。你堆再多的人，不如来一个武艺出众的人。本质上，就是这个人，在这个点上的认知体系，超越了一个庞大的队伍。</p>
-<p>一年半前，我见过百度的人，我跟他们说，头条就是移动上的搜索。他们不以为然。说百度有头条不具备的即时搜索，头条离了很远。一直到去年五月，百度才上了信息流。这就是两家产品在认知上的差距。</p>
-<p>领导者在核心点上必须有一个强大的认知体系覆盖所有人，才值得成为一个领导，才得以做出正确的决定，才能够带领整个队伍走到一条正确的道路。如果认知错了，即使每天鸡飞狗跳，也做不成真正有效的管理。绩效，期望，只是配合手段。核心是必须有这样的认知体系。</p>
-<p>所谓认知体系，是在脑海里有完整的认知框架，才能做出正确的判断。脑海要有一些抽象的框架图。比如简单、差异化、跨界、大趋势，还有时代热点等等。脑海里不断要有这样的框架。看到一个点，就拿这个框架去套。</p>
-<p>怎么建立这种框架呢？首先，对市场和产品的深入了解是认知体系的基础。用产品，抓细节，像用户一样思考问题。其次，真的要去和市场上吃过猪肉的人多聊天。看看别人在干什么，这很重要。其三，切忌以听报告的方式建立认知。有些领导，派两个实习生做个调查报告，看一眼，得出一个结论。非常要命。本质上是用实习生的认知取代团队认知。</p>
-<p>就像Snap CEO说，Snap chat不是聊天工具，而是改变新一代美国年轻人的沟通方式。现在它把chat去掉了，不再简单做熟人关系，而是围绕摄像头建立内容，这就与Facebook非常不一样了。Snap让Facebook头疼，不是源于钱更多，或队伍更强，而是源于对社交的认知不一样。今天就是这样一个时代——谁建立正确认知，谁就脱颖而出。</p>
-<h3 id="两翼-认知管理的两剂良药"><a href="#两翼-认知管理的两剂良药" class="headerlink" title="两翼:认知管理的两剂良药"></a>两翼:认知管理的两剂良药</h3><p>大的认知体系构建之后，具体问题是否有具体方法论作支撑——比如，事情太多管不过来怎么办？做了那么多总被老板批怎么办？做得辛苦不出绩效怎么办？对此，我开了两剂良药：</p>
-<p><strong>解药一：学会逆向思考，如果花的时间少一半，事情能否做得更好</strong></p>
-<p>记得有段时间，我非常忙，各种会议满天飞，效率很低。我当时就想，难道当年乔布斯会比我更忙吗？归根到底还是我的管理方法不对。于是我不停追问自己，如果我现在让工作时间少一半，能不能做得更好？</p>
-<p>当我的脑海里不断浮现这个问题时，我突然意识到——我忙的根源其实就在于自己认为太多事情都很重要。</p>
-<p>怎么让管理变得更有效率？本质是减少真正所谓管理的量，增加判断的量。增加帮团队在关键点做决定和梳理目标的量。</p>
-<p>核心是转换思维，培养做判断的能力。而不是勤勉工作的能力。勤勉工作只是基础。假设一下，如果只花一半时间，事情能不能做得更好？顺着这个方向想，很多事情就会不断要求去划分优先级。</p>
-<p><strong>解药二：战略的略是忽略，不敢忽略，本质是分不清优先级</strong></p>
-<p>绝大部分人觉得战略的重心是“战”，其实是“忽略”。忽略就是能放弃什么。</p>
-<p>不敢忽略，本质就是分不清优先级。怎么去建立优先级？分清优先级的前提是认知清晰。你脑海里有一个格局，叫大趋势。要知道什么是更重要的。找到最关键的点，牢牢不放。不是最关键的点，学会妥协和让步。有时候，我们思维会有盲点。原因在于：视野不够宽，反思不够频。</p>
-<p>人和人最大的区别就在于思维格局。什么是中层？什么是创始人？两者区别就在于：一个是迷恋具体情况，我在努力工作；一个是高低结合，我既能努力工作，又能不断花时间去反思，去判断，去拿到认知。而且清楚知道，低的目的是高。即我的每一个执行，本质上又在建立我的认知。</p>
-<h3 id="三个管理维度：信息、时间、人"><a href="#三个管理维度：信息、时间、人" class="headerlink" title="三个管理维度：信息、时间、人"></a>三个管理维度：信息、时间、人</h3><p>宏观层面，领导者要构建对行业的认知体系；那么微观层面，执行操作时，怎样才能做到更聪明的工作？怎样找到那件最重要的事？我从信息、时间、人三个维度剖析管理方法。</p>
-<p>先说信息维度。人的本质就是一个CPU。运算能力再强，没有足够的数据输入也不会有产出。有足够大的信息输入，足够高的反思频度，你才会有足够的信息输出，也才会产生格局，做出正确判断。搜集信息的目的，不是为了保持自身现状，而是为了进一步成长获得新能力，使我们做出正确的判断和聪明的决策。</p>
-<p>信息怎么输入：</p>
-<p>第一，深入分析对手。花时间加大信息搜集，磨刀不误砍柴工。</p>
-<p>第二，定期遍访行业。了解对手，否则会失去行业认知。</p>
-<p>第三，不断招聘行业里的人。他们不仅是来工作的，也会带来行业里的认知。<br>一个领导者的本质就是做正确的决定。只要你拿到足够的信息，就能做出正确的决定，执行将容易十倍，矛盾也会迎刃而解。有一句话叫主将无能累死三军。执行很难的本质是没有做出正确的决定。</p>
-<p>再来说时间维度，管理上最重要的资源就是领导人时间。时间的分配，表明了一个领导者对实际情况的优先级判断。</p>
-<p>我们经常自认为一件事情很重要，回头一看，根本没花足够时间，没放足够人力，没放足够资源。时间都去哪儿了？</p>
-<p>反问下自己：</p>
-<p>时间是如何分配的？<br>构建格局上花了多少时间？<br>信息输入花了多少时间？<br>关键人身上花了多少时间？</p>
-<p>是不是偶尔想到了，去思考一下，还是变成一种工作习惯？<br>猎豹最早能杀出来的一个核心原因，就是我们当时乐此不疲地参加各种展会，跟各种人聊，建立了对国际APP市场的认知。</p>
-<p>我作为CEO亲自站台，亲自抗资料，住很远的酒店，转地铁转三次，走路还得十几分钟，听起来都很辛苦。但一有展会，我就会带人去。而且经常是规模性的。</p>
-<p>看上去花了这么多时间，但实际上建立了认知，找到了简单的切入点。于是，整个公司的工作都变得简单了，反而为其他事务节约了时间。</p>
-<p>时间是最重要的资源。经常有同事问我，你天天管公司，介绍新文章，还玩无人机和王者荣耀，时间怎么用的？其实很简单。我每天都会想：有哪几个关键的会，关键的人，关键点是什么。</p>
-<p>讲完信息和时间，回到人的维度。一句话：学会通过管一个人达到管一片人的目的。</p>
-<p>首先，管理一个人，解决一大片。我们很容易陷入一种状况，搞一堆人，这个要照顾，那个要照顾。团队初创时，可扁平化。但越往后，越成熟的业务，越要找一个堪以重用的人。重用到什么程度？为了这一个人，能把整个团队重构掉。</p>
-<p>要简化对人的管理，找到关键人。在关键人身上花足够多的时间，把足够的认知传递给这个关键人，让他做一群人的决定。切忌多人平行站位的职责不清。多人负责，容易变成每个人都不满意。给一个人足够授权，职责清晰，简化管理，即便没有达到预期，更换人时他也更容易接受。</p>
-<p>其次就是简化目标。不要给一个人多目标。领导最大的职责是帮员工找到一个简单的目标。这就考验领导，能否构建纵深的行业认知体系，找出那个关键目标，帮助团队简化目标，建立一个正确统一的目标认知。团队目标越简单，越明确，越容易达成一致。</p>
-<p>现在我做管理，就简化成“定目标”和“找关键人”。目标要简单清晰，人要能挺身而出，超出预期，一战就要解决问题。</p>
-<p>好领导，首先是打胜仗。开战之前，就要有七分胜算。这七分胜，就靠认知。打的就是认知之仗。看上去千军万马在打，本质是两个将领脑海里的战争格局。胜负基本已定。</p>
-<p>先胜后战，胜算就在认知。管理如是。</p>
-<h2 id="三、战略就是格局-破局"><a href="#三、战略就是格局-破局" class="headerlink" title="三、战略就是格局+破局"></a>三、战略就是格局+破局</h2><p>两年前，我写过一篇《一家公司CEO该如何做战略》。应该说，上市以来，我花在战略思考的时间，不少。伴随猎豹前进中遇到的一些问题，我的思考也在不断深入。</p>
-<p>我曾经说过战略三部曲是预测-破局点-All in。破局的单点，被很多人讨论。但，预测这件事，给忽略了。然而，预测背后就是格局观。怎么理解？</p>
-<p>今天的移动互联网，纯粹靠一个单点爆发，已经很难了。过去十年，甚至二十年，互联网是一片蛮荒之地，需求稀缺，人才也稀缺。只要你投身这个行业，随便找个单点开始深耕；只要你还算努力和坚韧，运气也不太差，就有机会做家不错的公司。所以，那个时候不需要预测，需要的就是干干干！</p>
-<p>于是，我们都觉得自己很牛，以为世界就是这样。我们以为不断努力努力再努力，加班加班再加班，逼疯自己，逼死对手，战争就结束了，却没有意识到——我们站在互联网这个正确的格局和风口上，做什么事情都是对的，而我们正是那群幸运的猪。</p>
-<p>不幸的是，这个世界是不连续的。经过二十年的发展，今天，互联网已经是一个传统行业。风停了，放眼望去，到处是血海竞争，乌压压一片创业大军。勤奋依然很重要，但聪明的勤奋才是关键。这个时候，就要求我们想清楚，行业里的大风在哪里，并做出预测。</p>
-<p>因此，你的脑海里必须有一个对于这个行业越来越清晰的认知格局脑图。哪里已经是过度竞争，哪里刚兴起却没人察觉，三四线城市网民的不同在哪，互联网与哪个行业、以哪种形式的结合会有机会等等。</p>
-<p>我们需要在这样的大格局下，在过去积累的认知红利之上，重新构建新的认知体系，制定战略的新打法，去更大的空间，寻找新的破局点和机会。</p>
-<p><strong>战略认知=格局思考</strong></p>
-<p>过去，我讲过一句话，叫“现象即规律”。现在，我把它解释得更清楚一点，叫“没有偶然，只有必然，所有单点都是大趋势下的必然。”</p>
-<p>一个现象，它发生的时候，一定有大趋势支撑它。没有孤立的单点，本质都是大趋势下的单点的必然。</p>
-<p>以前，我们就站在肥沃的土地上，不用深入思考就可有所作为；今天，挤进来的人越来越多，思考某个现象为什么突然生机勃勃，它背后反应的规律是什么，怎么利用这个规律帮助自己找到下一个肥沃的土壤，就变得非常关键了。</p>
-<p>我曾经一度认为：</p>
-<p>美国人强调“think different”很有情怀，后来才发现，本质不是情怀，而是为了减少竞争成本。因为美国创业者们比我们更早进入血海竞争阶段，“勤奋+努力+不要命”已经很难产生质的差别了，才逼迫他们用“更勤奋的思考”来避免高成本的竞争，从而降低失败概率。<br>创业必须讲究方法论，必须讲究不同情形下的不同方法。今天互联网的竞争格局，远远不是十年前的样子。我们必须think different，而think different的前提，就是要有行业格局认知，看清大趋势，在大趋势下做判断。</p>
-<p>所谓战略，就是在这样的格局认知下，找到破局点，制定路线图，投入资源。如果不去建立这样的认知，公司很容易陷入一些误区。</p>
-<p><strong>战略认知的两个误区</strong></p>
-<p>第一个误区是：见招拆招，啥热做啥，啥熟悉做啥。这是懒惰思考，不愿意认知升级的表现。结果就是越做越多，越做越累，越做越委屈。</p>
-<p>我拿自己做例子。</p>
-<p>一年多前，我跟几个高管反思，猎豹今天是不是做挺多的？我们在过去野蛮生长中，不断强调快速执行，做热点，认为只要做好这个点就会有机会。没有拿整个大趋势，或者叫大格局下的战略，做一个大方向下的可串联的点。</p>
-<p>但事实上，整个互联网的竞争加剧比我们想象中来得快。如果每个单点，不是在一个大格局下的累加，以致每个单点都会遇到对手强大的竞争，很难长大。</p>
-<p>我们老说战略的懒惰，就这个意思。看到一个机会，扑上去。看到另一个机会，再扑上去。看上去每天都在努力工作，但回头一看，各种方向上布满了各种产品，彼此不能借力，也没办法真正在单点上聚焦。</p>
-<p>第二个误区是：做产品的方法论依然停留在5年前，认为抓一个简单功能热点就颠覆格局。</p>
-<p>我经常在微博上收到各种私信，说他有个点子，要颠覆腾讯，颠覆阿里，问要不要见他？我基本不回，为什么？</p>
-<p>因为我不觉得存在这样的点。如果20年前，想个网址导航，还有可能成为hao123。几个人在屋子里攒出一个聊天APP，还有机会是QQ，逆向一个Dos3.0，写个WPS，一不小心就成为一家上市公司。那是一个多么美好的时代。</p>
-<p>但这个时代真的过去了。移动互联网的APP，不稀缺了，越来越少的APP可异军突起了。APP呈现越来越强的头部效应。而头部的那些大佬们，已经总结了一整套如何面对单点突破的小对手。尽管你精干灵活，但他们会用生态、用流量、用更强大的研发力量碾压你。</p>
-<p>只把一个单点做到极致就能创造奇迹的时代，真的过去了。</p>
-<p>为什么会出现这种情况？归根到底，还是以前互联网不被重视，具备互联网技能和认知的人有限，所以你做了，别人要么看不起，要么做不来。而今天，“互联网就是金矿”的认知，已经深入人心；互联网相关从业者，浩浩荡荡。这好像一碗好吃的牛肉面，如果利润很高，如果能做出来的人已经一大片，就更不要提那些巨头们了。</p>
-<p>怎么办？你必须结合趋势，结合整个战略思考，把所有东西累加进去。容易打的仗，已经打完了。要花足够的精力和时间，去构建自己的行业格局认知。在看上去繁杂纷扰的信息中，不断深度思考，加大自己的认知优势，然后在熙熙攘攘的人流中找到不为人知的机会，趁着大家还不够懂，突然发起战役，全力以赴。</p>
-<p>这就回到开头的问题，我们究竟该如何构建这样一种格局思考的能力？</p>
-<p>举个例子：回顾几个破局点</p>
-<p>先拿我自己做例子，回顾几个破局点的思考路径。</p>
-<p>怎么产生Clean Master这一个点？我当时觉得，中国互联网APP水平还是不错的。拉了一个技术同事到美国开会，请了一个挺牛的人介绍安卓。讲完后，我的同事说，这人水平一般。</p>
-<p>我想，这位同事虽然狂了点，但说得很中肯。而这位牛人，已经是一家60人硅谷创业公司的CTO。我们做了一些动效给他，他还很疑惑怎么做到的。我发现，中美之间并不存在技术代差。</p>
-<p>于是，我开始思考，中国APP能否走出去。最后我作出了一个大趋势的判断——中国APP已经领先全球了，我们已具备这样的基础。这个判断做出以后，后面的事情就简单了。</p>
-<p>包括猎豹上市后，该干什么？当时我的判断是，移动互联网颠覆格局的机会基本过去了，要想找到猎豹十倍增长的机会，必须从未来着手。所以那时，我跑硅谷，跑以色列，去世界各地看创业团队。</p>
-<p>在国内搞傅盛战队，办紫牛基金，只投非纯粹互联网的早期创业项目，想知道年轻创业者在干什么，互联网跨界到底怎么发生的。</p>
-<p>在这个过程中，我慢慢发现了人工智能和机器人。尤其深度学习，开始在很多创业方向中都有体现。它把很多过去跨行业的算法统一了起来，并且效果上有了质的飞跃，这让我非常着迷。</p>
-<p>而机器人又是个工具，和猎豹过去做的事情不谋而合。它到底长什么样子，谁也不知道。这就有机会去定义。作为一个产品经理，要去定义机器人的交互是怎样的，人的感受是怎样的？我觉得这个特别吸引我，也符合我的特质。</p>
-<p>与此同时，能把基于深度学习产生的视觉、听觉技术革命，与机器人产业结合起来，更是今天很少人意识到的巨大机会。</p>
-<p>这个行业认知建立以后，执行也就变得简单了。去年年初，我开始下大力气组建人工智能和机器人团队。在整个行业暴热，开启人才大战的前夜，我们组建了一支精壮的国际化队伍，还全力以赴研发了产品。很快大家就会看到我们即将发布的AI产品，多少也算领先了业界一步。</p>
-<p>回想当初，我说自己要倾家荡产做机器人，很多人还认为我只是蹭个热点，搞个宣传。但把真实情况串起来后，你会发现，我是经过了深思熟虑，花了足够时间认真思考的。如同上文所述，这个单点，它不是偶然，而是我整体思路的必然。</p>
-<p>所以，一个点不是孤立存在的。你的脑海里有没有一个大格局？这个大格局是什么？这很重要。</p>
-<p>回到根本：怎样做战略？</p>
-<p>首先，脑海要有大格局。大格局就是对这个行业深入的、清晰的认知。</p>
-<p>你心中要不断问这个问题——在这个行业里，什么才是真正的机会？什么才是下一个趋势？这样，你才有机会，才能判断，这个点对不对。否则，可能消耗了很多人，把什么都投进去，但不形成持续爆发增长。因为它不是大趋势下的点。本质就不该做。</p>
-<p>我们需要花足够的时间去了解行业，去思考对手，去观察现象。在获取大量信息后，不断在脑海里做思维推演，去判断。</p>
-<p>当然，这些格局认知里，至少你要想到一些关键词，比如全球化、视频、品牌、AI、争夺时长和红利结束等等。整个行业的大格局，没必要从零开始做认知判断，一些看上去很热门的趋势，选择相信，再去分析背后的规律。</p>
-<p>其次，养成格局和破局结合的思维习惯。高是什么？你的格局，大风口。破局就是找到与众不同的那个点。二者缺一不可。</p>
-<p>过去，我们太强调那个单点的重要性了。大部分人的思维习惯，停留在游击战。有个好想法，做起来。就像游击队，看到有头猪，就抢一把。对手在哪，他们在怎么做？这个领域的趋势会怎样？这个点领先者是不是稍微抄袭下就一样了？基本都不知道，也不去了解。只在为自己的想法激动不已，恨不得明天就赶紧实现。</p>
-<p>今天，做一个互联网产品就像做一辆汽车。如果你只有对某个功能（比如汽车安全）的好想法，而不去认真思考资金，工厂，产业链，上下游，品牌定位，对手策略，消费者习惯迁移等因素，你认为你有机会超越宝马、奥迪、奔驰吗？</p>
-<p>战略，就是要求我们进行深入的、逼迫自我的思考。真正的超越机会，不是来自于在工作时间上把对手逼死，而是在认知深度上先把自己逼疯。</p>
-<p>互联网竞争已经白热化的形势下，做战略的关键点，就在于不断加深自己的认知，找到已经存在但不为人知的那个秘密。而且，这个秘密所能孕育的机会，要足够大；离现有领先者的区域，要足够远。核心是你能否具备超出对手的、对行业的、与众不同的认知。基于这个格局认知，为自己撕开一道突破口。</p>
-<p>简单一句话概括——经过充分思考和认真研究后，制定清晰目标以及持续推进的路线图，这应该就是战略的全貌。</p>
-<p>同时我也要补充一点：战略是在这个路线图下的势能的累加，不能累加势能的，再有效果的执行，本质都是增加成本。</p>
-<p>这就慢慢理解了杰克·韦尔奇说的“数一数二法则”。因为不数一数二，长期没有竞争力，还耗费精力。就不是一个累加势能的点。</p>
-<p>如今，猎豹的新Slogan——Make The World Smarter，目标就是要围绕AI方向做累加。猎豹的路线非常清楚，那就是——以人工智能为核心的累加，以6亿月度活跃用户数据为基础，用技术和产品的突进，完成我们整个目标。对目标没有持续、有效累加的事情，都没有意义。</p>
-<p>猎豹要做的，是将人工智能跟传统移动互联网的业务相结合。产品创新上不断发力，真正做出一些赶超BAT的AI产品。</p>
-<p>回到战略，它的本质是什么？我认为，战略就是一个杠杆。它让你做的每一件事，都放大几倍，几十倍。一旦远离这个杠杆，就变成小公司创业模式。关键是，这种创业模式，又比不过真正的创业公司。</p>
-<p>猎豹走到今天，重新回到创业，置身于一处——于大格局之下，寻找新的破局点。战略如是。</p>
-<p>来源介绍：盛盛GO（ID：fstalk），猎豹移动联合创始人兼CEO，关注创新创业，人工智能，还有机器人。</p>
-<p>from <a href="http://mp.weixin.qq.com/s/uDqm18HdijB59sUQJMckrw" target="_blank" rel="external">http://mp.weixin.qq.com/s/uDqm18HdijB59sUQJMckrw</a></p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/08/29/记一次诡异的数据库故障的排查过程/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2020/08/29/记一次诡异的数据库故障的排查过程/" itemprop="url">未命名</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-08-29T17:39:11+08:00">
-                2020-08-29
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2020/08/29/记一次诡异的数据库故障的排查过程/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2020/08/29/记一次诡异的数据库故障的排查过程/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="记一次诡异的数据库故障的排查过程"><a href="#记一次诡异的数据库故障的排查过程" class="headerlink" title="记一次诡异的数据库故障的排查过程"></a>记一次诡异的数据库故障的排查过程</h1><p>这两周遇到了一个诡异的应用数据库访问现象：某业务通过 TDDL 访问数据库，偶尔会出现超长的访问 RT，导致整个 HSF 服务接口调用超时。从 Eagleeye 调用链分析平台看到的图形是这个样子：</p>
-<p><img src="http://img1.tbcdn.cn/L1/461/1/17a3e60a6a1b18a081870b2762bcafce7977a27e" alt="1"></p>
-<p>从这张图上可以看出：</p>
-<ol>
-<li>查询多张表 RT 都超过 500ms；</li>
-<li>同样一次调用，另一些表的 RT 只有 1ms；</li>
-<li>都是访问同一个数据库；</li>
-</ol>
-<p><strong>在什么情况下会出现这种现象呢</strong>？ 完全难以捉摸：</p>
-<ol>
-<li>大约 0.3% 的服务调用会出现这种现象，其他请求完全不受影响；</li>
-<li>几乎不受业务访问压力的影响，包括预发环境也能重现这种现象；</li>
-<li>所有应用服务器上都能重现；</li>
-</ol>
-<p>如图：<br><img src="http://img2.tbcdn.cn/L1/461/1/4d553ff978f2e53ad4fa2d2b3bf19c198ff52480" alt="2"> </p>
-<p><strong>问题会不会在连接池</strong>？或者是应用、中间件、网络、数据库上有资源瓶颈？</p>
-<p>不会。因为所有业务请求都需要同样的资源，大家都在同一个资源池上排队。假设请求是相同的，插队是很少的 —— 如果有人排队等了 500ms 才拿到资源，有人 1ms 就抢到了资源 —— 那么，一定会有等待了 100ms, 200ms, 300ms, 400ms … 的请求，RT 应该呈现平均分布。 </p>
-<p>现象显然不符。那什么场景下才会产生明显差异？ 按已有经验，也许是：</p>
-<ol>
-<li>锁等待：<br>  部分数据频繁加锁，部分请求长时间等待锁。或者非公平的锁等待，插队太多，请求被 “饿死”。</li>
-<li>数据不均匀：<br>  部分业务ID 查询返回的数据量很大或者索引扫描的数据库行数很多。</li>
-<li>IO 抖动：<br>  高 IO 压力下，命中缓存的请求和需要读磁盘的请求 RT （因为 IO 排队）会差别很大。</li>
-</ol>
-<p>当然，也不排除是未知的中间件/数据库 bug。</p>
-<p>首先，锁等待和 IO 抖动的问题被排除了，因为问题请求都是 SELECT 语句，MySQL InnoDB 支持 MVCC, 查询是不加锁的。此外，数据库压力很低，buf 命中率很高，也不是 IO 的原因：<br><img src="http://img4.tbcdn.cn/L1/461/1/9f4ef8852aa535348e3d477c1f6fbfa2b85b42fe" alt="7"></p>
-<p>数据不均匀的可能性也被排除了。高 RT 查询中，ttp_order 表的查询是主键查询，符合条件的数据有且只有一条。并且，仔细检查 Eagleeye 记录发现：相同入参的 HSF 服务调用，也会出现有时快、有时慢的现象。</p>
-<p>最后，DBA 在业务数据库上完全看不到慢查询。上文 1）2）3） 三种情况导致的查询 RT 超过 1s 都会记录 MySQL 慢查询日志。从 Eagleeye 可以看到最高 RT 超过 2s，但是在 MySQL 的慢查询日志却没有记录。</p>
-<p>已知可能性都被排除了。没办法，只能上应用机器看看日志。</p>
-<p><strong>还真的有发现</strong>。从 TDDL 统计日志 /home/admin/logs/tddl/tddl-stat.log 发现，业务数据库包含 8 个分库（分库分表），高 RT 查询都来自其中 2 个分库：</p>
-<pre><code>V1 2015-06-24 16:24:24:629 read statistics
- [ appName:TRIP_TTP8_APP dsKey:g1-myb077004_et2_trip_ttp_00_3306 
-   times:1779 errors:0 qps:29 rt(avg/min/max):94/0/2164 ]
-V1 2015-06-24 16:24:24:630 write statistics 
-[ appName:TRIP_TTP8_APP dsKey:g1-myb077004_et2_trip_ttp_00_3306 
-   times:6 errors:0 qps:1 rt(avg/min/max):0/0/1 ]
-V1 2015-06-24 16:24:24:630 dataSource statistics
- [ appName:TRIP_TTP8_APP dsKey:g1-myb077004_et2_trip_ttp_00_3306 
-   poolSize:30 active(now/max):3/9 pooling(now/max):10/13 create:0 destroy:0 errors:0 ]
-V1 2015-06-24 16:24:24:630 read statistics
- [ appName:TRIP_TTP8_APP dsKey:g1-myb077004_et2_trip_ttp_01_3306 
-   times:1647 errors:0 qps:27 rt(avg/min/max):69/0/2164 ]
-V1 2015-06-24 16:24:24:630 write statistics 
-[ appName:TRIP_TTP8_APP dsKey:g1-myb077004_et2_trip_ttp_01_3306 
-   times:14 errors:0 qps:1 rt(avg/min/max):0/0/1 ]
-V1 2015-06-24 16:24:24:630 dataSource statistics 
-[ appName:TRIP_TTP8_APP dsKey:g1-myb077004_et2_trip_ttp_01_3306 poolSize:30 active(now/max):2/8 pooling(now/max):11/13 create:0 destroy:0 errors:0 ]
-V1 2015-06-24 16:24:24:631 read statistics
- [ appName:TRIP_TTP8_APP dsKey:g1-myb077004_et2_trip_ttp_02_3307 
-   times:1829 errors:0 qps:30 rt(avg/min/max):0/0/1 ]
-V1 2015-06-24 16:24:24:631 write statistics
- [ appName:TRIP_TTP8_APP dsKey:g1-myb077004_et2_trip_ttp_02_3307 
-   times:10 errors:0 qps:1 rt(avg/min/max):0/0/1 ]
-V1 2015-06-24 16:24:24:631 dataSource statistics 
-[ appName:TRIP_TTP8_APP dsKey:g1-myb077004_et2_trip_ttp_02_3307 
-   poolSize:30 active(now/max):0/8 pooling(now/max):8/8 create:0 destroy:0 errors:0 ]
-...
-</code></pre><p>可以看出 00 和 01 库的查询 RT <code>rt(avg/min/max):94/0/2164</code> 与下面的 02 库 <code>rt(avg/min/max):0/0/1</code> 完全不同，而且每个周期的统计日志重复该现象。</p>
-<p>巧合的是，00/01 库位于在同一个 MySql 实例 10.x.77.4:3306 上，应用的其他分库则全部位于同一台物理机的其他实例（10.x.77.4:3307~3309）上。</p>
-<p>这样，问题更可能是这个数据库实例造成的。因为 TDDL 中间件处理不同分库没有区别，不会导致 00/01 库出现高 RT 查询，而 02/03 库完全没有问题。</p>
-<p>DBA 检查了 10.x.77.4 上的 4 个 MySQL 实例，没有发现 3306 实例配置有特殊差异。从 DBFree 提供的数据库监控看，3306 与其他实例的监控曲线也没有明显的差别。</p>
-<p>由于应用端统计到的数据库 RT 很大，而数据库端看到的查询很快。怀疑的目标转移到了网络上。难道是网络问题？抓个包看看。</p>
-<p>tcpdump host 10.x.77.4 and port 3306 -s 0 -w xxx.pcap<br><img src="http://img2.tbcdn.cn/L1/461/1/ab9c0dccef6f2c862e3bbd58a6ffdf0d016d032a" alt="8"></p>
-<p>Wireshark 的 RTT 统计表明网络延迟很低：<br><img src="http://img1.tbcdn.cn/L1/461/1/2fbb84b615183d35b7a474681e075d3844868f85" alt="9"></p>
-<p>抓包的确可以看出有一些 MySQL 请求的 RT 很高（600ms）：<br><img src="http://img4.tbcdn.cn/L1/461/1/9e89e6f2450dff46536d70a9e27876cc8507db06" alt="10"></p>
-<p>而大多数请求的 RT 比较正常（3ms）：<br><img src="http://img2.tbcdn.cn/L1/461/1/d507dbf33a6230fcc3adf986af3702c3d2b885f9" alt="11"></p>
-<p><strong>但是发现一个特殊现象</strong>：<br>同一条 TCP 连接（stream）的请求，要么都慢（500ms 以上），要么都快（5ms 以下）。<br> <img src="http://img4.tbcdn.cn/L1/461/1/783cc78dba90bebad5e655430bcacd97706a6b89" alt="13"><br>这个状况有点复杂。很少有因素影响单个 TCP 连接的处理效率。<br>硬件 bug？<br>TCP 连接所在的网卡中断处理不均衡？<br>负责处理请求的 MySQL 线程被 Affinity 到繁忙的 CPU 上？</p>
-<p>结果都不是。排查网络中间看了眼 TDDL 统计日志，发现高 RT 查询的现象从 16:42 起完全消失了，现在的 00/01 库统计日志和其他分库一样：</p>
-<p><code>V1 2015-06-24 17:20:24:629 read statistics 
-[ appName:TRIP_TTP8_APP dsKey:g1-myb077004_et2_trip_ttp_00_3306 
-times:1826 errors:0 qps:30 rt(avg/min/max):0/0/6 ]
-V1 2015-06-24 17:20:24:629 write statistics 
-[ appName:TRIP_TTP8_APP dsKey:g1-myb077004_et2_trip_ttp_00_3306 
-times:24 errors:0 qps:1 rt(avg/min/max):0/0/1 ]
-V1 2015-06-24 17:20:24:630 dataSource statistics 
-[ appName:TRIP_TTP8_APP dsKey:g1-myb077004_et2_trip_ttp_00_3306 
-poolSize:30 active(now/max):0/7 pooling(now/max):11/11 create:0 destroy:0 errors:0 ]
-V1 2015-06-24 17:20:24:630 read statistics 
-[ appName:TRIP_TTP8_APP dsKey:g1-myb077004_et2_trip_ttp_01_3306 
-times:2393 errors:0 qps:39 rt(avg/min/max):0/0/3 ]
-V1 2015-06-24 17:20:24:630 write statistics 
-[ appName:TRIP_TTP8_APP dsKey:g1-myb077004_et2_trip_ttp_01_3306 
-times:13 errors:0 qps:1 rt(avg/min/max):0/0/3 ]
-V1 2015-06-24 17:20:24:630 dataSource statistics 
-[ appName:TRIP_TTP8_APP dsKey:g1-myb077004_et2_trip_ttp_01_3306 
-poolSize:30 active(now/max):0/7 pooling(now/max):13/13 create:0 destroy:0 errors:0 ]
-.....</code></p>
-<p>询问业务方，发现 HSF 调用超时的问题也消失了。再询问 DBA ,..  DBA 的确在 16:42 的时候进行了操作：kill 了 10.x.77.4：3306 上的多余 DRC 线程。</p>
-<p><strong>什么是 DRC</strong>?  DRC 是一个获取数据库增量数据的服务。它采用 MySQL 主备复制协议，在数据库上启动一个长期运行的 Binlog Dump 线程，持续抓取新增的 Binlog 日志发送给远端的 DRC 节点。</p>
-<p>为啥 DRC 会影响连接的处理？ 这以前在 MySQL 上从没有遇到过。因为 DRC 使用 MySQL 的主备复制协议，对数据库的影响理论上跟一台备库没有区别。 尽管 DRC 会长期占用一个服务线程，但是普通 MySQL 是一个线程服务一个连接的调度方式，除了 IO，锁和 CPU 调度，不同连接上的请求不会相互影响。</p>
-<p>咨询 DBA 同学才知道：原来业务的 MySQL 采用了 AliSQL 的线程池插件，是线程池 + DRC 才导致了这个问题：</p>
-<p><strong>MySQL 线程池</strong> 是个高大上的功能。拥有线程池功能的 MySQL Percona  分支以及企业版声称可以 “提升 MySQL 扩展性 60 倍”。它的好处是让 MySQL 用较少的线程支持更多的连接与并发。因为线程数太多会在锁和 IO 上产生更多的竞争，使得更多的 CPU 资源消耗在上下文切换、spin 和内核调度上。</p>
-<p>AliSQL 的线程池做了更多的优化。其中一个优化是对线程进行了分组，每个分组只有少量（2-3 个）线程。这样每个组的资源相互隔离，防止慢查询将全部线程池资源耗尽，导致 MySQL 无法响应正常业务请求。</p>
-<p>在分组模式下，如果有新的连接进入 MySQL，新连接会以 HASH 的方式固定分配到其中一个分组，由这个分组内线程响应连接上的请求。当处理结束，响应请求的线程就从连接释放，然后去处理同一分组上的其他连接上的请求。</p>
-<p>但是上面已经说过了，DRC 的连接与普通连接不一样。它的请求处理一直不会结束，这样处理 DRC 请求的线程就会一直不释放。而 AliSQL 一个分组内的线程实在太少了。如果正好一个分组分配到 2 个以上的 DRC 连接，该分组内就没有空闲线程来响应其他请求了。因此，被固定分配到这个分组的连接请求得不到线程处理，表现在应用端就是高 RT 查询。</p>
-<p><em>注：这里表现出高 RT 而不是超时，原因是 MySQL 线程池有另一个参数 <code>thread_pool_stall_limit</code> 防止线程卡死．请求如果在分组内等待超过 <code>thread_pool_stall_limit</code> 时间没被处理，则会退回传统模式，创建新线程来处理请求。这个参数的默认值是 500ms。 – by @蛰剑</em></p>
-<p>BTW，由于请求是堆积在连接 TCP buf 中没人处理，MySQL 端是无法记录到请求的等待时间的。这样，MySQL 的慢查询日志就不会有记录。</p>
-<p>知道原因后，解决问题就简单了。临时解决方案是尽量减少单个 MySQL 实例上 DRC 连接的数目。最终解决方案是 AliSQL 进行升级，让 DRC 这样的请求走独立线程分组，或者直接绕开线程池，回到一个线程服务一个连接的模式。</p>
-<p>在这个案例里，能最终找到问题原因其实有点靠运气的。但是排查和分析过程比较有意思。</p>
-<p>其实一开始的分析已经接近了问题的本质：资源池的均衡问题 —— 如果所有请求都在同一组资源上排队等待，那么 RT 一定是连续分布的。AliSQL 的线程分组功能实际上拆分了资源池，使得不同的请求在不同的资源池上排队。如果这些池中的资源数量不同，那么就会有请求更容易得到资源，有请求得不到资源，出现类似的 RT 分布。</p>
-<p>先记到这里，后面遇到有意思的排查再继续分享。</p>
-<p>感谢 DBA @朱曜鑫 @朱旭，应用 @神月 @张浚 在排查问题上的协助。</p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/03/MySQL JDBC StreamResult 和 net_write_timeout/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -4768,6 +3759,1120 @@ test.x86_64.rpm
 
 
     
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/01/01/2010到2020这10年的碎碎念念/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2020/01/01/2010到2020这10年的碎碎念念/" itemprop="url">2010到2020这10年的碎碎念念</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-01-01T00:30:03+08:00">
+                2020-01-01
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/others/" itemprop="url" rel="index">
+                    <span itemprop="name">others</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2020/01/01/2010到2020这10年的碎碎念念/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2020/01/01/2010到2020这10年的碎碎念念/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="2010到2020这10年的碎碎念念"><a href="#2010到2020这10年的碎碎念念" class="headerlink" title="2010到2020这10年的碎碎念念"></a>2010到2020这10年的碎碎念念</h1><h2 id="来自网络的一些数据"><a href="#来自网络的一些数据" class="headerlink" title="来自网络的一些数据"></a>来自网络的一些数据</h2><p>这十年，中国的人均GDP从大约3300美金干到了9800美金。这意味着：更多的中国人脱贫，更多的中国人变成了中产。这是这一轮消费升级的核心原动力，没有之一。</p>
+<p>这十年，中国的进出口的总额从2009年占GDP的44.86%，降至34.35%。</p>
+<p>互联网从美国copy开始变成创新、走在前列，因为有庞大的存量市场</p>
+<p>2010年，一个数据发生了逆势波动。那就是中国的适龄小学人口增速。在此之前从1997年后，基本呈负增长。这是因为中国80后家长开始登上历史舞台。这带动了诸多产业的蓬勃发展，比如互联网教育，当然还有学区房。</p>
+<p>10年吉利收购沃尔沃，18年吉利收购戴姆勒10%的股份。</p>
+<p>微信崛起、头条崛起、百度走下神坛。</p>
+<p>12年2月6号的王护士长外逃美国大使馆也让大家兴奋了，11年的郭美美红十字会事件快要被忘记了，但是也让大家对慈善事件更加警惕，倒是谅解了汶川地震的王石10块捐款事件，不过老王很快因为娶了年轻的影星田朴珺一下子人设坍塌，大家更热衷老王的负面言论了。</p>
+<p>温州动车事件让高铁降速了</p>
+<p>我爸是李刚、药家鑫、李天一、邓玉娇（09年），陈冠希艳照门、三鹿奶粉、汶川地震、奥运会（08年）</p>
+<p>2018年：中美贸易站、问题疫苗、个税改革、中兴被美制裁，北京驱赶低端人口，鸿茅药酒，p2p暴雷，昆山反杀案，相互宝</p>
+<p>2015年：雾霾、柴静纪录片《穹顶之下》，屠呦呦诺贝尔奖，放开二胎</p>
+<p>2014年：东莞扫黄、马航370事件；周师傅被查、占中</p>
+<p>2013年：劳教正式被废除，想起2003年的孙志刚事件废除收容制度</p>
+<p>2012年：方韩之争，韩寒走下神坛</p>
+<p>2011年：日本海啸地震，中国抢盐事件；郭美美，温州动车</p>
+<p>2010年：google退出中国，上海世博会开幕，富士康N连跳楼事件；我爸是李刚，腾讯大战360</p>
+<h2 id="自我记忆"><a href="#自我记忆" class="headerlink" title="自我记忆"></a>自我记忆</h2><p>刚看到有人在说乐清钱云会事件，一晃10年了，10年前微博开始流行改变了好多新闻、热点事件的引爆方式。</p>
+<p>这十年BBS、门户慢慢在消亡，10年前大家都知道三大门户网站和天涯，现在的新网民应该知道的不多了。</p>
+<p>影响最大的还是移动网络的崛起，这也取决于4G和山寨机以及后来的小米手机，真正给中国的移动互联网带来巨大的红利，注入的巨大的增长。<br>我自己对移动互联网的判断是极端错误的，即使09年我就开始用上了iphone手机，那又怎么样，看问题还是用静态的视觉观点。手机没有键盘、手机屏幕狭小，这些确实是限制，到2014年我还想不明白为什么要在手机上购物，比较、看物品图片太不方便了，结果便利性秒杀了这些不方便；只有手机的群体秒杀了办公室里的白领，最后大家都很高兴地用手机购物了，甚至PC端bug更多，更甚至有些网站不提供PC端。</p>
+<p>移动网络的崛起和微信的成功也相辅相成的，在移动网络时代每个人都有自己的手机，所以账号系统的打通不再是问题，尤其是都被微信这个移动航母在吞噬，其它公司都活在微信的阴影里。</p>
+<p>当然移动支付的崛起就理所当然了。</p>
+<p>即使今天网上购物还是PC上要方便，那又怎么样，很多时候网上购物都是不在电脑前的零碎时间。</p>
+<p>10多年前第一次看到智能手机是室友购买的多普达，20年前也是这个室友半夜里很兴奋地播报台湾大选，让我知道了台湾大选这个事情。</p>
+<p>基本的价值观、世界观，没怎么改变，不应该是年龄大了僵化了，应该是掌握信息的手段和能力增强了，翻墙获取信息也很容易，基本的逻辑还在也没那么容易跑偏了。可能就是别人看到的年纪大了脑子僵化了吧，自我感觉不一定对。</p>
+<p>最近10年经济发展的非常好，政府对言论的控制越来越精准，舆论引导也非常”成功”,所以网络上看到这5年和5年前基本差别很大，5年前公知是个褒义词，5年后居然成了贬义词。</p>
+<p>房价自然是这10年最火的话题，07年大家开始感觉到房价上涨快、房价高，08年金融危机本来是最好的机会，结果4万亿刺激下09年年底房价开始翻倍，到10年面对翻倍了的房价政府、媒体、老百姓都在喊高，实际也只是横盘，13-14年小拉一波，16年涨价去库存再大拉一波。基本让很多人绝望了</p>
+<p>这十年做的最错的事情除了没有早点买房外就是想搞点投资收入投了制造外加炒股，踩点能力太差了，虽然前5年像任志强一样一直看多房价的不多，这个5年都被现实教育了，房价也基本到头了。</p>
+<p>工作上应该更早地、坚定地进入互联网、移动互联网，这10年互联网对人才的需求实在太大了，虽然最终能伴随公司成长的太少，毕竟活下来长大的公司不多。</p>
+<p>Google退出中国、看着小杨同学和一些同事移民、360大战QQ、诺贝尔和平奖、华为251事件都算是自己在一些公众事情上投入比较多的。非常不舍google的离开，这些年也基本还是只用google，既是无奈中用下百度也还是觉得搜不到什么有效信息；好奇移民的想法和他们出去后的各种生活；360跟QQ大战的时候觉得腾讯的垄断太牛叉了，同时认为可能360有这种资源的话会更作恶和垄断的更厉害，至少腾讯还是在乎外面的看法和要面子的；LXB到现在也是敏感词，直到病死在软禁中，这些年敏感词越来越多，言论的控制更严厉了；华为251也是个奇葩事件了，暴漏了资本家的粗野和枉法。</p>
+<p>自己工作上最幸运的事情是换到了现在的公司，才能够继续做一个北漂，要不已经被淘汰走了。这也导致了这几年能赚到前面10多年都赚不到钱。现在的公司对自己的方法论改变确实比较大，近距离看到了一些成功因素方面的逻辑（更有效的激励和企业文化）。</p>
+<p>经历了从外企到私企，从小公司到大公司的不同，外企英语是天花板，也看到了华为所谓的狼性、在金钱激励下的狼性，和对企业文化的维护，不能否认90%以上的人工作是为了钱</p>
+<p>这几年也开始习惯写技术文章来总结了，这得益于Markdown+截图表述的便利，也深刻感受到深抠，然后总结分享的方法真的很好（高斯学习方法），也体会到了抓手、触类旁通的运用。10年前在搜狐blog写过一两年的博客放弃的很快，很难一直有持续的高水平总结和输出。</p>
+<p>10年前还在比较MSN和QQ谁更好（我是坚定站在QQ这边的），10年后MSN再也看不见了，QQ也有了更好的替代工具微信。用处不大的地方倒是站对了，对自己最有用的关键地方都站错了。</p>
+<p>10年前差点要去豆瓣，10年后豆瓣还活着，依然倔强地保持自己的品味，这太难得了。相反十年前好用得不得了的RSS订阅，从抓虾转到google reader再到feedly好东西就是活得这么艰难。反过来公众号起来了、贴吧式微了，公众号运作新闻类是没问题的（看完就过），但是对技术类深度一点的就很不合适了，你看看一篇文章24小时内的阅读量占据了98%以上，再到后面就存亡了！但是公众号有流量，流量可以让大家跪在地上。</p>
+<p>10年前坑老是被看不起的，10年后早结婚、多啃老也基本成了这10年更对的事情，结婚得买房，啃老买的更早，不对的事情变对了（结婚早没错）。</p>
+<p>很成功地组织了一次初中同学20周年的聚会，也看到了远则亲、近则仇的现实情况，自己组织统筹能力还可以。</p>
+<p>情绪控制能力太差、容易失眠。这十年爱上了羽毛球和滑雪，虽然最近几年滑雪少了。</p>
+<p>体会到自小贫穷带来的一些抠门的坏习惯。</p>
+<p>2015年的股票大跌让自己很痛苦，这个过程反馈出来的不愿意撒手、在股市上的鸵鸟方式，股市上总是踩不到正确的点。割肉太难，割掉的总是错误的。</p>
+<p>15、16年我认为云计算不怎么样，觉得无非就是新瓶装旧酒，现在云计算不再有人质疑了，即使现在都还是亏钱。</p>
+<p>当然我也质疑过外卖就是一跑腿的，确实撑不起那么大的盘子，虽然没有像团购一样消亡，基本跟共享单车一样了，主要因为我是共享单车的重度用户，而我极端不喜欢外卖，所以要站出来看问题、屁股坐在哪边会严重影响看法，也就是不够客观。</p>
+<p>网约车和移动支付一起在硝烟中混战</p>
+<p>电动车开始起来，主要受政府弯道超车的刺激，目前看取决于自有充电位（适合三四线城市），可是三四线城市用户舍不得花这个溢价，汽油车都还没爽够呢。</p>
+<p>对世界杯不再那么关注，对AlphaGo的新闻倒是很在意了。魏则西事件牢牢地把百度钉死在耻辱柱上。</p>
+<p>随着12306的发展和高铁的起来，终于过年回家的火车票不用再靠半夜排队了。</p>
+<p>2019年年末行政强制安装ETC，让我想起20年前物理老师在课堂上跟我们描述的将来小汽车走高速公路再也不用停下来收费了，会自动感应，开过去就自动扣钱了。我一直对这个未来场景念念不忘，最近10年我经常问别人为什么不办ETC，这个年底看到的是行政命令下的各种抱怨。</p>
+<h3 id="看到："><a href="#看到：" class="headerlink" title="看到："></a>看到：</h3><ul>
+<li><p>老人、家人更不愿意听身边亲近人员的建议；</p>
+</li>
+<li><p>老人思维为什么固化、怎么样在自己老后不是那样固化；</p>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/12/24/Linux内核版本升级，性能到底提升多少？拿数据说话/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/12/24/Linux内核版本升级，性能到底提升多少？拿数据说话/" itemprop="url">Linux内核版本升级，性能到底提升多少？拿数据说话</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-12-24T17:30:03+08:00">
+                2019-12-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/12/24/Linux内核版本升级，性能到底提升多少？拿数据说话/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2019/12/24/Linux内核版本升级，性能到底提升多少？拿数据说话/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="Linux内核版本升级，性能到底提升多少？拿数据说话"><a href="#Linux内核版本升级，性能到底提升多少？拿数据说话" class="headerlink" title="Linux内核版本升级，性能到底提升多少？拿数据说话"></a>Linux内核版本升级，性能到底提升多少？拿数据说话</h1><h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>DRDS在公有云售卖一直使用的2.6.32的内核，有点老并且有些内核配套工具不能用，于是想升级一下内核版本。预期新内核的性能不能比2.6.32差</p>
+<p>以下不作特殊说明的话都是在相同核数的Intel(R) Xeon(R) Platinum 8163 CPU @ 2.50GHz下得到的数据，最后还会比较相同内核下不同机型/CPU型号的性能差异。</p>
+<p>场景都是用sysbench 100个并发跑点查。</p>
+<h2 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h2><p><strong>先说大家关心的数据，最终4.19内核性能比2.6.32好将近30%，建议大家升级新内核，不需要做任何改动，尤其是Java应用（不同场景会有差异）</strong></p>
+<p>本次比较的场景是Java应用的Proxy类服务，主要瓶颈是网络消耗，类似于MaxScale。后面有一个简单的MySQL Server场景下2.6.32和4.19的比较，性能也有33%的提升。</p>
+<h2 id="2-6-32性能数据"><a href="#2-6-32性能数据" class="headerlink" title="2.6.32性能数据"></a>2.6.32性能数据</h2><p>升级前先看看目前的性能数据好对比（以下各个场景都是CPU基本跑到85%）</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/b57c5ee5fe50ceb81cbad158f7b7aeeb.png" alt="image.png"></p>
+<h2 id="一波N折的4-19"><a href="#一波N折的4-19" class="headerlink" title="一波N折的4.19"></a>一波N折的4.19</h2><p>阿里云上默认买到的ALinux2 OS（4.19），同样配置跑起来后，tps只有16000，比2.6.32的22000差了不少，心里只能暗暗骂几句坑爹的货，看了下各项指标，看不出来什么问题，就像是CPU能力不行一样。如果这个时候直接找内核同学，估计他们心里会说 DRDS 是个什么东西？是不是你们测试有问题，是不是你们配置的问题，不要来坑我，内核性能我们每次发布都在实验室里跑过了，肯定是你们的应用问题。</p>
+<p>所以要找到一个公认的场景下的性能差异。</p>
+<h3 id="通过qperf来比较差异"><a href="#通过qperf来比较差异" class="headerlink" title="通过qperf来比较差异"></a>通过qperf来比较差异</h3><p>大包的情况下性能基本差不多，小包上差别还是很明显</p>
+<pre><code>qperf -t 40 -oo msg_size:1  4.19 tcp_bw tcp_lat
+tcp_bw:
+    bw  =  2.13 MB/sec
+tcp_lat:
+    latency  =  224 us
+tcp_bw:
+    bw  =  2.15 MB/sec
+tcp_lat:
+    latency  =  226 us
+
+qperf -t 40 -oo msg_size:1  2.6.32 tcp_bw tcp_lat
+tcp_bw:
+    bw  =  82 MB/sec
+tcp_lat:
+    latency  =  188 us
+tcp_bw:
+    bw  =  90.4 MB/sec
+tcp_lat:
+    latency  =  229 us
+</code></pre><p>这下不用怕内核同学怼回来了，拿着这个数据直接找他们，可以稳定重现。</p>
+<p>经过内核同学一顿排查后，发现默认镜像做了一些加固，简而言之就是CPU拿出一部分资源做了其它事情，比如旁路攻击的补丁之类的，需要关掉（因为DRDS的OS只给我们自己用，上面部署的代码都是DRDS自己的代码，没有客户代码，客户也不能够ssh连上DRDS节点）</p>
+<pre><code>去掉 melt、spec 能到20000， 去掉sonypatch能到21000 
+</code></pre><p>关闭的办法在grub配置中增加这些参数：</p>
+<pre><code>nopti nospectre_v2 nospectre_v1 l1tf=off nospec_store_bypass_disable no_stf_barrier mds=off mitigations=off
+</code></pre><p>关掉之后的状态看起来是这样的：</p>
+<pre><code>$sudo cat /sys/devices/system/cpu/vulnerabilities/*
+Mitigation: PTE Inversion
+Vulnerable; SMT Host state unknown
+Vulnerable
+Vulnerable
+Vulnerable: __user pointer sanitization and usercopy barriers only; no swapgs barriers
+Vulnerable, STIBP: disabled
+</code></pre><p>这块参考<a href="https://help.aliyun.com/document_detail/102087.html?spm=a2c4g.11186623.6.721.4a732223pEfyNC" target="_blank" rel="external">阿里云文档</a></p>
+<h3 id="4-9版本的内核性能"><a href="#4-9版本的内核性能" class="headerlink" title="4.9版本的内核性能"></a>4.9版本的内核性能</h3><p>但是性能还是不符合预期，总是比2.6.32差点。在中间经过几个星期排查不能解决问题，陷入僵局的过程中，尝试了一下4.9内核，果然有惊喜。</p>
+<p>下图中对4.9的内核版本验证发现，tps能到24000，明显比2.6.32要好，所以传说中的新内核版本性能要好看来是真的，这下坚定了升级的念头，同时也看到了兜底的方案–最差就升级到4.9</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/2f035e145f1bc41eb4a8b8bda8ed4ea2.png" alt="image.png"></p>
+<p><strong>多队列是指网卡多队列功能，也是这次升级的一个动力。看起来在没达到单核瓶颈前，网卡多队列性能反而差点，这也符合预期</strong></p>
+<h3 id="继续分析为什么4-19比4-9差了这么多"><a href="#继续分析为什么4-19比4-9差了这么多" class="headerlink" title="继续分析为什么4.19比4.9差了这么多"></a>继续分析为什么4.19比4.9差了这么多</h3><p>4.9和4.19这两个内核版本隔的近，比较好对比分析内核参数差异，4.19跟2.6.32差太多，比较起来很困难。</p>
+<p>最终仔细对比了两者配置的差异，发现ALinux的4.19中 transparent_hugepage 是 madvise ,这对Java应用来说可不是太友好：</p>
+<pre><code>$cat /sys/kernel/mm/transparent_hugepage/enabled
+always [madvise] never
+</code></pre><p>将其改到 always 后4.19的tps终于稳定在了28300</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/081c08801adb36cdfd8ff62be54fce94.png" alt="image.png"></p>
+<p>这个过程中花了两个月的一些其他折腾就不多说了，主要是内核补丁和transparent_hugepage导致了性能差异。</p>
+<p>transparent_hugepage，在redis、mongodb、memcache等场景（很多小内存分配）是推荐关闭的，所以要根据不同的业务场景来选择开关。</p>
+<p><strong>透明大页打开后在内存紧张的时候会触发sys飙高对业务会导致不可预期的抖动，同时存在已知内存泄漏的问题，我们建议是关掉的，如果需要使用，建议使用madvise方式或者hugetlbpage</strong></p>
+<h2 id="一些内核版本、机型和CPU的总结"><a href="#一些内核版本、机型和CPU的总结" class="headerlink" title="一些内核版本、机型和CPU的总结"></a>一些内核版本、机型和CPU的总结</h2><p>到此终于看到不需要应用做什么改变，整体性能将近有30%的提升。 在这个测试过程中发现不同CPU对性能影响很明显，相同机型也有不同的CPU型号（性能差异在20%以上–这个太坑了）</p>
+<p>性能方面 4.19&gt;4.9&gt;2.6.32</p>
+<p>没有做3.10内核版本的比较</p>
+<p>以下仅作为大家选择ECS的时候做参考。</p>
+<h3 id="不同机型-CPU对性能的影响"><a href="#不同机型-CPU对性能的影响" class="headerlink" title="不同机型/CPU对性能的影响"></a>不同机型/CPU对性能的影响</h3><p>还是先说结论：</p>
+<ul>
+<li>CPU:内存为1:2机型的性能排序：c6-&gt;c5-&gt;sn1ne-&gt;hfc5-&gt;s1</li>
+<li>CPU:内存为1:4机型的性能排序：g6-&gt;g5-&gt;sn2ne-&gt;hfg5-&gt;sn2</li>
+</ul>
+<p>性能差异主要来源于CPU型号的不同</p>
+<pre><code>c6/g6:                  Intel(R) Xeon(R) Platinum 8269CY CPU @ 2.50GHz
+c5/g5/sn1ne/sn2ne:      Intel(R) Xeon(R) Platinum 8163 CPU @ 2.50GHz
+</code></pre><p>8269比8163大概好5-10%，价格便宜一点点，8163比E5-2682好20%以上，价格便宜10%（该买什么机型你懂了吧，价格是指整个ECS，而不是单指CPU）</p>
+<p>要特别注意sn1ne/sn2ne 是8163和E5-2682 两种CPU型号随机的，如果买到的是E5-2682就自认倒霉吧</p>
+<p>C5的CPU都是8163，相比sn1ne价格便宜10%，网卡性能也一样。但是8核以上的sn1ne机型就把网络性能拉开了（价格还是维持c5便宜10%），从点查场景的测试来看网络不会成为瓶颈，到16核机型网卡多队列才会需要打开。</p>
+<p>顺便给一下部分机型的包月价格比较：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/7c8b107fb12e285c8eab2c2d136bbd4e.png" alt="image.png"></p>
+<p>官方给出的CPU数据：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/5f57f4228621378d14ffdd124fe54626.png" alt="image.png"></p>
+<h2 id="4-19内核在MySQL-Server场景下的性能比较"><a href="#4-19内核在MySQL-Server场景下的性能比较" class="headerlink" title="4.19内核在MySQL Server场景下的性能比较"></a>4.19内核在MySQL Server场景下的性能比较</h2><p>这只是sysbench点查场景粗略比较，因为本次的目标是对DRDS性能的改进</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/4f276e93cb914b3cdd312423be63c376.png" alt="image.png"></p>
+<p>（以上表格数据主要由 @夷则 团队和我一起测试得到）</p>
+<p><strong>重点注意2.6.32不但tps差30%，并发能力也差的比较多，如果同样用100个并发压2.6.32上的MySQL，TPS在30000左右。只有在减少并发到20个的时候压测才能达到图中最好的tps峰值：45000. </strong></p>
+<h2 id="新内核除了性能提升外带来的便利性"><a href="#新内核除了性能提升外带来的便利性" class="headerlink" title="新内核除了性能提升外带来的便利性"></a>新内核除了性能提升外带来的便利性</h2><p>升级内核带来的性能提升只是在极端场景下才会需要，大部分时候我们希望节省开发人员的时间，提升工作效率。</p>
+<h3 id="麻烦的网络重传率"><a href="#麻烦的网络重传率" class="headerlink" title="麻烦的网络重传率"></a>麻烦的网络重传率</h3><p>通过tsar或者其它方式发现网络重传率有点高，有可能是别的管理端口重传率高，有可能是往外连其它服务端口重传率高等，尤其是在整体流量小的情况下一点点管理端口的重传包拉升了整个机器的重传率，严重干扰了问题排查，所以需要进一步确认重传发生在哪个进程的哪个端口上，是否真正影响了我们的业务。</p>
+<p>在2.6.32内核下的排查过程是：抓包，然后写脚本分析（或者下载到本地通过wireshark分析），整个过程比较麻烦，需要的时间也比较长。那么在新镜像中我们可以利用内核自带的bcc来快速得到这些信息</p>
+<pre><code>sudo /usr/share/bcc/tools/tcpretrans -l
+</code></pre><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/c68cc22b2e6eb7dd51d8613c5e79e88c.png" alt="image.png"></p>
+<p>从截图可以看到重传时间、pid、tcp四元组、状态，针对重传发生的端口和阶段（SYN_SENT握手、ESTABLISHED）可以快速推断导致重传的不同原因。</p>
+<p>再也不需要像以前一样抓包、下载、写脚本分析了。</p>
+<h3 id="通过perf-top直接看Java函数的CPU消耗"><a href="#通过perf-top直接看Java函数的CPU消耗" class="headerlink" title="通过perf top直接看Java函数的CPU消耗"></a>通过perf top直接看Java函数的CPU消耗</h3><p>这个大家都比较了解，不多说，主要是top的时候能够把java函数给关联上，直接看截图：</p>
+<pre><code>sh ~/tools/perf-map-agent/bin/create-java-perf-map.sh pid
+sudo perf top
+</code></pre><p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/gif/33359/1568775788220-32745082-5155-4ecd-832a-e814a682c0df.gif" alt=""></p>
+<h3 id="快速定位Java中的锁等待"><a href="#快速定位Java中的锁等待" class="headerlink" title="快速定位Java中的锁等待"></a>快速定位Java中的锁等待</h3><p>如果CPU跑不起来，可能会存在锁瓶颈，需要快速找到它们</p>
+<p>如下测试中11万的tps是解决掉锁后得到的，4万tps是没解决锁等待前的tps：</p>
+<pre><code>#[ 210s] threads: 400, tps: 0.00, reads/s: 115845.43, writes/s: 0.00, response time: 7.57ms (95%)
+#[ 220s] threads: 400, tps: 0.00, reads/s: 116453.12, writes/s: 0.00, response time: 7.28ms (95%)
+#[ 230s] threads: 400, tps: 0.00, reads/s: 116400.31, writes/s: 0.00, response time: 7.33ms (95%)
+#[ 240s] threads: 400, tps: 0.00, reads/s: 116025.35, writes/s: 0.00, response time: 7.48ms (95%)
+#[ 250s] threads: 400, tps: 0.00, reads/s: 45260.97, writes/s: 0.00, response time: 29.57ms (95%)
+#[ 260s] threads: 400, tps: 0.00, reads/s: 41598.41, writes/s: 0.00, response time: 29.07ms (95%)
+#[ 270s] threads: 400, tps: 0.00, reads/s: 41939.98, writes/s: 0.00, response time: 28.96ms (95%)
+#[ 280s] threads: 400, tps: 0.00, reads/s: 40875.48, writes/s: 0.00, response time: 29.16ms (95%)
+#[ 290s] threads: 400, tps: 0.00, reads/s: 41053.73, writes/s: 0.00, response time: 29.07ms (95%)
+</code></pre><p>这行命令得到如下等锁的top 10堆栈（<a href="https://github.com/jvm-profiling-tools/async-profiler" target="_blank" rel="external">async-profiler</a>）：</p>
+<pre><code>$~/tools/async-profiler/profiler.sh -e lock -d 5 1560
+
+--- 1687260767618 ns (100.00%), 91083 samples
+ [ 0] ch.qos.logback.classic.sift.SiftingAppender
+ [ 1] ch.qos.logback.core.AppenderBase.doAppend
+ [ 2] ch.qos.logback.core.spi.AppenderAttachableImpl.appendLoopOnAppenders
+ [ 3] ch.qos.logback.classic.Logger.appendLoopOnAppenders
+ [ 4] ch.qos.logback.classic.Logger.callAppenders
+ [ 5] ch.qos.logback.classic.Logger.buildLoggingEventAndAppend
+ [ 6] ch.qos.logback.classic.Logger.filterAndLog_0_Or3Plus
+ [ 7] ch.qos.logback.classic.Logger.info
+ [ 8] com.*****.logger.slf4j.Slf4jLogger.info
+ [ 9] com.*****.utils.logger.support.FailsafeLogger.info
+ [10] com.*****.util.LogUtils.recordSql
+
+
+
+
+
+
+
+
+&quot;ServerExecutor-3-thread-480&quot; #753 daemon prio=5 os_prio=0 tid=0x00007f8265842000 nid=0x26f1 waiting for monitor entry [0x00007f82270bf000]
+  java.lang.Thread.State: BLOCKED (on object monitor)
+    at ch.qos.logback.core.AppenderBase.doAppend(AppenderBase.java:64)
+    - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+    at ch.qos.logback.core.spi.AppenderAttachableImpl.appendLoopOnAppenders(AppenderAttachableImpl.java:48)
+    at ch.qos.logback.classic.Logger.appendLoopOnAppenders(Logger.java:282)
+    at ch.qos.logback.classic.Logger.callAppenders(Logger.java:269)
+    at ch.qos.logback.classic.Logger.buildLoggingEventAndAppend(Logger.java:470)
+    at ch.qos.logback.classic.Logger.filterAndLog_0_Or3Plus(Logger.java:424)
+    at ch.qos.logback.classic.Logger.info(Logger.java:628)
+    at com.****.utils.logger.slf4j.Slf4jLogger.info(Slf4jLogger.java:42)
+    at com.****.utils.logger.support.FailsafeLogger.info(FailsafeLogger.java:102)
+    at com.****.util.LogUtils.recordSql(LogUtils.java:115)
+
+          ns  percent  samples  top
+  ----------  -------  -------  ---
+160442633302   99.99%    38366  ch.qos.logback.classic.sift.SiftingAppender
+    12480081    0.01%       19  java.util.Properties
+     3059572    0.00%        9  com.***.$$$.common.IdGenerator
+      244394    0.00%        1  java.lang.Object
+</code></pre><p>堆栈中也可以看到大量的：</p>
+<pre><code>- waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+  - locked &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+  - waiting to lock &lt;0x00007f866dcec208&gt; (a ch.qos.logback.classic.sift.SiftingAppender)
+</code></pre><p>当然还有很多其他爽得要死的命令，比如一键生成火焰图等，不再一一列举，可以从业务层面的需要从这次镜像升级的便利中将他们固化到镜像中，以后排查问题不再需要繁琐的安装、配置、调试过程了。</p>
+<h2 id="跟内核无关的应用层的优化"><a href="#跟内核无关的应用层的优化" class="headerlink" title="跟内核无关的应用层的优化"></a>跟内核无关的应用层的优化</h2><p>到此我们基本不用任何改动得到了30%的性能提升，但是对整个应用来说，通过以上工具让我们看到了一些明显的问题，还可以从应用层面继续提升性能。</p>
+<p>如上描述通过锁排序定位到logback确实会出现锁瓶颈，同时在一些客户场景中，因为网盘的抖动也带来了灾难性的影响，所以日志需要异步处理，经过异步化后tps 达到了32000，关键的是rt 95线下降明显，这个rt下降对DRDS这种Proxy类型的应用是非常重要的（经常被客户指责多了一层转发，rt增加了）。</p>
+<p>日志异步化和使用协程后的性能数据：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/bec4e8105091bc4b8a263aef245c0ce9.png" alt="image.png"></p>
+<h3 id="Wisp2-协程带来的红利"><a href="#Wisp2-协程带来的红利" class="headerlink" title="Wisp2 协程带来的红利"></a>Wisp2 协程带来的红利</h3><p>参考 <a href="https://www.atatech.org/articles/147345" target="_blank" rel="external">@梁希 的 Wisp2: 开箱即用的Java协程</a>：</p>
+<p>在整个测试过程中都很顺利，只是发现Wisp2在阻塞不明显的场景下，抖的厉害。简单来说就是压力比较大的话Wisp2表现很稳定，一旦压力一般（这是大部分应用场景），Wisp2表现像是一会是协程状态，一会是没开携程状态，系统的CS也变化很大。</p>
+<p>比如同一测试过程中tps抖动明显，从15000到50000：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/1550cc74116a56220d25e1434a675d14.png" alt="image.png"></p>
+<p>100个并发的时候cs很小，40个并发的时候cs反而要大很多：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/3f79909f89889459d1f0dfe4fa0a2f53.png" alt="image.png"></p>
+<p>最终在 @梁希 同学的攻关下问题基本都解决了。不但tps提升明显，rt也有很大的下降。</p>
+<h2 id="致谢"><a href="#致谢" class="headerlink" title="致谢"></a>致谢</h2><p>感谢 @夷则 团队对这次内核版本升级的支持，感谢 @雏雁 @飞绪 @李靖轩(无牙) @齐江(窅默) @梁希 等大佬的支持。</p>
+<p>最终应用不需要任何改动可以得到 30%的性能提升，经过开启协程等优化后应用有将近80%的性能提升，同时平均rt下降了到原来的60%，rt 95线下降到原来的40%。</p>
+<p>快点升级你们的内核，用上协程吧。同时考虑下在你们的应用中用上DRDS。</p>
+<h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a href="https://www.atatech.org/articles/104696" target="_blank" rel="external">记一次不同OS间的网络性能差异的排查经历</a></p>
+<p><a href="https://www.atatech.org/articles/147345" target="_blank" rel="external">@梁希 的 Wisp2: 开箱即用的Java协程</a></p>
+<p><a href="https://help.aliyun.com/document_detail/25378.html" target="_blank" rel="external">https://help.aliyun.com/document_detail/25378.html</a></p>
+<p><a href="https://help.aliyun.com/document_detail/55263.html" target="_blank" rel="external">https://help.aliyun.com/document_detail/55263.html</a></p>
+<p><a href="https://help.aliyun.com/document_detail/52559.html" target="_blank" rel="external">https://help.aliyun.com/document_detail/52559.html</a> (网卡)</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/12/16/Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/12/16/Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的/" itemprop="url">Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-12-16T12:30:03+08:00">
+                2019-12-16
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/12/16/Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2019/12/16/Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="Intel-PAUSE指令变化是如何影响自旋锁以及MySQL的性能的"><a href="#Intel-PAUSE指令变化是如何影响自旋锁以及MySQL的性能的" class="headerlink" title="Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的"></a>Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的</h1><p>本文记录专有云场景下Tomcat+MySQL集群的一次全表扫描性能优化过程</p>
+<p>经验总结，长链路下性能瓶颈发现规则（最容易互相扯皮、协调难度大）：</p>
+<blockquote>
+<p>从一个压测线程开始压，记录tps、rt；然后增加线程数量，到tps明显不再增加，分析此时各个环节的rt，看哪个环节rt增加最明显，瓶颈就在哪个环节</p>
+<p>如果监控没法得到各个环节的rt数据(太现实和普遍了)，抓包分析请求相应的rt</p>
+</blockquote>
+<h2 id="业务结构"><a href="#业务结构" class="headerlink" title="业务结构"></a>业务结构</h2><p>client -&gt; Tomcat -&gt; slb -&gt; MySQL（32实例，每个实例8Core）</p>
+<h2 id="场景描述："><a href="#场景描述：" class="headerlink" title="场景描述："></a>场景描述：</h2><p>通过client压 Tomcat和MySQL，MySQL是32个实例，业务逻辑是不带拆分键的全表扫描，也就是一个client SQL经过Tomcat后会拆分成256个SQL发送给32个MySQL（每个MySQL上有8个分库）</p>
+<p>业务SQL是一个简单的select sum求和，这个SQL在每个MySQL上都很快（有索引）</p>
+<pre><code>SELECT SUM(emp_arr_amt) FROM uebmi_clct_det_c WHERE INSUTYPE=&apos;310&apos; AND Revs_Flag=&apos;Z&apos; AND accrym=&apos;201910&apos; AND emp_no=&apos;1050457&apos;;
+</code></pre><h2 id="说明："><a href="#说明：" class="headerlink" title="说明："></a>说明：</h2><ul>
+<li>后述或者截图中的逻辑rt/QPS是指client看到的Tomcat的rt和QPS； </li>
+<li>物理rt/QPS是指Tomcat看到的MySQL rt和QPS（这里的rt是指到达Tomcat节点网卡的rt，所以还包含了网络消耗）</li>
+</ul>
+<h2 id="问题描述："><a href="#问题描述：" class="headerlink" title="问题描述："></a>问题描述：</h2><p>通过client压一个Tomcat节点+32个MySQL，QPS大概是430，Tomcat节点CPU跑满，MySQL rt是0.5ms，增加一个Tomcat节点，QPS大概是700，Tomcat CPU接近跑满，MySQL rt是0.6ms，到这里基本都是正常的。</p>
+<p>继续增加Tomcat节点来横向扩容性能，通过client压三个Tomcat节点+32个MySQL，QPS还是700，Tomcat节点CPU跑不满，MySQL rt是0.8ms，这就严重不符合预期了。</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/28610e403282d493e2ce18fbecc69421.png" alt="image.png"></p>
+<p><strong>到这里一切都还是符合我们的经验的，看起来是后端有瓶颈。</strong></p>
+<h2 id="排查-MySQL"><a href="#排查-MySQL" class="headerlink" title="排查 MySQL"></a>排查 MySQL</h2><p>现场DBA通过监控看到MySQL CPU不到20%，没有慢查询，并且尝试用client越过所有中间环节直接压其中一个MySQL，发现MySQL CPU基本能跑满，这时的QPS大概是38000（对应上面的场景client QPS为700的时候，单个MySQL上的QPS才跑到6000) 所以排除了MySQL的嫌疑</p>
+<h2 id="slb和网络的嫌疑"><a href="#slb和网络的嫌疑" class="headerlink" title="slb和网络的嫌疑"></a>slb和网络的嫌疑</h2><p>首先通过大查询排除了带宽的问题，因为这里都是小包，pps到了72万，很自然想到了xgw、slb的限流之类的</p>
+<p>pps监控，这台物理机有4个MySQL实例上，pps 9万左右，9*32/4=72万<br><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/b84245c17e213de528f2ad8090d504f6.png" alt="image.png"></p>
+<p>在xgw可以看到pps大概是100万：<br><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/87a6b32986859828dc3b5f2de3d4f430.png" alt="image.png"></p>
+<p>另外检查lvs，也没看到有进出丢包的问题：<br><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/3754ba7ac526423eba8e20f7d2953ae1.png" alt="image.png"></p>
+<p>所以网络因素被排除，另外做压测的时候反复从Tomcat上ping 后面的MySQL，rt跟没有压力的时候一样，也说明了网络没有问题。</p>
+<h2 id="问题的确认"><a href="#问题的确认" class="headerlink" title="问题的确认"></a>问题的确认</h2><p>尝试在Tomcat上打开慢查询，并将慢查询阈值设置为100ms，这个时候确实能从日志中看到大量MySQL上的慢查询，因为这个SQL需要在Tomcat上做拆分成256个SQL，同时下发，一旦有一个SQL返回慢，整个请求就因为这个短板被拖累了。平均rt0.8ms，但是经常有超过100ms的话对整体影响还是很大的。</p>
+<p>将Tomcat记录下来的慢查询（Tomcat增加了一个唯一id下发给MySQL）到MySQL日志中查找，果然发现MySQL上确实慢了，所以到这里基本确认是MySQL的问题，终于不用再纠结是否是网络问题了。</p>
+<p>同时在Tomcat进行抓包，对网卡上的rt进行统计分析：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ffd66d9a6098979b555dfb00d3494255.png" alt="image.png"></p>
+<p>这是Tomcat上抓到的每个sql的物理rt 平均值，上面是QPS 430的时候，rt 0.6ms，下面是3个server，QPS为700，但是rt上升到了0.9ms，基本跟Tomcat监控记录到的物理rt一致。如果MySQL上也有类似抓包计算rt时间的话可以快速排除网络问题。</p>
+<p>网络抓包得到的rt数据更容易被所有人接受。尝试过在MySQL上抓包，但是因为slb模块的原因，进出端口、ip都被修改过，所以没法分析一个流的响应时间。</p>
+<h2 id="重心再次转向MySQL"><a href="#重心再次转向MySQL" class="headerlink" title="重心再次转向MySQL"></a>重心再次转向MySQL</h2><p>这个时候因为问题点基本确认，再去查看MySQL是否有问题的重心都不一样了，不再只是看看CPU和慢查询，这个问题明显更复杂一些。</p>
+<p>通过监控发现MySQL CPU虽然一直不高，但是经常看到running thread飙到100多，很快又降下去了，看起来像是突发性的并发查询请求太多导致了排队等待，每个MySQL实例是8Core的CPU，尝试将MySQL实例扩容到16Core（只是为了验证这个问题），QPS确实可以上升到1000（没有到达理想的1400）。</p>
+<p>这是Tomcat上监控到的MySQL状态（Tomcat的监控还是很给力的)：<br><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e73c1371a02106a52f8a13f89a9dd9ad.png" alt="image.png"></p>
+<p>同时在MySQL机器上通过vmstat也可以看到这种飙升：<br><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/4dbd9dff9deacec0e9911e3a7d025578.png" alt="image.png"></p>
+<p>另外像这种短暂突发性的并发流量似乎监控都很难看到（基本都被平均掉了），只有一些实时性监控偶尔会采集到这种短暂突发性飙升，这也导致了一开始忽视了MySQL</p>
+<p>所以接下来的核心问题就是MySQL为什么会有这种飙升、这种飙升的影响到底是什么？</p>
+<h2 id="MySQL部署awr"><a href="#MySQL部署awr" class="headerlink" title="MySQL部署awr"></a>MySQL部署awr</h2><p>步骤：</p>
+<ol>
+<li>打开performance_schema；设置参数performance_schema=on</li>
+<li>压测前后调用调用 call awr_snapshot(‘memo’);  memo 是你希望给这次测试设置的标签</li>
+<li>查看的时候，先call awr_list_snapshot(); 找到你对应的那次测试，再运行call awr_report(1,2); 1/2对应你测试的开始、结束snapshot ID</li>
+</ol>
+<p>通过awr将performance_schema打开，并采集一些MySQL数据(SQL/CPU/Lock/Mutex等等)进行统计分析</p>
+<p>可以清楚地看到一些锁等待：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/481d7bef3dc0a1fbe20ab9cf01978a7c.png" alt="image.png"><br>从上图可以看到主要是select wait比较多，符合业务场景（都是 select sum语句），这里wait是98%，QPS为38000的时候wait才88%。</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/745790bf9b7562cc60bf311c7963c983.png" alt="image.png"></p>
+<p>从这里可以看到fil_system_mutex锁等待比较多，但是还是不清楚这个锁是怎么产生的，得怎么优化掉。QPS为38000的时候这个等待才 10%</p>
+<h2 id="perf-top"><a href="#perf-top" class="headerlink" title="perf top"></a>perf top</h2><p>直接上 perf ，发现ut_delay高得不符合逻辑：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/cd145c494c074e01e9d2d1d5583a87a0.png" alt="image.png"></p>
+<p>展开看一下，基本是在优化器中做索引命中行数的选择：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/46d5f5ee5c58d7090a71164e645ccf79.png" alt="image.png" style="zoom: 67%;"></p>
+<p>跟直接在MySQL命令行中通过 show processlist看到的基本一致：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/89cccebe41a8b8461ea75586b61b929f.png" alt="image.png" style="zoom:50%;"></p>
+<p>主要是优化器在做statistics的时候需要对索引进行统计，统计的时候要加锁，thread running抖动时对应的通过show processlist看到很多thread处于 statistics 状态。</p>
+<p>这里ut_delay 消耗了28%的CPU肯定太不正常了，于是将 innodb_spin_wait_delay 从 30 改成 6 后性能立即上去了，继续增加Tomcat节点，QPS也可以线性增加。</p>
+<h2 id="最终的性能"><a href="#最终的性能" class="headerlink" title="最终的性能"></a>最终的性能</h2><p>调整到MySQL官方默认配置innodb_spin_wait_delay=6 后在4个Tomcat节点下，并发40时，QPS跑到了1700，物理rt：0.7，逻辑rt：19.6，cpu：90%，这个时候只需要继续扩容Tomcat节点的数量就可以增加QPS<br>19.6，cpu：90%<br><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/48c976f989747266f9892403794996c0.png" alt="image.png"></p>
+<p>再跟调整前比较一下，innodb_spin_wait_delay=30，并发40时，QPS 500+，物理rt：2.6ms 逻辑rt：72.1ms cpu：37%<br><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/fdb459972926cff371f5f5ab703790bb.png" alt="image.png"></p>
+<p>再看看调整前压测的时候的vmstat和tsar –cpu，可以看到process running抖动明显<br><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/4dbd9dff9deacec0e9911e3a7d025578.png" alt="image.png"></p>
+<p>对比修改delay后的process running就很稳定了，即使QPS大了3倍<br><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ed46d35161ea28352acd4289a3e9ddad.png" alt="image.png"></p>
+<h2 id="关于-innodb-spin-wait-delay"><a href="#关于-innodb-spin-wait-delay" class="headerlink" title="关于 innodb_spin_wait_delay"></a>关于 innodb_spin_wait_delay</h2><p>innodb通过大量的自旋锁来用高CPU消耗避免CS，这是自旋锁的正确使用方式，但是在多个核的情况下，多核一起自旋抢同一个锁，容易造成cache ping-pong，进而多个CPU核之间会互相使对方缓存部分无效。所以这里<a href="https://dev.mysql.com/doc/refman/5.7/en/innodb-performance-spin_lock_polling.html" target="_blank" rel="external">innodb通过增加innodb_spin_wait_delay和pause配合来缓解cache ping-pong</a>，也就是本来要高速通过CPU自旋抢锁的，换成了抢锁失败后 delay一下（Pause）但是不释放CPU，delay时间到后继续抢锁，也就是把连续的自旋抢锁转换成了更稀疏的点状的抢锁（间隔的delay是个随机数–机关枪换成左轮手枪，避免卡壳），这样不但避免了CS也大大减少了cache ping-pong. </p>
+<p>多线程竞争锁的时候，加锁失败的线程会“忙等待”，直到它拿到锁。什么叫“忙等待”呢？它并不意味着一直执行 CAS 函数，生产级的自旋锁在“忙等待”时，会与 CPU 紧密配合 ，它通过 CPU 提供的 PAUSE 指令，减少循环等待时的cache ping-pong和耗电量；对于单核 CPU，忙等待并没有意义，此时它会主动把线程休眠。</p>
+<p>CPU专为自旋锁设计了pause指令，一旦自旋抢锁失败先pause一下，只是这个pause对于innodb来说pause的还不够久，所以需要 innodb_spin_wait_delay 来将pause放大一些。</p>
+<p>在我们的这个场景下对每个SQL的rt抖动非常敏感（放大256倍），所以过高的delay会导致部分SQL rt变高。</p>
+<p>函数 ut_delay(ut_rnd_interval(0, srv_spin_wait_delay)) 用来执行这个delay：</p>
+<pre><code>/***************************MySQL代码****************************//**
+Runs an idle loop on CPU. The argument gives the desired delay
+in microseconds on 100 MHz Pentium + Visual C++.
+@return dummy value */
+UNIV_INTERN
+ulint
+ut_delay(ulint delay)  //delay 是[0,innodb_spin_wait_delay)之间的一个随机数
+{
+        ulint   i, j;
+
+        UT_LOW_PRIORITY_CPU();
+
+        j = 0;
+
+        for (i = 0; i &lt; delay * 50; i++) {  //delay 放大50倍
+                j += i;
+                UT_RELAX_CPU();             //cpu Pause
+        }
+
+        UT_RESUME_PRIORITY_CPU();
+
+        return(j);
+}
+
+// kernel 自旋锁部分代码
+while (true) {
+  //因为判断lock变量的值比CAS操作更快，所以先判断lock再调用CAS效率更高
+  if (lock == 0 &amp;&amp;  CAS(lock, 0, pid) == 1) return;
+
+  if (CPU_count &gt; 1 ) { //如果是多核CPU，“忙等待”才有意义
+      for (n = 1; n &lt; 2048; n &lt;&lt;= 1) {//pause的时间，应当越来越长
+        for (i = 0; i &lt; n; i++) pause();//CPU专为自旋锁设计了pause指令
+        if (lock == 0 &amp;&amp; CAS(lock, 0, pid)) return;//pause后再尝试获取锁
+      }
+  }
+  sched_yield();//单核CPU，或者长时间不能获取到锁，应主动休眠，让出CPU
+}
+
+//MySQL 8.0 针对PAUSE，源码中新增了spin_wait_pause_multiplier参数，来替换之前写死的循环次数。
+</code></pre><p>innodb_spin_wait_delay的默认值为6. spin 等待延迟是一个动态全局参数，您可以在MySQL选项文件（my.cnf或my.ini）中指定该参数，或者在运行时使用SET GLOBAL 来修改。在我们的MySQL配置中默认改成了30，导致了这个问题。</p>
+<h3 id="Skylake架构的8163-和-Broadwell架构-E5-2682-CPU型号的不同"><a href="#Skylake架构的8163-和-Broadwell架构-E5-2682-CPU型号的不同" class="headerlink" title="Skylake架构的8163 和 Broadwell架构 E5-2682 CPU型号的不同"></a>Skylake架构的8163 和 Broadwell架构 E5-2682 CPU型号的不同</h3><p>UT_RELAX_CPU()的汇编指令为pause，在CPU指令同步数据时进行等待的空转，<strong>在pause期间，同一个core上的HT可以执行其他指令</strong>。</p>
+<p>在Intel 64-ia-32-architectures-optimization-manual手册中提到：<br>The latency of the PAUSE instruction in prior generation microarchitectures is about 10 cycles, whereas in Skylake microarchitecture it has been extended to as many as 140 cycles.</p>
+<blockquote>
+<p><a href="https://xem.github.io/minix86/manual/intel-x86-and-64-manual-vol3/o_fe12b1e2a880e0ce-302.html" target="_blank" rel="external">The PAUSE instruction can improves the performance</a> of processors supporting Intel Hyper-Threading Technology when executing “spin-wait loops” and other routines where one thread is accessing a shared lock or semaphore in a tight polling loop. When executing a spin-wait loop, the processor can suffer a severe performance penalty when exiting the loop because it detects a possible memory order violation and flushes the core processor’s pipeline. The PAUSE instruction provides a hint to the processor that the code sequence is a spin-wait loop. The processor uses this hint to avoid the memory order violation and prevent the pipeline flush. In addition, the PAUSE instruction de-<br>pipelines the spin-wait loop to prevent it from consuming execution resources excessively and consume power needlessly. (See<a href="https://xem.github.io/minix86/manual/intel-x86-and-64-manual-vol3/o_fe12b1e2a880e0ce-305.html" target="_blank" rel="external"> Section 8.10.6.1, “Use the PAUSE Instruction in Spin-Wait Loops,” for more </a>information about using the PAUSE instruction with IA-32 processors supporting Intel Hyper-Threading Technology.)</p>
+</blockquote>
+<p><strong>Skylake架构的CPU的PAUSE指令从之前的10 cycles提升到140 cycles。</strong></p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/f712640a787655ad1bcddec4c65215e5.png" alt="image.png"></p>
+<p>可以看到V52的CPU绝大部分时间消耗在ut_delay函数上。（注：V42和V52表示两种不同的机型，他们使用的CPU型号不一样）</p>
+<p>使用pqos观测CPU的IPC指标：<br>在128并发写入场景下，V42 CPU的IPC为0.35左右，而V52 CPU的IPC只有0.18</p>
+<blockquote>
+<p>说明：IPC是单位时钟周期的指令数，反映当前场景下，CPU的执行效率</p>
+</blockquote>
+<p>MySQL使用innodb_spin_wait_delay控制spin lock等待时间，等待时间时间从0*50个pause到innodb_spin_wait_delay*50个pause。<br>线上innodb_spin_wait_delay默认配置30，对于V42 CPU，等待的最长时间为：<br>30 * 50 * 10=15000 cycles，对于2.5GHz的CPU，等待时间为6us。<br>对应计算V52 CPU的等待时间：30 *50 *140=210000 cycles，CPU主频也是2.5GHz，等待时间84us。</p>
+<p>E5-2682 CPU型号在不同的delay参数和不同并发压力下的写入性能数据：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/9377127947c23dd166f6aa399b6a89b9.png" alt="image.png"></p>
+<p>Skylake 8163 CPU型号在不同的delay参数和不同并发压力下的写入性能数据：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d567449fe52725a9d0b9d4ec9baa372c.png" alt="image.png"></p>
+<p>因为8163的cycles从10改到了140，所以可以看到delay参数对性能的影响更加陡峻。</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d0b0687ab72cfb785441bfb343b9f948.png" alt="image.png"></p>
+<h4 id="不同的架构下的参数"><a href="#不同的架构下的参数" class="headerlink" title="不同的架构下的参数"></a>不同的架构下的参数</h4><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e4a2fb522be7aa65158778b7ea825207.png" alt="image.png"></p>
+<h3 id="cache-一致性"><a href="#cache-一致性" class="headerlink" title="cache 一致性"></a>cache 一致性</h3><p>处理器都实现了 Cache 一致性 (Cache Coherence）协议。如历史上 x86 曾实现了<a href="https://en.wikipedia.org/wiki/MESI_protocol" target="_blank" rel="external"> MESI 协议</a>，以及 MESIF 协议。</p>
+<p>假设两个处理器 A 和 B, 都在各自本地 Cache Line 里有同一个变量的拷贝时，此时该 Cache Line 处于 Shared 状态。当处理器 A 在本地修改了变量，除去把本地变量所属的 Cache Line 置为 Modified 状态以外，<br>还必须在另一个处理器 B 读同一个变量前，对该变量所在的 B 处理器本地 Cache Line 发起 Invaidate 操作，标记 B 处理器的那条 Cache Line 为 Invalidate 状态。<br>随后，若处理器 B 在对变量做读写操作时，如果遇到这个标记为 Invalidate 的状态的 Cache Line，即会引发 Cache Miss，从而将内存中最新的数据拷贝到 Cache Line 里，然后处理器 B 再对此 Cache Line 对变量做读写操作。</p>
+<p>cache ping-pong(cache-line ping-ponging) 是指不同的CPU共享位于同一个cache-line里边的变量，当不同的CPU频繁的对该变量进行读写时，会导致其他CPU cache-line的失效。</p>
+<h4 id="Cache-Line-伪共享"><a href="#Cache-Line-伪共享" class="headerlink" title="Cache Line 伪共享"></a>Cache Line 伪共享</h4><p>Cache Line 伪共享问题，就是由多个 CPU 上的多个线程同时修改自己的变量引发的。这些变量表面上是不同的变量，但是实际上却存储在同一条 Cache Line 里（Cache Line 失效的最小单位是整个Line，而不是一个变量）。<br>在这种情况下，由于 Cache 一致性协议，两个处理器都存储有相同的 Cache Line 拷贝的前提下，本地 CPU 变量的修改会导致本地 Cache Line 变成 Modified 状态，然后在其它共享此 Cache Line 的 CPU 上，<br>引发 Cache Line 的 Invaidate 操作，导致 Cache Line 变为 Invalidate 状态，从而使 Cache Line 再次被访问时，发生本地 Cache Miss，从而伤害到应用的性能。<br>在此场景下，多个线程在不同的 CPU 上高频反复访问这种 Cache Line 伪共享的变量，则会因 Cache 颠簸引发严重的性能问题。</p>
+<h4 id="MESI-protocol"><a href="#MESI-protocol" class="headerlink" title="MESI protocol"></a><a href="https://en.wikipedia.org/wiki/MESI_protocol" target="_blank" rel="external">MESI protocol</a></h4><p>MySQL 这里读取Mutex or rw-lock 会导致其它core的cache line 失效，这个读取应该不是一个 Shared读，猜测是一个Exclusive读（加锁成功肯定会Modified），意味着读取就会让其他 cache line失效。</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/2a5245c81a37d166c7e0b2ace45b9e4b.png" alt="image.png"></p>
+<p>在NUMA架构中，多个处理器中的同一个缓存页面必定在其中一个处理器中属于 F 状态(可以修改的状态)，这个页面在这个处理器中没有理由不可以多核心共享(可以多核心共享就意味着这个能进入修改状态的页面的多个有效位被设置为一)。MESIF协议应该是工作在核心(L1+L2)层面而不是处理器(L3)层面，这样同一处理器里多个核心共享的页面，只有其中一个是出于 F 状态(可以修改的状态)。见后面对 NUMA 和 MESIF 的解析。(L1/L2/L3 的同步应该是不需要 MESIF 的同步机制)</p>
+<h2 id="分析源代码"><a href="#分析源代码" class="headerlink" title="分析源代码"></a>分析源代码</h2><p>另外分析了MySQL源代码后，在select中通过使用force index来绕过优化器是可以达到相同的效果（不再走statistics流程，也就不会有这个锁争抢了）</p>
+<p>从下面的源代码中可以看到perf top中fil_space_get，在这个函数里面确实会对fil_system_mutex加锁（跟awr监控对应上了）</p>
+<pre><code>/** Look up a tablespace.
+The caller should hold an InnoDB table lock or a MDL that prevents
+the tablespace from being dropped during the operation,
+or the caller should be in single-threaded crash recovery mode
+(no user connections that could drop tablespaces).
+If this is not the case, fil_space_acquire() and fil_space_release()
+should be used instead.
+@param[in]      id      tablespace ID
+@return tablespace, or NULL if not found */
+fil_space_t*
+fil_space_get(
+        ulint   id)
+{
+        mutex_enter(&amp;fil_system-&gt;mutex);
+        fil_space_t*    space = fil_space_get_by_id(id);
+        mutex_exit(&amp;fil_system-&gt;mutex);
+        ut_ad(space == NULL || space-&gt;purpose != FIL_TYPE_LOG);
+        return(space);
+}
+</code></pre><p>btr_estimate_n_rows_in_range_low会调用btr_estimate_n_rows_in_range_on_level, btr_estimate_n_rows_in_range_on_level中调用 fil_space_get</p>
+<p>const fil_space_t*      space = fil_space_get(index-&gt;space);</p>
+<pre><code>/** Estimates the number of rows in a given index range.
+@param[in]      index           index
+@param[in]      tuple1          range start, may also be empty tuple
+@param[in]      mode1           search mode for range start
+@param[in]      tuple2          range end, may also be empty tuple
+@param[in]      mode2           search mode for range end
+@param[in]      nth_attempt     if the tree gets modified too much while
+we are trying to analyze it, then we will retry (this function will call
+itself, incrementing this parameter)
+@return estimated number of rows; if after rows_in_range_max_retries
+retries the tree keeps changing, then we will just return
+rows_in_range_arbitrary_ret_val as a result (if
+nth_attempt &gt;= rows_in_range_max_retries and the tree is modified between
+the two dives). */
+static
+int64_t
+btr_estimate_n_rows_in_range_low(
+        dict_index_t*   index,
+        const dtuple_t* tuple1,
+        page_cur_mode_t mode1,
+        const dtuple_t* tuple2,
+        page_cur_mode_t mode2,
+        unsigned        nth_attempt)
+
+/*******************************************************************//**
+Estimate the number of rows between slot1 and slot2 for any level on a
+B-tree. This function starts from slot1-&gt;page and reads a few pages to
+the right, counting their records. If we reach slot2-&gt;page quickly then
+we know exactly how many records there are between slot1 and slot2 and
+we set is_n_rows_exact to TRUE. If we cannot reach slot2-&gt;page quickly
+then we calculate the average number of records in the pages scanned
+so far and assume that all pages that we did not scan up to slot2-&gt;page
+contain the same number of records, then we multiply that average to
+the number of pages between slot1-&gt;page and slot2-&gt;page (which is
+n_rows_on_prev_level). In this case we set is_n_rows_exact to FALSE.
+@return number of rows, not including the borders (exact or estimated) */
+static
+int64_t
+btr_estimate_n_rows_in_range_on_level(
+/*==================================*/
+        dict_index_t*   index,                  /*!&lt; in: index */
+        btr_path_t*     slot1,                  /*!&lt; in: left border */
+        btr_path_t*     slot2,                  /*!&lt; in: right border */
+        int64_t         n_rows_on_prev_level,   /*!&lt; in: number of rows
+                                                on the previous level for the
+                                                same descend paths; used to
+                                                determine the number of pages
+                                                on this level */
+        ibool*          is_n_rows_exact)        /*!&lt; out: TRUE if the returned
+                                                value is exact i.e. not an
+                                                estimation */
+</code></pre><p>JOIN::estimate_row_count 是优化器估计行数的调用。 CBO 需要获得扫描行数数量，计算各访问路径的代价，确定哪个访问路径更好。在 MySQL 社区版，支持索引下探 (records_in_range) 和索引 key ndv (records_in_key) 来估计行数，但默认是索引下探（文中 perf 调用栈）。本文的查询是简单查询，而 force index 固定了访问路径，所以可以忽略行数估计，跳过下探逻辑。</p>
+<p>顺便说一下， RDS MySQL 8.0 Outline 功能可以在 server 端 force index ，避免对应用代码的侵入。此外 PolarDB MySQL 里新增加了根据直方图来估计行数的功能，并且增强了直方图，可以有效应对这种场景。我们也在开发执行计划的锁定和演进功能，相信这类场景后面都可以系统化地解决掉。</p>
+<h2 id="perf-top-和-pause"><a href="#perf-top-和-pause" class="headerlink" title="perf top 和 pause"></a>perf top 和 pause</h2><p>案例：</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/864427c491497acb02d37c02cb35eeb2.png" alt="image.png"></p>
+<p>对如上两个pause指令以及一个 count++（addq），进行perf top：</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/40945b005eb9f716e429fd30be55b6d1.png" alt="image.png"></p>
+<p>可以看到第一个pasue在perf top中cycles为0，第二个为46.85%，另外一个addq也有48.83%，基本可以猜测perf top在这里数据都往后挪了一个。</p>
+<p><strong>问题总结：</strong><br> 我们知道perf top是通过读取PMU的PC寄存器来获取当前执行的指令进而根据汇编的symbol信息获得是执行的哪条指令。所以看起来CPU在执行pause指令的时候，从PMU中看到的PC值指向到了下一条指令，进而导致我们看到的这个现象。通过查阅《Intel® 64 and IA-32 Architectures Optimization Reference Manual》目前还无法得知这是CPU的一个设计缺陷还是PMU的一个bug(需要对pause指令做特殊处理)。<strong>不管怎样，这个实验证明了我们统计spin lock的CPU占比还是准确的，不会因为pause指令导致PMU采样出错导致统计信息的整体失真。只是对于指令级的CPU统计，我们能确定的就是它把pause的执行cycles 数统计到了下一条指令。</strong></p>
+<p><strong>补充说明：</strong></p>
+<p>​    <strong>经过测试，非skylake CPU也同样存在perf top会把pause(执行数cycles是10)的执行cycles数统计到下一条指令的问题，看来这是X86架构都存在的问题。</strong></p>
+<h2 id="总结分析"><a href="#总结分析" class="headerlink" title="总结分析"></a>总结分析</h2><p>CPU 架构不同Pause 指令的不同导致了 MySQL innodb_spin_wait_delay 在spin lock失败的时候delay更久，导致调用方看到了MySQL更大的rt，导致Tomcat Server上并发跑不起来，所以最终压力上不去。</p>
+<p>在长链路的排查中，细化定位是哪个节点出了问题是最难的，这里大量的时间都花在了client、slb、Tomcat节点等等有没有问题，就是因为MySQL有32个节点，他们的CPU都不高，让大家很快排除了他的嫌疑。</p>
+<p>在一开始排除MySQL嫌疑(主要是这种场景下对抖动太敏感了)后花了大量的工作在简化链路上，实际因为他们都不是瓶颈，所以没有任何效果。</p>
+<p>在极端环境下（比如没有网络、工具不健全）排查问题太困难了，比如这个问题MySQL早装perf可能很快就发现了问题。</p>
+<p>这种一个查询分成多个查询的业务逻辑受短板影响明显，短板进而受抖动影响明显（比如这里的随机delay）。</p>
+<p>应用的Tomcat横向扩展是非常可靠的，应用Tomcat统计出来的物理rt是绝对可信的，经过这次案例后续大家应该会更加相信应用的监控。</p>
+<p>增加并发压力的时候MySQL rt增加很明显是最关键的证据（即使MySQL CPU很闲，但是总的MySQL平均rt也才0.9ms让我们一开始有点疏忽了），所以这种场景下还要多看长尾。</p>
+<p>欲速则不达，做压测的时候还是要老老实实地从一个并发开始观察QPS、rt，然后一直增加压力到压不上去了，再看QPS、rt变化，然后确认瓶颈点。</p>
+<p>关于这个抖动对整体rt的影响计算：</p>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/c47d2bd0e4d9d0f005d0e1132b385eab.png" alt="image.png"></p>
+<h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a href="https://cloud.tencent.com/developer/article/1005284" target="_blank" rel="external">https://cloud.tencent.com/developer/article/1005284</a></p>
+<p><a href="https://dev.mysql.com/doc/refman/5.7/en/innodb-performance-spin_lock_polling.html" target="_blank" rel="external">mysql doc</a></p>
+<p><a href="http://oliveryang.net/2018/01/cache-false-sharing-debug" target="_blank" rel="external">Cache Line 伪共享发现与优化</a></p>
+<p><a href="https://en.wikichip.org/w/images/e/eb/intel-ref-248966-037.pdf" target="_blank" rel="external">intel spec</a></p>
+<p><a href="https://coolshell.cn/articles/20793.html" target="_blank" rel="external">与程序员相关的CPU缓存知识</a> </p>
+<p><a href="https://mp.weixin.qq.com/s/dlKC13i9Z8wjDDiU2tig6Q" target="_blank" rel="external">Intel PAUSE指令变化影响到MySQL的性能，该如何解决？</a></p>
+<p><a href="https://www.atatech.org/articles/85549" target="_blank" rel="external">https://www.atatech.org/articles/85549</a></p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/12/09/epoll的LT和ET/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/12/09/epoll的LT和ET/" itemprop="url">epoll的LT和ET</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-12-09T12:30:03+08:00">
+                2019-12-09
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/12/09/epoll的LT和ET/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2019/12/09/epoll的LT和ET/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="epoll的LT和ET"><a href="#epoll的LT和ET" class="headerlink" title="epoll的LT和ET"></a>epoll的LT和ET</h1><ul>
+<li><p>LT水平触发(翻译为 条件触发 更合适） </p>
+<blockquote>
+<p>   如果事件来了，不管来了几个，只要仍然有未处理的事件，epoll都会通知你。比如事件来了，打印一行通知，但是不去处理事件，那么会不停滴打印通知。水平触发模式的 epoll 的扩展性很差。</p>
+</blockquote>
+</li>
+<li><p>ET边沿触发<br>&gt;</p>
+<blockquote>
+<p>  如果事件来了，不管来了几个，你若不处理或者没有处理完，除非下一个事件到来，否则epoll将不会再通知你。 比如事件来了，打印一行通知，但是不去处理事件，那么不再通知，除非下个事件来了</p>
+</blockquote>
+</li>
+</ul>
+<p>LT比ET会多一次重新加入就绪队列的动作，也就是意味着一定有一次poll不到东西，效率是有影响但是队列长度有限所以基本可以不用考虑。但是LT编程方式上要简单多了，所以LT也是默认的。</p>
+<h3 id="水平触发的问题：不必要的唤醒"><a href="#水平触发的问题：不必要的唤醒" class="headerlink" title="水平触发的问题：不必要的唤醒"></a>水平触发的问题：不必要的唤醒</h3><ol>
+<li>内核：收到一个新建连接的请求</li>
+<li>内核：由于 “惊群效应” ，唤醒两个正在 epoll_wait() 的线程 A 和线程 B</li>
+<li>线程A：epoll_wait() 返回</li>
+<li>线程B：epoll_wait() 返回</li>
+<li>线程A：执行 accept() 并且成功</li>
+<li>线程B：执行 accept() 失败，accept() 返回 EAGAIN</li>
+</ol>
+<h3 id="边缘触发的问题：不必要的唤醒以及饥饿"><a href="#边缘触发的问题：不必要的唤醒以及饥饿" class="headerlink" title="边缘触发的问题：不必要的唤醒以及饥饿"></a>边缘触发的问题：不必要的唤醒以及饥饿</h3><p>不必要的唤醒：</p>
+<ol>
+<li>内核：收到第一个连接请求。线程 A 和 线程 B 两个线程都在 epoll_wait() 上等待。由于采用边缘触发模式，所以只有一个线程会收到通知。这里假定线程 A 收到通知</li>
+<li>线程A：epoll_wait() 返回</li>
+<li>线程A：调用 accpet() 并且成功</li>
+<li>内核：此时 accept queue 为空，所以将边缘触发的 socket 的状态从可读置成不可读</li>
+<li>内核：收到第二个建连请求</li>
+<li>内核：此时，由于线程 A 还在执行 accept() 处理，只剩下线程 B 在等待 epoll_wait()，于是唤醒线程 B</li>
+<li>线程A：继续执行 accept() 直到返回 EAGAIN</li>
+<li>线程B：执行 accept()，并返回 EAGAIN，此时线程 B 可能有点困惑(“明明通知我有事件，结果却返回 EAGAIN”)</li>
+<li>线程A：再次执行 accept()，这次终于返回 EAGAIN</li>
+</ol>
+<p>饥饿：</p>
+<ol>
+<li>内核：接收到两个建连请求。线程 A 和 线程 B 两个线程都在等在 epoll_wait()。由于采用边缘触发模式，只有一个线程会被唤醒，我们这里假定线程 A 先被唤醒</li>
+<li>线程A：epoll_wait() 返回</li>
+<li>线程A：调用 accpet() 并且成功</li>
+<li>内核：收到第三个建连请求。由于线程 A 还没有处理完(没有返回 EAGAIN)，当前 socket 还处于可读的状态，由于是边缘触发模式，所有不会产生新的事件</li>
+<li>线程A：继续执行 accept() 希望返回 EAGAIN 再进入 epoll_wait() 等待，然而它又 accept() 成功并处理了一个新连接</li>
+<li>内核：又收到了第四个建连请求</li>
+<li>线程A：又继续执行 accept()，结果又返回成功</li>
+</ol>
+<p>ET的话会要求应用一直要把消息处理完毕，比如nginx用ET模式，来了一个上传大文件并压缩的任务，会造成这么一个循环：</p>
+<pre><code>nginx读数据（未读完）-&gt;Gzip(需要时间，套接字又有数据过来)-&gt;读数据（未读完）-&gt;Gzip .....
+</code></pre><p>新的accpt进来，因为前一个nginx worker已经被唤醒并且还在read(这个时候内核因为accept queue为空所以已经将socket设置成不可读），所以即使其它worker 被唤醒，看到的也是一个不可读的socket，所以很快因为EAGAIN返回了。</p>
+<p>这样就会造成nginx的这个worker假死了一样。如果上传速度慢，这个循环无法持续存在，也就是一旦读完nginx切走（再有数据进来等待下次触发），不会造成假死。</p>
+<p>JDK中的NIO是条件触发（level-triggered），不支持ET。netty，nginx和redis默认是边缘触发（edge-triggered），netty因为JDK不支持ET，所以自己实现了Netty-native的抽象，不依赖JDK来提供ET。</p>
+<p>边缘触发会比条件触发更高效一些，因为边缘触发不会让同一个文件描述符多次被处理,比如有些文件描述符已经不需要再读写了,但是在条件触发下每次都会返回,而边缘触发只会返回一次。</p>
+<p>如果设置边缘触发,则必须将对应的文件描述符设置为非阻塞模式并且循环读取数据。否则会导致程序的效率大大下降或丢消息。</p>
+<p>poll和epoll默认采用的都是条件触发,只是epoll可以修改成边缘触发。条件触发同时支持block和non-block，使用更简单一些。</p>
+<h3 id="epoll-LT惊群的发生"><a href="#epoll-LT惊群的发生" class="headerlink" title="epoll LT惊群的发生"></a>epoll LT惊群的发生</h3><pre><code>// 否则会阻塞在IO系统调用，导致没有机会再epoll
+set_socket_nonblocking(sd);
+epfd = epoll_create(64);
+event.data.fd = sd;
+epoll_ctl(epfd, EPOLL_CTL_ADD, sd, &amp;event);
+while (1) {
+    epoll_wait(epfd, events, 64, xx);
+    ... // 危险区域！如果有共享同一个epfd的进程/线程调用epoll_wait，它们也将会被唤醒！
+    // 这个accept将会有多个进程/线程调用，如果并发请求数很少，那么将仅有几个进程会成功：
+    // 1. 假设accept队列中有n个请求，则仅有n个进程能成功，其它将全部返回EAGAIN (Resource temporarily unavailable)
+    // 2. 如果n很大(即增加请求负载)，虽然返回EAGAIN的比率会降低，但这些进程也并不一定取到了epoll_wait返回当下的那个预期的请求。
+    csd = accept(sd, &amp;in_addr, &amp;in_len); 
+    ...
+}
+</code></pre><p>再看一遍LT的描述“如果事件来了，不管来了几个，只要仍然有未处理的事件，epoll都会通知你。”，显然，epoll_wait刚刚取到事件的时候的时候，不可能马上就调用accept去处理，事实上，逻辑在epoll_wait函数调用的ep_poll中还没返回的，这个时候，显然符合“仍然有未处理的事件”这个条件，显然这个时候为了实现这个语义，需要做的就是通知别的同样阻塞在同一个epoll句柄睡眠队列上的进程！在实现上，这个语义由两点来保证：</p>
+<p>保证1：在LT模式下，“就绪链表”上取出的epi上报完事件后会重新加回“就绪链表”；<br>保证2：如果“就绪链表”不为空，且此时有进程阻塞在同一个epoll句柄的睡眠队列上，则唤醒它。</p>
+<p>epoll LT模式下有进程被不必要唤醒，这一点并不是内核无意而为之的，内核肯定是知道这件事的，这个并不像之前accept惊群那样算是内核的一个缺陷。epoll LT模式只是提供了一种模式，误用这种模式将会造成类似惊群那样的效应。但是不管怎么说，为了讨论上的方便，后面我们姑且将这种效应称作epoll LT惊群吧。</p>
+<h3 id="epoll-ET模式可以解决上面的问题，但是带来了新的麻烦"><a href="#epoll-ET模式可以解决上面的问题，但是带来了新的麻烦" class="headerlink" title="epoll ET模式可以解决上面的问题，但是带来了新的麻烦"></a>epoll ET模式可以解决上面的问题，但是带来了新的麻烦</h3><p>由于epi entry的callback即ep_poll_callback所做的事情仅仅是将该epi自身加入到epoll句柄的“就绪链表”，同时唤醒在epoll句柄睡眠队列上的task，所以这里并不对事件的细节进行计数，比如说，<strong>如果ep_poll_callback在将一个epi加入“就绪链表”之前发现它已经在“就绪链表”了，那么就不会再次添加，因此可以说，一个epi可能pending了多个事件，注意到这点非常重要！</strong></p>
+<p>一个epi上pending多个事件，这个在LT模式下没有任何问题，因为获取事件的epi总是会被重新添加回“就绪链表”，那么如果还有事件，在下次check的时候总会取到。然而对于ET模式，仅仅将epi从“就绪链表”删除并将事件本身上报后就返回了，因此如果该epi里还有事件，则只能等待再次发生事件，进而调用ep_poll_callback时将该epi加入“就绪队列”。这意味着什么？</p>
+<p>这意味着，应用程序，即epoll_wait的调用进程必须自己在获取事件后将其处理干净后方可再次调用epoll_wait，否则epoll_wait不会返回，而是必须等到下次产生事件的时候方可返回。这会导致事件堆积，所以一般会死循环一直拉取事件，直到拉取不到了再返回。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://www.atatech.org/articles/157349" target="_blank" rel="external">Epoll is fundamentally broken</a> </p>
+<p><a href="https://idea.popcount.org/2017-02-20-epoll-is-fundamentally-broken-12" target="_blank" rel="external">Epoll is fundamentally broken 1/2</a> </p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
   </section>
 
   
@@ -4817,7 +4922,7 @@ test.x86_64.rpm
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">99</span>
+                <span class="site-state-item-count">95</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
