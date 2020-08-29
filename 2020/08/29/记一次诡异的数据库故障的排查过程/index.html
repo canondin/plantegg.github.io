@@ -1,0 +1,912 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="Hexo, NexT" />
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="plantegg" type="application/atom+xml" />
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.1" />
+
+
+
+
+
+
+<meta name="description" content="记一次诡异的数据库故障的排查过程这两周遇到了一个诡异的应用数据库访问现象：某业务通过 TDDL 访问数据库，偶尔会出现超长的访问 RT，导致整个 HSF 服务接口调用超时。从 Eagleeye 调用链分析平台看到的图形是这个样子：  从这张图上可以看出：  查询多张表 RT 都超过 500ms； 同样一次调用，另一些表的 RT 只有 1ms； 都是访问同一个数据库；  在什么情况下会出现这种现象呢">
+<meta property="og:type" content="article">
+<meta property="og:title" content="plantegg">
+<meta property="og:url" content="http://yoursite.com/2020/08/29/记一次诡异的数据库故障的排查过程/index.html">
+<meta property="og:site_name" content="plantegg">
+<meta property="og:description" content="记一次诡异的数据库故障的排查过程这两周遇到了一个诡异的应用数据库访问现象：某业务通过 TDDL 访问数据库，偶尔会出现超长的访问 RT，导致整个 HSF 服务接口调用超时。从 Eagleeye 调用链分析平台看到的图形是这个样子：  从这张图上可以看出：  查询多张表 RT 都超过 500ms； 同样一次调用，另一些表的 RT 只有 1ms； 都是访问同一个数据库；  在什么情况下会出现这种现象呢">
+<meta property="og:image" content="http://img1.tbcdn.cn/L1/461/1/17a3e60a6a1b18a081870b2762bcafce7977a27e">
+<meta property="og:image" content="http://img2.tbcdn.cn/L1/461/1/4d553ff978f2e53ad4fa2d2b3bf19c198ff52480">
+<meta property="og:image" content="http://img4.tbcdn.cn/L1/461/1/9f4ef8852aa535348e3d477c1f6fbfa2b85b42fe">
+<meta property="og:image" content="http://img2.tbcdn.cn/L1/461/1/ab9c0dccef6f2c862e3bbd58a6ffdf0d016d032a">
+<meta property="og:image" content="http://img1.tbcdn.cn/L1/461/1/2fbb84b615183d35b7a474681e075d3844868f85">
+<meta property="og:image" content="http://img4.tbcdn.cn/L1/461/1/9e89e6f2450dff46536d70a9e27876cc8507db06">
+<meta property="og:image" content="http://img2.tbcdn.cn/L1/461/1/d507dbf33a6230fcc3adf986af3702c3d2b885f9">
+<meta property="og:image" content="http://img4.tbcdn.cn/L1/461/1/783cc78dba90bebad5e655430bcacd97706a6b89">
+<meta property="og:updated_time" content="2019-10-25T05:15:39.337Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="plantegg">
+<meta name="twitter:description" content="记一次诡异的数据库故障的排查过程这两周遇到了一个诡异的应用数据库访问现象：某业务通过 TDDL 访问数据库，偶尔会出现超长的访问 RT，导致整个 HSF 服务接口调用超时。从 Eagleeye 调用链分析平台看到的图形是这个样子：  从这张图上可以看出：  查询多张表 RT 都超过 500ms； 同样一次调用，另一些表的 RT 只有 1ms； 都是访问同一个数据库；  在什么情况下会出现这种现象呢">
+<meta name="twitter:image" content="http://img1.tbcdn.cn/L1/461/1/17a3e60a6a1b18a081870b2762bcafce7977a27e">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    sidebar: {"position":"left","display":"post","offset":12,"offset_float":0,"b2t":false,"scrollpercent":false},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2020/08/29/记一次诡异的数据库故障的排查过程/"/>
+
+
+
+
+
+  <title> | plantegg</title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  
+
+  <div class="container sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">plantegg</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <h1 class="site-subtitle" itemprop="description">java tcp mysql performance network docker Linux</h1>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-categories"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/08/29/记一次诡异的数据库故障的排查过程/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline"></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-08-29T17:39:11+08:00">
+                2020-08-29
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2020/08/29/记一次诡异的数据库故障的排查过程/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2020/08/29/记一次诡异的数据库故障的排查过程/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+            <span class="post-meta-divider">|</span>
+            <span class="page-pv"><i class="fa fa-file-o"></i>
+            <span class="busuanzi-value" id="busuanzi_value_page_pv" ></span>次
+            </span>
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="记一次诡异的数据库故障的排查过程"><a href="#记一次诡异的数据库故障的排查过程" class="headerlink" title="记一次诡异的数据库故障的排查过程"></a>记一次诡异的数据库故障的排查过程</h1><p>这两周遇到了一个诡异的应用数据库访问现象：某业务通过 TDDL 访问数据库，偶尔会出现超长的访问 RT，导致整个 HSF 服务接口调用超时。从 Eagleeye 调用链分析平台看到的图形是这个样子：</p>
+<p><img src="http://img1.tbcdn.cn/L1/461/1/17a3e60a6a1b18a081870b2762bcafce7977a27e" alt="1"></p>
+<p>从这张图上可以看出：</p>
+<ol>
+<li>查询多张表 RT 都超过 500ms；</li>
+<li>同样一次调用，另一些表的 RT 只有 1ms；</li>
+<li>都是访问同一个数据库；</li>
+</ol>
+<p><strong>在什么情况下会出现这种现象呢</strong>？ 完全难以捉摸：</p>
+<ol>
+<li>大约 0.3% 的服务调用会出现这种现象，其他请求完全不受影响；</li>
+<li>几乎不受业务访问压力的影响，包括预发环境也能重现这种现象；</li>
+<li>所有应用服务器上都能重现；</li>
+</ol>
+<p>如图：<br><img src="http://img2.tbcdn.cn/L1/461/1/4d553ff978f2e53ad4fa2d2b3bf19c198ff52480" alt="2"> </p>
+<p><strong>问题会不会在连接池</strong>？或者是应用、中间件、网络、数据库上有资源瓶颈？</p>
+<p>不会。因为所有业务请求都需要同样的资源，大家都在同一个资源池上排队。假设请求是相同的，插队是很少的 —— 如果有人排队等了 500ms 才拿到资源，有人 1ms 就抢到了资源 —— 那么，一定会有等待了 100ms, 200ms, 300ms, 400ms … 的请求，RT 应该呈现平均分布。 </p>
+<p>现象显然不符。那什么场景下才会产生明显差异？ 按已有经验，也许是：</p>
+<ol>
+<li>锁等待：<br>  部分数据频繁加锁，部分请求长时间等待锁。或者非公平的锁等待，插队太多，请求被 “饿死”。</li>
+<li>数据不均匀：<br>  部分业务ID 查询返回的数据量很大或者索引扫描的数据库行数很多。</li>
+<li>IO 抖动：<br>  高 IO 压力下，命中缓存的请求和需要读磁盘的请求 RT （因为 IO 排队）会差别很大。</li>
+</ol>
+<p>当然，也不排除是未知的中间件/数据库 bug。</p>
+<p>首先，锁等待和 IO 抖动的问题被排除了，因为问题请求都是 SELECT 语句，MySQL InnoDB 支持 MVCC, 查询是不加锁的。此外，数据库压力很低，buf 命中率很高，也不是 IO 的原因：<br><img src="http://img4.tbcdn.cn/L1/461/1/9f4ef8852aa535348e3d477c1f6fbfa2b85b42fe" alt="7"></p>
+<p>数据不均匀的可能性也被排除了。高 RT 查询中，ttp_order 表的查询是主键查询，符合条件的数据有且只有一条。并且，仔细检查 Eagleeye 记录发现：相同入参的 HSF 服务调用，也会出现有时快、有时慢的现象。</p>
+<p>最后，DBA 在业务数据库上完全看不到慢查询。上文 1）2）3） 三种情况导致的查询 RT 超过 1s 都会记录 MySQL 慢查询日志。从 Eagleeye 可以看到最高 RT 超过 2s，但是在 MySQL 的慢查询日志却没有记录。</p>
+<p>已知可能性都被排除了。没办法，只能上应用机器看看日志。</p>
+<p><strong>还真的有发现</strong>。从 TDDL 统计日志 /home/admin/logs/tddl/tddl-stat.log 发现，业务数据库包含 8 个分库（分库分表），高 RT 查询都来自其中 2 个分库：</p>
+<pre><code>V1 2015-06-24 16:24:24:629 read statistics
+ [ appName:TRIP_TTP8_APP dsKey:g1-myb077004_et2_trip_ttp_00_3306 
+   times:1779 errors:0 qps:29 rt(avg/min/max):94/0/2164 ]
+V1 2015-06-24 16:24:24:630 write statistics 
+[ appName:TRIP_TTP8_APP dsKey:g1-myb077004_et2_trip_ttp_00_3306 
+   times:6 errors:0 qps:1 rt(avg/min/max):0/0/1 ]
+V1 2015-06-24 16:24:24:630 dataSource statistics
+ [ appName:TRIP_TTP8_APP dsKey:g1-myb077004_et2_trip_ttp_00_3306 
+   poolSize:30 active(now/max):3/9 pooling(now/max):10/13 create:0 destroy:0 errors:0 ]
+V1 2015-06-24 16:24:24:630 read statistics
+ [ appName:TRIP_TTP8_APP dsKey:g1-myb077004_et2_trip_ttp_01_3306 
+   times:1647 errors:0 qps:27 rt(avg/min/max):69/0/2164 ]
+V1 2015-06-24 16:24:24:630 write statistics 
+[ appName:TRIP_TTP8_APP dsKey:g1-myb077004_et2_trip_ttp_01_3306 
+   times:14 errors:0 qps:1 rt(avg/min/max):0/0/1 ]
+V1 2015-06-24 16:24:24:630 dataSource statistics 
+[ appName:TRIP_TTP8_APP dsKey:g1-myb077004_et2_trip_ttp_01_3306 poolSize:30 active(now/max):2/8 pooling(now/max):11/13 create:0 destroy:0 errors:0 ]
+V1 2015-06-24 16:24:24:631 read statistics
+ [ appName:TRIP_TTP8_APP dsKey:g1-myb077004_et2_trip_ttp_02_3307 
+   times:1829 errors:0 qps:30 rt(avg/min/max):0/0/1 ]
+V1 2015-06-24 16:24:24:631 write statistics
+ [ appName:TRIP_TTP8_APP dsKey:g1-myb077004_et2_trip_ttp_02_3307 
+   times:10 errors:0 qps:1 rt(avg/min/max):0/0/1 ]
+V1 2015-06-24 16:24:24:631 dataSource statistics 
+[ appName:TRIP_TTP8_APP dsKey:g1-myb077004_et2_trip_ttp_02_3307 
+   poolSize:30 active(now/max):0/8 pooling(now/max):8/8 create:0 destroy:0 errors:0 ]
+...
+</code></pre><p>可以看出 00 和 01 库的查询 RT <code>rt(avg/min/max):94/0/2164</code> 与下面的 02 库 <code>rt(avg/min/max):0/0/1</code> 完全不同，而且每个周期的统计日志重复该现象。</p>
+<p>巧合的是，00/01 库位于在同一个 MySql 实例 10.x.77.4:3306 上，应用的其他分库则全部位于同一台物理机的其他实例（10.x.77.4:3307~3309）上。</p>
+<p>这样，问题更可能是这个数据库实例造成的。因为 TDDL 中间件处理不同分库没有区别，不会导致 00/01 库出现高 RT 查询，而 02/03 库完全没有问题。</p>
+<p>DBA 检查了 10.x.77.4 上的 4 个 MySQL 实例，没有发现 3306 实例配置有特殊差异。从 DBFree 提供的数据库监控看，3306 与其他实例的监控曲线也没有明显的差别。</p>
+<p>由于应用端统计到的数据库 RT 很大，而数据库端看到的查询很快。怀疑的目标转移到了网络上。难道是网络问题？抓个包看看。</p>
+<p>tcpdump host 10.x.77.4 and port 3306 -s 0 -w xxx.pcap<br><img src="http://img2.tbcdn.cn/L1/461/1/ab9c0dccef6f2c862e3bbd58a6ffdf0d016d032a" alt="8"></p>
+<p>Wireshark 的 RTT 统计表明网络延迟很低：<br><img src="http://img1.tbcdn.cn/L1/461/1/2fbb84b615183d35b7a474681e075d3844868f85" alt="9"></p>
+<p>抓包的确可以看出有一些 MySQL 请求的 RT 很高（600ms）：<br><img src="http://img4.tbcdn.cn/L1/461/1/9e89e6f2450dff46536d70a9e27876cc8507db06" alt="10"></p>
+<p>而大多数请求的 RT 比较正常（3ms）：<br><img src="http://img2.tbcdn.cn/L1/461/1/d507dbf33a6230fcc3adf986af3702c3d2b885f9" alt="11"></p>
+<p><strong>但是发现一个特殊现象</strong>：<br>同一条 TCP 连接（stream）的请求，要么都慢（500ms 以上），要么都快（5ms 以下）。<br> <img src="http://img4.tbcdn.cn/L1/461/1/783cc78dba90bebad5e655430bcacd97706a6b89" alt="13"><br>这个状况有点复杂。很少有因素影响单个 TCP 连接的处理效率。<br>硬件 bug？<br>TCP 连接所在的网卡中断处理不均衡？<br>负责处理请求的 MySQL 线程被 Affinity 到繁忙的 CPU 上？</p>
+<p>结果都不是。排查网络中间看了眼 TDDL 统计日志，发现高 RT 查询的现象从 16:42 起完全消失了，现在的 00/01 库统计日志和其他分库一样：</p>
+<p><code>V1 2015-06-24 17:20:24:629 read statistics 
+[ appName:TRIP_TTP8_APP dsKey:g1-myb077004_et2_trip_ttp_00_3306 
+times:1826 errors:0 qps:30 rt(avg/min/max):0/0/6 ]
+V1 2015-06-24 17:20:24:629 write statistics 
+[ appName:TRIP_TTP8_APP dsKey:g1-myb077004_et2_trip_ttp_00_3306 
+times:24 errors:0 qps:1 rt(avg/min/max):0/0/1 ]
+V1 2015-06-24 17:20:24:630 dataSource statistics 
+[ appName:TRIP_TTP8_APP dsKey:g1-myb077004_et2_trip_ttp_00_3306 
+poolSize:30 active(now/max):0/7 pooling(now/max):11/11 create:0 destroy:0 errors:0 ]
+V1 2015-06-24 17:20:24:630 read statistics 
+[ appName:TRIP_TTP8_APP dsKey:g1-myb077004_et2_trip_ttp_01_3306 
+times:2393 errors:0 qps:39 rt(avg/min/max):0/0/3 ]
+V1 2015-06-24 17:20:24:630 write statistics 
+[ appName:TRIP_TTP8_APP dsKey:g1-myb077004_et2_trip_ttp_01_3306 
+times:13 errors:0 qps:1 rt(avg/min/max):0/0/3 ]
+V1 2015-06-24 17:20:24:630 dataSource statistics 
+[ appName:TRIP_TTP8_APP dsKey:g1-myb077004_et2_trip_ttp_01_3306 
+poolSize:30 active(now/max):0/7 pooling(now/max):13/13 create:0 destroy:0 errors:0 ]
+.....</code></p>
+<p>询问业务方，发现 HSF 调用超时的问题也消失了。再询问 DBA ,..  DBA 的确在 16:42 的时候进行了操作：kill 了 10.x.77.4：3306 上的多余 DRC 线程。</p>
+<p><strong>什么是 DRC</strong>?  DRC 是一个获取数据库增量数据的服务。它采用 MySQL 主备复制协议，在数据库上启动一个长期运行的 Binlog Dump 线程，持续抓取新增的 Binlog 日志发送给远端的 DRC 节点。</p>
+<p>为啥 DRC 会影响连接的处理？ 这以前在 MySQL 上从没有遇到过。因为 DRC 使用 MySQL 的主备复制协议，对数据库的影响理论上跟一台备库没有区别。 尽管 DRC 会长期占用一个服务线程，但是普通 MySQL 是一个线程服务一个连接的调度方式，除了 IO，锁和 CPU 调度，不同连接上的请求不会相互影响。</p>
+<p>咨询 DBA 同学才知道：原来业务的 MySQL 采用了 AliSQL 的线程池插件，是线程池 + DRC 才导致了这个问题：</p>
+<p><strong>MySQL 线程池</strong> 是个高大上的功能。拥有线程池功能的 MySQL Percona  分支以及企业版声称可以 “提升 MySQL 扩展性 60 倍”。它的好处是让 MySQL 用较少的线程支持更多的连接与并发。因为线程数太多会在锁和 IO 上产生更多的竞争，使得更多的 CPU 资源消耗在上下文切换、spin 和内核调度上。</p>
+<p>AliSQL 的线程池做了更多的优化。其中一个优化是对线程进行了分组，每个分组只有少量（2-3 个）线程。这样每个组的资源相互隔离，防止慢查询将全部线程池资源耗尽，导致 MySQL 无法响应正常业务请求。</p>
+<p>在分组模式下，如果有新的连接进入 MySQL，新连接会以 HASH 的方式固定分配到其中一个分组，由这个分组内线程响应连接上的请求。当处理结束，响应请求的线程就从连接释放，然后去处理同一分组上的其他连接上的请求。</p>
+<p>但是上面已经说过了，DRC 的连接与普通连接不一样。它的请求处理一直不会结束，这样处理 DRC 请求的线程就会一直不释放。而 AliSQL 一个分组内的线程实在太少了。如果正好一个分组分配到 2 个以上的 DRC 连接，该分组内就没有空闲线程来响应其他请求了。因此，被固定分配到这个分组的连接请求得不到线程处理，表现在应用端就是高 RT 查询。</p>
+<p><em>注：这里表现出高 RT 而不是超时，原因是 MySQL 线程池有另一个参数 <code>thread_pool_stall_limit</code> 防止线程卡死．请求如果在分组内等待超过 <code>thread_pool_stall_limit</code> 时间没被处理，则会退回传统模式，创建新线程来处理请求。这个参数的默认值是 500ms。 – by @蛰剑</em></p>
+<p>BTW，由于请求是堆积在连接 TCP buf 中没人处理，MySQL 端是无法记录到请求的等待时间的。这样，MySQL 的慢查询日志就不会有记录。</p>
+<p>知道原因后，解决问题就简单了。临时解决方案是尽量减少单个 MySQL 实例上 DRC 连接的数目。最终解决方案是 AliSQL 进行升级，让 DRC 这样的请求走独立线程分组，或者直接绕开线程池，回到一个线程服务一个连接的模式。</p>
+<p>在这个案例里，能最终找到问题原因其实有点靠运气的。但是排查和分析过程比较有意思。</p>
+<p>其实一开始的分析已经接近了问题的本质：资源池的均衡问题 —— 如果所有请求都在同一组资源上排队等待，那么 RT 一定是连续分布的。AliSQL 的线程分组功能实际上拆分了资源池，使得不同的请求在不同的资源池上排队。如果这些池中的资源数量不同，那么就会有请求更容易得到资源，有请求得不到资源，出现类似的 RT 分布。</p>
+<p>先记到这里，后面遇到有意思的排查再继续分享。</p>
+<p>感谢 DBA @朱曜鑫 @朱旭，应用 @神月 @张浚 在排查问题上的协助。</p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2020/08/26/perf-usage/" rel="next" title="">
+                <i class="fa fa-chevron-left"></i> 
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2020/08/29/傅盛认知三部曲完整版：人与人最大的差别是认知/" rel="prev" title="">
+                 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/avatar.gif"
+               alt="weibo @plantegg" />
+          <p class="site-author-name" itemprop="name">weibo @plantegg</p>
+           
+              <p class="site-description motion-element" itemprop="description"></p>
+           
+        </div>
+        <nav class="site-state motion-element">
+
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">109</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-categories">
+              <a href="/categories/index.html">
+                <span class="site-state-item-count">32</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-tags">
+              <a href="/tags/index.html">
+                <span class="site-state-item-count">195</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+          <div class="feed-link motion-element">
+            <a href="/atom.xml" rel="alternate">
+              <i class="fa fa-rss"></i>
+              RSS
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#记一次诡异的数据库故障的排查过程"><span class="nav-number">1.</span> <span class="nav-text">记一次诡异的数据库故障的排查过程</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+
+<div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">weibo @plantegg</span>
+</div>
+
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Muse
+  </a>
+</div>
+
+<span id="busuanzi_container_site_pv">
+    本站总访问量<span id="busuanzi_value_site_pv"></span>次
+</span>
+<span id="busuanzi_container_site_uv">
+  本站访客数<span id="busuanzi_value_site_uv"></span>人次
+</span>
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+  
+    <span class="site-uv">
+      <i class="fa fa-user"></i> 访问人数
+      <span class="busuanzi-value" id="busuanzi_value_site_uv"></span>
+      人
+    </span>
+  
+
+  
+    <span class="site-pv">
+      <i class="fa fa-eye"></i>
+      <span class="busuanzi-value" id="busuanzi_value_site_pv"></span>
+      次
+    </span>
+  
+</div>
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.1"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.1"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'http://yoursite.com/2020/08/29/记一次诡异的数据库故障的排查过程/';
+          this.page.identifier = '2020/08/29/记一次诡异的数据库故障的排查过程/';
+          this.page.title = '';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
