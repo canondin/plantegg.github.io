@@ -3148,8 +3148,8 @@ ProxyCommand ssh -l root 2.2.2.2 exec /usr/bin/nc %h %p
             <h1 id="如何设置git-Proxy"><a href="#如何设置git-Proxy" class="headerlink" title="如何设置git Proxy"></a>如何设置git Proxy</h1><h2 id="git-http-proxy"><a href="#git-http-proxy" class="headerlink" title="git http proxy"></a>git http proxy</h2><blockquote>
 <p>首先你要有一个socks5代理服务器，从 github.com 拉代码的话海外的代理速度才快，可以用阿里郎的网络加速，也可以自己配置shadowsocks这样的代理。</p>
 <p>Windows阿里郎会在本地生成socks5代理：127.0.0.1:13658</p>
-<p>下面的例子假设你的socks5代理是： 127.0.0.1:13658</p>
 </blockquote>
+<p>下面的例子假设你的socks5代理是： 127.0.0.1:13658</p>
 <h3 id="执行如下命令"><a href="#执行如下命令" class="headerlink" title="执行如下命令"></a>执行如下命令</h3><pre><code>git config --global http.proxy socks5://127.0.0.1:13658
 </code></pre><p>上面的命令实际上是修改了 .gitconfig：</p>
 <pre><code>$cat ~/.gitconfig   
@@ -3271,8 +3271,8 @@ ProxyCommand ssh -l root 2.2.2.2 exec /usr/bin/nc %h %p
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Docker/" itemprop="url" rel="index">
-                    <span itemprop="name">Docker</span>
+                  <a href="/categories/docker/" itemprop="url" rel="index">
+                    <span itemprop="name">docker</span>
                   </a>
                 </span>
 

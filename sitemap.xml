@@ -2,6 +2,20 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>http://yoursite.com/2018/03/14/%E5%A6%82%E4%BD%95%E8%AE%BE%E7%BD%AEgit%20Proxy/</loc>
+    
+    <lastmod>2020-08-31T06:02:04.012Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>http://yoursite.com/2018/02/25/Docker%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98/</loc>
+    
+    <lastmod>2020-08-31T06:02:03.980Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://yoursite.com/2020/08/31/kubernetes%20calico%E7%BD%91%E7%BB%9C/</loc>
     
     <lastmod>2020-08-31T05:16:27.054Z</lastmod>
@@ -86,13 +100,6 @@
   </url>
   
   <url>
-    <loc>http://yoursite.com/2018/02/25/Docker%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98/</loc>
-    
-    <lastmod>2020-08-06T02:56:01.258Z</lastmod>
-    
-  </url>
-  
-  <url>
     <loc>http://yoursite.com/2016/03/24/ansible%20%E5%91%BD%E4%BB%A4%E9%80%9A%E9%81%93%E4%BD%BF%E7%94%A8%E6%89%8B%E5%86%8C/</loc>
     
     <lastmod>2020-08-06T02:56:01.242Z</lastmod>
@@ -131,13 +138,6 @@
     <loc>http://yoursite.com/2020/07/03/MySQL%20JDBC%20StreamResult%20%E5%92%8C%20net_write_timeout/</loc>
     
     <lastmod>2020-08-02T12:41:18.366Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>http://yoursite.com/2018/03/14/%E5%A6%82%E4%BD%95%E8%AE%BE%E7%BD%AEgit%20Proxy/</loc>
-    
-    <lastmod>2020-07-28T07:45:55.122Z</lastmod>
     
   </url>
   
