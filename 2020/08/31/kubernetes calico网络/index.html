@@ -1,0 +1,884 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="network,docker,kubernetes,calico," />
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="plantegg" type="application/atom+xml" />
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.1" />
+
+
+
+
+
+
+<meta name="description" content="kubernetes calico 网络kubernetes 集群下安装 calico 网络1234kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml#或者老版本的calicocurl https://docs.projectcalico.org/v3.15/manifests/calico.yaml -o c">
+<meta name="keywords" content="network,docker,kubernetes,calico">
+<meta property="og:type" content="article">
+<meta property="og:title" content="kubernetes calico 网络">
+<meta property="og:url" content="http://yoursite.com/2020/08/31/kubernetes calico网络/index.html">
+<meta property="og:site_name" content="plantegg">
+<meta property="og:description" content="kubernetes calico 网络kubernetes 集群下安装 calico 网络1234kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml#或者老版本的calicocurl https://docs.projectcalico.org/v3.15/manifests/calico.yaml -o c">
+<meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d3111417ce646ca1475def5bea01e6b9.png">
+<meta property="og:image" content="d:%5Cali%5Ccase%5Cimage%5Cimage-20200831102845966.png">
+<meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/16fda9322e9a59c37c11629acc611bf3.png">
+<meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/3d31512342b9432556c21353452f2e8c.png">
+<meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/5c7172e2422579eb99c66e881d47bf99.png">
+<meta property="og:updated_time" content="2020-08-31T04:04:34.934Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="kubernetes calico 网络">
+<meta name="twitter:description" content="kubernetes calico 网络kubernetes 集群下安装 calico 网络1234kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml#或者老版本的calicocurl https://docs.projectcalico.org/v3.15/manifests/calico.yaml -o c">
+<meta name="twitter:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d3111417ce646ca1475def5bea01e6b9.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    sidebar: {"position":"left","display":"post","offset":12,"offset_float":0,"b2t":false,"scrollpercent":false},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2020/08/31/kubernetes calico网络/"/>
+
+
+
+
+
+  <title>kubernetes calico 网络 | plantegg</title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  
+
+  <div class="container sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">plantegg</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <h1 class="site-subtitle" itemprop="description">java tcp mysql performance network docker Linux</h1>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-categories"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/08/31/kubernetes calico网络/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">kubernetes calico 网络</h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-08-31T11:30:03+08:00">
+                2020-08-31
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/docker/" itemprop="url" rel="index">
+                    <span itemprop="name">docker</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2020/08/31/kubernetes calico网络/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2020/08/31/kubernetes calico网络/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+            <span class="post-meta-divider">|</span>
+            <span class="page-pv"><i class="fa fa-file-o"></i>
+            <span class="busuanzi-value" id="busuanzi_value_page_pv" ></span>次
+            </span>
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="kubernetes-calico-网络"><a href="#kubernetes-calico-网络" class="headerlink" title="kubernetes calico 网络"></a>kubernetes calico 网络</h1><h2 id="kubernetes-集群下安装-calico-网络"><a href="#kubernetes-集群下安装-calico-网络" class="headerlink" title="kubernetes 集群下安装 calico 网络"></a>kubernetes 集群下安装 calico 网络</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml</div><div class="line"></div><div class="line">#或者老版本的calico</div><div class="line">curl https://docs.projectcalico.org/v3.15/manifests/calico.yaml -o calico.yaml</div></pre></td></tr></table></figure>
+<p>默认calico用的是ipip封包（这个性能跟原生网络差多少有待验证，本质也是overlay网络，比flannel那种要好很多吗？）</p>
+<p>基本链路是：</p>
+<blockquote>
+<p>cali-容器-&gt;tunl0-&gt;内核ipip模块封包-&gt;物理网卡（ipip封包后）—远程–&gt; 物理网卡-&gt;内核ipip模块解包-&gt;tunl0-&gt;cali-容器</p>
+</blockquote>
+<h2 id="calico-网络不通"><a href="#calico-网络不通" class="headerlink" title="calico 网络不通"></a>calico 网络不通</h2><h3 id="案例1"><a href="#案例1" class="headerlink" title="案例1"></a>案例1</h3><p>本机是10.122.127.128（宿主机ip 192.168.3.112），如果从10.122.17.64（宿主机ip 192.168.3.110） ping 10.122.127.128不通</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">[root@az3-k8s-13 ~]# ip route |grep tunl0</div><div class="line">10.122.17.64/26 via 10.122.127.128 dev tunl0  //这条路由不通</div><div class="line">[root@az3-k8s-13 ~]# ip route del 10.122.17.64/26 via 10.122.127.128 dev tunl0 ; ip route add 10.122.17.64/26 via 192.168.3.110 dev tunl0 proto bird onlink</div><div class="line">RTNETLINK answers: File exists</div><div class="line">[root@az3-k8s-13 ~]# ip route |grep tunl0</div><div class="line">10.122.17.64/26 via 192.168.3.110 dev tunl0 proto bird onlink //这样就通了</div></pre></td></tr></table></figure>
+<p>在10.122.127.128抓包如下，明显可以看到icmp request到了 tunl0网卡，tunl0网卡也回复了，但是回复包没有抓到 ipip 包：</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d3111417ce646ca1475def5bea01e6b9.png" alt="image.png"></p>
+<p>正常机器应该是这样，上图不正常的时候缺少红框中的reply：</p>
+<p><img src="D:%5Cali%5Ccase%5Cimage%5Cimage-20200831102845966.png" alt="image-20200831102845966"></p>
+<p>解决：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">ip route del 10.122.17.64/26 via 10.122.127.128 dev tunl0 ; </div><div class="line">ip route add 10.122.17.64/26 via 192.168.3.110 dev tunl0 proto bird onlink</div></pre></td></tr></table></figure>
+<p>删除错误路由增加新的路由就可以了，这两条路由的原理性差异还需要学习下。</p>
+<p> via 192.168.3.110 表示下一跳的ip</p>
+<p>onlink参数的作用：<br>使用这个参数将会告诉内核，不必检查网关是否可达。因为在linux内核中，网关与本地的网段不同是被认为不可达的，从而拒绝执行添加路由的操作。</p>
+<p>因为tunl0网卡ip的 CIRD 是32，也就是不属于任何子网，那么这个网卡上的路由没有网关，配置路由的话必须是onlink, 内核存也没法根据子网来选择到这块网卡，所以还会加上 dev 指定网卡。</p>
+<h3 id="案例2"><a href="#案例2" class="headerlink" title="案例2"></a>案例2</h3><p>集群有五台机器192.168.0.110-114, 同时每个node都有另外一个ip：192.168.3.110-114，只有node2没有192.168.3.111这个ip，结果node2跟其他节点都不通：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">#calicoctl node status</div><div class="line">Calico process is running.</div><div class="line"></div><div class="line">IPv4 BGP status</div><div class="line">+---------------+-------------------+-------+------------+-------------+</div><div class="line">| PEER ADDRESS  |     PEER TYPE     | STATE |   SINCE    |    INFO     |</div><div class="line">+---------------+-------------------+-------+------------+-------------+</div><div class="line">| 192.168.0.111 | node-to-node mesh | up    | 2020-08-29 | Established |</div><div class="line">| 192.168.3.112 | node-to-node mesh | up    | 2020-08-29 | Established |</div><div class="line">| 192.168.3.113 | node-to-node mesh | up    | 2020-08-29 | Established |</div><div class="line">| 192.168.3.114 | node-to-node mesh | up    | 2020-08-29 | Established |</div><div class="line">+---------------+-------------------+-------+------------+-------------+</div></pre></td></tr></table></figure>
+<p>从node4 ping node2，然后在node2上抓包，可以看到 icmp request都发到了node2上，但是node2收到后没有发给tunl0：</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/16fda9322e9a59c37c11629acc611bf3.png" alt="image.png"></p>
+<p>所以icmp没有回复，这里的问题在于<strong>kernel收到包后为什么不给tunl0</strong></p>
+<p>同样，在node2上ping node4，同时在node2上抓包，可以看到发给node3的request包和reply包：</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/3d31512342b9432556c21353452f2e8c.png" alt="image.png"></p>
+<p>从request包可以看到src ip 是0.111， dest ip是 3.113，<strong>因为 node2 没有192.168.3.111这个ip</strong></p>
+<p>非常关键的我们看到node4的回复包 src ip 不是3.113，而是0.113（根据node4的路由就应该是0.113）</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/5c7172e2422579eb99c66e881d47bf99.png" alt="image.png"></p>
+<p>这就是问题所在，请求的目的地址是 3.113，但是回复包是 0.113。</p>
+<p>如果这个时候在3.113机器上把0.113网卡down掉，那么3.113上的：</p>
+<p>10.122.124.128/26 via 192.168.0.111 dev tunl0 proto bird onlink 路由被自动删除，3.113将不再回复request。这是因为calico记录的node2的ip是192.168.0.111，所以会自动增加</p>
+<p>解决办法，在node4上删除这条路由记录，也就是强制让回复包走3.113网卡，这样收发的ip就能对应上了</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">ip route del 192.168.0.0/24 dev eth0 proto kernel scope link src 192.168.0.113</div><div class="line">//同时将默认路由改到3.113</div><div class="line">ip route del default via 192.168.0.253 dev eth0; ip route add default via 192.168.3.253 dev eth1</div></pre></td></tr></table></figure>
+<p>最终OK后，node4上的ip route是这样的：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">[root@az3-k8s-14 ~]# ip route</div><div class="line">default via 192.168.3.253 dev eth1 </div><div class="line">10.122.17.64/26 via 192.168.3.110 dev tunl0 proto bird onlink </div><div class="line">10.122.124.128/26 via 192.168.0.111 dev tunl0 proto bird onlink </div><div class="line">10.122.127.128/26 via 192.168.3.112 dev tunl0 proto bird onlink </div><div class="line">blackhole 10.122.157.128/26 proto bird </div><div class="line">10.122.157.129 dev cali19f6ea143e3 scope link </div><div class="line">10.122.157.130 dev cali09e016ead53 scope link </div><div class="line">10.122.157.131 dev cali0ad3225816d scope link </div><div class="line">10.122.157.132 dev cali55a5ff1a4aa scope link </div><div class="line">10.122.157.133 dev cali01cf8687c65 scope link </div><div class="line">10.122.157.134 dev cali65232d7ada6 scope link </div><div class="line">10.122.173.128/26 via 192.168.3.114 dev tunl0 proto bird onlink </div><div class="line">172.17.0.0/16 dev docker0 proto kernel scope link src 172.17.0.1 </div><div class="line">192.168.3.0/24 dev eth1 proto kernel scope link src 192.168.3.113</div></pre></td></tr></table></figure>
+<p>正常后的抓包, 注意这里dest ip 和 src ip终于一致了：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">//request</div><div class="line">00:16:3e:02:06:1e &gt; ee:ff:ff:ff:ff:ff, ethertype IPv4 (0x0800), length 118: (tos 0x0, ttl 64, id 57971, offset 0, flags [DF], proto IPIP (4), length 104)</div><div class="line">    192.168.0.111 &gt; 192.168.3.110: (tos 0x0, ttl 64, id 18953, offset 0, flags [DF], proto ICMP (1), length 84)</div><div class="line">    10.122.124.128 &gt; 10.122.17.64: ICMP echo request, id 22001, seq 4, length 64</div><div class="line">    </div><div class="line">//reply    </div><div class="line">ee:ff:ff:ff:ff:ff &gt; 00:16:3e:02:06:1e, ethertype IPv4 (0x0800), length 118: (tos 0x0, ttl 64, id 2565, offset 0, flags [none], proto IPIP (4), length 104)</div><div class="line">    192.168.3.110 &gt; 192.168.0.111: (tos 0x0, ttl 64, id 26374, offset 0, flags [none], proto ICMP (1), length 84)</div><div class="line">    10.122.17.64 &gt; 10.122.124.128: ICMP echo reply, id 22001, seq 4, length 64</div></pre></td></tr></table></figure>
+<p>总结下来这两个案例都还是对路由不够了解，特别是案例2，因为有了多个网卡后导致路由更复杂。calico ipip的基本原理就是利用内核进行ipip封包，然后修改路由来保证网络的畅通。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://morven.life/notes/networking-3-ipip/" target="_blank" rel="external">https://morven.life/notes/networking-3-ipip/</a></p>
+<p><a href="https://www.cnblogs.com/bakari/p/10564347.html" target="_blank" rel="external">https://www.cnblogs.com/bakari/p/10564347.html</a></p>
+<p><a href="https://www.cnblogs.com/goldsunshine/p/10701242.html" target="_blank" rel="external">https://www.cnblogs.com/goldsunshine/p/10701242.html</a></p>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/network/" rel="tag"># network</a>
+          
+            <a href="/tags/docker/" rel="tag"># docker</a>
+          
+            <a href="/tags/kubernetes/" rel="tag"># kubernetes</a>
+          
+            <a href="/tags/calico/" rel="tag"># calico</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2020/07/03/MySQL JDBC StreamResult 和 net_write_timeout/" rel="next" title="MySQL JDBC StreamResult 和 net_write_timeout">
+                <i class="fa fa-chevron-left"></i> MySQL JDBC StreamResult 和 net_write_timeout
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2117/06/07/文章索引index/" rel="prev" title="文章索引">
+                文章索引 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/avatar.gif"
+               alt="weibo @plantegg" />
+          <p class="site-author-name" itemprop="name">weibo @plantegg</p>
+           
+              <p class="site-description motion-element" itemprop="description"></p>
+           
+        </div>
+        <nav class="site-state motion-element">
+
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">95</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-categories">
+              <a href="/categories/index.html">
+                <span class="site-state-item-count">32</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-tags">
+              <a href="/tags/index.html">
+                <span class="site-state-item-count">196</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+          <div class="feed-link motion-element">
+            <a href="/atom.xml" rel="alternate">
+              <i class="fa fa-rss"></i>
+              RSS
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#kubernetes-calico-网络"><span class="nav-number">1.</span> <span class="nav-text">kubernetes calico 网络</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#kubernetes-集群下安装-calico-网络"><span class="nav-number">1.1.</span> <span class="nav-text">kubernetes 集群下安装 calico 网络</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#calico-网络不通"><span class="nav-number">1.2.</span> <span class="nav-text">calico 网络不通</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#案例1"><span class="nav-number">1.2.1.</span> <span class="nav-text">案例1</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#案例2"><span class="nav-number">1.2.2.</span> <span class="nav-text">案例2</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">1.3.</span> <span class="nav-text">参考资料</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+
+<div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">weibo @plantegg</span>
+</div>
+
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Muse
+  </a>
+</div>
+
+<span id="busuanzi_container_site_pv">
+    本站总访问量<span id="busuanzi_value_site_pv"></span>次
+</span>
+<span id="busuanzi_container_site_uv">
+  本站访客数<span id="busuanzi_value_site_uv"></span>人次
+</span>
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+  
+    <span class="site-uv">
+      <i class="fa fa-user"></i> 访问人数
+      <span class="busuanzi-value" id="busuanzi_value_site_uv"></span>
+      人
+    </span>
+  
+
+  
+    <span class="site-pv">
+      <i class="fa fa-eye"></i>
+      <span class="busuanzi-value" id="busuanzi_value_site_pv"></span>
+      次
+    </span>
+  
+</div>
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.1"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.1"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'http://yoursite.com/2020/08/31/kubernetes calico网络/';
+          this.page.identifier = '2020/08/31/kubernetes calico网络/';
+          this.page.title = 'kubernetes calico 网络';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

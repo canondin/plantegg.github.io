@@ -2,6 +2,20 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>http://yoursite.com/2020/01/12/kubernetes/</loc>
+    
+    <lastmod>2020-08-31T04:04:34.946Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>http://yoursite.com/2020/08/31/kubernetes%20calico%E7%BD%91%E7%BB%9C/</loc>
+    
+    <lastmod>2020-08-31T04:04:34.934Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://yoursite.com/2017/08/28/netstat%20--timer/</loc>
     
     <lastmod>2020-08-29T09:38:02.767Z</lastmod>
