@@ -396,7 +396,8 @@
 <p>机器有两块网卡，请求走eth0 进来(绿线)，然后走 eth1回复(路由决定的，红线)，但是实际没走eth1回复，像是丢包了。</p>
 <h3 id="解决办法"><a href="#解决办法" class="headerlink" title="解决办法"></a>解决办法</h3><p>修改一下route，让eth0成为默认路由，这样北京、杭州都能走eth0进出了</p>
 <h3 id="为什么5U的机器可以"><a href="#为什么5U的机器可以" class="headerlink" title="为什么5U的机器可以"></a>为什么5U的机器可以</h3><p>开发同学接着反馈，出问题的172是7U2的系统，但是还有一些5U7的机器完全正常，5U7的机器上也是两块网卡，route规则也是一样的。</p>
-<p>这确实诡异，看着像是7U的内核行为跟5U不一致，咨询了内核同学，让检查一下 rp_filter 参数。果然看到7U2的系统默认 rp_filter 开着，而5U7是关着的，于是反复开关这个参数稳定重现了问题</p>
+<p>这确实诡异，看着像是7U的内核行为跟5U不一致，咨询了内核同学，让检查一下 rp_filter 参数。果然看到7U2的系统默认 rp_filter 开着，而5U7是关着的，于是反复开关这个参数稳定重现了问题    </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sysctl -w net.ipv4.conf.eth0.rp_filter=0</div></pre></td></tr></table></figure>
 <h3 id="rp-filter-原理"><a href="#rp-filter-原理" class="headerlink" title="rp_filter 原理"></a>rp_filter 原理</h3><pre><code>rp_filter参数用于控制系统是否开启对数据包源地址的校验, 收到包后根据source ip到route表中检查是否否和最佳路由，否的话扔掉这个包【可以防止DDoS，攻击等】
     0：不开启源地址校验。
     1：开启严格的反向路径校验。对每个进来的数据包，校验其反向路径是否是最佳路径。如果反向路径不是最佳路径，则直接丢弃该数据包。
