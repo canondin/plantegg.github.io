@@ -2405,237 +2405,6 @@ LISTEN    0     511              *:8085           *:*
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/02/17/10+倍性能提升全过程/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2020/02/17/10+倍性能提升全过程/" itemprop="url">10+倍性能提升全过程</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-02-17T17:30:03+08:00">
-                2020-02-17
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/performance/" itemprop="url" rel="index">
-                    <span itemprop="name">performance</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2020/02/17/10+倍性能提升全过程/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2020/02/17/10+倍性能提升全过程/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="10-倍性能提升全过程–优酷账号绑定淘宝账号的TPS从500到5400的优化历程"><a href="#10-倍性能提升全过程–优酷账号绑定淘宝账号的TPS从500到5400的优化历程" class="headerlink" title="10+倍性能提升全过程–优酷账号绑定淘宝账号的TPS从500到5400的优化历程"></a>10+倍性能提升全过程–优酷账号绑定淘宝账号的TPS从500到5400的优化历程</h1><h2 id="背景说明"><a href="#背景说明" class="headerlink" title="背景说明"></a>背景说明</h2><blockquote>
-<p>2016年的双11在淘宝上买买买的时候，天猫和优酷土豆一起做了联合促销，在天猫双11当天购物满XXX元就赠送优酷会员，这个过程需要用户在优酷侧绑定淘宝账号(登录优酷、提供淘宝账号，优酷调用淘宝API实现两个账号绑定）和赠送会员并让会员权益生效(看收费影片、免广告等等）</p>
-<p>这里涉及到优酷的两个部门：Passport(在上海，负责登录、绑定账号，下文中的优化过程主要是Passport部分）；会员(在北京，负责赠送会员，保证权益生效）</p>
-<p>在双11活动之前，Passport的绑定账号功能一直在运行，只是没有碰到过大促销带来的挑战</p>
-</blockquote>
-<hr>
-<p>整个过程分为两大块：</p>
-<ol>
-<li>整个系统级别，包括网络和依赖服务的性能等，多从整个系统视角分析问题；</li>
-<li>但服务器内部的优化过程，将CPU从si/sy围赶us，然后在us从代码级别一举全歼。</li>
-</ol>
-<p>系统级别都是最容易被忽视但是成效最明显的，代码层面都是很细致的力气活。</p>
-<p>整个过程都是在对业务和架构不是非常了解的情况下做出的。</p>
-<h2 id="会员部分的架构改造"><a href="#会员部分的架构改造" class="headerlink" title="会员部分的架构改造"></a>会员部分的架构改造</h2><ul>
-<li>接入中间件DRDS，让优酷的数据库支持拆分，分解MySQL压力</li>
-<li>接入中间件vipserver来支持负载均衡</li>
-<li>接入集团DRC来保障数据的高可用</li>
-<li>对业务进行改造支持Amazon的全链路压测</li>
-</ul>
-<h2 id="主要的压测过程"><a href="#主要的压测过程" class="headerlink" title="主要的压测过程"></a>主要的压测过程</h2><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/6b24a854d91aba4dcdbd4f0155683d93.png" alt="screenshot.png"></p>
-<p><strong>上图是压测过程中主要的阶段中问题和改进,主要的问题和优化过程如下：</strong></p>
-<pre><code>- docker bridge网络性能问题和网络中断si不均衡    (优化后：500-&gt;1000TPS)
-- 短连接导致的local port不够                   (优化后：1000-3000TPS)
-- 生产环境snat单核导致的网络延时增大             (优化后生产环境能达到测试环境的3000TPS)
-- Spring MVC Path带来的过高的CPU消耗           (优化后：3000-&gt;4200TPS)
-- 其他业务代码的优化(比如异常、agent等)          (优化后：4200-&gt;5400TPS)
-</code></pre><p><strong>优化过程中碰到的比如淘宝api调用次数限流等一些业务原因就不列出来了</strong></p>
-<hr>
-<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>由于用户进来后先要登录并且绑定账号，实际压力先到Passport部分，在这个过程中最开始单机TPS只能到500，经过N轮优化后基本能达到5400 TPS，下面主要是阐述这个优化过程</p>
-<h2 id="Passport部分的压力"><a href="#Passport部分的压力" class="headerlink" title="Passport部分的压力"></a>Passport部分的压力</h2><h3 id="Passport-核心服务分两个："><a href="#Passport-核心服务分两个：" class="headerlink" title="Passport 核心服务分两个："></a>Passport 核心服务分两个：</h3><ul>
-<li>Login              主要处理登录请求</li>
-<li>userservice    处理登录后的业务逻辑，比如将优酷账号和淘宝账号绑定</li>
-</ul>
-<p>为了更好地利用资源每台物理加上部署三个docker 容器，跑在不同的端口上(8081、8082、8083），通过bridge网络来互相通讯</p>
-<h3 id="Passport机器大致结构"><a href="#Passport机器大致结构" class="headerlink" title="Passport机器大致结构"></a>Passport机器大致结构</h3><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/b509b30218dd22e03149985cf5e15f8e.png" alt="screenshot.png"></p>
-<!--这里的500 TPS到5400 TPS是指登录和将优酷账号和淘宝账号绑定的TPS，也是促销活动主要的瓶颈-->
-<h3 id="userservice服务网络相关的各种问题"><a href="#userservice服务网络相关的各种问题" class="headerlink" title="userservice服务网络相关的各种问题"></a>userservice服务网络相关的各种问题</h3><hr>
-<h4 id="太多SocketConnect异常-如上图）"><a href="#太多SocketConnect异常-如上图）" class="headerlink" title="太多SocketConnect异常(如上图）"></a>太多SocketConnect异常(如上图）</h4><p>在userservice机器上通过netstat也能看到大量的SYN_SENT状态，如下图：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/99bf952b880f17243953da790ff0e710.png" alt="image.png"></p>
-<h4 id="因为docker-bridge通过nat来实现，尝试去掉docker，让tomcat直接跑在物理机上"><a href="#因为docker-bridge通过nat来实现，尝试去掉docker，让tomcat直接跑在物理机上" class="headerlink" title="因为docker bridge通过nat来实现，尝试去掉docker，让tomcat直接跑在物理机上"></a>因为docker bridge通过nat来实现，尝试去掉docker，让tomcat直接跑在物理机上</h4><p>这时SocketConnect异常不再出现<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/6ed62fd6b50ad2785e5b57687d95ad6e.png" alt="image.png"></p>
-<h4 id="从新梳理一下网络流程"><a href="#从新梳理一下网络流程" class="headerlink" title="从新梳理一下网络流程"></a>从新梳理一下网络流程</h4><p>docker(bridge)—-短连接—&gt;访问淘宝API(淘宝open api只能短连接访问），性能差，cpu都花在si上； </p>
-<p>如果 docker(bridge)—-长连接到宿主机的某个代理上(比如haproxy）—–短连接—&gt;访问淘宝API， 性能就能好一点。问题可能是短连接放大了Docker bridge网络的性能损耗</p>
-<h4 id="当时看到的cpu-si非常高，截图如下："><a href="#当时看到的cpu-si非常高，截图如下：" class="headerlink" title="当时看到的cpu si非常高，截图如下："></a>当时看到的cpu si非常高，截图如下：</h4><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/4c1eff0f925f59977e2557acff5cf03b.png" alt="image.png"></p>
-<p>去掉Docker后，性能有所提升，继续通过perf top看到内核态寻找可用的Local Port消耗了比较多的CPU，gif动态截图如下(可以点击看高清大图）：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/fff502ca73e3112e585560ffe4a4dbf1.gif" alt="perf-top-netLocalPort-issue.gif"></p>
-<p><strong>注意图中ipv6_rcv_saddr_equal和inet_csk_get_port 总共占了30%的CPU</strong> (系统态的CPU使用率高意味着共享资源有竞争或者I/O设备之间有大量的交互。)</p>
-<p><strong>一般来说一台机器默认配置的可用 Local Port 3万多个，如果是短连接的话，一个连接释放后默认需要60秒回收，30000/60 =500 这是大概的理论TPS值【这里只考虑连同一个server IP:port 的时候】</strong></p>
-<p>这500的tps算是一个老中医的经验。不过有些系统调整过Local Port取值范围，比如从1024到65534，那么这个tps上限就是1000附近。</p>
-<p>同时观察这个时候CPU的主要花在sy上，最理想肯定是希望CPU主要用在us上，截图如下：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/05703c168e63e96821ea9f921d83712b.png" alt="image.png"></p>
-<p><strong>规则：性能优化要先把CPU从SI、SY上的消耗赶到US上去(通过架构、系统配置）；然后提升 US CPU的效率(代码级别的优化）</strong></p>
-<p>sy占用了30-50%的CPU，这太不科学了，同时通过 netstat 分析连接状态，确实看到很多TIME_WAIT：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2ae2cb8b0cb324b68ca22c48c019e029.png" alt="localportissue-time-wait.png"></p>
-<p><strong>cpu要花在us上，这部分才是我们代码吃掉的</strong></p>
-<p><strong><em>于是让PE修改了tcp相关参数：降低 tcp_max_tw_buckets和开启tcp_tw_reuse，这个时候TPS能从1000提升到3000</em></strong></p>
-<p>鼓掌，赶紧休息，迎接双11啊</p>
-<h2 id="测试环境优化到3000-TPS后上线继续压测"><a href="#测试环境优化到3000-TPS后上线继续压测" class="headerlink" title="测试环境优化到3000 TPS后上线继续压测"></a>测试环境优化到3000 TPS后上线继续压测</h2><p><strong>居然性能又回到了500，太沮丧了</strong>，其实最开始账号绑定慢，Passport这边就怀疑taobao api是不是在大压力下不稳定，一般都是认为自己没问题，有问题的一定是对方。我不觉得这有什么问题，要是知道自己有什么问题不早就优化掉了，但是这里缺乏证据支撑，也就是如果你觉得自己没有问题或者问题在对方，一定要拿出证据来(有证据那么大家可以就证据来讨论，而不是互相苍白地推诿）。</p>
-<p>这个时候Passport更加理直气壮啊，好不容易在测试环境优化到3000，怎么一调taobao api就掉到500呢，这么点压力你们就扛不住啊。 但是taobao api那边给出调用数据都是1ms以内就返回了(alimonitor监控图表–拿证据说话）。</p>
-<p>看到alimonitor给出的api响应时间图表后，我开始怀疑从优酷的机器到淘宝的机器中间链路上有瓶颈，但是需要设计方案来证明这个问题在链路上，要不各个环节都会认为自己没有问题的，问题就会卡死。但是当时Passport的开发也只能拿到Login和Userservice这两组机器的权限，中间的负载均衡、交换机都没有权限接触到。</p>
-<p>在没有证据的情况下，肯定机房、PE配合你排查的欲望基本是没有的(被坑过很多回啊，你说我的问题，结果几天配合排查下来发现还是你程序的问题，凭什么我要每次都陪你玩？），所以我要给出证明问题出现在网络链路上，然后拿着这个证据跟网络的同学一起排查。</p>
-<p>讲到这里我禁不住要插一句，在出现问题的时候，都认为自己没有问题这是正常反应，毕竟程序是看不见的，好多意料之外逻辑考虑不周全也是常见的，出现问题按照自己的逻辑自查的时候还是没有跳出之前的逻辑所以发现不了问题。但是好的程序员在问题的前面会尝试用各种手段去证明问题在哪里，而不是复读机一样我的逻辑是这样的，不可能出问题的。即使目的是证明问题在对方，只要能给出明确的证据都是负责任的，拿着证据才能理直气壮地说自己没有问题和干净地甩锅。</p>
-<p><strong>在尝试过tcpdump抓包、ping等各种手段分析后，设计了场景证明问题在中间链路上。</strong></p>
-<h3 id="设计如下三个场景证明问题在中间链路上："><a href="#设计如下三个场景证明问题在中间链路上：" class="headerlink" title="设计如下三个场景证明问题在中间链路上："></a>设计如下三个场景证明问题在中间链路上：</h3><ol>
-<li>压测的时候在userservice ping 淘宝的机器；</li>
-<li>将一台userservice机器从负载均衡上拿下来(没有压力），ping 淘宝的机器；</li>
-<li>从公网上非优酷的机器 ping 淘宝的机器；</li>
-</ol>
-<p>这个时候奇怪的事情发现了，压力一上来<strong>场景1、2</strong>的两台机器ping淘宝的rt都从30ms上升到100-150ms，<strong>场景1</strong> 的rt上升可以理解，但是<strong>场景2</strong>的rt上升不应该，同时<strong>场景3</strong>中ping淘宝在压力测试的情况下rt一直很稳定(说明压力下淘宝的机器没有问题），到此确认问题在优酷到淘宝机房的链路上有瓶颈，而且问题在优酷机房出口扛不住这么大的压力。于是从上海Passport的团队找到北京Passport的PE团队，确认在优酷调用taobao api的出口上使用了snat，PE到snat机器上看到snat只能使用单核，而且对应的核早就100%的CPU了，因为之前一直没有这么大的压力所以这个问题一直存在只是没有被发现。</p>
-<p><strong>于是PE去掉snat，再压的话 TPS稳定在3000左右</strong></p>
-<hr>
-<h2 id="到这里结束了吗？-从3000到5400TPS"><a href="#到这里结束了吗？-从3000到5400TPS" class="headerlink" title="到这里结束了吗？ 从3000到5400TPS"></a>到这里结束了吗？ 从3000到5400TPS</h2><p>优化到3000TPS的整个过程没有修改业务代码，只是通过修改系统配置、结构非常有效地把TPS提升了6倍，对于优化来说这个过程是最轻松，性价比也是非常高的。实际到这个时候也临近双11封网了，最终通过计算(机器数量*单机TPS）完全可以抗住双11的压力，所以最终双11运行的版本就是这样的。 但是有工匠精神的工程师是不会轻易放过这么好的优化场景和环境的(基线、机器、代码、工具都具备配套好了）</p>
-<p><strong>优化完环境问题后，3000TPS能把CPU US跑上去，于是再对业务代码进行优化也是可行的了</strong>。</p>
-<h3 id="进一步挖掘代码中的优化空间"><a href="#进一步挖掘代码中的优化空间" class="headerlink" title="进一步挖掘代码中的优化空间"></a>进一步挖掘代码中的优化空间</h3><p>双11前的这段封网其实是比较无聊的，于是和Passport的开发同学们一起挖掘代码中的可以优化的部分。这个过程中使用到的主要工具是这三个：火焰图、perf、perf-map-java。相关链接：<a href="http://www.brendangregg.com/perf.html" target="_blank" rel="external">http://www.brendangregg.com/perf.html</a> ; <a href="https://github.com/jrudolph/perf-map-agent" target="_blank" rel="external">https://github.com/jrudolph/perf-map-agent</a></p>
-<h3 id="通过Perf发现的一个SpringMVC-的性能问题"><a href="#通过Perf发现的一个SpringMVC-的性能问题" class="headerlink" title="通过Perf发现的一个SpringMVC 的性能问题"></a>通过Perf发现的一个SpringMVC 的性能问题</h3><p>这个问题具体参考我之前发表的优化文章<a href="http://www.atatech.org/articles/65232" title="spring mvc issue" target="_blank" rel="external">http://www.atatech.org/articles/65232</a> 。 主要是通过火焰图发现spring mapping path消耗了过多CPU的性能问题，CPU热点都在methodMapping相关部分，于是修改代码去掉spring中的methodMapping解析后性能提升了40%，TPS能从3000提升到4200.</p>
-<h3 id="著名的fillInStackTrace导致的性能问题"><a href="#著名的fillInStackTrace导致的性能问题" class="headerlink" title="著名的fillInStackTrace导致的性能问题"></a>著名的fillInStackTrace导致的性能问题</h3><p>代码中的第二个问题是我们程序中很多异常(fillInStackTrace），实际业务上没有这么多错误，应该是一些不重要的异常，不会影响结果，但是异常频率很高，对这种我们可以找到触发的地方，catch住，然后不要抛出去(也就是别触发fillInStackTrace)，打印一行error日志就行，这块也能省出10%的CPU，对应到TPS也有几百的提升。</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/36ef4b16c3c400abf6eb7e6b0fbb2f58.png" alt="screenshot.png"></p>
-<p>部分触发fillInStackTrace的场景和具体代码行(点击看高清大图）：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/7eb2cbb4afc2c7d7007c35304c95342a.png" alt="screenshot.png"></p>
-<p>对应的火焰图(点击看高清大图）：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/894bd736dd03060e89e3fa49cc98ae5e.png" alt="screenshot.png"></p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2bb7395a2cc6833c9c7587b38402a301.png" alt="screenshot.png"></p>
-<h3 id="解析useragent-代码部分的性能问题"><a href="#解析useragent-代码部分的性能问题" class="headerlink" title="解析useragent 代码部分的性能问题"></a>解析useragent 代码部分的性能问题</h3><p>整个useragent调用堆栈和cpu占用情况，做了个汇总(useragent不启用TPS能从4700提升到5400）<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/8a4a97cb74724b8baa3b90072a1914e0.png" alt="screenshot.png"></p>
-<p>实际火焰图中比较分散：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/afacc681a9550cd087838c2383be54c8.png" alt="screenshot.png"></p>
-<p><strong>最终通过对代码的优化勉勉强强将TPS从3000提升到了5400(太不容易了，改代码过程太辛苦，不如改配置来得快）</strong></p>
-<p>优化代码后压测tps可以跑到5400，截图：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/38bb043c85c7b50007609484c7bf5698.png" alt="image.png"></p>
-<h2 id="最后再次总结整个压测过程的问题和优化历程"><a href="#最后再次总结整个压测过程的问题和优化历程" class="headerlink" title="最后再次总结整个压测过程的问题和优化历程"></a>最后再次总结整个压测过程的问题和优化历程</h2><pre><code>- docker bridge网络性能问题和网络中断si不均衡    (优化后：500-&gt;1000TPS)
-- 短连接导致的local port不够                   (优化后：1000-3000TPS）
-- 生产环境snat单核导致的网络延时增大             (优化后能达到测试环境的3000TPS）
-- Spring MVC Path带来的过高的CPU消耗           (优化后：3000-&gt;4200TPS)
-- 其他业务代码的优化(比如异常、agent等）         (优化后：4200-&gt;5400TPS)
-</code></pre><hr>
-<h5 id="整个过程得到了淘宝API、优酷会员、优酷Passport、网络、蚂蚁等众多同学的帮助，本来是计划去上海跟Passport的同学一起复盘然后再写这篇文章的，结果一直未能成行，请原谅我拖延到现在才把大家一起辛苦工作的结果整理出来，可能过程中的数据会有一些记忆上的小错误。"><a href="#整个过程得到了淘宝API、优酷会员、优酷Passport、网络、蚂蚁等众多同学的帮助，本来是计划去上海跟Passport的同学一起复盘然后再写这篇文章的，结果一直未能成行，请原谅我拖延到现在才把大家一起辛苦工作的结果整理出来，可能过程中的数据会有一些记忆上的小错误。" class="headerlink" title="整个过程得到了淘宝API、优酷会员、优酷Passport、网络、蚂蚁等众多同学的帮助，本来是计划去上海跟Passport的同学一起复盘然后再写这篇文章的，结果一直未能成行，请原谅我拖延到现在才把大家一起辛苦工作的结果整理出来，可能过程中的数据会有一些记忆上的小错误。"></a>整个过程得到了淘宝API、优酷会员、优酷Passport、网络、蚂蚁等众多同学的帮助，本来是计划去上海跟Passport的同学一起复盘然后再写这篇文章的，结果一直未能成行，请原谅我拖延到现在才把大家一起辛苦工作的结果整理出来，可能过程中的数据会有一些记忆上的小错误。</h5>
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/01/26/TCP相关参数解释/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -3350,7 +3119,16 @@ Swap:            0          0          0
 <h2 id="cached过高回收"><a href="#cached过高回收" class="headerlink" title="cached过高回收"></a>cached过高回收</h2><p>回收：<br>    echo 1/2/3 &gt;/proc/sys/vm/drop_cached</p>
 <p>查看回收后：</p>
 <pre><code>cat /proc/meminfo
-</code></pre><h2 id="还有很多cached无法回收"><a href="#还有很多cached无法回收" class="headerlink" title="还有很多cached无法回收"></a>还有很多cached无法回收</h2><p>可能是正打开的文件占用了cached，比如 vim 打开了一个巨大的文件；比如 mount的 tmpfs； 比如 journald 日志等等</p>
+</code></pre><p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/7cedcb6daa53cbcfc9c68568086500b7.png" alt="image.png"></p>
+<p>当我们执行 echo 2 来 drop slab 的时候，它也会把 Page Cache(inode可能会有对应的pagecache，inode释放后对应的pagecache也释放了)给 drop 掉</p>
+<p>在系统内存紧张的时候，运维人员或者开发人员会想要通过 drop_caches 的方式来释放一些内存，但是由于他们清楚 Page Cache 被释放掉会影响业务性能，所以就期望只去 drop slab 而不去 drop pagecache。于是很多人这个时候就运行 echo 2 &gt; /proc/sys/vm/drop_caches，但是结果却出乎了他们的意料：Page Cache 也被释放掉了，业务性能产生了明显的下降。</p>
+<p>查看 drop_caches 是否执行过释放：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">$ grep drop /proc/vmstat</div><div class="line">drop_pagecache 1</div><div class="line">drop_slab 0</div><div class="line"></div><div class="line"> $ grep inodesteal /proc/vmstat </div><div class="line"> pginodesteal 114341</div><div class="line"> kswapd_inodesteal 1291853</div></pre></td></tr></table></figure>
+<p>在内存紧张的时候会触发内存回收，内存回收会尝试去回收 reclaimable（可以被回收的）内存，这部分内存既包含 Page Cache 又包含 reclaimable kernel memory(比如 slab)。inode被回收后可以通过  grep inodesteal /proc/vmstat 观察到</p>
+<blockquote>
+<p>kswapd_inodesteal 是指在 kswapd 回收的过程中，因为回收 inode 而释放的 pagecache page 个数；pginodesteal 是指 kswapd 之外其他线程在回收过程中，因为回收 inode 而释放的 pagecache page 个数;</p>
+</blockquote>
+<h2 id="还有很多cached无法回收"><a href="#还有很多cached无法回收" class="headerlink" title="还有很多cached无法回收"></a>还有很多cached无法回收</h2><p>可能是正打开的文件占用了cached，比如 vim 打开了一个巨大的文件；比如 mount的 tmpfs； 比如 journald 日志等等</p>
 <h3 id="通过vmtouch-查看"><a href="#通过vmtouch-查看" class="headerlink" title="通过vmtouch 查看"></a>通过<a href="https://hoytech.com/vmtouch/" target="_blank" rel="external">vmtouch</a> 查看</h3><pre><code># vmtouch -v test.x86_64.rpm 
 test.x86_64.rpm
 [OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO] 10988/10988
@@ -3393,22 +3171,57 @@ test.x86_64.rpm
 </ul>
 <p>缺页后kswapd在短时间内回收不了足够多的 free 内存，或kswapd 还没有触发执行，操作系统就会进行内存页直接回收。这个过程中，应用会进行自旋等待直到回收的完成，从而产生巨大的延迟。</p>
 <p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/0a5cdeb75b7dee2068254cd4b7fe254d.png" alt=""></p>
-<p>如果page被swapped，那么恢复进内场的过程也对延迟有影响，当被匿名内存页被回收后，如果下次再访问就会产生IO的延迟。</p>
+<p>如果page被swapped，那么恢复进内存的过程也对延迟有影响，当被匿名内存页被回收后，如果下次再访问就会产生IO的延迟。</p>
 <p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/740b95056dace8ae6fb3b8f58d91572e.png" alt=""></p>
 <h3 id="min-和-low的区别："><a href="#min-和-low的区别：" class="headerlink" title="min 和 low的区别："></a>min 和 low的区别：</h3><ol>
-<li>min下的内存是保留给内核使用的；当到达min，会触发内存的direct reclaim</li>
-<li>low水位比min高一些，当内存可用量小于low的时候，会触发 kswapd回收内存，当kswapd慢慢的将内存 回收到high水位，就开始继续睡眠</li>
+<li>min下的内存是保留给内核使用的；当到达min，会触发内存的direct reclaim （vm.min_free_kbytes）</li>
+<li>low水位比min高一些，当内存可用量小于low的时候，会触发 kswapd回收内存，当kswapd慢慢的将内存 回收到high水位，就开始继续睡眠 </li>
 </ol>
 <h3 id="内存回收方式"><a href="#内存回收方式" class="headerlink" title="内存回收方式"></a>内存回收方式</h3><p>内存回收方式有两种，主要对应low ，min</p>
 <ol>
-<li>direct reclaim : 达到min水位线时执行</li>
-<li>kswapd reclaim : 达到low水位线时执行</li>
+<li>direct reclaim : 达到min水位线时执行 – 同步</li>
+<li>kswapd reclaim : 达到low水位线时执行 – 异步（实际还有，只是比较危险了，后台kswapd会回收，不会卡顿应用）</li>
 </ol>
-<p>为了减少缺页中断，首先就要保证我们有足够的内存可以使用。由于Linux会尽可能多的使用free的内存，运行很久的应用free的内存是很少的。下面的图中，紫色表示已经使用的内存，白色表示尚未分配的内存。当我们的内存使用达到水位的low值的时候，kswapd就会开始回收工作，而一旦内存分配超过了mini，就会进行内存的直接回收。</p>
+<p>为了减少缺页中断，首先就要保证我们有足够的内存可以使用。由于Linux会尽可能多的使用free的内存，运行很久的应用free的内存是很少的。下面的图中，紫色表示已经使用的内存，白色表示尚未分配的内存。当我们的内存使用达到水位的low值的时候，kswapd就会开始回收工作，而一旦内存分配超过了min，就会进行内存的直接回收。</p>
 <p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/5933cc4c28f86aa08410a8af4ff4410d.png" alt=""></p>
 <p>针对这种情况，我们需要采用预留内存的手段，系统参数vm.extra_free_kbytes就是用来做这个事情的。这个参数设置了系统预留给应用的内存，可以避免紧急需要内存时发生内存回收不及时导致的高延迟。从下面图中可以看到，通过vm.extra_free_kbytes的设置，预留内存可以让内存的申请处在一个安全的水位。<strong>需要注意的是，因为内核的优化，在3.10以上的内核版本这个参数已经被取消。</strong></p>
 <p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/f55022d4eb181b92ba5d2e142ec940c8.png" alt=""></p>
 <p>或者禁止： vm.swappiness  来避免swapped来减少延迟</p>
+<h2 id="Page回收–缺页中断"><a href="#Page回收–缺页中断" class="headerlink" title="Page回收–缺页中断"></a>Page回收–缺页中断</h2><p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/3fdffacd66c0981956b15be348fff46a.png" alt="image.png" style="zoom:50%;"></p>
+<p>从图里你可以看到，在开始内存回收后，首先进行后台异步回收（上图中蓝色标记的地方），这不会引起进程的延迟；如果后台异步回收跟不上进程内存申请的速度，就会开始同步阻塞回收，导致延迟（上图中红色和粉色标记的地方，这就是引起 load 高的地址）。</p>
+<p>那么，针对直接内存回收引起 load 飙高或者业务 RT 抖动的问题，一个解决方案就是及早地触发后台回收来避免应用程序进行直接内存回收，那具体要怎么做呢？</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/4b341ba757d27e3a81145a55f54363e1.png" alt="image.png"></p>
+<p>它的意思是：当内存水位低于 watermark low 时，就会唤醒 kswapd 进行后台回收，然后 kswapd 会一直回收到 watermark high。</p>
+<p>那么，我们可以增大 min_free_kbytes 这个配置选项来及早地触发后台回收，该选项最终控制的是内存回收水位，不过，内存回收水位是内核里面非常细节性的知识点，我们可以先不去讨论。</p>
+<p>对于大于等于 128G 的系统而言，将 min_free_kbytes 设置为 4G 比较合理，这是我们在处理很多这种问题时总结出来的一个经验值，既不造成较多的内存浪费，又能避免掉绝大多数的直接内存回收。</p>
+<p>该值的设置和总的物理内存并没有一个严格对应的关系，我们在前面也说过，如果配置不当会引起一些副作用，所以在调整该值之前，我的建议是：你可以渐进式地增大该值，比如先调整为 1G，观察 sar -B 中 pgscand 是否还有不为 0 的情况；如果存在不为 0 的情况，继续增加到 2G，再次观察是否还有不为 0 的情况来决定是否增大，以此类推。</p>
+<blockquote>
+<p>sar -B :  Report paging statistics.</p>
+<p>pgscand/s  Number of pages scanned directly per second.</p>
+</blockquote>
+<h3 id="系统中脏页过多引起-load-飙高"><a href="#系统中脏页过多引起-load-飙高" class="headerlink" title="系统中脏页过多引起 load 飙高"></a>系统中脏页过多引起 load 飙高</h3><p>直接回收过程中，如果存在较多脏页就可能涉及在回收过程中进行回写，这可能会造成非常大的延迟，而且因为这个过程本身是阻塞式的，所以又可能进一步导致系统中处于 D 状态的进程数增多，最终的表现就是系统的 load 值很高。</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/f16438b744a248d7671d5ac7317b0a98.png" alt="image.png" style="zoom: 50%;"></p>
+<p>可以通过 sar -r 来观察系统中的脏页个数：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">$ sar -r 1</div><div class="line">07:30:01 PM kbmemfree kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty</div><div class="line">09:20:01 PM   5681588   2137312     27.34         0   1807432    193016      2.47    534416   1310876         4</div><div class="line">09:30:01 PM   5677564   2141336     27.39         0   1807500    204084      2.61    539192   1310884        20</div><div class="line">09:40:01 PM   5679516   2139384     27.36         0   1807508    196696      2.52    536528   1310888        20</div><div class="line">09:50:01 PM   5679548   2139352     27.36         0   1807516    196624      2.51    536152   1310892        24</div></pre></td></tr></table></figure>
+<p>kbdirty 就是系统中的脏页大小，它同样也是对 /proc/vmstat 中 nr_dirty 的解析。你可以通过调小如下设置来将系统脏页个数控制在一个合理范围:</p>
+<blockquote>
+<p>vm.dirty_background_bytes = 0</p>
+<p>vm.dirty_background_ratio = 10</p>
+<p>vm.dirty_bytes = 0</p>
+<p>vm.dirty_expire_centisecs = 3000</p>
+<p>vm.dirty_ratio = 20</p>
+</blockquote>
+<p>至于这些值调整大多少比较合适，也是因系统和业务的不同而异，我的建议也是一边调整一边观察，将这些值调整到业务可以容忍的程度就可以了，即在调整后需要观察业务的服务质量 (SLA)，要确保 SLA 在可接受范围内。调整的效果你可以通过 /proc/vmstat 来查看：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">#grep &quot;nr_dirty_&quot; /proc/vmstat</div><div class="line">nr_dirty_threshold 3071708</div><div class="line">nr_dirty_background_threshold 1023902</div></pre></td></tr></table></figure>
+<p>在4.20的内核并且sar 的版本为12.3.3可以看到PSI（Pressure-Stall Information）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">some avg10=45.49 avg60=10.23 avg300=5.41 total=76464318</div><div class="line">full avg10=40.87 avg60=9.05 avg300=4.29 total=58141082</div></pre></td></tr></table></figure>
+<p>你需要重点关注 avg10 这一列，它表示最近 10s 内存的平均压力情况，如果它很大（比如大于 40）那 load 飙高大概率是由于内存压力，尤其是 Page Cache 的压力引起的。</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/cf58f10a523e1e4f0db443be3f54fc04.png" alt="image.png"></p>
+<h2 id="通过tracepoint分析内存卡顿问题"><a href="#通过tracepoint分析内存卡顿问题" class="headerlink" title="通过tracepoint分析内存卡顿问题"></a>通过tracepoint分析内存卡顿问题</h2><p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d5446b656e8d91a9fb72200a7b97e723.png" alt="image.png"></p>
+<p>我们继续以内存规整 (memory compaction) 为例，来看下如何利用 tracepoint 来对它进行观察：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">#首先来使能compcation相关的一些tracepoing</div><div class="line">$ echo 1 &gt;</div><div class="line">/sys/kernel/debug/tracing/events/compaction/mm_compaction_begin/enable</div><div class="line">$ echo 1 &gt;</div><div class="line">/sys/kernel/debug/tracing/events/compaction/mm_compaction_end/enable </div><div class="line"></div><div class="line">#然后来读取信息，当compaction事件触发后就会有信息输出</div><div class="line">$ cat /sys/kernel/debug/tracing/trace_pipe</div><div class="line">           &lt;...&gt;-49355 [037] .... 1578020.975159: mm_compaction_begin: </div><div class="line">zone_start=0x2080000 migrate_pfn=0x2080000 free_pfn=0x3fe5800 </div><div class="line">zone_end=0x4080000, mode=async</div><div class="line">           &lt;...&gt;-49355 [037] .N.. 1578020.992136: mm_compaction_end: </div><div class="line">zone_start=0x2080000 migrate_pfn=0x208f420 free_pfn=0x3f4b720 </div><div class="line">zone_end=0x4080000, mode=async status=contended</div></pre></td></tr></table></figure>
+<p>从这个例子中的信息里，我们可以看到是 49355 这个进程触发了 compaction，begin 和 end 这两个 tracepoint 触发的时间戳相减，就可以得到 compaction 给业务带来的延迟，我们可以计算出这一次的延迟为 17ms。</p>
+<p>或者用 <a href="https://lore.kernel.org/linux-mm/20191001144524.GB3321@techsingularity.net/T/" target="_blank" rel="external">perf script</a> 脚本来分析, <a href="https://github.com/iovisor/bcc/blob/master/tools/drsnoop.py" target="_blank" rel="external">基于 bcc(eBPF) 写的direct reclaim snoop</a>来观察进程因为 direct reclaim 而导致的延迟。</p>
 <h2 id="slabtop和-proc-slabinfo"><a href="#slabtop和-proc-slabinfo" class="headerlink" title="slabtop和/proc/slabinfo"></a>slabtop和/proc/slabinfo</h2><p>slabtop和/proc/slabinfo 查看cached使用情况 主要是：pagecache（页面缓存）， dentries（目录缓存）， inodes</p>
 <h2 id="消失的内存"><a href="#消失的内存" class="headerlink" title="消失的内存"></a>消失的内存</h2><p>OS刚启动后就报内存不够了，什么都没跑就500G没了，cached和buffer基本没用，纯粹就是used占用高，top按内存排序没有超过0.5%的进程</p>
 <p>参考： <a href="https://cloud.tencent.com/developer/article/1087455" target="_blank" rel="external">https://cloud.tencent.com/developer/article/1087455</a></p>
@@ -4730,6 +4543,259 @@ while (1) {
 <p>这意味着，应用程序，即epoll_wait的调用进程必须自己在获取事件后将其处理干净后方可再次调用epoll_wait，否则epoll_wait不会返回，而是必须等到下次产生事件的时候方可返回。这会导致事件堆积，所以一般会死循环一直拉取事件，直到拉取不到了再返回。</p>
 <h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://www.atatech.org/articles/157349" target="_blank" rel="external">Epoll is fundamentally broken</a> </p>
 <p><a href="https://idea.popcount.org/2017-02-20-epoll-is-fundamentally-broken-12" target="_blank" rel="external">Epoll is fundamentally broken 1/2</a> </p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/12/09/如何在工作中学习-2019V2版/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/12/09/如何在工作中学习-2019V2版/" itemprop="url">如何在工作中学习-2019V2版</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-12-09T12:30:03+08:00">
+                2019-12-09
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/技巧/" itemprop="url" rel="index">
+                    <span itemprop="name">技巧</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/12/09/如何在工作中学习-2019V2版/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2019/12/09/如何在工作中学习-2019V2版/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="如何在工作中学习-2019V2版"><a href="#如何在工作中学习-2019V2版" class="headerlink" title="如何在工作中学习-2019V2版"></a>如何在工作中学习-2019V2版</h1><p><a href="https://plantegg.github.io/2018/05/23/%E5%A6%82%E4%BD%95%E5%9C%A8%E5%B7%A5%E4%BD%9C%E4%B8%AD%E5%AD%A6%E4%B9%A0/" target="_blank" rel="external">2018版简单一些，可以看这里</a>，2019版加入了一些新的理解和案例，目的是想要让文章中所说的不是空洞的口号，而是可以具体执行的命令，拉平对读者的要求。</p>
+<blockquote>
+<p>先说一件值得思考的事情：高考的时候大家都是一样的教科书，同一个教室，同样的老师辅导，时间精力基本差不多，可是最后别人考的是清华北大或者一本，而你的实力只能考个三本，为什么？ 当然这里主要是智商的影响，那么其他因素呢？智商解决的问题能不能后天用其他方式来补位一下？</p>
+</blockquote>
+<p>学习的闭环：先了解知识，再实战演练，然后总结复盘。很多时候只是停留在知识学习层面，没有实践，或者实践后没有思考复盘优化，都导致无法深入的理解掌握知识点(from: 瑾妤)</p>
+<h2 id="关键问题点"><a href="#关键问题点" class="headerlink" title="关键问题点"></a>关键问题点</h2><h3 id="为什么你的知识积累不了？"><a href="#为什么你的知识积累不了？" class="headerlink" title="为什么你的知识积累不了？"></a>为什么你的知识积累不了？</h3><p>有些知识看过就忘、忘了再看，实际碰到问题还是联系不上这个知识，这其实是知识的积累出了问题，没有深入的理解自然就不能灵活运用，也就谈不上解决问题了。这跟大家一起看相同的高考教科书但是高考结果不一样是一个原因。问题出在了理解上，每个人的理解能力不一样（智商），绝大多数人对知识的理解要靠不断地实践（做题）来巩固。</p>
+<h3 id="同样实践效果不一样？"><a href="#同样实践效果不一样？" class="headerlink" title="同样实践效果不一样？"></a>同样实践效果不一样？</h3><p>同样工作一年碰到了10个问题（或者说做了10套高考模拟试卷），但是结果不一样，那是因为在实践过程中方法不够好。或者说你对你为什么做对了、为什么做错了没有去复盘</p>
+<p>假如碰到一个问题，身边的同事解决了，而我解决不了。那么我就去想这个问题他是怎么解决的，他看到这个问题后的逻辑和思考是怎么样的，有哪些知识指导了他这么逻辑推理，这些知识哪些我也知道但是我没有想到这么去运用推理（说明我对这个知识理解的不到位导致灵活运用缺乏）；这些知识中又有哪些是我不知道的（知识缺乏，没什么好说的快去Google什么学习下–有场景案例和目的加持，学习理解起来更快）。</p>
+<p>等你把这个问题基本按照你同事掌握的知识和逻辑推理想明白后，需要再去琢磨一下他的逻辑推理解题思路中有没有不对的，有没有啰嗦的地方，有没有更直接的方式（对知识更好地运用）。</p>
+<p>我相信每个问题都这么去实践的话就不应该再抱怨灵活运用、举一反三，同时知识也积累下来了，这种场景下积累到的知识是不会那么容易忘记的。</p>
+<p>这就是向身边的牛人学习，同时很快超过他的办法。这就是为什么高考前你做了10套模拟题还不如其他人做一套的效果好</p>
+<p><strong>知识+逻辑 基本等于你的能力</strong>，知识让你知道那个东西，逻辑让你把东西和问题联系起来</p>
+<p><strong>这里的问题你可以理解成方案、架构、设计等</strong></p>
+<h3 id="系统化的知识哪里来？"><a href="#系统化的知识哪里来？" class="headerlink" title="系统化的知识哪里来？"></a>系统化的知识哪里来？</h3><p>知识之间是可以联系起来的并且像一颗大树一样自我生长，但是当你都没理解透彻，自然没法产生联系，也就不能够自我生长了。</p>
+<p>真正掌握好的知识点会慢慢生长连接最终组成一张大网</p>
+<p>但是我们最容易陷入的就是掌握的深度、系统化（工作中碎片时间过多，学校里缺少时间）不够，所以一个知识点每次碰到花半个小时学习下来觉得掌握了，但是3个月后就又没印象了。总是感觉自己在懵懵懂懂中，或者一个领域学起来总是不得要领，根本的原因还是在于：宏观整体大图了解不够（缺乏体系，每次都是盲人摸象）；关键知识点深度不够，理解不透彻，这些关键点就是这个领域的骨架、支点、抓手。缺了抓手自然不能生长，缺了宏观大图容易误入歧途。</p>
+<p>我们有时候发现自己在某个领域学起来特别快，但是换个领域就总是不得要领，问题出在了上面，即使花再多时间也是徒然。这也就是为什么学霸看两个小时的课本比你看两天效果还好，感受下来还觉得别人好聪明，是不是智商比我高啊。</p>
+<p>所以新进入一个领域的时候要去找他的大图和抓手。</p>
+<p>好的同事总是能很轻易地把这个大图交给你，再顺便给你几个抓手，你就基本入门了，这就是培训的魅力，这种情况肯定比自学效率高多了。但是目前绝大部分的培训都做不到这点</p>
+<h3 id="好的逻辑又怎么来？"><a href="#好的逻辑又怎么来？" class="headerlink" title="好的逻辑又怎么来？"></a>好的逻辑又怎么来？</h3><p>实践、复盘</p>
+<h2 id="讲个前同事的故事"><a href="#讲个前同事的故事" class="headerlink" title="讲个前同事的故事"></a>讲个前同事的故事</h2><p>有一个前同事是5Q过来的，负责技术（所有解决不了的问题都找他），这位同学从chinaren出道，跟着王兴一块创业5Q，5Q在学校靠鸡腿打下大片市场，最后被陈一舟的校内收购（据说被收购后5Q的好多技术都走了，最后王兴硬是呆在校内网把合约上的所有钱都拿到了）。这位同学让我最佩服的解决问题的能力，好多问题其实他也不一定就擅长，但是他就是有本事通过Help、Google不停地验证尝试就把一个不熟悉的问题给解决了，这是我最羡慕的能力，在后面的职业生涯中一直不停地往这个方面尝试。</p>
+<h3 id="应用刚启动连接到数据库的时候比较慢，但又不是慢查询"><a href="#应用刚启动连接到数据库的时候比较慢，但又不是慢查询" class="headerlink" title="应用刚启动连接到数据库的时候比较慢，但又不是慢查询"></a>应用刚启动连接到数据库的时候比较慢，但又不是慢查询</h3><ol>
+<li>这位同学的解决办法是通过tcpdump来分析网络包，看网络包的时间戳和网络包的内容，然后找到了具体卡在了哪里。</li>
+<li>如果是专业的DBA可能会通过show processlist 看具体连接在做什么，比如看到这些连接状态是 <strong>authentication</strong> 状态，然后再通过Google或者对这个状态的理解知道创建连接的时候MySQL需要反查IP、域名这里比较耗时，通过配置参数 <strong>skip-name-resolve</strong> 跳过去就好了。</li>
+<li><p>如果是MySQL的老司机，一上来就知道连接慢的话跟 <strong>skip-name-resolve</strong> 关系最大。</p>
+<p> 在我眼里这三种方式都解决了问题，最后一种最快但是纯靠积累和经验，换个问题也许就不灵了；第一种方式是最牛逼和通用的，只需要最少的知识就把问题解决了。</p>
+</li>
+</ol>
+<p>我当时跟着他从sudo、ls等linux命令开始学起。当然我不会轻易去打搅他问他，每次碰到问题我尽量让他在我的电脑上来操作，解决后我再自己复盘，通过history调出他的所有操作记录，看他在我的电脑上用Google搜啥了，然后一个个去学习分析他每个动作，去想他为什么搜这个关键字，复盘完还有不懂的再到他面前跟他面对面的讨论他为什么要这么做，指导他这么做的知识和逻辑又是什么。</p>
+<h2 id="如何向身边的同学学习"><a href="#如何向身边的同学学习" class="headerlink" title="如何向身边的同学学习"></a>如何向身边的同学学习</h2><h3 id="钉钉提问的技巧"><a href="#钉钉提问的技巧" class="headerlink" title="钉钉提问的技巧"></a>钉钉提问的技巧</h3><p>我进现在的公司的时候是个网络小白，但是业务需要我去解决这些问题，于是我就经常在钉钉上找内部的专家来帮请教一些问题，首先要感谢他们的耐心，同时我觉得跟他们提问的时候的方法大家可以参考一下。</p>
+<p>首先，没有客套直奔主题把问题描述清楚，钉钉消息本来就不是即时的，就不要问在不在、能不能问个问题、你好（因为这些问题会浪费他一次切换，真要客套把 你好 写在问题前面在一条消息中发出去）。</p>
+<p>其次，我会截图把现象接下来，关键部分红框标明。如果是内部机器还会帮对方申请登陆账号，打通ssh登陆，然后把ssh登陆命令和触发截图现象命令的文字一起钉钉发过去。也就是对方收到我的消息，看到截图的问题后，他只要复制粘贴我发给他的文字信息就看到现象了。为什么要帮他申请账号，有时候账号要审批，要找人，对方不知道到哪里申请等等；这么复杂对方干脆就装作没看见你的消息好了。</p>
+<p>为什么还要把ssh登陆命令、重现文字命令发给他呢，怕他敲错啊，敲错了还得来问你，一来一回时间都浪费了。你也许会说我截图上有重现命令啊，那么凭什么他帮你解决问题他还要瞪大眼睛看你的截图把你的命令抄下来？比如容器ID一长串，你是截图了，结果他把b抄成6了，重现不了，还得问你，又是几个来回……</p>
+<p>提完问题后有三种情况：抱歉，我也不知道；这个问题你要问问谁，他应该知道；沉默</p>
+<p>没关系钉钉的优势是复制粘贴方便，你就换个人再问，可能问到第三个人终于搞定了。那么我会回来把结果告诉前面我问过的同学，即使他是沉默的那个。因为我骚扰过人家，要回来填这个坑，另外也许他真的不知道，那么同步给他也可以帮到他。结果就是他觉得我很靠谱，信任度就建立好了，下次再有问题会更卖力地一起来解决。</p>
+<h4 id="一些不好的"><a href="#一些不好的" class="headerlink" title="一些不好的"></a>一些不好的</h4><p>有个同学看了我的文章（晚上11点看的），马上发了钉钉消息过来问文章中用到的工具是什么。我还没睡觉但是躺床上看东西，有钉钉消息提醒，但没有切过去回复（不想中断我在看的东西）。5分钟后这个同学居然钉了我一下，我当时是很震惊的，这是你平时学习，不是我的产品出了故障，现在晚上11点。</p>
+<p>提问题的时间要考虑对方大概率在电脑前，打字快。否则要紧的话就提选择题类型的问题</p>
+<p>问题要尽量是封闭的，比如钉钉上不适合问的问题：</p>
+<ul>
+<li>为什么我们应用的TPS压不上去，即使CPU还有很多空闲（不好的原因：太开放，原因太多，对方要打字2000才能给你解释清楚各种可能的原因，你要不是他老板就不要这样问了）</li>
+<li>用多条消息来描述一个问题，一次没把问题描述清楚，需要对方中断多次</li>
+</ul>
+<h2 id="场景式学习、体感的来源、面对问题学习"><a href="#场景式学习、体感的来源、面对问题学习" class="headerlink" title="场景式学习、体感的来源、面对问题学习"></a>场景式学习、体感的来源、面对问题学习</h2><p>前面提到的对知识的深入理解这有点空，如何才能做到深入理解？</p>
+<h3 id="举个学习TCP三次握手例子"><a href="#举个学习TCP三次握手例子" class="headerlink" title="举个学习TCP三次握手例子"></a>举个学习TCP三次握手例子</h3><p>经历稍微丰富点的工程师都觉得TCP三次握手看过很多次、很多篇文章了，但是文章写得再好似乎当时理解了，但是总是过几个月就忘了或者一看就懂，过一阵子被人一问就模模糊糊了，或者两个为什么就答不上了，自己都觉得自己的回答是在猜或者不确定</p>
+<p>为什么会这样呢？而学其它知识就好通畅多了，我觉得这里最主要的是我们对TCP缺乏体感，比如没有几个工程师去看过TCP握手的代码，也没法想象真正的TCP握手是如何在电脑里运作的（打电话能给你一些类似的体感，但是细节覆盖面不够）。</p>
+<p>如果这个时候你一边学习的时候一边再用wireshark抓包看看三次握手具体在干什么，比抽象的描述实在多了，你能看到具体握手的一来一回，并且看到一来一回带了哪些内容，这些内容又是用来做什么、为什么要带，这个时候你再去看别人讲解的理论顿时会觉得好理解多了，以后也很难忘记。</p>
+<p>但是这里很多人执行能力不强，想去抓包，但是觉得要下载安装wireshark，要学习wireshark就放弃了。只看不动手当然是最舒适的，但是这个最舒适给了你在学习的假象，没有结果。</p>
+<p>这是不是跟你要解决一个难题非常像，这个难题需要你去做很多事，比如下载源代码（翻不了墙，放弃）；比如要编译（还要去学习那些编译参数，放弃）；比如要搭建环境（太琐屑，放弃）。你看这中间九九八十一难你放弃了一难都取不了真经。这也是为什么同样学习、同样的问题，他能学会，他能解决，你不可以。</p>
+<h3 id="再来看一个解决问题的例子"><a href="#再来看一个解决问题的例子" class="headerlink" title="再来看一个解决问题的例子"></a>再来看一个解决问题的例子</h3><p><a href="https://www.atatech.org/articles/73174" target="_blank" rel="external">会员系统双11优化这个问题</a>对我来说，我是个外来者，完全不懂这里面的部署架构、业务逻辑。但是在问题的关键地方（会员认为自己没问题–压力测试正常的；淘宝API更是认为自己没问题，alimonitor监控显示正常），结果就是会员的同学说我们没有问题，淘宝API肯定有问题，然后就不去思考自己这边可能出问题的环节了。思想上已经甩包了，那么即使再去review流程、环节也就不会那么仔细，自然更是发现不了问题了。</p>
+<p>但是我的经验告诉我要有证据地甩包，或者说拿着证据优雅地甩包，这迫使我去找更多的细节证据（证据要给力哦，不能让人家拍回来）。如果我是这么说的，这个问题在淘宝API这里，你看理由是…………，我做了这些实验，看到了这些东东。那么淘宝API那边想要证明我的理由错了就会更积极地去找一些数据。</p>
+<p>事实上我就是做这些实验找证据过程中发现了会员的问题，这就是态度、执行力、知识、逻辑能力综合下来拿到的一个结果。我最不喜欢的一句话就是我的程序没问题，因为我的逻辑是这样的，不会错的。你当然不会写你知道的错误逻辑，程序之所以有错误都是在你的逻辑、意料之外的东西。有很多次一堆人电话会议中扯皮的时候，我一般把电话静音了，直接上去人肉一个个过对方的逻辑，一般来说电话会议还没有结束我就给出来对方逻辑之外的东西。</p>
+<h3 id="场景式学习"><a href="#场景式学习" class="headerlink" title="场景式学习"></a>场景式学习</h3><p>我带2岁的小朋友看刷牙的画本的时候，小朋友理解不了喝口水含在嘴里咕噜咕噜不要咽下去，然后刷牙的时候就都喝下去了。我讲到这里的时候立马放下书把小朋友带到洗手间，先开始我自己刷牙了，示范一下什么是咕噜咕噜（放心，他还是理解不了的，但是至少有点感觉了，水在口里会响，然后水会吐出来）。示范完然后辅导他刷牙，喝水的时候我和他一起直接低着头，喝水然后立马水吐出来了，让他理解了到嘴里的东西不全是吞下去的。然后喝水晃脑袋，有点声音了（离咕噜咕噜不远了）。训练几次后小朋友就理解了咕噜咕噜，也学会了咕噜咕噜。这就是场景式学习的魅力。</p>
+<p>很多年前我有一次等电梯，边上还有一个老太太，一个年轻的妈妈带着一个4、5岁的娃。应该是刚从外面玩了回来，妈妈在教育娃娃刚刚在外面哪里做错了，那个小朋友也是气嘟嘟地。进了电梯后都不说话，小朋友就开始踢电梯。这个时候那个年轻的妈妈又想开始教育小朋友了。这时老太太教育这个妈妈说，这是小朋友不高兴，做出的反抗，就是想要用这个方式抗议刚刚的教育或者挑逗起妈妈的注意。这个时候要忽视他，不要去在意，他踢几下后（虽然没有公德这么小懂不了这么多）脚也疼还没人搭理他这个动作，就觉得真没劲，可能后面他都不踢电梯了，觉得这是一个非常无聊还挨疼的事情。那么我在这个场景下立马反应过来，这就是很多以前我对一些小朋友的行为不理解的原因啊，这比书上看到的深刻多了。就是他们生气了在那里做妖挑逗你骂他、打他或者激怒你来吸引大人的注意力。</p>
+<h2 id="钉子式学习方法和系统性学习方法"><a href="#钉子式学习方法和系统性学习方法" class="headerlink" title="钉子式学习方法和系统性学习方法"></a>钉子式学习方法和系统性学习方法</h2><p>系统性就是想掌握MySQL，那么搞几本MySQL专著和MySQL 官方DOC看下来，一般课程设计的好的话还是比较容易普遍性地掌握下来，绝大部分时候都是这种学习方法，可是问题在于在种方式下学完后当时看着似乎理解了，但是很容易忘记，一片一片地系统性的忘记。还是一般人对知识的理解没那么容易真正理解。</p>
+<p>钉子式的学习方式，就是在一大片知识中打入几个桩，反复演练将这个桩不停地夯实，夯温，做到在这个知识点上用通俗的语言跟小白都能讲明白，然后在这几个桩中间发散像星星之火燎原一样把整个一片知识都掌握下来。这种学习方法的缺点就是很难找到一片知识点的这个点，然后没有很好整合的话知识过于零散。</p>
+<p>我们常说的一个人很聪明，就是指系统性的看看书就都理解了，是真的理解那种，还能灵活运用，但是大多数普通人就不是这样的，看完书似乎理解了，实际几周后基本都忘记了，真正实践需要用的时候还是用不好。</p>
+<p>实际这两种学习方法要互相结合，对普通人来讲钉子式学习方法更好一些，掌握几个钉子后再系统性地学习也容易多了；对非常聪明的人来说系统性地学习效率更高一些。</p>
+<h3 id="举个Open-SSH的例子"><a href="#举个Open-SSH的例子" class="headerlink" title="举个Open-SSH的例子"></a>举个Open-SSH的例子</h3><p>为了做通 SSH 的免密登陆，大家都需要用到 ssh-keygen/ssh-copy-id， 如果我们把这两个命令当一个小的钉子的话，会去了解ssh-keygen做了啥（生成了密钥对），或者ssh-copy-id 的时候报错了（原来是需要秘钥对），然后将 ssh-keygen 生成的pub key复制到server的~/.ssh/authorized_keys 中。</p>
+<p>然后你应该会对这个原理要有一些理解（更大的钉子），于是理解了密钥对，和ssh验证的流程，顺便学会怎么看ssh debug信息，那么接下来网络上各种ssh攻略、各种ssh卡顿的解决都是很简单的事情了。</p>
+<p>比如你通过SSH可以解决这些问题：</p>
+<ul>
+<li>免密登陆</li>
+<li>ssh卡顿</li>
+<li>怎么去掉ssh的时候需要手工多输入yes</li>
+<li>怎么样一次登录，多次复用</li>
+<li>我的ssh怎么很快就断掉了</li>
+<li>我怎么样才能一次通过跳板机ssh到目标机器</li>
+<li>我怎么样通过ssh科学上网</li>
+<li>我的ansible（底层批量命令都是基于ssh）怎么这么多问题，到底是为什么</li>
+<li>我的git怎么报网络错误了</li>
+<li>xshell我怎么配置不好</li>
+<li>https为什么需要随机数加密，还需要签名</li>
+<li>…………</li>
+</ul>
+<p>这些问题都是一步步在扩大ssh的外延，让这个钉子变成一个巨大的桩。</p>
+<p>然后就会学习到一些<a href="https://plantegg.github.io/2018/06/02/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82SSH--SSH%E8%8A%B1%E5%BC%8F%E7%8E%A9%E6%B3%95/" target="_blank" rel="external">高级一些的ssh配置</a>，比如干掉经常ssh的时候要yes一下(StrictHostKeyChecking=no), 或者怎么配置一下ssh就不会断线了（ServerAliveInterval=15），或者将 ssh跳板机-&gt;ssh server的过程做成 ssh server一步就可以了(ProxyCommand)，进而发现用 ssh的ProxyCommand很容易科学上网了，或者git有问题的时候轻而易举地把ssh debug打开，对git进行debug了……</p>
+<p>这基本都还是ssh的本质范围，像ansible、git在底层都是依赖ssh来通讯的，你会发现学、调试xshell、ansible和git简直太容易了。</p>
+<p>另外理解了ssh的秘钥对，也就理解了非对称加密，同时也很容易理解https流程（SSL），同时知道对称和非对称加密各自的优缺点，SSL为什么需要用到这两种加密算法了。</p>
+<p>你看一个简单日常的知识我们只要沿着它用钉子精神，深挖细挖你就会发现知识之间的连接，这个小小的知识点成为你知识体系的一根结实的柱子。</p>
+<p>我见过太多的老的工程师、年轻的工程师，天天在那里ssh 密码，ssh 跳板机，ssh 目标机，一小会ssh断了，重来一遍；或者ssh后卡住了，等吧……</p>
+<p>在这个问题上表现得没有求知欲、没有探索精神、没有一次把问题搞定的魄力，所以就习惯了</p>
+<h2 id="空洞的口号"><a href="#空洞的口号" class="headerlink" title="空洞的口号"></a>空洞的口号</h2><p>很多文章都会教大家：举一反三、灵活运用、活学活用、多做多练。但是只有这些口号是没法落地的，落地的基本原则就是前面提到的，却总是被忽视了。</p>
+<h2 id="什么是工程效率，什么是知识效率"><a href="#什么是工程效率，什么是知识效率" class="headerlink" title="什么是工程效率，什么是知识效率"></a>什么是工程效率，什么是知识效率</h2><p>有些人纯看理论就能掌握好一门技能，还能举一反三，这是知识效率，这种人非常少；</p>
+<p>大多数普通人都是看点知识然后结合实践来强化理论，要经过反反复复才能比较好地掌握一个知识，这就是工程效率，讲究技巧、工具来达到目的。</p>
+<p>肯定知识效率最牛逼，但是拥有这种技能的人毕竟非常少（天生的高智商吧）。从小我们周边那种不怎么学的学霸型基本都是这类，这种学霸都还能触类旁通非常快的掌握一个新知识，非常气人。剩下的绝大部分只能拼时间+方法+总结等也能掌握一些知识</p>
+<p>非常遗憾我就是工程效率型，只能羡慕那些知识效率型的学霸。但是这事又不能独立看待有些人在某些方向上是工程效率型，有些方向就又是知识效率型（有一种知识效率型是你掌握的实在太多也就比较容易触类旁通了，这算灰色知识效率型）</p>
+<p>使劲挖掘自己在知识效率型方面的能力吧，两者之间当然没有明显的界限，知识积累多了逻辑训练好了在别人看来你的智商就高了</p>
+<h2 id="为什么看电影注意力特别好，做正事注意力集中不了"><a href="#为什么看电影注意力特别好，做正事注意力集中不了" class="headerlink" title="为什么看电影注意力特别好，做正事注意力集中不了"></a>为什么看电影注意力特别好，做正事注意力集中不了</h2><p>首先接受这个现实，医学上把这叫作注意力缺失症，基本所有人都有这种毛病，因为做正事比较枯燥、困难，让人不舒服，集中不了注意力，逃避很正常！</p>
+<p>改善方法：做笔记、收集素材、写作</p>
+<h2 id="极易被手机、微博、朋友圈干扰"><a href="#极易被手机、微博、朋友圈干扰" class="headerlink" title="极易被手机、微博、朋友圈干扰"></a>极易被手机、微博、朋友圈干扰</h2><p>意志力—还没有好办法</p>
+<h2 id="改变条件反射，多逻辑思考"><a href="#改变条件反射，多逻辑思考" class="headerlink" title="改变条件反射，多逻辑思考"></a>改变条件反射，多逻辑思考</h2><p>有科学家通过研究，发现一个人一天的行为中，5%是非习惯性的，用思考脑的逻辑驱动，95%是习惯性的，用反射脑的直觉驱动，决定我们一生的，永远是95%的反射脑（习惯），而不是5%的思考脑（逻辑）</p>
+<p>互联网+手机时代：浏览信息的时间多了，自己思考和琢磨的时间少了，专注在无效事情上的时间多了，专注在自我成长上的时间少了。</p>
+<h2 id="容易忘记"><a href="#容易忘记" class="headerlink" title="容易忘记"></a>容易忘记</h2><p>学东西当时感觉很好，但是过几周基本都忘记了</p>
+<p>这很正常，主要还是理解不够，理解不够也正常，这就是普通人的智商和理解能力。</p>
+<p>改善：做笔记，利用碎片时间回顾</p>
+<p>总结成系统性的文章，知识体系化，不会再忘记了。</p>
+<h2 id="执行力和自律"><a href="#执行力和自律" class="headerlink" title="执行力和自律"></a>执行力和自律</h2><p>执行力和自律在我们的工作和生活中出现的频率非常高，因为这是我们成长或做成事时必须要有的2个关键词，但是很长一段时间里，对于提升执行力，疑惑很大。同时在工作场景中可能会被老板多次要求提升执行力，抽象又具体，但往往只有提升执行力的要求没有如何提升的方法和认知，这是普遍点到即止的现象，普遍提升不了执行力的现象。</p>
+<p>“要有执行力”就是一句空话，谁都想，但是臣妾做不到。</p>
+<p>人生由成长（学习）和享受（比如看电影、刷朋友圈）构成，成长太艰难，享受就很自然符合人性</p>
+<p>怎么办？</p>
+<pre><code>划重点：执行力就是想明白，然后一步一步做下去。
+</code></pre><h2 id="跳出舒适区"><a href="#跳出舒适区" class="headerlink" title="跳出舒适区"></a>跳出舒适区</h2><p>重复、没有进步的时候就是舒适区，人性就是喜欢适合自己、符合自己技能的环境，解决问题容易；对陌生区域有恐惧感。</p>
+<p>有时候是缺机会和场景驱动自我去学习，要找到从舒适到陌生区域的交融点，慢慢跨出去。<br>比如从自己熟悉的知识体系中入手，从已有的抓手和桩开始突击不清楚的问题，也就是横向、纵向多深挖，自然恐惧区就越来越小了，舒适区慢慢在扩张</p>
+<h2 id="养成写文章的习惯非常重要"><a href="#养成写文章的习惯非常重要" class="headerlink" title="养成写文章的习惯非常重要"></a>养成写文章的习惯非常重要</h2><p>对自我碎片知识的总结、加深理解的良机，将知识体系化、结构化，形成知识体系中的抓手、桩。</p>
+<p>缺的不是鸡汤，而是勺子，勺子就是具体的步骤，可以复制，对人、人性要求很低的动作。</p>
+<p>生活本质是生产（工作学习成长）和消费(娱乐、刷朋友圈等)，消费总是符合人性的，当是对自己的适当奖励，不要把自己搞成机器人</p>
+<p>可以做的是生产的时候效率更高</p>
+<h2 id="知识分两种"><a href="#知识分两种" class="headerlink" title="知识分两种"></a>知识分两种</h2><p>一种是通用知识（不是说对所有人通用，而是说在一个专业领域去到哪个公司都能通用）；另外一种是跟业务公司绑定的特定知识</p>
+<p>通用知识没有任何疑问碰到后要非常饥渴地扑上去掌握他们（受益终生，这还有什么疑问吗？）。对于特定知识就要看你对业务需要掌握的深度了，肯定也是需要掌握一些的，特定知识掌握好的一般在公司里混的也会比较好</p>
 
           
         
