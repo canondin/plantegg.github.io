@@ -54,6 +54,103 @@
   </entry>
   
   <entry>
+    <title></title>
+    <link href="http://yoursite.com/2020/09/19/perf-usage/"/>
+    <id>http://yoursite.com/2020/09/19/perf-usage/</id>
+    <published>2020-09-19T10:00:19.207Z</published>
+    <updated>2020-09-19T10:00:19.207Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="perf"><a href="#perf" class="headerlink" title="perf"></a>perf</h1><pre><code>   83  07/08/19 13:56:26 sudo perf record -ag -p 4759
+   84  07/08/19 13:56:50 ls /tmp/
+   85  07/08/19 13:57:06 history |tail -16
+   86  07/08/19 13:57:20 sudo chmod 777 perf.data
+   87  07/08/19 13:57:33 perf script &gt;out.perf
+   88  07/08/19 13:59:24 ~/tools/FlameGraph-master/./stackcollapse-perf.pl ~/out.perf &gt;out.folded
+   89  07/08/19 14:01:01 ~/tools/FlameGraph-master/flamegraph.pl out.folded &gt; kernel-perf.svg
+   90  07/08/19 14:01:07 ls -lh
+   91  07/08/19 14:03:33 history
+
+
+$ sudo perf record -F 99 -a -g -- sleep 60
+</code></pre><p>　　执行这个命令将生成一个 perf.data 文件：</p>
+<p>执行sudo perf report -n可以生成报告的预览。<br>执行sudo perf report -n –stdio可以生成一个详细的报告。<br>执行sudo perf script可以 dump 出 perf.data 的内容。</p>
+<pre><code># 折叠调用栈
+$ FlameGraph/stackcollapse-perf.pl out.perf &gt; out.folded
+# 生成火焰图
+$ FlameGraph/flamegraph.pl out.folded &gt; out.svg
+</code></pre><p>perf详解： <a href="https://zhengheng.me/2015/11/12/perf-stat/" target="_blank" rel="external">https://zhengheng.me/2015/11/12/perf-stat/</a>     <a href="https://mp.weixin.qq.com/s?__biz=MzUxNjE3MTcwMg==&amp;mid=2247483755&amp;idx=1&amp;sn=5324f7e46c91739b566dfc1d0847fc4a&amp;chksm=f9aa33b2ceddbaa478729383cac89967cc515bafa472001adc4ad42fb37e3ce473eddc3b591a&amp;mpshare=1&amp;scene=1&amp;srcid=0127mp3WJ6Kd1UOQISFg3SIC#rd" target="_blank" rel="external">https://mp.weixin.qq.com/s?__biz=MzUxNjE3MTcwMg==&amp;mid=2247483755&amp;idx=1&amp;sn=5324f7e46c91739b566dfc1d0847fc4a&amp;chksm=f9aa33b2ceddbaa478729383cac89967cc515bafa472001adc4ad42fb37e3ce473eddc3b591a&amp;mpshare=1&amp;scene=1&amp;srcid=0127mp3WJ6Kd1UOQISFg3SIC#rd</a>  <strong>CPU 利用率的真实含义</strong>  cpu有很大一部分在stale状态, stale表示cpu流水线出现卡顿、不顺畅</p>
+<p>sudo perf record -g -a -e skb:kfree_skb //perf 记录丢包调用栈 然后sudo perf script 查看 （网络报文被丢弃时会调用该函数kfree_skb）</p>
+<p>perf record -e ‘skb:consume_skb’ -ag  //记录网络消耗</p>
+<p>perf probe –add tcp_sendmsg //增加监听probe  perf record -e probe:tcp_sendmsg -aR sleep 1</p>
+<p>sudo perf sched record – sleep 1 //记录cpu调度的延时</p>
+<p>sudo perf sched latency //查看</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b3b05e3e9b6f6eb5d362eab7ebaa4b3a.png" alt="image.png"></p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line"><span class="meta">$</span>sudo perf stat -a -- sleep 10</div><div class="line"> Performance counter stats for 'system wide':</div><div class="line">     239866.330098      task-clock (msec)         #   23.985 CPUs utilized    /10*1000        (100.00%)</div><div class="line">            45,709      context-switches          #    0.191 K/sec                    (100.00%)</div><div class="line">             1,715      cpu-migrations            #    0.007 K/sec                    (100.00%)</div><div class="line">            79,586      page-faults               #    0.332 K/sec</div><div class="line">     3,488,525,170      cycles                    #    0.015 GHz                      (83.34%)</div><div class="line">     9,708,140,897      stalled-cycles-frontend   #  278.29% /cycles frontend cycles idle     (83.34%)</div><div class="line">     9,314,891,615      stalled-cycles-backend    #  267.02% /cycles backend  cycles idle     (66.68%)</div><div class="line">     2,292,955,367      instructions              #    0.66  insns per cycle  insn/cycles</div><div class="line">                                                 \#    4.23  stalled cycles per insn stalled-cycles-frontend/insn (83.34%)</div><div class="line">       447,584,805      branches                  #    1.866 M/sec                    (83.33%)</div><div class="line">         8,470,791      branch-misses             #    1.89% of all branches          (83.33%)</div><div class="line">     10.000830932 seconds time elapsed</div></pre></td></tr></table></figure>
+<ul>
+<li>cycles：CPU时钟周期。CPU从它的指令集(instruction set)中选择指令执行。一个指令包含以下的步骤，每个步骤由CPU的一个叫做功能单元(functional unit)的组件来进行处理，每个步骤的执行都至少需要花费一个时钟周期。</li>
+</ul>
+<ol>
+<li>指令读取(instruction fetch)</li>
+<li>指令解码(instruction decode)</li>
+<li>执行(execute)</li>
+<li>内存访问(memory access)</li>
+<li>寄存器回写(register write-back)</li>
+</ol>
+<p>五个步骤只能串行，但是可以做成pipeline提升效率，也就是第一个指令做第二步的时候，指令读取单元可以去读取下一个指令了，如果有一个指令慢就会造成stall，也就是pipeline有地方卡壳了。</p>
+<p>另外cpu可以同时有多条pipeline，这也就是理论上最大的ipc.</p>
+<p>stalled-cycles，则是指令管道未能按理想状态发挥并行作用，发生停滞的时钟周期。stalled-cycles-frontend指指令读取或解码的指令步骤，而stalled-cycles-backend则是指令执行步骤。第二列中的cycles idle其实意思跟stalled是一样的，由于指令执行停滞了，所以指令管道也就空闲了，千万不要误解为CPU的空闲率。这个数值是由stalled-cycles-frontend或stalled-cycles-backend除以上面的cycles得出的</p>
+<p>从操作系统的角度讲，os会维护一个ready queue（就绪的线程队列）。并且在某一时刻cpu只为ready queue中位于队列头部的线程服务。</p>
+<p>sleep()使当前线程进入停滞状态，所以执行sleep()的线程在指定的时间内肯定不会执行；yield()只是使当前线程重新回到可执行状态，所以执行yield()的线程有可能在进入到可执行状态后马上又被执行。</p>
+<h2 id="bcc-tools"><a href="#bcc-tools" class="headerlink" title="bcc-tools"></a>bcc-tools</h2><p>sudo /usr/share/bcc/tools/syscount -p 3057 -L -T 80</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;perf&quot;&gt;&lt;a href=&quot;#perf&quot; class=&quot;headerlink&quot; title=&quot;perf&quot;&gt;&lt;/a&gt;perf&lt;/h1&gt;&lt;pre&gt;&lt;code&gt;   83  07/08/19 13:56:26 sudo perf record -ag -p 4759
+
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title>delay ack拉高实际rt的case</title>
+    <link href="http://yoursite.com/2020/09/16/RT%E9%83%BD%E5%8E%BB%E5%93%AA%E4%BA%86/"/>
+    <id>http://yoursite.com/2020/09/16/RT都去哪了/</id>
+    <published>2020-09-16T09:30:03.000Z</published>
+    <updated>2020-09-19T10:00:19.215Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="delay-ack拉高实际rt的case"><a href="#delay-ack拉高实际rt的case" class="headerlink" title="delay ack拉高实际rt的case"></a>delay ack拉高实际rt的case</h2><h2 id="案例描述"><a href="#案例描述" class="headerlink" title="案例描述"></a>案例描述</h2><blockquote>
+<p>开发人员发现client到server的rtt是2.5ms，每个请求1ms server就能处理完毕，但是监控发现的rt不是3.5（1+2.5），而是6ms，想知道这个6ms怎么来的？</p>
+</blockquote>
+<p>如下业务监控图：实际处理时间（逻辑服务时间1ms，rtt2.4ms，加起来3.5ms），但是系统监控到的rt（蓝线）是6ms，如果一个请求分很多响应包串行发给client，这个6ms是正常的（1+2.4*N），但实际上如果send buffer足够的话，按我们前面的理解多个响应包会并发发出去，所以如果整个rt是3.5ms才是正常的。</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d56f87a19a10b0ac9a3b7009641247a0.png" alt="image.png"></p>
+<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>抓包来分析原因：</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d5e2e358dd1a24e104f54815c84875c9.png" alt="image.png"></p>
+<p>实际看到大量的response都是3.5ms左右，符合我们的预期，但是有少量rt被delay ack严重影响了</p>
+<p>从下图也可以看到有很多rtt超过3ms的，这些超长时间的rtt会最终影响到整个服务rt</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/48eae3dcd7c78a68b0afd5c66f783f23.png" alt="image.png"></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;delay-ack拉高实际rt的case&quot;&gt;&lt;a href=&quot;#delay-ack拉高实际rt的case&quot; class=&quot;headerlink&quot; title=&quot;delay ack拉高实际rt的case&quot;&gt;&lt;/a&gt;delay ack拉高实际rt的case&lt;/h2&gt;&lt;
+    
+    </summary>
+    
+      <category term="Performance" scheme="http://yoursite.com/categories/Performance/"/>
+    
+    
+      <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
+    
+      <category term="Performance" scheme="http://yoursite.com/tags/Performance/"/>
+    
+      <category term="TCP" scheme="http://yoursite.com/tags/TCP/"/>
+    
+  </entry>
+  
+  <entry>
     <title>kubernetes calico 网络</title>
     <link href="http://yoursite.com/2020/08/31/kubernetes%20calico%E7%BD%91%E7%BB%9C/"/>
     <id>http://yoursite.com/2020/08/31/kubernetes calico网络/</id>
@@ -1301,6 +1398,284 @@ LISTEN    0     511              *:8085           *:*
   </entry>
   
   <entry>
+    <title>kubernetes 多集群管理</title>
+    <link href="http://yoursite.com/2020/01/21/kubernetes%20%E5%A4%9A%E9%9B%86%E7%BE%A4%E7%AE%A1%E7%90%86/"/>
+    <id>http://yoursite.com/2020/01/21/kubernetes 多集群管理/</id>
+    <published>2020-01-21T09:30:03.000Z</published>
+    <updated>2020-09-19T10:00:19.163Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="kubernetes-多集群管理"><a href="#kubernetes-多集群管理" class="headerlink" title="kubernetes 多集群管理"></a>kubernetes 多集群管理</h1><h2 id="kubectl-管理多集群"><a href="#kubectl-管理多集群" class="headerlink" title="kubectl 管理多集群"></a>kubectl 管理多集群</h2><p>指定config配置文件的方式访问不同的集群</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">kubectl --kubeconfig=/etc/kubernetes/admin.conf get nodes</div></pre></td></tr></table></figure>
+<p>一个kubectl可以管理多个集群，主要是 ~/.kube/config 里面的配置，比如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div></pre></td><td class="code"><pre><div class="line">clusters:</div><div class="line">- cluster:</div><div class="line">    certificate-authority: /root/k8s-cluster.ca</div><div class="line">    server: https://192.168.0.80:6443</div><div class="line">  name: context-az1</div><div class="line">- cluster:</div><div class="line">    certificate-authority-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCQl0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K</div><div class="line">    server: https://192.168.0.97:6443</div><div class="line">  name: context-az3</div><div class="line"></div><div class="line">- context:</div><div class="line">    cluster: context-az1</div><div class="line">    namespace: default</div><div class="line">    user: az1-admin</div><div class="line">  name: az1</div><div class="line">- context:</div><div class="line">    cluster: context-az3</div><div class="line">    namespace: default</div><div class="line">    user: az3-read</div><div class="line">  name: az3</div><div class="line">current-context: az3  //当前使用的集群</div><div class="line"></div><div class="line">kind: Config</div><div class="line">preferences: &#123;&#125;</div><div class="line">users:</div><div class="line">- name: az1-admin</div><div class="line">  user:</div><div class="line">    client-certificate: /root/k8s.crt  //key放在配置文件中</div><div class="line">    client-key: /root/k8s.key</div><div class="line">- name: az3-read</div><div class="line">  user:</div><div class="line">    client-certificate-data: LS0tLS1CRUQ0FURS0tLS0tCg==</div><div class="line">    client-key-data: LS0tLS1CRUdJThuL2VPM0YxSWpEcXBQdmRNbUdiU2c9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo=</div></pre></td></tr></table></figure>
+<p>多个集群中切换的话 ： kubectl config use-context az3</p>
+<h3 id="快速合并两个cluster"><a href="#快速合并两个cluster" class="headerlink" title="快速合并两个cluster"></a>快速合并两个cluster</h3><p>简单来讲就是把两个集群的 .kube/config 文件合并，注意context、cluster name别重复了。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"># 必须提前保证两个config文件中的cluster、context名字不能重复</div><div class="line">export KUBECONFIG=~/.kube/config:~/someotherconfig </div><div class="line">kubectl config view --flatten</div><div class="line"></div><div class="line">#激活这个上下文</div><div class="line">kubectl config use-context az1 </div><div class="line"></div><div class="line">#查看所有context</div><div class="line">kubectl config get-contexts </div><div class="line">CURRENT   NAME   CLUSTER       AUTHINFO           NAMESPACE</div><div class="line">          az1    context-az1   az1-admin          default</div><div class="line">*         az2    kubernetes    kubernetes-admin   </div><div class="line">          az3    context-az3   az3-read           default</div></pre></td></tr></table></figure>
+<p>背后的原理类似于这个流程：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"># 添加集群 集群地址上一步有获取 ，需要指定ca文件，上一步有获取 </div><div class="line">kubectl config set-cluster cluster-az1 --server https://192.168.146.150:6444  --certificate-authority=/usr/program/k8s-certs/k8s-cluster.ca</div><div class="line"></div><div class="line"># 添加用户 需要指定crt，key文件，上一步有获取</div><div class="line">kubectl config set-credentials az1-admin --client-certificate=/usr/program/k8s-certs/k8s.crt --client-key=/usr/program/k8s-certs/k8s.key</div><div class="line"></div><div class="line"># 指定一个上下文的名字，我这里叫做 az1，随便你叫啥 关联刚才的用户</div><div class="line">kubectl config set-context az1 --cluster=context-az1  --namespace=default --user=az1-admin</div></pre></td></tr></table></figure>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="http://coreos.com/blog/kubectl-tips-and-tricks" target="_blank" rel="external">http://coreos.com/blog/kubectl-tips-and-tricks</a></p>
+<p><a href="https://stackoverflow.com/questions/46184125/how-to-merge-kubectl-config-file-with-kube-config" target="_blank" rel="external">https://stackoverflow.com/questions/46184125/how-to-merge-kubectl-config-file-with-kube-config</a></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;kubernetes-多集群管理&quot;&gt;&lt;a href=&quot;#kubernetes-多集群管理&quot; class=&quot;headerlink&quot; title=&quot;kubernetes 多集群管理&quot;&gt;&lt;/a&gt;kubernetes 多集群管理&lt;/h1&gt;&lt;h2 id=&quot;kubectl-管
+    
+    </summary>
+    
+      <category term="docker" scheme="http://yoursite.com/categories/docker/"/>
+    
+    
+      <category term="docker" scheme="http://yoursite.com/tags/docker/"/>
+    
+      <category term="kubernetes" scheme="http://yoursite.com/tags/kubernetes/"/>
+    
+      <category term="context" scheme="http://yoursite.com/tags/context/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Linux 内存问题汇总</title>
+    <link href="http://yoursite.com/2020/01/15/Linux%20%E5%86%85%E5%AD%98%E9%97%AE%E9%A2%98%E6%B1%87%E6%80%BB/"/>
+    <id>http://yoursite.com/2020/01/15/Linux 内存问题汇总/</id>
+    <published>2020-01-15T08:30:03.000Z</published>
+    <updated>2020-09-19T10:00:19.183Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="Linux-内存问题汇总"><a href="#Linux-内存问题汇总" class="headerlink" title="Linux 内存问题汇总"></a>Linux 内存问题汇总</h1><h2 id="内存使用观察"><a href="#内存使用观察" class="headerlink" title="内存使用观察"></a>内存使用观察</h2><pre><code># free -m
+         total       used       free     shared    buffers     cached
+Mem:          7515       1115       6400          0        189        492
+-/+ buffers/cache:        432       7082
+Swap:            0          0          0
+</code></pre><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/f8d944e2c7a8611384acb820c4471007.png" alt="image.png" style="zoom:80%;"></p>
+<p><strong>上图中-/+ buffers/cache: -是指userd去掉buffers/cached后真正使用掉的内存; +是指free加上buffers和cached后真正free的内存大小。</strong></p>
+<h2 id="free"><a href="#free" class="headerlink" title="free"></a>free</h2><p>free是从 /proc/meminfo 读取数据然后展示：</p>
+<blockquote>
+<p>buff/cache = Buffers + Cached + SReclaimable</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">[root@az1-drds-79 ~]# cat /proc/meminfo |egrep -i &quot;buff|cach|SReclai&quot;</div><div class="line">Buffers:          817764 kB</div><div class="line">Cached:         76629252 kB</div><div class="line">SwapCached:            0 kB</div><div class="line">SReclaimable:    7202264 kB</div><div class="line">[root@az1-drds-79 ~]# free -k</div><div class="line">             total       used       free     shared    buffers     cached</div><div class="line">Mem:      97267672   95522336    1745336          0     817764   76629352</div><div class="line">-/+ buffers/cache:   18075220   79192452</div><div class="line">Swap:            0          0          0</div></pre></td></tr></table></figure>
+<h2 id="cached过高回收"><a href="#cached过高回收" class="headerlink" title="cached过高回收"></a>cached过高回收</h2><p>回收：<br>    echo 1/2/3 &gt;/proc/sys/vm/drop_cached</p>
+<p>查看回收后：</p>
+<pre><code>cat /proc/meminfo
+</code></pre><p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/7cedcb6daa53cbcfc9c68568086500b7.png" alt="image.png"></p>
+<p>当我们执行 echo 2 来 drop slab 的时候，它也会把 Page Cache(inode可能会有对应的pagecache，inode释放后对应的pagecache也释放了)给 drop 掉</p>
+<p>在系统内存紧张的时候，运维人员或者开发人员会想要通过 drop_caches 的方式来释放一些内存，但是由于他们清楚 Page Cache 被释放掉会影响业务性能，所以就期望只去 drop slab 而不去 drop pagecache。于是很多人这个时候就运行 echo 2 &gt; /proc/sys/vm/drop_caches，但是结果却出乎了他们的意料：Page Cache 也被释放掉了，业务性能产生了明显的下降。</p>
+<p>查看 drop_caches 是否执行过释放：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">$ grep drop /proc/vmstat</div><div class="line">drop_pagecache 1</div><div class="line">drop_slab 0</div><div class="line"></div><div class="line"> $ grep inodesteal /proc/vmstat </div><div class="line"> pginodesteal 114341</div><div class="line"> kswapd_inodesteal 1291853</div></pre></td></tr></table></figure>
+<p>在内存紧张的时候会触发内存回收，内存回收会尝试去回收 reclaimable（可以被回收的）内存，这部分内存既包含 Page Cache 又包含 reclaimable kernel memory(比如 slab)。inode被回收后可以通过  grep inodesteal /proc/vmstat 观察到</p>
+<blockquote>
+<p>kswapd_inodesteal 是指在 kswapd 回收的过程中，因为回收 inode 而释放的 pagecache page 个数；pginodesteal 是指 kswapd 之外其他线程在回收过程中，因为回收 inode 而释放的 pagecache page 个数;</p>
+</blockquote>
+<h2 id="还有很多cached无法回收"><a href="#还有很多cached无法回收" class="headerlink" title="还有很多cached无法回收"></a>还有很多cached无法回收</h2><p>可能是正打开的文件占用了cached，比如 vim 打开了一个巨大的文件；比如 mount的 tmpfs； 比如 journald 日志等等</p>
+<h3 id="通过vmtouch-查看"><a href="#通过vmtouch-查看" class="headerlink" title="通过vmtouch 查看"></a>通过<a href="https://hoytech.com/vmtouch/" target="_blank" rel="external">vmtouch</a> 查看</h3><pre><code># vmtouch -v test.x86_64.rpm 
+test.x86_64.rpm
+[OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO] 10988/10988
+
+           Files: 1
+     Directories: 0
+  Resident Pages: 10988/10988  42M/42M  100%
+         Elapsed: 0.000594 seconds
+
+# ls -lh test.x86_64.rpm
+-rw-r--r-- 1 root root 43M 10月  8 14:11 test.x86_64.rpm
+</code></pre><p>如上，表示整个文件 test.x86_64.rpm 都被cached了，回收的话执行：</p>
+<pre><code>vmtouch -e test.x86_64.rpm // 或者： echo 3 &gt;/proc/sys/vm/drop_cached
+</code></pre><h3 id="遍历某个目录下的所有文件被cached了多少"><a href="#遍历某个目录下的所有文件被cached了多少" class="headerlink" title="遍历某个目录下的所有文件被cached了多少"></a>遍历某个目录下的所有文件被cached了多少</h3><pre><code># vmtouch -vt /var/log/journal/
+/var/log/journal/20190829214900434421844640356160/user-1000@ad408d9cb9d94f9f93f2c2396c26b542-000000000011ba49-00059979e0926f43.journal
+[OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO] 4096/4096
+/var/log/journal/20190829214900434421844640356160/system@782ec314565e436b900454c59655247c-0000000000152f41-00059b2c88eb4344.journal
+[OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO] 14336/14336
+/var/log/journal/20190829214900434421844640356160/user-1000@ad408d9cb9d94f9f93f2c2396c26b542-00000000000f2181-000598335fcd492f.journal
+[OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO] 4096/4096
+/var/log/journal/20190829214900434421844640356160/system@782ec314565e436b900454c59655247c-0000000000129aea-000599e83996db80.journal
+[OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO] 14336/14336
+/var/log/journal/20190829214900434421844640356160/user-1000@ad408d9cb9d94f9f93f2c2396c26b542-000000000009f171-000595a722ead670.journal
+…………
+           Files: 48
+ Directories: 2
+ Touched Pages: 468992 (1G)
+ Elapsed: 13.274 seconds
+</code></pre><h2 id="pagecache-的产生和释放"><a href="#pagecache-的产生和释放" class="headerlink" title="pagecache 的产生和释放"></a>pagecache 的产生和释放</h2><ul>
+<li>标准 I/O 是写的 (write(2)) 用户缓冲区 (Userpace Page 对应的内存)，<strong>然后再将用户缓冲区里的数据拷贝到内核缓冲区 (Pagecache Page 对应的内存)</strong>；如果是读的 (read(2)) 话则是先从内核缓冲区拷贝到用户缓冲区，再从用户缓冲区读数据，也就是 buffer 和文件内容不存在任何映射关系。</li>
+<li>对于存储映射 I/O（Memory-Mapped I/O） 而言，则是直接将 Pagecache Page 给映射到用户地址空间，用户直接读写 Pagecache Page 中内容，效率相对标准IO更高一些</li>
+</ul>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/51bf36aa14dc01e7ad309c1bb9d252e9.png" alt="image.png"></p>
+<p>当 <strong>将用户缓冲区里的数据拷贝到内核缓冲区 (Pagecache Page 对应的内存)</strong> 最容易发生缺页中断，OS需要先分配Page（应用感知到的就是卡顿了）</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d62ea00662f8342b7df3aab6b28e4cbb.png" alt="image.png">  </p>
+<ul>
+<li>Page Cache 是在应用程序读写文件的过程中产生的，所以在读写文件之前你需要留意是否还有足够的内存来分配 Page Cache；</li>
+<li>Page Cache 中的脏页很容易引起问题，你要重点注意这一块；</li>
+<li>在系统可用内存不足的时候就会回收 Page Cache 来释放出来内存，我建议你可以通过 sar 或者 /proc/vmstat 来观察这个行为从而更好的判断问题是否跟回收有关</li>
+</ul>
+<p>缺页后kswapd在短时间内回收不了足够多的 free 内存，或kswapd 还没有触发执行，操作系统就会进行内存页直接回收。这个过程中，应用会进行自旋等待直到回收的完成，从而产生巨大的延迟。</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/0a5cdeb75b7dee2068254cd4b7fe254d.png" alt=""></p>
+<p>如果page被swapped，那么恢复进内存的过程也对延迟有影响，当被匿名内存页被回收后，如果下次再访问就会产生IO的延迟。</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/740b95056dace8ae6fb3b8f58d91572e.png" alt=""></p>
+<h3 id="min-和-low的区别："><a href="#min-和-low的区别：" class="headerlink" title="min 和 low的区别："></a>min 和 low的区别：</h3><ol>
+<li>min下的内存是保留给内核使用的；当到达min，会触发内存的direct reclaim （vm.min_free_kbytes）</li>
+<li>low水位比min高一些，当内存可用量小于low的时候，会触发 kswapd回收内存，当kswapd慢慢的将内存 回收到high水位，就开始继续睡眠 </li>
+</ol>
+<h3 id="内存回收方式"><a href="#内存回收方式" class="headerlink" title="内存回收方式"></a>内存回收方式</h3><p>内存回收方式有两种，主要对应low ，min</p>
+<ol>
+<li>direct reclaim : 达到min水位线时执行 – 同步</li>
+<li>kswapd reclaim : 达到low水位线时执行 – 异步（实际还有，只是比较危险了，后台kswapd会回收，不会卡顿应用）</li>
+</ol>
+<p>为了减少缺页中断，首先就要保证我们有足够的内存可以使用。由于Linux会尽可能多的使用free的内存，运行很久的应用free的内存是很少的。下面的图中，紫色表示已经使用的内存，白色表示尚未分配的内存。当我们的内存使用达到水位的low值的时候，kswapd就会开始回收工作，而一旦内存分配超过了min，就会进行内存的直接回收。</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/5933cc4c28f86aa08410a8af4ff4410d.png" alt=""></p>
+<p>针对这种情况，我们需要采用预留内存的手段，系统参数vm.extra_free_kbytes就是用来做这个事情的。这个参数设置了系统预留给应用的内存，可以避免紧急需要内存时发生内存回收不及时导致的高延迟。从下面图中可以看到，通过vm.extra_free_kbytes的设置，预留内存可以让内存的申请处在一个安全的水位。<strong>需要注意的是，因为内核的优化，在3.10以上的内核版本这个参数已经被取消。</strong></p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/f55022d4eb181b92ba5d2e142ec940c8.png" alt=""></p>
+<p>或者禁止： vm.swappiness  来避免swapped来减少延迟</p>
+<h2 id="Page回收–缺页中断"><a href="#Page回收–缺页中断" class="headerlink" title="Page回收–缺页中断"></a>Page回收–缺页中断</h2><p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/3fdffacd66c0981956b15be348fff46a.png" alt="image.png" style="zoom:50%;"></p>
+<p>从图里你可以看到，在开始内存回收后，首先进行后台异步回收（上图中蓝色标记的地方），这不会引起进程的延迟；如果后台异步回收跟不上进程内存申请的速度，就会开始同步阻塞回收，导致延迟（上图中红色和粉色标记的地方，这就是引起 load 高的地址）。</p>
+<p>那么，针对直接内存回收引起 load 飙高或者业务 RT 抖动的问题，一个解决方案就是及早地触发后台回收来避免应用程序进行直接内存回收，那具体要怎么做呢？</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/4b341ba757d27e3a81145a55f54363e1.png" alt="image.png"></p>
+<p>它的意思是：当内存水位低于 watermark low 时，就会唤醒 kswapd 进行后台回收，然后 kswapd 会一直回收到 watermark high。</p>
+<p>那么，我们可以增大 min_free_kbytes 这个配置选项来及早地触发后台回收，该选项最终控制的是内存回收水位，不过，内存回收水位是内核里面非常细节性的知识点，我们可以先不去讨论。</p>
+<p>对于大于等于 128G 的系统而言，将 min_free_kbytes 设置为 4G 比较合理，这是我们在处理很多这种问题时总结出来的一个经验值，既不造成较多的内存浪费，又能避免掉绝大多数的直接内存回收。</p>
+<p>该值的设置和总的物理内存并没有一个严格对应的关系，我们在前面也说过，如果配置不当会引起一些副作用，所以在调整该值之前，我的建议是：你可以渐进式地增大该值，比如先调整为 1G，观察 sar -B 中 pgscand 是否还有不为 0 的情况；如果存在不为 0 的情况，继续增加到 2G，再次观察是否还有不为 0 的情况来决定是否增大，以此类推。</p>
+<blockquote>
+<p>sar -B :  Report paging statistics.</p>
+<p>pgscand/s  Number of pages scanned directly per second.</p>
+</blockquote>
+<h3 id="系统中脏页过多引起-load-飙高"><a href="#系统中脏页过多引起-load-飙高" class="headerlink" title="系统中脏页过多引起 load 飙高"></a>系统中脏页过多引起 load 飙高</h3><p>直接回收过程中，如果存在较多脏页就可能涉及在回收过程中进行回写，这可能会造成非常大的延迟，而且因为这个过程本身是阻塞式的，所以又可能进一步导致系统中处于 D 状态的进程数增多，最终的表现就是系统的 load 值很高。</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/f16438b744a248d7671d5ac7317b0a98.png" alt="image.png" style="zoom: 50%;"></p>
+<p>可以通过 sar -r 来观察系统中的脏页个数：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">$ sar -r 1</div><div class="line">07:30:01 PM kbmemfree kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty</div><div class="line">09:20:01 PM   5681588   2137312     27.34         0   1807432    193016      2.47    534416   1310876         4</div><div class="line">09:30:01 PM   5677564   2141336     27.39         0   1807500    204084      2.61    539192   1310884        20</div><div class="line">09:40:01 PM   5679516   2139384     27.36         0   1807508    196696      2.52    536528   1310888        20</div><div class="line">09:50:01 PM   5679548   2139352     27.36         0   1807516    196624      2.51    536152   1310892        24</div></pre></td></tr></table></figure>
+<p>kbdirty 就是系统中的脏页大小，它同样也是对 /proc/vmstat 中 nr_dirty 的解析。你可以通过调小如下设置来将系统脏页个数控制在一个合理范围:</p>
+<blockquote>
+<p>vm.dirty_background_bytes = 0</p>
+<p>vm.dirty_background_ratio = 10</p>
+<p>vm.dirty_bytes = 0</p>
+<p>vm.dirty_expire_centisecs = 3000</p>
+<p>vm.dirty_ratio = 20</p>
+</blockquote>
+<p>至于这些值调整大多少比较合适，也是因系统和业务的不同而异，我的建议也是一边调整一边观察，将这些值调整到业务可以容忍的程度就可以了，即在调整后需要观察业务的服务质量 (SLA)，要确保 SLA 在可接受范围内。调整的效果你可以通过 /proc/vmstat 来查看：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">#grep &quot;nr_dirty_&quot; /proc/vmstat</div><div class="line">nr_dirty_threshold 3071708</div><div class="line">nr_dirty_background_threshold 1023902</div></pre></td></tr></table></figure>
+<p>在4.20的内核并且sar 的版本为12.3.3可以看到PSI（Pressure-Stall Information）</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">some avg10=45.49 avg60=10.23 avg300=5.41 total=76464318</div><div class="line">full avg10=40.87 avg60=9.05 avg300=4.29 total=58141082</div></pre></td></tr></table></figure>
+<p>你需要重点关注 avg10 这一列，它表示最近 10s 内存的平均压力情况，如果它很大（比如大于 40）那 load 飙高大概率是由于内存压力，尤其是 Page Cache 的压力引起的。</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/cf58f10a523e1e4f0db443be3f54fc04.png" alt="image.png"></p>
+<h2 id="通过tracepoint分析内存卡顿问题"><a href="#通过tracepoint分析内存卡顿问题" class="headerlink" title="通过tracepoint分析内存卡顿问题"></a>通过tracepoint分析内存卡顿问题</h2><p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d5446b656e8d91a9fb72200a7b97e723.png" alt="image.png"></p>
+<p>我们继续以内存规整 (memory compaction) 为例，来看下如何利用 tracepoint 来对它进行观察：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">#首先来使能compcation相关的一些tracepoing</div><div class="line">$ echo 1 &gt;</div><div class="line">/sys/kernel/debug/tracing/events/compaction/mm_compaction_begin/enable</div><div class="line">$ echo 1 &gt;</div><div class="line">/sys/kernel/debug/tracing/events/compaction/mm_compaction_end/enable </div><div class="line"></div><div class="line">#然后来读取信息，当compaction事件触发后就会有信息输出</div><div class="line">$ cat /sys/kernel/debug/tracing/trace_pipe</div><div class="line">           &lt;...&gt;-49355 [037] .... 1578020.975159: mm_compaction_begin: </div><div class="line">zone_start=0x2080000 migrate_pfn=0x2080000 free_pfn=0x3fe5800 </div><div class="line">zone_end=0x4080000, mode=async</div><div class="line">           &lt;...&gt;-49355 [037] .N.. 1578020.992136: mm_compaction_end: </div><div class="line">zone_start=0x2080000 migrate_pfn=0x208f420 free_pfn=0x3f4b720 </div><div class="line">zone_end=0x4080000, mode=async status=contended</div></pre></td></tr></table></figure>
+<p>从这个例子中的信息里，我们可以看到是 49355 这个进程触发了 compaction，begin 和 end 这两个 tracepoint 触发的时间戳相减，就可以得到 compaction 给业务带来的延迟，我们可以计算出这一次的延迟为 17ms。</p>
+<p>或者用 <a href="https://lore.kernel.org/linux-mm/20191001144524.GB3321@techsingularity.net/T/" target="_blank" rel="external">perf script</a> 脚本来分析, <a href="https://github.com/iovisor/bcc/blob/master/tools/drsnoop.py" target="_blank" rel="external">基于 bcc(eBPF) 写的direct reclaim snoop</a>来观察进程因为 direct reclaim 而导致的延迟。</p>
+<h2 id="slabtop和-proc-slabinfo"><a href="#slabtop和-proc-slabinfo" class="headerlink" title="slabtop和/proc/slabinfo"></a>slabtop和/proc/slabinfo</h2><p>slabtop和/proc/slabinfo 查看cached使用情况 主要是：pagecache（页面缓存）， dentries（目录缓存）， inodes</p>
+<h2 id="消失的内存"><a href="#消失的内存" class="headerlink" title="消失的内存"></a>消失的内存</h2><p>OS刚启动后就报内存不够了，什么都没跑就500G没了，cached和buffer基本没用，纯粹就是used占用高，top按内存排序没有超过0.5%的进程</p>
+<p>参考： <a href="https://cloud.tencent.com/developer/article/1087455" target="_blank" rel="external">https://cloud.tencent.com/developer/article/1087455</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div></pre></td><td class="code"><pre><div class="line">[aliyun@uos15 18:40 /u02/backup_15/leo/benchmark/run]</div><div class="line">$free -g</div><div class="line">              total        used        free      shared  buff/cache   available</div><div class="line">Mem:            503         501           1           0           0           1</div><div class="line">Swap:            15          12           3</div><div class="line"></div><div class="line">$cat /proc/meminfo </div><div class="line">MemTotal:       528031512 kB</div><div class="line">MemFree:         1469632 kB</div><div class="line">MemAvailable:          0 kB</div><div class="line">VmallocTotal:   135290290112 kB</div><div class="line">VmallocUsed:           0 kB</div><div class="line">VmallocChunk:          0 kB</div><div class="line">Percpu:            81920 kB</div><div class="line">AnonHugePages:    950272 kB</div><div class="line">ShmemHugePages:        0 kB</div><div class="line">ShmemPmdMapped:        0 kB</div><div class="line">HugePages_Total:   252557   ----- 预分配太多，一个2M，加起来刚好500G了</div><div class="line">HugePages_Free:    252557</div><div class="line">HugePages_Rsvd:        0</div><div class="line">HugePages_Surp:        0</div><div class="line">Hugepagesize:       2048 kB</div><div class="line">Hugetlb:        517236736 kB</div><div class="line"></div><div class="line">以下是一台正常的机器对比：</div><div class="line">Percpu:            41856 kB</div><div class="line">AnonHugePages:  11442176 kB</div><div class="line">ShmemHugePages:        0 kB</div><div class="line">ShmemPmdMapped:        0 kB</div><div class="line">HugePages_Total:       0            ----没有做预分配</div><div class="line">HugePages_Free:        0</div><div class="line">HugePages_Rsvd:        0</div><div class="line">HugePages_Surp:        0</div><div class="line">Hugepagesize:       2048 kB</div><div class="line">Hugetlb:               0 kB</div><div class="line"></div><div class="line">[aliyun@uos16 18:43 /home/aliyun]</div><div class="line">$free -g</div><div class="line">              total        used        free      shared  buff/cache   available</div><div class="line">Mem:            503          20         481           0           1         480</div><div class="line">Swap:            15           0          15</div><div class="line"></div><div class="line">对有问题的机器执行：</div><div class="line"># echo 1024 &gt; /proc/sys/vm/nr_hugepages</div><div class="line">可以看到内存恢复正常了 </div><div class="line">root@uos15:/u02/backup_15/leo/benchmark/run# free -g</div><div class="line">              total        used        free      shared  buff/cache   available</div><div class="line">Mem:            503          10         492           0           0         490</div><div class="line">Swap:            15          12           3</div><div class="line">root@uos15:/u02/backup_15/leo/benchmark/run# cat /proc/meminfo </div><div class="line">MemTotal:       528031512 kB</div><div class="line">MemFree:        516106832 kB</div><div class="line">MemAvailable:   514454408 kB</div><div class="line">VmallocTotal:   135290290112 kB</div><div class="line">VmallocUsed:           0 kB</div><div class="line">VmallocChunk:          0 kB</div><div class="line">Percpu:            81920 kB</div><div class="line">AnonHugePages:    313344 kB</div><div class="line">ShmemHugePages:        0 kB</div><div class="line">ShmemPmdMapped:        0 kB</div><div class="line">HugePages_Total:    1024</div><div class="line">HugePages_Free:     1024</div><div class="line">HugePages_Rsvd:        0</div><div class="line">HugePages_Surp:        0</div><div class="line">Hugepagesize:       2048 kB</div><div class="line">Hugetlb:         2097152 kB</div></pre></td></tr></table></figure>
+<h2 id="关于hugetlb"><a href="#关于hugetlb" class="headerlink" title="关于hugetlb"></a>关于hugetlb</h2><p> This is an entry in the TLB that points to a HugePage (a large/big page larger than regular 4K and predefined in size). HugePages are implemented via hugetlb entries, i.e. we can say that a HugePage is handled by a “hugetlb page entry”. The ‘hugetlb” term is also (and mostly) used synonymously with a HugePage (See Note 261889.1). In this document the term “HugePage” is going to be used but keep in mind that mostly “hugetlb” refers to the same concept.</p>
+<p> hugetlb 是TLB中指向HugePage的一个entry(通常大于4k或预定义页面大小)。 HugePage 通过hugetlb entries来实现，也可以理解为HugePage 是hugetlb page entry的一个句柄。</p>
+<p><strong>Linux下的大页分为两种类型：标准大页（Huge Pages）和透明大页（Transparent Huge Pages）</strong></p>
+<p>标准大页管理是预分配的方式，而透明大页管理则是动态分配的方式</p>
+<p>目前透明大页与传统HugePages联用会出现一些问题，导致性能问题和系统重启。Oracle 建议禁用透明大页（Transparent Huge Pages）</p>
+<p>hugetlbfs比THP要好，开thp的机器碎片化严重（不开THP会有更严重的碎片化问题），最后和没开THP一样 <a href="https://www.atatech.org/articles/152660" target="_blank" rel="external">https://www.atatech.org/articles/152660</a></p>
+<h2 id="THP"><a href="#THP" class="headerlink" title="THP"></a>THP</h2><p>Linux kernel在2.6.38内核增加了Transparent Huge Pages (THP)特性 ，支持大内存页(2MB)分配，默认开启。当开启时可以降低fork子进程的速度，但fork之后，每个内存页从原来4KB变为2MB，会大幅增加重写期间父进程内存消耗。同时每次写命令引起的复制内存页单位放大了512倍，会拖慢写操作的执行时间，导致大量写操作慢查询。例如简单的incr命令也会出现在慢查询中。因此Redis日志中建议将此特性进行禁用。  </p>
+<p>THP 对redis、monglodb 这种cache类推荐关闭，对drds这种java应用最好打开</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">grep &quot;Huge&quot; /proc/meminfo</div><div class="line">AnonHugePages:   1286144 kB</div><div class="line">ShmemHugePages:        0 kB</div><div class="line">HugePages_Total:       0</div><div class="line">HugePages_Free:        0</div><div class="line">HugePages_Rsvd:        0</div><div class="line">HugePages_Surp:        0</div><div class="line">Hugepagesize:       2048 kB</div><div class="line">Hugetlb:               0 kB</div><div class="line">$grep -e AnonHugePages  /proc/*/smaps | awk  &apos;&#123; if($2&gt;4) print $0&#125; &apos; |  awk -F &quot;/&quot;  &apos;&#123;print $0; system(&quot;ps -fp &quot; $3)&#125; &apos;</div><div class="line"></div><div class="line">//查看pagesize（默认4K） </div><div class="line">$getconf PAGESIZE</div></pre></td></tr></table></figure>
+<p>在透明大页功能打开时，造成系统性能下降的主要原因可能是 <code>khugepaged</code> 守护进程。该进程会在（它认为）系统空闲时启动，扫描系统中剩余的空闲内存，并将普通 4k 页转换为大页。该操作会在内存路径中加锁，而该守护进程可能会在错误的时间启动扫描和转换大页的操作，从而影响应用性能。</p>
+<p>此外，当缺页异常(page faults)增多时，透明大页会和普通 4k 页一样，产生同步内存压缩(direct compaction)操作，以节省内存。该操作是一个同步的内存整理操作，如果应用程序会短时间分配大量内存，内存压缩操作很可能会被触发，从而会对系统性能造成风险。<a href="https://yq.aliyun.com/articles/712830" target="_blank" rel="external">https://yq.aliyun.com/articles/712830</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">#查看系统级别的 THP 使用情况，执行下列命令：</div><div class="line">cat /proc/meminfo  | grep AnonHugePages</div><div class="line">#类似地，查看进程级别的 THP 使用情况，执行下列命令：</div><div class="line">cat /proc/1730/smaps | grep AnonHugePages |grep -v &quot;0 kB&quot;</div></pre></td></tr></table></figure>
+<h2 id="碎片化"><a href="#碎片化" class="headerlink" title="碎片化"></a>碎片化</h2><p>内存碎片严重的话会导致系统hang很久(回收、压缩内存）</p>
+<p>尽量让系统的free多一点(比例高一点）可以调整 vm.min_free_kbytes(128G 以内 2G，256G以内 8G), 线上机器直接修改vm.min_free_kbytes<strong>会触发回收，导致系统hang住</strong> <a href="https://www.atatech.org/articles/163233" target="_blank" rel="external">https://www.atatech.org/articles/163233</a> <a href="https://www.atatech.org/articles/97130" target="_blank" rel="external">https://www.atatech.org/articles/97130</a></p>
+<p>每个zone都有自己的min low high,如下，但是单位是page, 计算案例：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div></pre></td><td class="code"><pre><div class="line">[root@jiangyi01.sqa.zmf /home/ahao.mah]</div><div class="line">#cat /proc/zoneinfo  |grep &quot;Node&quot;</div><div class="line">Node 0, zone      DMA</div><div class="line">Node 0, zone    DMA32</div><div class="line">Node 0, zone   Normal</div><div class="line">Node 1, zone   Normal</div><div class="line"></div><div class="line">[root@jiangyi01.sqa.zmf /home/ahao.mah]</div><div class="line">#cat /proc/zoneinfo  |grep &quot;Node 0, zone&quot; -A10</div><div class="line">Node 0, zone      DMA</div><div class="line">  pages free     3975</div><div class="line">        min      20</div><div class="line">        low      25</div><div class="line">        high     30</div><div class="line">        scanned  0</div><div class="line">        spanned  4095</div><div class="line">        present  3996</div><div class="line">        managed  3975</div><div class="line">    nr_free_pages 3975</div><div class="line">    nr_alloc_batch 5</div><div class="line">--</div><div class="line">Node 0, zone    DMA32</div><div class="line">  pages free     382873</div><div class="line">        min      2335</div><div class="line">        low      2918</div><div class="line">        high     3502</div><div class="line">        scanned  0</div><div class="line">        spanned  1044480</div><div class="line">        present  513024</div><div class="line">        managed  450639</div><div class="line">    nr_free_pages 382873</div><div class="line">    nr_alloc_batch 584</div><div class="line">--</div><div class="line">Node 0, zone   Normal</div><div class="line">  pages free     11105097</div><div class="line">        min      61463</div><div class="line">        low      76828</div><div class="line">        high     92194</div><div class="line">        scanned  0</div><div class="line">        spanned  12058624</div><div class="line">        present  12058624</div><div class="line">        managed  11859912</div><div class="line">    nr_free_pages 11105097</div><div class="line">    nr_alloc_batch 12344</div><div class="line">    </div><div class="line">    low = 5/4 * min</div><div class="line">high = 3/2 * min</div><div class="line"></div><div class="line">[root@jiangyi01.sqa.zmf /home/ahao.mah]</div><div class="line">#T=min;sum=0;for i in `cat /proc/zoneinfo  |grep $T | awk &apos;&#123;print $NF&#125;&apos;`;do sum=`echo &quot;$sum+$i&quot; |bc`;done;sum=`echo &quot;$sum*4/1024&quot; |bc`;echo &quot;sum=$&#123;sum&#125; MB&quot;</div><div class="line">sum=499 MB</div><div class="line"></div><div class="line">[root@jiangyi01.sqa.zmf /home/ahao.mah]</div><div class="line">#T=low;sum=0;for i in `cat /proc/zoneinfo  |grep $T | awk &apos;&#123;print $NF&#125;&apos;`;do sum=`echo &quot;$sum+$i&quot; |bc`;done;sum=`echo &quot;$sum*4/1024&quot; |bc`;echo &quot;sum=$&#123;sum&#125; MB&quot;</div><div class="line">sum=624 MB</div><div class="line"></div><div class="line">[root@jiangyi01.sqa.zmf /home/ahao.mah]</div><div class="line">#T=high;sum=0;for i in `cat /proc/zoneinfo  |grep $T | awk &apos;&#123;print $NF&#125;&apos;`;do sum=`echo &quot;$sum+$i&quot; |bc`;done;sum=`echo &quot;$sum*4/1024&quot; |bc`;echo &quot;sum=$&#123;sum&#125; MB&quot;</div><div class="line">sum=802 MB</div></pre></td></tr></table></figure>
+<h2 id="定制内存"><a href="#定制内存" class="headerlink" title="定制内存"></a>定制内存</h2><p>物理内存700多G，要求OS只能用512G：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div></pre></td><td class="code"><pre><div class="line">24条32G的内存条，总内存768G</div><div class="line"># dmidecode -t memory |grep &quot;Size: 32 GB&quot;</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">  Size: 32 GB</div><div class="line">root@uos15:/etc# dmidecode -t memory |grep &quot;Size: 32 GB&quot; | wc -l</div><div class="line">24</div><div class="line"></div><div class="line"># cat /boot/grub/grub.cfg  |grep 512</div><div class="line">  linux /vmlinuz-4.19.0-arm64-server root=UUID=dbc68010-8c36-40bf-b794-271e59ff5727 ro  splash quiet console=tty video=VGA-1:1280x1024@60 mem=512G DEEPIN_GFXMODE=$DEEPIN_GFXMODE</div><div class="line">    linux /vmlinuz-4.19.0-arm64-server root=UUID=dbc68010-8c36-40bf-b794-271e59ff5727 ro  splash quiet console=tty video=VGA-1:1280x1024@60 mem=512G DEEPIN_GFXMODE=$DEEPIN_GFXMODE</div></pre></td></tr></table></figure>
+<p>​    </p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://www.atatech.org/articles/66885" target="_blank" rel="external">https://www.atatech.org/articles/66885</a></p>
+<p><a href="https://cloud.tencent.com/developer/article/1087455" target="_blank" rel="external">https://cloud.tencent.com/developer/article/1087455</a></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;Linux-内存问题汇总&quot;&gt;&lt;a href=&quot;#Linux-内存问题汇总&quot; class=&quot;headerlink&quot; title=&quot;Linux 内存问题汇总&quot;&gt;&lt;/a&gt;Linux 内存问题汇总&lt;/h1&gt;&lt;h2 id=&quot;内存使用观察&quot;&gt;&lt;a href=&quot;#内存使用观察&quot;
+    
+    </summary>
+    
+      <category term="Linux" scheme="http://yoursite.com/categories/Linux/"/>
+    
+    
+      <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
+    
+      <category term="free" scheme="http://yoursite.com/tags/free/"/>
+    
+      <category term="Memory" scheme="http://yoursite.com/tags/Memory/"/>
+    
+      <category term="vmtouch" scheme="http://yoursite.com/tags/vmtouch/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>kubernetes volume and storage</title>
+    <link href="http://yoursite.com/2020/01/13/kubernetes%20%E5%8D%B7%E5%92%8Cvolume/"/>
+    <id>http://yoursite.com/2020/01/13/kubernetes 卷和volume/</id>
+    <published>2020-01-13T09:30:03.000Z</published>
+    <updated>2020-09-19T10:00:19.159Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="kubernetes-volume-and-storage"><a href="#kubernetes-volume-and-storage" class="headerlink" title="kubernetes volume and storage"></a>kubernetes volume and storage</h1><p>通常部署应用需要一些永久存储，kubernetes提供了PersistentVolume （PV，实际存储）、PersistentVolumeClaim （PVC，Pod访问PV的接口）、StorageClass来支持。</p>
+<p>它为 PersistentVolume 定义了 <a href="https://kubernetes.io/docs/concepts/storage/persistent-volumes/#class" target="_blank" rel="external">StorageClass 名称</a> 为 <code>manual</code>，StorageClass 名称用来将 PersistentVolumeClaim 请求绑定到该 PersistentVolume。</p>
+<p>PVC是用来描述希望使用什么样的或者说是满足什么条件的存储，它的全称是Persistent Volume Claim，也就是持久化存储声明。开发人员使用这个来描述该容器需要一个什么存储。</p>
+<p>PVC就相当于是容器和PV之间的一个接口，使用人员只需要和PVC打交道即可。另外你可能也会想到如果当前环境中没有合适的PV和我的PVC绑定，那么我创建的POD不就失败了么？的确是这样的，不过如果发现这个问题，那么就赶快创建一个合适的PV，那么这时候持久化存储循环控制器会不断的检查PVC和PV，当发现有合适的可以绑定之后它会自动给你绑定上然后被挂起的POD就会自动启动，而不需要你重建POD。</p>
+<p>创建 PersistentVolumeClaim 之后，Kubernetes 控制平面将查找满足申领要求的 PersistentVolume。 如果控制平面找到具有相同 StorageClass 的适当的 PersistentVolume，则将 PersistentVolumeClaim 绑定到该 PersistentVolume 上。<strong>PVC的大小可以小于PV的大小</strong>。</p>
+<p>一旦 PV 和 PVC 绑定后，<code>PersistentVolumeClaim</code> 绑定是排他性的，不管它们是如何绑定的。 PVC 跟 PV 绑定是一对一的映射。</p>
+<p><strong>注意</strong>：PV必须先于POD创建，而且只能是网络存储不能属于任何Node，虽然它支持HostPath类型但由于你不知道POD会被调度到哪个Node上，所以你要定义HostPath类型的PV就要保证所有节点都要有HostPath中指定的路径。</p>
+<h2 id="PV-和PVC的关系"><a href="#PV-和PVC的关系" class="headerlink" title="PV 和PVC的关系"></a>PV 和PVC的关系</h2><p>PVC就会和PV进行绑定，绑定的一些原则：</p>
+<ol>
+<li>PV和PVC中的spec关键字段要匹配，比如存储（storage）大小。</li>
+<li>PV和PVC中的storageClassName字段必须一致，这个后面再说。</li>
+<li>上面的labels中的标签只是增加一些描述，对于PVC和PV的绑定没有关系</li>
+</ol>
+<p>PV的accessModes：支持三种类型</p>
+<ul>
+<li>ReadWriteMany 多路读写，卷能被集群多个节点挂载并读写</li>
+<li>ReadWriteOnce 单路读写，卷只能被单一集群节点挂载读写</li>
+<li>ReadOnlyMany 多路只读，卷能被多个集群节点挂载且只能读</li>
+</ul>
+<p>PV状态：</p>
+<ul>
+<li>Available – 资源尚未被claim使用</li>
+<li>Bound – 卷已经被绑定到claim了</li>
+<li>Released – claim被删除，卷处于释放状态，但未被集群回收。</li>
+<li><p>Failed – 卷自动回收失败</p>
+<p>PV<strong>回收Recycling</strong>—pv可以设置三种回收策略：保留（Retain），回收（Recycle）和删除（Delete）。</p>
+</li>
+<li><p>保留（Retain）： 当删除与之绑定的PVC时候，这个PV被标记为released（PVC与PV解绑但还没有执行回收策略）且之前的数据依然保存在该PV上，但是该PV不可用，需要手动来处理这些数据并删除该PV。</p>
+</li>
+<li>删除（Delete）：当删除与之绑定的PVC时候</li>
+<li>回收（Recycle）：这个在1.14版本中以及被废弃，取而代之的是推荐使用动态存储供给策略，它的功能是当删除与该PV关联的PVC时，自动删除该PV中的所有数据</li>
+</ul>
+<h3 id="更改-PersistentVolume-的回收策略"><a href="#更改-PersistentVolume-的回收策略" class="headerlink" title="更改 PersistentVolume 的回收策略"></a>更改 PersistentVolume 的回收策略</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">#kubectl patch pv wordpress-data -p &apos;&#123;&quot;spec&quot;:&#123;&quot;persistentVolumeReclaimPolicy&quot;:&quot;Delete&quot;&#125;&#125;&apos;</div><div class="line">persistentvolume/wordpress-data patched</div></pre></td></tr></table></figure>
+<p>本地卷（hostPath）也就是LPV不支持动态供给的方式，延迟绑定，就是为了综合考虑所有因素再进行POD调度。其根本原因是动态供给是先调度POD到节点，然后动态创建PV以及绑定PVC最后运行POD；而LPV是先创建与某一节点关联的PV，然后在调度的时候综合考虑各种因素而且要包括PV在哪个节点，然后再进行调度，到达该节点后在进行PVC的绑定。也就说动态供给不考虑节点，LPV必须考虑节点。所以这两种机制有冲突导致无法在动态供给策略下使用LPV。换句话说动态供给是PV跟着POD走，而LPV是POD跟着PV走。</p>
+<h2 id="PV-和-PVC"><a href="#PV-和-PVC" class="headerlink" title="PV 和 PVC"></a>PV 和 PVC</h2><p>创建 pv controller 和pvc</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div></pre></td><td class="code"><pre><div class="line">#cat mysql-pv.yaml </div><div class="line">apiVersion: v1</div><div class="line">kind: PersistentVolume</div><div class="line">metadata:</div><div class="line">  name: simple-pv-volume</div><div class="line">  labels:</div><div class="line">    type: local</div><div class="line">spec:</div><div class="line">  storageClassName: manual</div><div class="line">  capacity:</div><div class="line">    storage: 20Gi</div><div class="line">  accessModes:</div><div class="line">    - ReadWriteOnce</div><div class="line">  hostPath:</div><div class="line">    path: &quot;/mnt/simple&quot;</div><div class="line">---</div><div class="line">apiVersion: v1</div><div class="line">kind: PersistentVolumeClaim</div><div class="line">metadata:</div><div class="line">  name: pv-claim</div><div class="line">spec:</div><div class="line">  storageClassName: manual</div><div class="line">  accessModes:</div><div class="line">    - ReadWriteOnce</div><div class="line">  resources:</div><div class="line">    requests:</div><div class="line">      storage: 20Gi</div></pre></td></tr></table></figure>
+<h3 id="StorageClass"><a href="#StorageClass" class="headerlink" title="StorageClass"></a>StorageClass</h3><p>PV是运维人员来创建的，开发操作PVC，可是大规模集群中可能会有很多PV，如果这些PV都需要运维手动来处理这也是一件很繁琐的事情，所以就有了动态供给概念，也就是Dynamic Provisioning。而我们上面的创建的PV都是静态供给方式，也就是Static Provisioning。而动态供给的关键就是StorageClass，它的作用就是创建PV模板。</p>
+<p>创建StorageClass里面需要定义PV属性比如存储类型、大小等；另外创建这种PV需要用到存储插件。最终效果是，用户提交PVC，里面指定存储类型，如果符合我们定义的StorageClass，则会为其自动创建PV并进行绑定。</p>
+<p><strong>简单可以把storageClass理解为名字，只是这个名字可以重复，然后pvc和pv之间通过storageClass来绑定。</strong></p>
+<p>如下case中两个pv和两个pvc的绑定就是通过storageClass(一致)来实现的（当然pvc要求的大小也必须和pv一致）：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div></pre></td><td class="code"><pre><div class="line">#kubectl get pv</div><div class="line">NAME             CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                              STORAGECLASS   REASON   AGE</div><div class="line">mariadb-pv       8Gi        RWO            Retain           Bound    default/data-wordpress-mariadb-0   db                      3m54s</div><div class="line">wordpress-data   10Gi       RWO            Retain           Bound    default/wordpress                  wordpress               3m54s</div><div class="line"></div><div class="line">[root@az3-k8s-11 15:35 /root/charts/bitnami/wordpress]</div><div class="line">#kubectl get pvc</div><div class="line">NAME                       STATUS   VOLUME           CAPACITY   ACCESS MODES   STORAGECLASS   AGE</div><div class="line">data-wordpress-mariadb-0   Bound    mariadb-pv       8Gi        RWO            db             4m21s</div><div class="line">wordpress                  Bound    wordpress-data   10Gi       RWO            wordpress      4m21s</div><div class="line"></div><div class="line">#cat create-pv.yaml </div><div class="line">apiVersion: v1</div><div class="line">kind: PersistentVolume</div><div class="line">metadata:</div><div class="line">  name: mariadb-pv</div><div class="line">spec:</div><div class="line">  capacity:</div><div class="line">    storage: 8Gi</div><div class="line">  accessModes:</div><div class="line">    - ReadWriteOnce</div><div class="line">  persistentVolumeReclaimPolicy: Retain</div><div class="line">  storageClassName: db</div><div class="line">  hostPath:</div><div class="line">    path: /mnt/mariadb-pv</div><div class="line"></div><div class="line">---</div><div class="line"></div><div class="line">apiVersion: v1</div><div class="line">kind: PersistentVolume</div><div class="line">metadata:</div><div class="line">  name: wordpress-data</div><div class="line">spec:</div><div class="line">  capacity:</div><div class="line">    storage: 10Gi</div><div class="line">  accessModes:</div><div class="line">    - ReadWriteOnce</div><div class="line">  persistentVolumeReclaimPolicy: Retain</div><div class="line">  storageClassName: wordpress</div><div class="line">  hostPath:</div><div class="line">    path: /mnt/wordpress-pv</div><div class="line"></div><div class="line">----对应 pvc的定义参数：</div><div class="line">persistence:</div><div class="line">  enabled: true</div><div class="line">  storageClass: &quot;wordpress&quot;</div><div class="line">  accessMode: ReadWriteOnce</div><div class="line">  size: 10Gi</div><div class="line">  </div><div class="line">  persistence:</div><div class="line">    enabled: true</div><div class="line">    mountPath: /bitnami/mariadb</div><div class="line">    storageClass: &quot;db&quot;</div><div class="line">    annotations: &#123;&#125;</div><div class="line">    accessModes:</div><div class="line">      - ReadWriteOnce</div><div class="line">    size: 8Gi</div></pre></td></tr></table></figure>
+<h4 id="定义StorageClass"><a href="#定义StorageClass" class="headerlink" title="定义StorageClass"></a>定义StorageClass</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">kind: StorageClass</div><div class="line">apiVersion: storage.k8s.io/v1</div><div class="line">metadata:</div><div class="line">  name: local-storage</div><div class="line">provisioner: kubernetes.io/no-provisioner</div><div class="line">volumeBindingMode: WaitForFirstConsumer</div></pre></td></tr></table></figure>
+<h4 id="定义PVC"><a href="#定义PVC" class="headerlink" title="定义PVC"></a>定义PVC</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">kind: PersistentVolumeClaim</div><div class="line">apiVersion: v1</div><div class="line">metadata:</div><div class="line">  name: local-claim</div><div class="line">spec:</div><div class="line">  accessModes:</div><div class="line">  - ReadWriteOnce</div><div class="line">  resources:</div><div class="line">    requests:</div><div class="line">      storage: 5Gi</div><div class="line">  storageClassName: local-storage</div></pre></td></tr></table></figure>
+<h2 id="delete-pv-卡住"><a href="#delete-pv-卡住" class="headerlink" title="delete pv 卡住"></a>delete pv 卡住</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line">#kubectl describe pv wordpress-pv</div><div class="line">Name:            wordpress-pv</div><div class="line">Labels:          &lt;none&gt;</div><div class="line">Annotations:     pv.kubernetes.io/bound-by-controller: yes</div><div class="line">Finalizers:      [kubernetes.io/pv-protection]  --- 问题在finalizers</div><div class="line">StorageClass:    </div><div class="line">Status:          Terminating (lasts 18h)</div><div class="line">Claim:           default/wordpress</div><div class="line">Reclaim Policy:  Retain</div><div class="line">Access Modes:    RWO</div><div class="line">VolumeMode:      Filesystem</div><div class="line">Capacity:        10Gi</div><div class="line">Node Affinity:   &lt;none&gt;</div><div class="line">Message:         </div><div class="line">Source:</div><div class="line">    Type:      NFS (an NFS mount that lasts the lifetime of a pod)</div><div class="line">    Server:    192.168.0.111</div><div class="line">    Path:      /mnt/wordpress-pv</div><div class="line">    ReadOnly:  false</div><div class="line">Events:        &lt;none&gt;</div><div class="line"></div><div class="line">先执行后就能自动删除了：</div><div class="line">kubectl patch pv wordpress-pv -p &apos;&#123;&quot;metadata&quot;:&#123;&quot;finalizers&quot;: []&#125;&#125;&apos; --type=merge</div></pre></td></tr></table></figure>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;kubernetes-volume-and-storage&quot;&gt;&lt;a href=&quot;#kubernetes-volume-and-storage&quot; class=&quot;headerlink&quot; title=&quot;kubernetes volume and storage&quot;&gt;&lt;/a
+    
+    </summary>
+    
+      <category term="docker" scheme="http://yoursite.com/categories/docker/"/>
+    
+    
+      <category term="docker" scheme="http://yoursite.com/tags/docker/"/>
+    
+      <category term="kubernetes" scheme="http://yoursite.com/tags/kubernetes/"/>
+    
+      <category term="volume" scheme="http://yoursite.com/tags/volume/"/>
+    
+  </entry>
+  
+  <entry>
     <title>2010到2020这10年的碎碎念念</title>
     <link href="http://yoursite.com/2020/01/01/2010%E5%88%B02020%E8%BF%9910%E5%B9%B4%E7%9A%84%E7%A2%8E%E7%A2%8E%E5%BF%B5%E5%BF%B5/"/>
     <id>http://yoursite.com/2020/01/01/2010到2020这10年的碎碎念念/</id>
@@ -1576,798 +1951,6 @@ sudo perf top
       <category term="performance" scheme="http://yoursite.com/tags/performance/"/>
     
       <category term="kernel" scheme="http://yoursite.com/tags/kernel/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的</title>
-    <link href="http://yoursite.com/2019/12/16/Intel%20PAUSE%E6%8C%87%E4%BB%A4%E5%8F%98%E5%8C%96%E6%98%AF%E5%A6%82%E4%BD%95%E5%BD%B1%E5%93%8D%E8%87%AA%E6%97%8B%E9%94%81%E4%BB%A5%E5%8F%8AMySQL%E7%9A%84%E6%80%A7%E8%83%BD%E7%9A%84/"/>
-    <id>http://yoursite.com/2019/12/16/Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的/</id>
-    <published>2019-12-16T04:30:03.000Z</published>
-    <updated>2020-08-21T09:02:06.843Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="Intel-PAUSE指令变化是如何影响自旋锁以及MySQL的性能的"><a href="#Intel-PAUSE指令变化是如何影响自旋锁以及MySQL的性能的" class="headerlink" title="Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的"></a>Intel PAUSE指令变化是如何影响自旋锁以及MySQL的性能的</h1><p>本文记录专有云场景下Tomcat+MySQL集群的一次全表扫描性能优化过程</p>
-<p>经验总结，长链路下性能瓶颈发现规则（最容易互相扯皮、协调难度大）：</p>
-<blockquote>
-<p>从一个压测线程开始压，记录tps、rt；然后增加线程数量，到tps明显不再增加，分析此时各个环节的rt，看哪个环节rt增加最明显，瓶颈就在哪个环节</p>
-<p>如果监控没法得到各个环节的rt数据(太现实和普遍了)，抓包分析请求相应的rt</p>
-</blockquote>
-<h2 id="业务结构"><a href="#业务结构" class="headerlink" title="业务结构"></a>业务结构</h2><p>client -&gt; Tomcat -&gt; slb -&gt; MySQL（32实例，每个实例8Core）</p>
-<h2 id="场景描述："><a href="#场景描述：" class="headerlink" title="场景描述："></a>场景描述：</h2><p>通过client压 Tomcat和MySQL，MySQL是32个实例，业务逻辑是不带拆分键的全表扫描，也就是一个client SQL经过Tomcat后会拆分成256个SQL发送给32个MySQL（每个MySQL上有8个分库）</p>
-<p>业务SQL是一个简单的select sum求和，这个SQL在每个MySQL上都很快（有索引）</p>
-<pre><code>SELECT SUM(emp_arr_amt) FROM uebmi_clct_det_c WHERE INSUTYPE=&apos;310&apos; AND Revs_Flag=&apos;Z&apos; AND accrym=&apos;201910&apos; AND emp_no=&apos;1050457&apos;;
-</code></pre><h2 id="说明："><a href="#说明：" class="headerlink" title="说明："></a>说明：</h2><ul>
-<li>后述或者截图中的逻辑rt/QPS是指client看到的Tomcat的rt和QPS； </li>
-<li>物理rt/QPS是指Tomcat看到的MySQL rt和QPS（这里的rt是指到达Tomcat节点网卡的rt，所以还包含了网络消耗）</li>
-</ul>
-<h2 id="问题描述："><a href="#问题描述：" class="headerlink" title="问题描述："></a>问题描述：</h2><p>通过client压一个Tomcat节点+32个MySQL，QPS大概是430，Tomcat节点CPU跑满，MySQL rt是0.5ms，增加一个Tomcat节点，QPS大概是700，Tomcat CPU接近跑满，MySQL rt是0.6ms，到这里基本都是正常的。</p>
-<p>继续增加Tomcat节点来横向扩容性能，通过client压三个Tomcat节点+32个MySQL，QPS还是700，Tomcat节点CPU跑不满，MySQL rt是0.8ms，这就严重不符合预期了。</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/28610e403282d493e2ce18fbecc69421.png" alt="image.png"></p>
-<p><strong>到这里一切都还是符合我们的经验的，看起来是后端有瓶颈。</strong></p>
-<h2 id="排查-MySQL"><a href="#排查-MySQL" class="headerlink" title="排查 MySQL"></a>排查 MySQL</h2><p>现场DBA通过监控看到MySQL CPU不到20%，没有慢查询，并且尝试用client越过所有中间环节直接压其中一个MySQL，发现MySQL CPU基本能跑满，这时的QPS大概是38000（对应上面的场景client QPS为700的时候，单个MySQL上的QPS才跑到6000) 所以排除了MySQL的嫌疑</p>
-<h2 id="slb和网络的嫌疑"><a href="#slb和网络的嫌疑" class="headerlink" title="slb和网络的嫌疑"></a>slb和网络的嫌疑</h2><p>首先通过大查询排除了带宽的问题，因为这里都是小包，pps到了72万，很自然想到了xgw、slb的限流之类的</p>
-<p>pps监控，这台物理机有4个MySQL实例上，pps 9万左右，9*32/4=72万<br><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/b84245c17e213de528f2ad8090d504f6.png" alt="image.png"></p>
-<p>在xgw可以看到pps大概是100万：<br><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/87a6b32986859828dc3b5f2de3d4f430.png" alt="image.png"></p>
-<p>另外检查lvs，也没看到有进出丢包的问题：<br><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/3754ba7ac526423eba8e20f7d2953ae1.png" alt="image.png"></p>
-<p>所以网络因素被排除，另外做压测的时候反复从Tomcat上ping 后面的MySQL，rt跟没有压力的时候一样，也说明了网络没有问题。</p>
-<h2 id="问题的确认"><a href="#问题的确认" class="headerlink" title="问题的确认"></a>问题的确认</h2><p>尝试在Tomcat上打开慢查询，并将慢查询阈值设置为100ms，这个时候确实能从日志中看到大量MySQL上的慢查询，因为这个SQL需要在Tomcat上做拆分成256个SQL，同时下发，一旦有一个SQL返回慢，整个请求就因为这个短板被拖累了。平均rt0.8ms，但是经常有超过100ms的话对整体影响还是很大的。</p>
-<p>将Tomcat记录下来的慢查询（Tomcat增加了一个唯一id下发给MySQL）到MySQL日志中查找，果然发现MySQL上确实慢了，所以到这里基本确认是MySQL的问题，终于不用再纠结是否是网络问题了。</p>
-<p>同时在Tomcat进行抓包，对网卡上的rt进行统计分析：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ffd66d9a6098979b555dfb00d3494255.png" alt="image.png"></p>
-<p>这是Tomcat上抓到的每个sql的物理rt 平均值，上面是QPS 430的时候，rt 0.6ms，下面是3个server，QPS为700，但是rt上升到了0.9ms，基本跟Tomcat监控记录到的物理rt一致。如果MySQL上也有类似抓包计算rt时间的话可以快速排除网络问题。</p>
-<p>网络抓包得到的rt数据更容易被所有人接受。尝试过在MySQL上抓包，但是因为slb模块的原因，进出端口、ip都被修改过，所以没法分析一个流的响应时间。</p>
-<h2 id="重心再次转向MySQL"><a href="#重心再次转向MySQL" class="headerlink" title="重心再次转向MySQL"></a>重心再次转向MySQL</h2><p>这个时候因为问题点基本确认，再去查看MySQL是否有问题的重心都不一样了，不再只是看看CPU和慢查询，这个问题明显更复杂一些。</p>
-<p>通过监控发现MySQL CPU虽然一直不高，但是经常看到running thread飙到100多，很快又降下去了，看起来像是突发性的并发查询请求太多导致了排队等待，每个MySQL实例是8Core的CPU，尝试将MySQL实例扩容到16Core（只是为了验证这个问题），QPS确实可以上升到1000（没有到达理想的1400）。</p>
-<p>这是Tomcat上监控到的MySQL状态（Tomcat的监控还是很给力的)：<br><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e73c1371a02106a52f8a13f89a9dd9ad.png" alt="image.png"></p>
-<p>同时在MySQL机器上通过vmstat也可以看到这种飙升：<br><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/4dbd9dff9deacec0e9911e3a7d025578.png" alt="image.png"></p>
-<p>另外像这种短暂突发性的并发流量似乎监控都很难看到（基本都被平均掉了），只有一些实时性监控偶尔会采集到这种短暂突发性飙升，这也导致了一开始忽视了MySQL</p>
-<p>所以接下来的核心问题就是MySQL为什么会有这种飙升、这种飙升的影响到底是什么？</p>
-<h2 id="MySQL部署awr"><a href="#MySQL部署awr" class="headerlink" title="MySQL部署awr"></a>MySQL部署awr</h2><p>步骤：</p>
-<ol>
-<li>打开performance_schema；设置参数performance_schema=on</li>
-<li>压测前后调用调用 call awr_snapshot(‘memo’);  memo 是你希望给这次测试设置的标签</li>
-<li>查看的时候，先call awr_list_snapshot(); 找到你对应的那次测试，再运行call awr_report(1,2); 1/2对应你测试的开始、结束snapshot ID</li>
-</ol>
-<p>通过awr将performance_schema打开，并采集一些MySQL数据(SQL/CPU/Lock/Mutex等等)进行统计分析</p>
-<p>可以清楚地看到一些锁等待：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/481d7bef3dc0a1fbe20ab9cf01978a7c.png" alt="image.png"><br>从上图可以看到主要是select wait比较多，符合业务场景（都是 select sum语句），这里wait是98%，QPS为38000的时候wait才88%。</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/745790bf9b7562cc60bf311c7963c983.png" alt="image.png"></p>
-<p>从这里可以看到fil_system_mutex锁等待比较多，但是还是不清楚这个锁是怎么产生的，得怎么优化掉。QPS为38000的时候这个等待才 10%</p>
-<h2 id="perf-top"><a href="#perf-top" class="headerlink" title="perf top"></a>perf top</h2><p>直接上 perf ，发现ut_delay高得不符合逻辑：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/cd145c494c074e01e9d2d1d5583a87a0.png" alt="image.png"></p>
-<p>展开看一下，基本是在优化器中做索引命中行数的选择：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/46d5f5ee5c58d7090a71164e645ccf79.png" alt="image.png" style="zoom: 67%;"></p>
-<p>跟直接在MySQL命令行中通过 show processlist看到的基本一致：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/89cccebe41a8b8461ea75586b61b929f.png" alt="image.png" style="zoom:50%;"></p>
-<p>主要是优化器在做statistics的时候需要对索引进行统计，统计的时候要加锁，thread running抖动时对应的通过show processlist看到很多thread处于 statistics 状态。</p>
-<p>这里ut_delay 消耗了28%的CPU肯定太不正常了，于是将 innodb_spin_wait_delay 从 30 改成 6 后性能立即上去了，继续增加Tomcat节点，QPS也可以线性增加。</p>
-<h2 id="最终的性能"><a href="#最终的性能" class="headerlink" title="最终的性能"></a>最终的性能</h2><p>调整到MySQL官方默认配置innodb_spin_wait_delay=6 后在4个Tomcat节点下，并发40时，QPS跑到了1700，物理rt：0.7，逻辑rt：19.6，cpu：90%，这个时候只需要继续扩容Tomcat节点的数量就可以增加QPS<br>19.6，cpu：90%<br><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/48c976f989747266f9892403794996c0.png" alt="image.png"></p>
-<p>再跟调整前比较一下，innodb_spin_wait_delay=30，并发40时，QPS 500+，物理rt：2.6ms 逻辑rt：72.1ms cpu：37%<br><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/fdb459972926cff371f5f5ab703790bb.png" alt="image.png"></p>
-<p>再看看调整前压测的时候的vmstat和tsar –cpu，可以看到process running抖动明显<br><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/4dbd9dff9deacec0e9911e3a7d025578.png" alt="image.png"></p>
-<p>对比修改delay后的process running就很稳定了，即使QPS大了3倍<br><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ed46d35161ea28352acd4289a3e9ddad.png" alt="image.png"></p>
-<h2 id="关于-innodb-spin-wait-delay"><a href="#关于-innodb-spin-wait-delay" class="headerlink" title="关于 innodb_spin_wait_delay"></a>关于 innodb_spin_wait_delay</h2><p>innodb通过大量的自旋锁来用高CPU消耗避免CS，这是自旋锁的正确使用方式，但是在多个核的情况下，多核一起自旋抢同一个锁，容易造成cache ping-pong，进而多个CPU核之间会互相使对方缓存部分无效。所以这里<a href="https://dev.mysql.com/doc/refman/5.7/en/innodb-performance-spin_lock_polling.html" target="_blank" rel="external">innodb通过增加innodb_spin_wait_delay和pause配合来缓解cache ping-pong</a>，也就是本来要高速通过CPU自旋抢锁的，换成了抢锁失败后 delay一下（Pause）但是不释放CPU，delay时间到后继续抢锁，也就是把连续的自旋抢锁转换成了更稀疏的点状的抢锁（间隔的delay是个随机数–机关枪换成左轮手枪，避免卡壳），这样不但避免了CS也大大减少了cache ping-pong. </p>
-<p>多线程竞争锁的时候，加锁失败的线程会“忙等待”，直到它拿到锁。什么叫“忙等待”呢？它并不意味着一直执行 CAS 函数，生产级的自旋锁在“忙等待”时，会与 CPU 紧密配合 ，它通过 CPU 提供的 PAUSE 指令，减少循环等待时的cache ping-pong和耗电量；对于单核 CPU，忙等待并没有意义，此时它会主动把线程休眠。</p>
-<p>CPU专为自旋锁设计了pause指令，一旦自旋抢锁失败先pause一下，只是这个pause对于innodb来说pause的还不够久，所以需要 innodb_spin_wait_delay 来将pause放大一些。</p>
-<p>在我们的这个场景下对每个SQL的rt抖动非常敏感（放大256倍），所以过高的delay会导致部分SQL rt变高。</p>
-<p>函数 ut_delay(ut_rnd_interval(0, srv_spin_wait_delay)) 用来执行这个delay：</p>
-<pre><code>/***************************MySQL代码****************************//**
-Runs an idle loop on CPU. The argument gives the desired delay
-in microseconds on 100 MHz Pentium + Visual C++.
-@return dummy value */
-UNIV_INTERN
-ulint
-ut_delay(ulint delay)  //delay 是[0,innodb_spin_wait_delay)之间的一个随机数
-{
-        ulint   i, j;
-
-        UT_LOW_PRIORITY_CPU();
-
-        j = 0;
-
-        for (i = 0; i &lt; delay * 50; i++) {  //delay 放大50倍
-                j += i;
-                UT_RELAX_CPU();             //cpu Pause
-        }
-
-        UT_RESUME_PRIORITY_CPU();
-
-        return(j);
-}
-
-// kernel 自旋锁部分代码
-while (true) {
-  //因为判断lock变量的值比CAS操作更快，所以先判断lock再调用CAS效率更高
-  if (lock == 0 &amp;&amp;  CAS(lock, 0, pid) == 1) return;
-
-  if (CPU_count &gt; 1 ) { //如果是多核CPU，“忙等待”才有意义
-      for (n = 1; n &lt; 2048; n &lt;&lt;= 1) {//pause的时间，应当越来越长
-        for (i = 0; i &lt; n; i++) pause();//CPU专为自旋锁设计了pause指令
-        if (lock == 0 &amp;&amp; CAS(lock, 0, pid)) return;//pause后再尝试获取锁
-      }
-  }
-  sched_yield();//单核CPU，或者长时间不能获取到锁，应主动休眠，让出CPU
-}
-
-//MySQL 8.0 针对PAUSE，源码中新增了spin_wait_pause_multiplier参数，来替换之前写死的循环次数。
-</code></pre><p>innodb_spin_wait_delay的默认值为6. spin 等待延迟是一个动态全局参数，您可以在MySQL选项文件（my.cnf或my.ini）中指定该参数，或者在运行时使用SET GLOBAL 来修改。在我们的MySQL配置中默认改成了30，导致了这个问题。</p>
-<h3 id="Skylake架构的8163-和-Broadwell架构-E5-2682-CPU型号的不同"><a href="#Skylake架构的8163-和-Broadwell架构-E5-2682-CPU型号的不同" class="headerlink" title="Skylake架构的8163 和 Broadwell架构 E5-2682 CPU型号的不同"></a>Skylake架构的8163 和 Broadwell架构 E5-2682 CPU型号的不同</h3><p>UT_RELAX_CPU()的汇编指令为pause，在CPU指令同步数据时进行等待的空转，<strong>在pause期间，同一个core上的HT可以执行其他指令</strong>。</p>
-<p>在Intel 64-ia-32-architectures-optimization-manual手册中提到：<br>The latency of the PAUSE instruction in prior generation microarchitectures is about 10 cycles, whereas in Skylake microarchitecture it has been extended to as many as 140 cycles.</p>
-<blockquote>
-<p><a href="https://xem.github.io/minix86/manual/intel-x86-and-64-manual-vol3/o_fe12b1e2a880e0ce-302.html" target="_blank" rel="external">The PAUSE instruction can improves the performance</a> of processors supporting Intel Hyper-Threading Technology when executing “spin-wait loops” and other routines where one thread is accessing a shared lock or semaphore in a tight polling loop. When executing a spin-wait loop, the processor can suffer a severe performance penalty when exiting the loop because it detects a possible memory order violation and flushes the core processor’s pipeline. The PAUSE instruction provides a hint to the processor that the code sequence is a spin-wait loop. The processor uses this hint to avoid the memory order violation and prevent the pipeline flush. In addition, the PAUSE instruction de-<br>pipelines the spin-wait loop to prevent it from consuming execution resources excessively and consume power needlessly. (See<a href="https://xem.github.io/minix86/manual/intel-x86-and-64-manual-vol3/o_fe12b1e2a880e0ce-305.html" target="_blank" rel="external"> Section 8.10.6.1, “Use the PAUSE Instruction in Spin-Wait Loops,” for more </a>information about using the PAUSE instruction with IA-32 processors supporting Intel Hyper-Threading Technology.)</p>
-</blockquote>
-<p><strong>Skylake架构的CPU的PAUSE指令从之前的10 cycles提升到140 cycles。</strong></p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/f712640a787655ad1bcddec4c65215e5.png" alt="image.png"></p>
-<p>可以看到V52的CPU绝大部分时间消耗在ut_delay函数上。（注：V42和V52表示两种不同的机型，他们使用的CPU型号不一样）</p>
-<p>使用pqos观测CPU的IPC指标：<br>在128并发写入场景下，V42 CPU的IPC为0.35左右，而V52 CPU的IPC只有0.18</p>
-<blockquote>
-<p>说明：IPC是单位时钟周期的指令数，反映当前场景下，CPU的执行效率</p>
-</blockquote>
-<p>MySQL使用innodb_spin_wait_delay控制spin lock等待时间，等待时间时间从0*50个pause到innodb_spin_wait_delay*50个pause。<br>线上innodb_spin_wait_delay默认配置30，对于V42 CPU，等待的最长时间为：<br>30 * 50 * 10=15000 cycles，对于2.5GHz的CPU，等待时间为6us。<br>对应计算V52 CPU的等待时间：30 *50 *140=210000 cycles，CPU主频也是2.5GHz，等待时间84us。</p>
-<p>E5-2682 CPU型号在不同的delay参数和不同并发压力下的写入性能数据：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/9377127947c23dd166f6aa399b6a89b9.png" alt="image.png"></p>
-<p>Skylake 8163 CPU型号在不同的delay参数和不同并发压力下的写入性能数据：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d567449fe52725a9d0b9d4ec9baa372c.png" alt="image.png"></p>
-<p>因为8163的cycles从10改到了140，所以可以看到delay参数对性能的影响更加陡峻。</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d0b0687ab72cfb785441bfb343b9f948.png" alt="image.png"></p>
-<h4 id="不同的架构下的参数"><a href="#不同的架构下的参数" class="headerlink" title="不同的架构下的参数"></a>不同的架构下的参数</h4><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e4a2fb522be7aa65158778b7ea825207.png" alt="image.png"></p>
-<h3 id="cache-一致性"><a href="#cache-一致性" class="headerlink" title="cache 一致性"></a>cache 一致性</h3><p>处理器都实现了 Cache 一致性 (Cache Coherence）协议。如历史上 x86 曾实现了<a href="https://en.wikipedia.org/wiki/MESI_protocol" target="_blank" rel="external"> MESI 协议</a>，以及 MESIF 协议。</p>
-<p>假设两个处理器 A 和 B, 都在各自本地 Cache Line 里有同一个变量的拷贝时，此时该 Cache Line 处于 Shared 状态。当处理器 A 在本地修改了变量，除去把本地变量所属的 Cache Line 置为 Modified 状态以外，<br>还必须在另一个处理器 B 读同一个变量前，对该变量所在的 B 处理器本地 Cache Line 发起 Invaidate 操作，标记 B 处理器的那条 Cache Line 为 Invalidate 状态。<br>随后，若处理器 B 在对变量做读写操作时，如果遇到这个标记为 Invalidate 的状态的 Cache Line，即会引发 Cache Miss，从而将内存中最新的数据拷贝到 Cache Line 里，然后处理器 B 再对此 Cache Line 对变量做读写操作。</p>
-<p>cache ping-pong(cache-line ping-ponging) 是指不同的CPU共享位于同一个cache-line里边的变量，当不同的CPU频繁的对该变量进行读写时，会导致其他CPU cache-line的失效。</p>
-<h4 id="Cache-Line-伪共享"><a href="#Cache-Line-伪共享" class="headerlink" title="Cache Line 伪共享"></a>Cache Line 伪共享</h4><p>Cache Line 伪共享问题，就是由多个 CPU 上的多个线程同时修改自己的变量引发的。这些变量表面上是不同的变量，但是实际上却存储在同一条 Cache Line 里（Cache Line 失效的最小单位是整个Line，而不是一个变量）。<br>在这种情况下，由于 Cache 一致性协议，两个处理器都存储有相同的 Cache Line 拷贝的前提下，本地 CPU 变量的修改会导致本地 Cache Line 变成 Modified 状态，然后在其它共享此 Cache Line 的 CPU 上，<br>引发 Cache Line 的 Invaidate 操作，导致 Cache Line 变为 Invalidate 状态，从而使 Cache Line 再次被访问时，发生本地 Cache Miss，从而伤害到应用的性能。<br>在此场景下，多个线程在不同的 CPU 上高频反复访问这种 Cache Line 伪共享的变量，则会因 Cache 颠簸引发严重的性能问题。</p>
-<h4 id="MESI-protocol"><a href="#MESI-protocol" class="headerlink" title="MESI protocol"></a><a href="https://en.wikipedia.org/wiki/MESI_protocol" target="_blank" rel="external">MESI protocol</a></h4><p>MySQL 这里读取Mutex or rw-lock 会导致其它core的cache line 失效，这个读取应该不是一个 Shared读，猜测是一个Exclusive读（加锁成功肯定会Modified），意味着读取就会让其他 cache line失效。</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/2a5245c81a37d166c7e0b2ace45b9e4b.png" alt="image.png"></p>
-<p>在NUMA架构中，多个处理器中的同一个缓存页面必定在其中一个处理器中属于 F 状态(可以修改的状态)，这个页面在这个处理器中没有理由不可以多核心共享(可以多核心共享就意味着这个能进入修改状态的页面的多个有效位被设置为一)。MESIF协议应该是工作在核心(L1+L2)层面而不是处理器(L3)层面，这样同一处理器里多个核心共享的页面，只有其中一个是出于 F 状态(可以修改的状态)。见后面对 NUMA 和 MESIF 的解析。(L1/L2/L3 的同步应该是不需要 MESIF 的同步机制)</p>
-<h2 id="分析源代码"><a href="#分析源代码" class="headerlink" title="分析源代码"></a>分析源代码</h2><p>另外分析了MySQL源代码后，在select中通过使用force index来绕过优化器是可以达到相同的效果（不再走statistics流程，也就不会有这个锁争抢了）</p>
-<p>从下面的源代码中可以看到perf top中fil_space_get，在这个函数里面确实会对fil_system_mutex加锁（跟awr监控对应上了）</p>
-<pre><code>/** Look up a tablespace.
-The caller should hold an InnoDB table lock or a MDL that prevents
-the tablespace from being dropped during the operation,
-or the caller should be in single-threaded crash recovery mode
-(no user connections that could drop tablespaces).
-If this is not the case, fil_space_acquire() and fil_space_release()
-should be used instead.
-@param[in]      id      tablespace ID
-@return tablespace, or NULL if not found */
-fil_space_t*
-fil_space_get(
-        ulint   id)
-{
-        mutex_enter(&amp;fil_system-&gt;mutex);
-        fil_space_t*    space = fil_space_get_by_id(id);
-        mutex_exit(&amp;fil_system-&gt;mutex);
-        ut_ad(space == NULL || space-&gt;purpose != FIL_TYPE_LOG);
-        return(space);
-}
-</code></pre><p>btr_estimate_n_rows_in_range_low会调用btr_estimate_n_rows_in_range_on_level, btr_estimate_n_rows_in_range_on_level中调用 fil_space_get</p>
-<p>const fil_space_t*      space = fil_space_get(index-&gt;space);</p>
-<pre><code>/** Estimates the number of rows in a given index range.
-@param[in]      index           index
-@param[in]      tuple1          range start, may also be empty tuple
-@param[in]      mode1           search mode for range start
-@param[in]      tuple2          range end, may also be empty tuple
-@param[in]      mode2           search mode for range end
-@param[in]      nth_attempt     if the tree gets modified too much while
-we are trying to analyze it, then we will retry (this function will call
-itself, incrementing this parameter)
-@return estimated number of rows; if after rows_in_range_max_retries
-retries the tree keeps changing, then we will just return
-rows_in_range_arbitrary_ret_val as a result (if
-nth_attempt &gt;= rows_in_range_max_retries and the tree is modified between
-the two dives). */
-static
-int64_t
-btr_estimate_n_rows_in_range_low(
-        dict_index_t*   index,
-        const dtuple_t* tuple1,
-        page_cur_mode_t mode1,
-        const dtuple_t* tuple2,
-        page_cur_mode_t mode2,
-        unsigned        nth_attempt)
-
-/*******************************************************************//**
-Estimate the number of rows between slot1 and slot2 for any level on a
-B-tree. This function starts from slot1-&gt;page and reads a few pages to
-the right, counting their records. If we reach slot2-&gt;page quickly then
-we know exactly how many records there are between slot1 and slot2 and
-we set is_n_rows_exact to TRUE. If we cannot reach slot2-&gt;page quickly
-then we calculate the average number of records in the pages scanned
-so far and assume that all pages that we did not scan up to slot2-&gt;page
-contain the same number of records, then we multiply that average to
-the number of pages between slot1-&gt;page and slot2-&gt;page (which is
-n_rows_on_prev_level). In this case we set is_n_rows_exact to FALSE.
-@return number of rows, not including the borders (exact or estimated) */
-static
-int64_t
-btr_estimate_n_rows_in_range_on_level(
-/*==================================*/
-        dict_index_t*   index,                  /*!&lt; in: index */
-        btr_path_t*     slot1,                  /*!&lt; in: left border */
-        btr_path_t*     slot2,                  /*!&lt; in: right border */
-        int64_t         n_rows_on_prev_level,   /*!&lt; in: number of rows
-                                                on the previous level for the
-                                                same descend paths; used to
-                                                determine the number of pages
-                                                on this level */
-        ibool*          is_n_rows_exact)        /*!&lt; out: TRUE if the returned
-                                                value is exact i.e. not an
-                                                estimation */
-</code></pre><p>JOIN::estimate_row_count 是优化器估计行数的调用。 CBO 需要获得扫描行数数量，计算各访问路径的代价，确定哪个访问路径更好。在 MySQL 社区版，支持索引下探 (records_in_range) 和索引 key ndv (records_in_key) 来估计行数，但默认是索引下探（文中 perf 调用栈）。本文的查询是简单查询，而 force index 固定了访问路径，所以可以忽略行数估计，跳过下探逻辑。</p>
-<p>顺便说一下， RDS MySQL 8.0 Outline 功能可以在 server 端 force index ，避免对应用代码的侵入。此外 PolarDB MySQL 里新增加了根据直方图来估计行数的功能，并且增强了直方图，可以有效应对这种场景。我们也在开发执行计划的锁定和演进功能，相信这类场景后面都可以系统化地解决掉。</p>
-<h2 id="perf-top-和-pause"><a href="#perf-top-和-pause" class="headerlink" title="perf top 和 pause"></a>perf top 和 pause</h2><p>案例：</p>
-<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/864427c491497acb02d37c02cb35eeb2.png" alt="image.png"></p>
-<p>对如上两个pause指令以及一个 count++（addq），进行perf top：</p>
-<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/40945b005eb9f716e429fd30be55b6d1.png" alt="image.png"></p>
-<p>可以看到第一个pasue在perf top中cycles为0，第二个为46.85%，另外一个addq也有48.83%，基本可以猜测perf top在这里数据都往后挪了一个。</p>
-<p><strong>问题总结：</strong><br> 我们知道perf top是通过读取PMU的PC寄存器来获取当前执行的指令进而根据汇编的symbol信息获得是执行的哪条指令。所以看起来CPU在执行pause指令的时候，从PMU中看到的PC值指向到了下一条指令，进而导致我们看到的这个现象。通过查阅《Intel® 64 and IA-32 Architectures Optimization Reference Manual》目前还无法得知这是CPU的一个设计缺陷还是PMU的一个bug(需要对pause指令做特殊处理)。<strong>不管怎样，这个实验证明了我们统计spin lock的CPU占比还是准确的，不会因为pause指令导致PMU采样出错导致统计信息的整体失真。只是对于指令级的CPU统计，我们能确定的就是它把pause的执行cycles 数统计到了下一条指令。</strong></p>
-<p><strong>补充说明：</strong></p>
-<p>​    <strong>经过测试，非skylake CPU也同样存在perf top会把pause(执行数cycles是10)的执行cycles数统计到下一条指令的问题，看来这是X86架构都存在的问题。</strong></p>
-<h2 id="总结分析"><a href="#总结分析" class="headerlink" title="总结分析"></a>总结分析</h2><p>CPU 架构不同Pause 指令的不同导致了 MySQL innodb_spin_wait_delay 在spin lock失败的时候delay更久，导致调用方看到了MySQL更大的rt，导致Tomcat Server上并发跑不起来，所以最终压力上不去。</p>
-<p>在长链路的排查中，细化定位是哪个节点出了问题是最难的，这里大量的时间都花在了client、slb、Tomcat节点等等有没有问题，就是因为MySQL有32个节点，他们的CPU都不高，让大家很快排除了他的嫌疑。</p>
-<p>在一开始排除MySQL嫌疑(主要是这种场景下对抖动太敏感了)后花了大量的工作在简化链路上，实际因为他们都不是瓶颈，所以没有任何效果。</p>
-<p>在极端环境下（比如没有网络、工具不健全）排查问题太困难了，比如这个问题MySQL早装perf可能很快就发现了问题。</p>
-<p>这种一个查询分成多个查询的业务逻辑受短板影响明显，短板进而受抖动影响明显（比如这里的随机delay）。</p>
-<p>应用的Tomcat横向扩展是非常可靠的，应用Tomcat统计出来的物理rt是绝对可信的，经过这次案例后续大家应该会更加相信应用的监控。</p>
-<p>增加并发压力的时候MySQL rt增加很明显是最关键的证据（即使MySQL CPU很闲，但是总的MySQL平均rt也才0.9ms让我们一开始有点疏忽了），所以这种场景下还要多看长尾。</p>
-<p>欲速则不达，做压测的时候还是要老老实实地从一个并发开始观察QPS、rt，然后一直增加压力到压不上去了，再看QPS、rt变化，然后确认瓶颈点。</p>
-<p>关于这个抖动对整体rt的影响计算：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/c47d2bd0e4d9d0f005d0e1132b385eab.png" alt="image.png"></p>
-<h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a href="https://cloud.tencent.com/developer/article/1005284" target="_blank" rel="external">https://cloud.tencent.com/developer/article/1005284</a></p>
-<p><a href="https://dev.mysql.com/doc/refman/5.7/en/innodb-performance-spin_lock_polling.html" target="_blank" rel="external">mysql doc</a></p>
-<p><a href="http://oliveryang.net/2018/01/cache-false-sharing-debug" target="_blank" rel="external">Cache Line 伪共享发现与优化</a></p>
-<p><a href="https://en.wikichip.org/w/images/e/eb/intel-ref-248966-037.pdf" target="_blank" rel="external">intel spec</a></p>
-<p><a href="https://coolshell.cn/articles/20793.html" target="_blank" rel="external">与程序员相关的CPU缓存知识</a> </p>
-<p><a href="https://mp.weixin.qq.com/s/dlKC13i9Z8wjDDiU2tig6Q" target="_blank" rel="external">Intel PAUSE指令变化影响到MySQL的性能，该如何解决？</a></p>
-<p><a href="https://www.atatech.org/articles/85549" target="_blank" rel="external">https://www.atatech.org/articles/85549</a></p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;Intel-PAUSE指令变化是如何影响自旋锁以及MySQL的性能的&quot;&gt;&lt;a href=&quot;#Intel-PAUSE指令变化是如何影响自旋锁以及MySQL的性能的&quot; class=&quot;headerlink&quot; title=&quot;Intel PAUSE指令变化是如何影响自旋锁以
-    
-    </summary>
-    
-      <category term="Linux" scheme="http://yoursite.com/categories/Linux/"/>
-    
-    
-      <category term="performance" scheme="http://yoursite.com/tags/performance/"/>
-    
-      <category term="mysql" scheme="http://yoursite.com/tags/mysql/"/>
-    
-      <category term="perf" scheme="http://yoursite.com/tags/perf/"/>
-    
-      <category term="intel" scheme="http://yoursite.com/tags/intel/"/>
-    
-      <category term="pause" scheme="http://yoursite.com/tags/pause/"/>
-    
-      <category term="innodb_spin_wait_delay" scheme="http://yoursite.com/tags/innodb-spin-wait-delay/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>epoll的LT和ET</title>
-    <link href="http://yoursite.com/2019/12/09/epoll%E7%9A%84LT%E5%92%8CET/"/>
-    <id>http://yoursite.com/2019/12/09/epoll的LT和ET/</id>
-    <published>2019-12-09T04:30:03.000Z</published>
-    <updated>2020-05-15T07:25:42.065Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="epoll的LT和ET"><a href="#epoll的LT和ET" class="headerlink" title="epoll的LT和ET"></a>epoll的LT和ET</h1><ul>
-<li><p>LT水平触发(翻译为 条件触发 更合适） </p>
-<blockquote>
-<p>   如果事件来了，不管来了几个，只要仍然有未处理的事件，epoll都会通知你。比如事件来了，打印一行通知，但是不去处理事件，那么会不停滴打印通知。水平触发模式的 epoll 的扩展性很差。</p>
-</blockquote>
-</li>
-<li><p>ET边沿触发<br>&gt;</p>
-<blockquote>
-<p>  如果事件来了，不管来了几个，你若不处理或者没有处理完，除非下一个事件到来，否则epoll将不会再通知你。 比如事件来了，打印一行通知，但是不去处理事件，那么不再通知，除非下个事件来了</p>
-</blockquote>
-</li>
-</ul>
-<p>LT比ET会多一次重新加入就绪队列的动作，也就是意味着一定有一次poll不到东西，效率是有影响但是队列长度有限所以基本可以不用考虑。但是LT编程方式上要简单多了，所以LT也是默认的。</p>
-<h3 id="水平触发的问题：不必要的唤醒"><a href="#水平触发的问题：不必要的唤醒" class="headerlink" title="水平触发的问题：不必要的唤醒"></a>水平触发的问题：不必要的唤醒</h3><ol>
-<li>内核：收到一个新建连接的请求</li>
-<li>内核：由于 “惊群效应” ，唤醒两个正在 epoll_wait() 的线程 A 和线程 B</li>
-<li>线程A：epoll_wait() 返回</li>
-<li>线程B：epoll_wait() 返回</li>
-<li>线程A：执行 accept() 并且成功</li>
-<li>线程B：执行 accept() 失败，accept() 返回 EAGAIN</li>
-</ol>
-<h3 id="边缘触发的问题：不必要的唤醒以及饥饿"><a href="#边缘触发的问题：不必要的唤醒以及饥饿" class="headerlink" title="边缘触发的问题：不必要的唤醒以及饥饿"></a>边缘触发的问题：不必要的唤醒以及饥饿</h3><p>不必要的唤醒：</p>
-<ol>
-<li>内核：收到第一个连接请求。线程 A 和 线程 B 两个线程都在 epoll_wait() 上等待。由于采用边缘触发模式，所以只有一个线程会收到通知。这里假定线程 A 收到通知</li>
-<li>线程A：epoll_wait() 返回</li>
-<li>线程A：调用 accpet() 并且成功</li>
-<li>内核：此时 accept queue 为空，所以将边缘触发的 socket 的状态从可读置成不可读</li>
-<li>内核：收到第二个建连请求</li>
-<li>内核：此时，由于线程 A 还在执行 accept() 处理，只剩下线程 B 在等待 epoll_wait()，于是唤醒线程 B</li>
-<li>线程A：继续执行 accept() 直到返回 EAGAIN</li>
-<li>线程B：执行 accept()，并返回 EAGAIN，此时线程 B 可能有点困惑(“明明通知我有事件，结果却返回 EAGAIN”)</li>
-<li>线程A：再次执行 accept()，这次终于返回 EAGAIN</li>
-</ol>
-<p>饥饿：</p>
-<ol>
-<li>内核：接收到两个建连请求。线程 A 和 线程 B 两个线程都在等在 epoll_wait()。由于采用边缘触发模式，只有一个线程会被唤醒，我们这里假定线程 A 先被唤醒</li>
-<li>线程A：epoll_wait() 返回</li>
-<li>线程A：调用 accpet() 并且成功</li>
-<li>内核：收到第三个建连请求。由于线程 A 还没有处理完(没有返回 EAGAIN)，当前 socket 还处于可读的状态，由于是边缘触发模式，所有不会产生新的事件</li>
-<li>线程A：继续执行 accept() 希望返回 EAGAIN 再进入 epoll_wait() 等待，然而它又 accept() 成功并处理了一个新连接</li>
-<li>内核：又收到了第四个建连请求</li>
-<li>线程A：又继续执行 accept()，结果又返回成功</li>
-</ol>
-<p>ET的话会要求应用一直要把消息处理完毕，比如nginx用ET模式，来了一个上传大文件并压缩的任务，会造成这么一个循环：</p>
-<pre><code>nginx读数据（未读完）-&gt;Gzip(需要时间，套接字又有数据过来)-&gt;读数据（未读完）-&gt;Gzip .....
-</code></pre><p>新的accpt进来，因为前一个nginx worker已经被唤醒并且还在read(这个时候内核因为accept queue为空所以已经将socket设置成不可读），所以即使其它worker 被唤醒，看到的也是一个不可读的socket，所以很快因为EAGAIN返回了。</p>
-<p>这样就会造成nginx的这个worker假死了一样。如果上传速度慢，这个循环无法持续存在，也就是一旦读完nginx切走（再有数据进来等待下次触发），不会造成假死。</p>
-<p>JDK中的NIO是条件触发（level-triggered），不支持ET。netty，nginx和redis默认是边缘触发（edge-triggered），netty因为JDK不支持ET，所以自己实现了Netty-native的抽象，不依赖JDK来提供ET。</p>
-<p>边缘触发会比条件触发更高效一些，因为边缘触发不会让同一个文件描述符多次被处理,比如有些文件描述符已经不需要再读写了,但是在条件触发下每次都会返回,而边缘触发只会返回一次。</p>
-<p>如果设置边缘触发,则必须将对应的文件描述符设置为非阻塞模式并且循环读取数据。否则会导致程序的效率大大下降或丢消息。</p>
-<p>poll和epoll默认采用的都是条件触发,只是epoll可以修改成边缘触发。条件触发同时支持block和non-block，使用更简单一些。</p>
-<h3 id="epoll-LT惊群的发生"><a href="#epoll-LT惊群的发生" class="headerlink" title="epoll LT惊群的发生"></a>epoll LT惊群的发生</h3><pre><code>// 否则会阻塞在IO系统调用，导致没有机会再epoll
-set_socket_nonblocking(sd);
-epfd = epoll_create(64);
-event.data.fd = sd;
-epoll_ctl(epfd, EPOLL_CTL_ADD, sd, &amp;event);
-while (1) {
-    epoll_wait(epfd, events, 64, xx);
-    ... // 危险区域！如果有共享同一个epfd的进程/线程调用epoll_wait，它们也将会被唤醒！
-    // 这个accept将会有多个进程/线程调用，如果并发请求数很少，那么将仅有几个进程会成功：
-    // 1. 假设accept队列中有n个请求，则仅有n个进程能成功，其它将全部返回EAGAIN (Resource temporarily unavailable)
-    // 2. 如果n很大(即增加请求负载)，虽然返回EAGAIN的比率会降低，但这些进程也并不一定取到了epoll_wait返回当下的那个预期的请求。
-    csd = accept(sd, &amp;in_addr, &amp;in_len); 
-    ...
-}
-</code></pre><p>再看一遍LT的描述“如果事件来了，不管来了几个，只要仍然有未处理的事件，epoll都会通知你。”，显然，epoll_wait刚刚取到事件的时候的时候，不可能马上就调用accept去处理，事实上，逻辑在epoll_wait函数调用的ep_poll中还没返回的，这个时候，显然符合“仍然有未处理的事件”这个条件，显然这个时候为了实现这个语义，需要做的就是通知别的同样阻塞在同一个epoll句柄睡眠队列上的进程！在实现上，这个语义由两点来保证：</p>
-<p>保证1：在LT模式下，“就绪链表”上取出的epi上报完事件后会重新加回“就绪链表”；<br>保证2：如果“就绪链表”不为空，且此时有进程阻塞在同一个epoll句柄的睡眠队列上，则唤醒它。</p>
-<p>epoll LT模式下有进程被不必要唤醒，这一点并不是内核无意而为之的，内核肯定是知道这件事的，这个并不像之前accept惊群那样算是内核的一个缺陷。epoll LT模式只是提供了一种模式，误用这种模式将会造成类似惊群那样的效应。但是不管怎么说，为了讨论上的方便，后面我们姑且将这种效应称作epoll LT惊群吧。</p>
-<h3 id="epoll-ET模式可以解决上面的问题，但是带来了新的麻烦"><a href="#epoll-ET模式可以解决上面的问题，但是带来了新的麻烦" class="headerlink" title="epoll ET模式可以解决上面的问题，但是带来了新的麻烦"></a>epoll ET模式可以解决上面的问题，但是带来了新的麻烦</h3><p>由于epi entry的callback即ep_poll_callback所做的事情仅仅是将该epi自身加入到epoll句柄的“就绪链表”，同时唤醒在epoll句柄睡眠队列上的task，所以这里并不对事件的细节进行计数，比如说，<strong>如果ep_poll_callback在将一个epi加入“就绪链表”之前发现它已经在“就绪链表”了，那么就不会再次添加，因此可以说，一个epi可能pending了多个事件，注意到这点非常重要！</strong></p>
-<p>一个epi上pending多个事件，这个在LT模式下没有任何问题，因为获取事件的epi总是会被重新添加回“就绪链表”，那么如果还有事件，在下次check的时候总会取到。然而对于ET模式，仅仅将epi从“就绪链表”删除并将事件本身上报后就返回了，因此如果该epi里还有事件，则只能等待再次发生事件，进而调用ep_poll_callback时将该epi加入“就绪队列”。这意味着什么？</p>
-<p>这意味着，应用程序，即epoll_wait的调用进程必须自己在获取事件后将其处理干净后方可再次调用epoll_wait，否则epoll_wait不会返回，而是必须等到下次产生事件的时候方可返回。这会导致事件堆积，所以一般会死循环一直拉取事件，直到拉取不到了再返回。</p>
-<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://www.atatech.org/articles/157349" target="_blank" rel="external">Epoll is fundamentally broken</a> </p>
-<p><a href="https://idea.popcount.org/2017-02-20-epoll-is-fundamentally-broken-12" target="_blank" rel="external">Epoll is fundamentally broken 1/2</a> </p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;epoll的LT和ET&quot;&gt;&lt;a href=&quot;#epoll的LT和ET&quot; class=&quot;headerlink&quot; title=&quot;epoll的LT和ET&quot;&gt;&lt;/a&gt;epoll的LT和ET&lt;/h1&gt;&lt;ul&gt;
-&lt;li&gt;&lt;p&gt;LT水平触发(翻译为 条件触发 更合适） &lt;/p&gt;
-    
-    </summary>
-    
-      <category term="Linux" scheme="http://yoursite.com/categories/Linux/"/>
-    
-    
-      <category term="epoll" scheme="http://yoursite.com/tags/epoll/"/>
-    
-      <category term="惊群" scheme="http://yoursite.com/tags/%E6%83%8A%E7%BE%A4/"/>
-    
-      <category term="nginx" scheme="http://yoursite.com/tags/nginx/"/>
-    
-      <category term="reuseport" scheme="http://yoursite.com/tags/reuseport/"/>
-    
-      <category term="EPOLLEXCLUSIVE" scheme="http://yoursite.com/tags/EPOLLEXCLUSIVE/"/>
-    
-      <category term="条件触发" scheme="http://yoursite.com/tags/%E6%9D%A1%E4%BB%B6%E8%A7%A6%E5%8F%91/"/>
-    
-      <category term="边缘触发" scheme="http://yoursite.com/tags/%E8%BE%B9%E7%BC%98%E8%A7%A6%E5%8F%91/"/>
-    
-      <category term="LT" scheme="http://yoursite.com/tags/LT/"/>
-    
-      <category term="ET" scheme="http://yoursite.com/tags/ET/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>如何在工作中学习-2019V2版</title>
-    <link href="http://yoursite.com/2019/12/09/%E5%A6%82%E4%BD%95%E5%9C%A8%E5%B7%A5%E4%BD%9C%E4%B8%AD%E5%AD%A6%E4%B9%A0-2019V2%E7%89%88/"/>
-    <id>http://yoursite.com/2019/12/09/如何在工作中学习-2019V2版/</id>
-    <published>2019-12-09T04:30:03.000Z</published>
-    <updated>2020-04-17T12:37:34.649Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="如何在工作中学习-2019V2版"><a href="#如何在工作中学习-2019V2版" class="headerlink" title="如何在工作中学习-2019V2版"></a>如何在工作中学习-2019V2版</h1><p><a href="https://plantegg.github.io/2018/05/23/%E5%A6%82%E4%BD%95%E5%9C%A8%E5%B7%A5%E4%BD%9C%E4%B8%AD%E5%AD%A6%E4%B9%A0/" target="_blank" rel="external">2018版简单一些，可以看这里</a>，2019版加入了一些新的理解和案例，目的是想要让文章中所说的不是空洞的口号，而是可以具体执行的命令，拉平对读者的要求。</p>
-<blockquote>
-<p>先说一件值得思考的事情：高考的时候大家都是一样的教科书，同一个教室，同样的老师辅导，时间精力基本差不多，可是最后别人考的是清华北大或者一本，而你的实力只能考个三本，为什么？ 当然这里主要是智商的影响，那么其他因素呢？智商解决的问题能不能后天用其他方式来补位一下？</p>
-</blockquote>
-<p>学习的闭环：先了解知识，再实战演练，然后总结复盘。很多时候只是停留在知识学习层面，没有实践，或者实践后没有思考复盘优化，都导致无法深入的理解掌握知识点(from: 瑾妤)</p>
-<h2 id="关键问题点"><a href="#关键问题点" class="headerlink" title="关键问题点"></a>关键问题点</h2><h3 id="为什么你的知识积累不了？"><a href="#为什么你的知识积累不了？" class="headerlink" title="为什么你的知识积累不了？"></a>为什么你的知识积累不了？</h3><p>有些知识看过就忘、忘了再看，实际碰到问题还是联系不上这个知识，这其实是知识的积累出了问题，没有深入的理解自然就不能灵活运用，也就谈不上解决问题了。这跟大家一起看相同的高考教科书但是高考结果不一样是一个原因。问题出在了理解上，每个人的理解能力不一样（智商），绝大多数人对知识的理解要靠不断地实践（做题）来巩固。</p>
-<h3 id="同样实践效果不一样？"><a href="#同样实践效果不一样？" class="headerlink" title="同样实践效果不一样？"></a>同样实践效果不一样？</h3><p>同样工作一年碰到了10个问题（或者说做了10套高考模拟试卷），但是结果不一样，那是因为在实践过程中方法不够好。或者说你对你为什么做对了、为什么做错了没有去复盘</p>
-<p>假如碰到一个问题，身边的同事解决了，而我解决不了。那么我就去想这个问题他是怎么解决的，他看到这个问题后的逻辑和思考是怎么样的，有哪些知识指导了他这么逻辑推理，这些知识哪些我也知道但是我没有想到这么去运用推理（说明我对这个知识理解的不到位导致灵活运用缺乏）；这些知识中又有哪些是我不知道的（知识缺乏，没什么好说的快去Google什么学习下–有场景案例和目的加持，学习理解起来更快）。</p>
-<p>等你把这个问题基本按照你同事掌握的知识和逻辑推理想明白后，需要再去琢磨一下他的逻辑推理解题思路中有没有不对的，有没有啰嗦的地方，有没有更直接的方式（对知识更好地运用）。</p>
-<p>我相信每个问题都这么去实践的话就不应该再抱怨灵活运用、举一反三，同时知识也积累下来了，这种场景下积累到的知识是不会那么容易忘记的。</p>
-<p>这就是向身边的牛人学习，同时很快超过他的办法。这就是为什么高考前你做了10套模拟题还不如其他人做一套的效果好</p>
-<p><strong>知识+逻辑 基本等于你的能力</strong>，知识让你知道那个东西，逻辑让你把东西和问题联系起来</p>
-<p><strong>这里的问题你可以理解成方案、架构、设计等</strong></p>
-<h3 id="系统化的知识哪里来？"><a href="#系统化的知识哪里来？" class="headerlink" title="系统化的知识哪里来？"></a>系统化的知识哪里来？</h3><p>知识之间是可以联系起来的并且像一颗大树一样自我生长，但是当你都没理解透彻，自然没法产生联系，也就不能够自我生长了。</p>
-<p>真正掌握好的知识点会慢慢生长连接最终组成一张大网</p>
-<p>但是我们最容易陷入的就是掌握的深度、系统化（工作中碎片时间过多，学校里缺少时间）不够，所以一个知识点每次碰到花半个小时学习下来觉得掌握了，但是3个月后就又没印象了。总是感觉自己在懵懵懂懂中，或者一个领域学起来总是不得要领，根本的原因还是在于：宏观整体大图了解不够（缺乏体系，每次都是盲人摸象）；关键知识点深度不够，理解不透彻，这些关键点就是这个领域的骨架、支点、抓手。缺了抓手自然不能生长，缺了宏观大图容易误入歧途。</p>
-<p>我们有时候发现自己在某个领域学起来特别快，但是换个领域就总是不得要领，问题出在了上面，即使花再多时间也是徒然。这也就是为什么学霸看两个小时的课本比你看两天效果还好，感受下来还觉得别人好聪明，是不是智商比我高啊。</p>
-<p>所以新进入一个领域的时候要去找他的大图和抓手。</p>
-<p>好的同事总是能很轻易地把这个大图交给你，再顺便给你几个抓手，你就基本入门了，这就是培训的魅力，这种情况肯定比自学效率高多了。但是目前绝大部分的培训都做不到这点</p>
-<h3 id="好的逻辑又怎么来？"><a href="#好的逻辑又怎么来？" class="headerlink" title="好的逻辑又怎么来？"></a>好的逻辑又怎么来？</h3><p>实践、复盘</p>
-<h2 id="讲个前同事的故事"><a href="#讲个前同事的故事" class="headerlink" title="讲个前同事的故事"></a>讲个前同事的故事</h2><p>有一个前同事是5Q过来的，负责技术（所有解决不了的问题都找他），这位同学从chinaren出道，跟着王兴一块创业5Q，5Q在学校靠鸡腿打下大片市场，最后被陈一舟的校内收购（据说被收购后5Q的好多技术都走了，最后王兴硬是呆在校内网把合约上的所有钱都拿到了）。这位同学让我最佩服的解决问题的能力，好多问题其实他也不一定就擅长，但是他就是有本事通过Help、Google不停地验证尝试就把一个不熟悉的问题给解决了，这是我最羡慕的能力，在后面的职业生涯中一直不停地往这个方面尝试。</p>
-<h3 id="应用刚启动连接到数据库的时候比较慢，但又不是慢查询"><a href="#应用刚启动连接到数据库的时候比较慢，但又不是慢查询" class="headerlink" title="应用刚启动连接到数据库的时候比较慢，但又不是慢查询"></a>应用刚启动连接到数据库的时候比较慢，但又不是慢查询</h3><ol>
-<li>这位同学的解决办法是通过tcpdump来分析网络包，看网络包的时间戳和网络包的内容，然后找到了具体卡在了哪里。</li>
-<li>如果是专业的DBA可能会通过show processlist 看具体连接在做什么，比如看到这些连接状态是 <strong>authentication</strong> 状态，然后再通过Google或者对这个状态的理解知道创建连接的时候MySQL需要反查IP、域名这里比较耗时，通过配置参数 <strong>skip-name-resolve</strong> 跳过去就好了。</li>
-<li><p>如果是MySQL的老司机，一上来就知道连接慢的话跟 <strong>skip-name-resolve</strong> 关系最大。</p>
-<p> 在我眼里这三种方式都解决了问题，最后一种最快但是纯靠积累和经验，换个问题也许就不灵了；第一种方式是最牛逼和通用的，只需要最少的知识就把问题解决了。</p>
-</li>
-</ol>
-<p>我当时跟着他从sudo、ls等linux命令开始学起。当然我不会轻易去打搅他问他，每次碰到问题我尽量让他在我的电脑上来操作，解决后我再自己复盘，通过history调出他的所有操作记录，看他在我的电脑上用Google搜啥了，然后一个个去学习分析他每个动作，去想他为什么搜这个关键字，复盘完还有不懂的再到他面前跟他面对面的讨论他为什么要这么做，指导他这么做的知识和逻辑又是什么。</p>
-<h2 id="如何向身边的同学学习"><a href="#如何向身边的同学学习" class="headerlink" title="如何向身边的同学学习"></a>如何向身边的同学学习</h2><h3 id="钉钉提问的技巧"><a href="#钉钉提问的技巧" class="headerlink" title="钉钉提问的技巧"></a>钉钉提问的技巧</h3><p>我进现在的公司的时候是个网络小白，但是业务需要我去解决这些问题，于是我就经常在钉钉上找内部的专家来帮请教一些问题，首先要感谢他们的耐心，同时我觉得跟他们提问的时候的方法大家可以参考一下。</p>
-<p>首先，没有客套直奔主题把问题描述清楚，钉钉消息本来就不是即时的，就不要问在不在、能不能问个问题、你好（因为这些问题会浪费他一次切换，真要客套把 你好 写在问题前面在一条消息中发出去）。</p>
-<p>其次，我会截图把现象接下来，关键部分红框标明。如果是内部机器还会帮对方申请登陆账号，打通ssh登陆，然后把ssh登陆命令和触发截图现象命令的文字一起钉钉发过去。也就是对方收到我的消息，看到截图的问题后，他只要复制粘贴我发给他的文字信息就看到现象了。为什么要帮他申请账号，有时候账号要审批，要找人，对方不知道到哪里申请等等；这么复杂对方干脆就装作没看见你的消息好了。</p>
-<p>为什么还要把ssh登陆命令、重现文字命令发给他呢，怕他敲错啊，敲错了还得来问你，一来一回时间都浪费了。你也许会说我截图上有重现命令啊，那么凭什么他帮你解决问题他还要瞪大眼睛看你的截图把你的命令抄下来？比如容器ID一长串，你是截图了，结果他把b抄成6了，重现不了，还得问你，又是几个来回……</p>
-<p>提完问题后有三种情况：抱歉，我也不知道；这个问题你要问问谁，他应该知道；沉默</p>
-<p>没关系钉钉的优势是复制粘贴方便，你就换个人再问，可能问到第三个人终于搞定了。那么我会回来把结果告诉前面我问过的同学，即使他是沉默的那个。因为我骚扰过人家，要回来填这个坑，另外也许他真的不知道，那么同步给他也可以帮到他。结果就是他觉得我很靠谱，信任度就建立好了，下次再有问题会更卖力地一起来解决。</p>
-<h4 id="一些不好的"><a href="#一些不好的" class="headerlink" title="一些不好的"></a>一些不好的</h4><p>有个同学看了我的文章（晚上11点看的），马上发了钉钉消息过来问文章中用到的工具是什么。我还没睡觉但是躺床上看东西，有钉钉消息提醒，但没有切过去回复（不想中断我在看的东西）。5分钟后这个同学居然钉了我一下，我当时是很震惊的，这是你平时学习，不是我的产品出了故障，现在晚上11点。</p>
-<p>提问题的时间要考虑对方大概率在电脑前，打字快。否则要紧的话就提选择题类型的问题</p>
-<p>问题要尽量是封闭的，比如钉钉上不适合问的问题：</p>
-<ul>
-<li>为什么我们应用的TPS压不上去，即使CPU还有很多空闲（不好的原因：太开放，原因太多，对方要打字2000才能给你解释清楚各种可能的原因，你要不是他老板就不要这样问了）</li>
-<li>用多条消息来描述一个问题，一次没把问题描述清楚，需要对方中断多次</li>
-</ul>
-<h2 id="场景式学习、体感的来源、面对问题学习"><a href="#场景式学习、体感的来源、面对问题学习" class="headerlink" title="场景式学习、体感的来源、面对问题学习"></a>场景式学习、体感的来源、面对问题学习</h2><p>前面提到的对知识的深入理解这有点空，如何才能做到深入理解？</p>
-<h3 id="举个学习TCP三次握手例子"><a href="#举个学习TCP三次握手例子" class="headerlink" title="举个学习TCP三次握手例子"></a>举个学习TCP三次握手例子</h3><p>经历稍微丰富点的工程师都觉得TCP三次握手看过很多次、很多篇文章了，但是文章写得再好似乎当时理解了，但是总是过几个月就忘了或者一看就懂，过一阵子被人一问就模模糊糊了，或者两个为什么就答不上了，自己都觉得自己的回答是在猜或者不确定</p>
-<p>为什么会这样呢？而学其它知识就好通畅多了，我觉得这里最主要的是我们对TCP缺乏体感，比如没有几个工程师去看过TCP握手的代码，也没法想象真正的TCP握手是如何在电脑里运作的（打电话能给你一些类似的体感，但是细节覆盖面不够）。</p>
-<p>如果这个时候你一边学习的时候一边再用wireshark抓包看看三次握手具体在干什么，比抽象的描述实在多了，你能看到具体握手的一来一回，并且看到一来一回带了哪些内容，这些内容又是用来做什么、为什么要带，这个时候你再去看别人讲解的理论顿时会觉得好理解多了，以后也很难忘记。</p>
-<p>但是这里很多人执行能力不强，想去抓包，但是觉得要下载安装wireshark，要学习wireshark就放弃了。只看不动手当然是最舒适的，但是这个最舒适给了你在学习的假象，没有结果。</p>
-<p>这是不是跟你要解决一个难题非常像，这个难题需要你去做很多事，比如下载源代码（翻不了墙，放弃）；比如要编译（还要去学习那些编译参数，放弃）；比如要搭建环境（太琐屑，放弃）。你看这中间九九八十一难你放弃了一难都取不了真经。这也是为什么同样学习、同样的问题，他能学会，他能解决，你不可以。</p>
-<h3 id="再来看一个解决问题的例子"><a href="#再来看一个解决问题的例子" class="headerlink" title="再来看一个解决问题的例子"></a>再来看一个解决问题的例子</h3><p><a href="https://www.atatech.org/articles/73174" target="_blank" rel="external">会员系统双11优化这个问题</a>对我来说，我是个外来者，完全不懂这里面的部署架构、业务逻辑。但是在问题的关键地方（会员认为自己没问题–压力测试正常的；淘宝API更是认为自己没问题，alimonitor监控显示正常），结果就是会员的同学说我们没有问题，淘宝API肯定有问题，然后就不去思考自己这边可能出问题的环节了。思想上已经甩包了，那么即使再去review流程、环节也就不会那么仔细，自然更是发现不了问题了。</p>
-<p>但是我的经验告诉我要有证据地甩包，或者说拿着证据优雅地甩包，这迫使我去找更多的细节证据（证据要给力哦，不能让人家拍回来）。如果我是这么说的，这个问题在淘宝API这里，你看理由是…………，我做了这些实验，看到了这些东东。那么淘宝API那边想要证明我的理由错了就会更积极地去找一些数据。</p>
-<p>事实上我就是做这些实验找证据过程中发现了会员的问题，这就是态度、执行力、知识、逻辑能力综合下来拿到的一个结果。我最不喜欢的一句话就是我的程序没问题，因为我的逻辑是这样的，不会错的。你当然不会写你知道的错误逻辑，程序之所以有错误都是在你的逻辑、意料之外的东西。有很多次一堆人电话会议中扯皮的时候，我一般把电话静音了，直接上去人肉一个个过对方的逻辑，一般来说电话会议还没有结束我就给出来对方逻辑之外的东西。</p>
-<h3 id="场景式学习"><a href="#场景式学习" class="headerlink" title="场景式学习"></a>场景式学习</h3><p>我带2岁的小朋友看刷牙的画本的时候，小朋友理解不了喝口水含在嘴里咕噜咕噜不要咽下去，然后刷牙的时候就都喝下去了。我讲到这里的时候立马放下书把小朋友带到洗手间，先开始我自己刷牙了，示范一下什么是咕噜咕噜（放心，他还是理解不了的，但是至少有点感觉了，水在口里会响，然后水会吐出来）。示范完然后辅导他刷牙，喝水的时候我和他一起直接低着头，喝水然后立马水吐出来了，让他理解了到嘴里的东西不全是吞下去的。然后喝水晃脑袋，有点声音了（离咕噜咕噜不远了）。训练几次后小朋友就理解了咕噜咕噜，也学会了咕噜咕噜。这就是场景式学习的魅力。</p>
-<p>很多年前我有一次等电梯，边上还有一个老太太，一个年轻的妈妈带着一个4、5岁的娃。应该是刚从外面玩了回来，妈妈在教育娃娃刚刚在外面哪里做错了，那个小朋友也是气嘟嘟地。进了电梯后都不说话，小朋友就开始踢电梯。这个时候那个年轻的妈妈又想开始教育小朋友了。这时老太太教育这个妈妈说，这是小朋友不高兴，做出的反抗，就是想要用这个方式抗议刚刚的教育或者挑逗起妈妈的注意。这个时候要忽视他，不要去在意，他踢几下后（虽然没有公德这么小懂不了这么多）脚也疼还没人搭理他这个动作，就觉得真没劲，可能后面他都不踢电梯了，觉得这是一个非常无聊还挨疼的事情。那么我在这个场景下立马反应过来，这就是很多以前我对一些小朋友的行为不理解的原因啊，这比书上看到的深刻多了。就是他们生气了在那里做妖挑逗你骂他、打他或者激怒你来吸引大人的注意力。</p>
-<h2 id="钉子式学习方法和系统性学习方法"><a href="#钉子式学习方法和系统性学习方法" class="headerlink" title="钉子式学习方法和系统性学习方法"></a>钉子式学习方法和系统性学习方法</h2><p>系统性就是想掌握MySQL，那么搞几本MySQL专著和MySQL 官方DOC看下来，一般课程设计的好的话还是比较容易普遍性地掌握下来，绝大部分时候都是这种学习方法，可是问题在于在种方式下学完后当时看着似乎理解了，但是很容易忘记，一片一片地系统性的忘记。还是一般人对知识的理解没那么容易真正理解。</p>
-<p>钉子式的学习方式，就是在一大片知识中打入几个桩，反复演练将这个桩不停地夯实，夯温，做到在这个知识点上用通俗的语言跟小白都能讲明白，然后在这几个桩中间发散像星星之火燎原一样把整个一片知识都掌握下来。这种学习方法的缺点就是很难找到一片知识点的这个点，然后没有很好整合的话知识过于零散。</p>
-<p>我们常说的一个人很聪明，就是指系统性的看看书就都理解了，是真的理解那种，还能灵活运用，但是大多数普通人就不是这样的，看完书似乎理解了，实际几周后基本都忘记了，真正实践需要用的时候还是用不好。</p>
-<p>实际这两种学习方法要互相结合，对普通人来讲钉子式学习方法更好一些，掌握几个钉子后再系统性地学习也容易多了；对非常聪明的人来说系统性地学习效率更高一些。</p>
-<h3 id="举个Open-SSH的例子"><a href="#举个Open-SSH的例子" class="headerlink" title="举个Open-SSH的例子"></a>举个Open-SSH的例子</h3><p>为了做通 SSH 的免密登陆，大家都需要用到 ssh-keygen/ssh-copy-id， 如果我们把这两个命令当一个小的钉子的话，会去了解ssh-keygen做了啥（生成了密钥对），或者ssh-copy-id 的时候报错了（原来是需要秘钥对），然后将 ssh-keygen 生成的pub key复制到server的~/.ssh/authorized_keys 中。</p>
-<p>然后你应该会对这个原理要有一些理解（更大的钉子），于是理解了密钥对，和ssh验证的流程，顺便学会怎么看ssh debug信息，那么接下来网络上各种ssh攻略、各种ssh卡顿的解决都是很简单的事情了。</p>
-<p>比如你通过SSH可以解决这些问题：</p>
-<ul>
-<li>免密登陆</li>
-<li>ssh卡顿</li>
-<li>怎么去掉ssh的时候需要手工多输入yes</li>
-<li>怎么样一次登录，多次复用</li>
-<li>我的ssh怎么很快就断掉了</li>
-<li>我怎么样才能一次通过跳板机ssh到目标机器</li>
-<li>我怎么样通过ssh科学上网</li>
-<li>我的ansible（底层批量命令都是基于ssh）怎么这么多问题，到底是为什么</li>
-<li>我的git怎么报网络错误了</li>
-<li>xshell我怎么配置不好</li>
-<li>https为什么需要随机数加密，还需要签名</li>
-<li>…………</li>
-</ul>
-<p>这些问题都是一步步在扩大ssh的外延，让这个钉子变成一个巨大的桩。</p>
-<p>然后就会学习到一些<a href="https://plantegg.github.io/2018/06/02/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82SSH--SSH%E8%8A%B1%E5%BC%8F%E7%8E%A9%E6%B3%95/" target="_blank" rel="external">高级一些的ssh配置</a>，比如干掉经常ssh的时候要yes一下(StrictHostKeyChecking=no), 或者怎么配置一下ssh就不会断线了（ServerAliveInterval=15），或者将 ssh跳板机-&gt;ssh server的过程做成 ssh server一步就可以了(ProxyCommand)，进而发现用 ssh的ProxyCommand很容易科学上网了，或者git有问题的时候轻而易举地把ssh debug打开，对git进行debug了……</p>
-<p>这基本都还是ssh的本质范围，像ansible、git在底层都是依赖ssh来通讯的，你会发现学、调试xshell、ansible和git简直太容易了。</p>
-<p>另外理解了ssh的秘钥对，也就理解了非对称加密，同时也很容易理解https流程（SSL），同时知道对称和非对称加密各自的优缺点，SSL为什么需要用到这两种加密算法了。</p>
-<p>你看一个简单日常的知识我们只要沿着它用钉子精神，深挖细挖你就会发现知识之间的连接，这个小小的知识点成为你知识体系的一根结实的柱子。</p>
-<p>我见过太多的老的工程师、年轻的工程师，天天在那里ssh 密码，ssh 跳板机，ssh 目标机，一小会ssh断了，重来一遍；或者ssh后卡住了，等吧……</p>
-<p>在这个问题上表现得没有求知欲、没有探索精神、没有一次把问题搞定的魄力，所以就习惯了</p>
-<h2 id="空洞的口号"><a href="#空洞的口号" class="headerlink" title="空洞的口号"></a>空洞的口号</h2><p>很多文章都会教大家：举一反三、灵活运用、活学活用、多做多练。但是只有这些口号是没法落地的，落地的基本原则就是前面提到的，却总是被忽视了。</p>
-<h2 id="什么是工程效率，什么是知识效率"><a href="#什么是工程效率，什么是知识效率" class="headerlink" title="什么是工程效率，什么是知识效率"></a>什么是工程效率，什么是知识效率</h2><p>有些人纯看理论就能掌握好一门技能，还能举一反三，这是知识效率，这种人非常少；</p>
-<p>大多数普通人都是看点知识然后结合实践来强化理论，要经过反反复复才能比较好地掌握一个知识，这就是工程效率，讲究技巧、工具来达到目的。</p>
-<p>肯定知识效率最牛逼，但是拥有这种技能的人毕竟非常少（天生的高智商吧）。从小我们周边那种不怎么学的学霸型基本都是这类，这种学霸都还能触类旁通非常快的掌握一个新知识，非常气人。剩下的绝大部分只能拼时间+方法+总结等也能掌握一些知识</p>
-<p>非常遗憾我就是工程效率型，只能羡慕那些知识效率型的学霸。但是这事又不能独立看待有些人在某些方向上是工程效率型，有些方向就又是知识效率型（有一种知识效率型是你掌握的实在太多也就比较容易触类旁通了，这算灰色知识效率型）</p>
-<p>使劲挖掘自己在知识效率型方面的能力吧，两者之间当然没有明显的界限，知识积累多了逻辑训练好了在别人看来你的智商就高了</p>
-<h2 id="为什么看电影注意力特别好，做正事注意力集中不了"><a href="#为什么看电影注意力特别好，做正事注意力集中不了" class="headerlink" title="为什么看电影注意力特别好，做正事注意力集中不了"></a>为什么看电影注意力特别好，做正事注意力集中不了</h2><p>首先接受这个现实，医学上把这叫作注意力缺失症，基本所有人都有这种毛病，因为做正事比较枯燥、困难，让人不舒服，集中不了注意力，逃避很正常！</p>
-<p>改善方法：做笔记、收集素材、写作</p>
-<h2 id="极易被手机、微博、朋友圈干扰"><a href="#极易被手机、微博、朋友圈干扰" class="headerlink" title="极易被手机、微博、朋友圈干扰"></a>极易被手机、微博、朋友圈干扰</h2><p>意志力—还没有好办法</p>
-<h2 id="改变条件反射，多逻辑思考"><a href="#改变条件反射，多逻辑思考" class="headerlink" title="改变条件反射，多逻辑思考"></a>改变条件反射，多逻辑思考</h2><p>有科学家通过研究，发现一个人一天的行为中，5%是非习惯性的，用思考脑的逻辑驱动，95%是习惯性的，用反射脑的直觉驱动，决定我们一生的，永远是95%的反射脑（习惯），而不是5%的思考脑（逻辑）</p>
-<p>互联网+手机时代：浏览信息的时间多了，自己思考和琢磨的时间少了，专注在无效事情上的时间多了，专注在自我成长上的时间少了。</p>
-<h2 id="容易忘记"><a href="#容易忘记" class="headerlink" title="容易忘记"></a>容易忘记</h2><p>学东西当时感觉很好，但是过几周基本都忘记了</p>
-<p>这很正常，主要还是理解不够，理解不够也正常，这就是普通人的智商和理解能力。</p>
-<p>改善：做笔记，利用碎片时间回顾</p>
-<p>总结成系统性的文章，知识体系化，不会再忘记了。</p>
-<h2 id="执行力和自律"><a href="#执行力和自律" class="headerlink" title="执行力和自律"></a>执行力和自律</h2><p>执行力和自律在我们的工作和生活中出现的频率非常高，因为这是我们成长或做成事时必须要有的2个关键词，但是很长一段时间里，对于提升执行力，疑惑很大。同时在工作场景中可能会被老板多次要求提升执行力，抽象又具体，但往往只有提升执行力的要求没有如何提升的方法和认知，这是普遍点到即止的现象，普遍提升不了执行力的现象。</p>
-<p>“要有执行力”就是一句空话，谁都想，但是臣妾做不到。</p>
-<p>人生由成长（学习）和享受（比如看电影、刷朋友圈）构成，成长太艰难，享受就很自然符合人性</p>
-<p>怎么办？</p>
-<pre><code>划重点：执行力就是想明白，然后一步一步做下去。
-</code></pre><h2 id="跳出舒适区"><a href="#跳出舒适区" class="headerlink" title="跳出舒适区"></a>跳出舒适区</h2><p>重复、没有进步的时候就是舒适区，人性就是喜欢适合自己、符合自己技能的环境，解决问题容易；对陌生区域有恐惧感。</p>
-<p>有时候是缺机会和场景驱动自我去学习，要找到从舒适到陌生区域的交融点，慢慢跨出去。<br>比如从自己熟悉的知识体系中入手，从已有的抓手和桩开始突击不清楚的问题，也就是横向、纵向多深挖，自然恐惧区就越来越小了，舒适区慢慢在扩张</p>
-<h2 id="养成写文章的习惯非常重要"><a href="#养成写文章的习惯非常重要" class="headerlink" title="养成写文章的习惯非常重要"></a>养成写文章的习惯非常重要</h2><p>对自我碎片知识的总结、加深理解的良机，将知识体系化、结构化，形成知识体系中的抓手、桩。</p>
-<p>缺的不是鸡汤，而是勺子，勺子就是具体的步骤，可以复制，对人、人性要求很低的动作。</p>
-<p>生活本质是生产（工作学习成长）和消费(娱乐、刷朋友圈等)，消费总是符合人性的，当是对自己的适当奖励，不要把自己搞成机器人</p>
-<p>可以做的是生产的时候效率更高</p>
-<h2 id="知识分两种"><a href="#知识分两种" class="headerlink" title="知识分两种"></a>知识分两种</h2><p>一种是通用知识（不是说对所有人通用，而是说在一个专业领域去到哪个公司都能通用）；另外一种是跟业务公司绑定的特定知识</p>
-<p>通用知识没有任何疑问碰到后要非常饥渴地扑上去掌握他们（受益终生，这还有什么疑问吗？）。对于特定知识就要看你对业务需要掌握的深度了，肯定也是需要掌握一些的，特定知识掌握好的一般在公司里混的也会比较好</p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;如何在工作中学习-2019V2版&quot;&gt;&lt;a href=&quot;#如何在工作中学习-2019V2版&quot; class=&quot;headerlink&quot; title=&quot;如何在工作中学习-2019V2版&quot;&gt;&lt;/a&gt;如何在工作中学习-2019V2版&lt;/h1&gt;&lt;p&gt;&lt;a href=&quot;https
-    
-    </summary>
-    
-      <category term="技巧" scheme="http://yoursite.com/categories/%E6%8A%80%E5%B7%A7/"/>
-    
-    
-      <category term="实践" scheme="http://yoursite.com/tags/%E5%AE%9E%E8%B7%B5/"/>
-    
-      <category term="复盘" scheme="http://yoursite.com/tags/%E5%A4%8D%E7%9B%98/"/>
-    
-      <category term="逻辑" scheme="http://yoursite.com/tags/%E9%80%BB%E8%BE%91/"/>
-    
-      <category term="知识积累" scheme="http://yoursite.com/tags/%E7%9F%A5%E8%AF%86%E7%A7%AF%E7%B4%AF/"/>
-    
-      <category term="案例学习" scheme="http://yoursite.com/tags/%E6%A1%88%E4%BE%8B%E5%AD%A6%E4%B9%A0/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>就是要你懂网络--谁动了我的TCP连接</title>
-    <link href="http://yoursite.com/2019/11/06/%E8%B0%81%E5%8A%A8%E4%BA%86%E6%88%91%E7%9A%84TCP%E8%BF%9E%E6%8E%A5/"/>
-    <id>http://yoursite.com/2019/11/06/谁动了我的TCP连接/</id>
-    <published>2019-11-06T07:30:03.000Z</published>
-    <updated>2020-07-16T05:56:22.211Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="谁动了我的TCP连接"><a href="#谁动了我的TCP连接" class="headerlink" title="谁动了我的TCP连接"></a>谁动了我的TCP连接</h1><p>通过一个案例展示TCP连接是如何被reset的，以及identification、ttl都可以帮我们干点啥。</p>
-<h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><p>用户用navicat从自己访问云上的MySQL的时候，点开数据库总是报错（不是稳定报错，有一定的概率报错）</p>
-<h2 id="抓包"><a href="#抓包" class="headerlink" title="抓包"></a>抓包</h2><p>在 Navicat 机器上抓包如下：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/83b07725d92b9e4d3eb4a504cf83cc09.png" alt="image.png"></p>
-<p>从抓包可以清楚看到 Navicat 发送 Use Database后收到了 MySQL（来自3306端口）的Reset重接连接命令，所以连接强行中断，然后 Navicat报错了。注意图中红框中的 Identification 两次都是13052，先留下不表，这是个线索。</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/53b5dc8e0a90ed9ad641caf38399141b.png" alt="image.png"></p>
-<h2 id="MySQL-Server上抓包"><a href="#MySQL-Server上抓包" class="headerlink" title="MySQL Server上抓包"></a>MySQL Server上抓包</h2><p>特别说明下，MySQL上抓到的不是跟Navicat上抓到的同一次报错，所以报错的端口等会不一样</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/70287488290b38cd4753d9fce0bee945.png" alt="image.png"></p>
-<p>从这个图中可以清楚看到reset是从 Navicat 客户端发过来的，并且 Use Database被拦截了，没有发到MySQL上。</p>
-<p>从这里基本可以判断是客户的防火墙之类的中间设备监控到了关键字之类的触发了防火墙向两边发送了reset，导致了 Navicat 报错。</p>
-<h3 id="如果连接已经断开"><a href="#如果连接已经断开" class="headerlink" title="如果连接已经断开"></a>如果连接已经断开</h3><p>如果连接已经断开后还收到Client的请求包，因为连接在Server上是不存在的，这个时候Server收到这个包后也会发一个reset回去，这个reset的特点是identification是0.</p>
-<h2 id="到底是谁动了这个连接呢？"><a href="#到底是谁动了这个连接呢？" class="headerlink" title="到底是谁动了这个连接呢？"></a>到底是谁动了这个连接呢？</h2><h3 id="得帮客户解决问题"><a href="#得帮客户解决问题" class="headerlink" title="得帮客户解决问题"></a>得帮客户解决问题</h3><p>虽然原因很清楚，但是客户说连本地 MySQL就没这个问题，连你的云上MySQL就这样，你让我们怎么用？你们得帮我们找到是哪个设备。</p>
-<h3 id="线索一-Identification"><a href="#线索一-Identification" class="headerlink" title="线索一 Identification"></a>线索一 Identification</h3><p>还记得第一个截图中的两个相同的identification 13052吧，让我们来看看基础知识：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/eed9ba1f9ba492ed8954ae7f39e72803.png" alt="image.png"></p>
-<p>（摘自 TCP卷一），简单来说这个 identification 用来标识一个连接中的每个包，这个序号按包的个数依次递增，通信双方是两个不同的序列。</p>
-<p>所以如果这个reset是MySQL发出来的话，因为MySQL发出的前一个包的 identification 是23403，所以这个必须是23404，实际上居然是13502（而且还和Navicat发出的 Use Database包是同一个 identification），这是非常不对的。</p>
-<p>所以可以大胆猜测，这里有个中间设备收到 Use Database后触发了不放行的逻辑，于是冒充 Navicat给 MySQL Server发了reset包，src ip/src port/seq等都直接用Navicat的，identification也用Navicat的，所以 MySQL Server收到的 Reset看起来很正常（啥都是对的，没留下一点冒充的痕迹）。</p>
-<p>但是这个中间设备还要冒充MySQL Server给 Navicat 也发个reset，有点难为中间设备了，这个时候中间设备手里只有 Navicat 发出来的包， src ip/src port/seq 都比较好反过来，但是 identification 就不好糊弄了，手里只有 Navicat的，因为 Navicat和MySQL Server是两个序列的 identification，这下中间设备搞不出来MySQL Server的identification，怎么办？ 只能糊弄了，就随手用 Navicat 自己的 identification填回去了（所以看到这么个奇怪的 identification）</p>
-<p>但是这不影响实际连接被reset，也就是验证包的时候不会判断identification的正确性。</p>
-<h3 id="TTL"><a href="#TTL" class="headerlink" title="TTL"></a>TTL</h3><p>说了半天identification还是没解决问题啊，还得进一步找到是哪个机器，我们先来看一个基础知识 TTL(Time-to-Live):</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ed8c624b704b0c94da2ca76a37b39916.png" alt="image.png"></p>
-<p>然后我们再看看 Navicat收到的这个reset包的ttl是63，而正常的MySQL Server回过来的包是47，而发出的第一个包初始ttl是64，所以这里可以很清楚地看到在Navicat 下一跳发出的这个reset</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/b288a740f9f10007485e37fd339051f8.png" alt="image.png"></p>
-<p>既然是下一跳干的直接拿这个包的src mac地址，然后到内网中找这个内网设备就可以了，最终找到是一个锐捷的防火墙。</p>
-<h3 id="扩展一下"><a href="#扩展一下" class="headerlink" title="扩展一下"></a>扩展一下</h3><p>假如这里不是下一跳，而是隔了几跳发过来的reset，那么这个src mac地址就不是发reset设备的mac了，那该怎么办呢？</p>
-<p>可以根据中间的跳数(TTL)，再配合 traceroute 来找到这个设备的ip</p>
-<h2 id="slb主动reset的话"><a href="#slb主动reset的话" class="headerlink" title="slb主动reset的话"></a>slb主动reset的话</h2><p>ttl是102, identification是31415，探活reset不是这样的。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>基础知识很重要，但是知道ttl、identification到会用ttl、identification是两个不同的层次。只是看书的话未必会有很深的印象，实际也不会定会灵活使用。</p>
-<p>平时不要看那么多书，会用才是关键。</p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;谁动了我的TCP连接&quot;&gt;&lt;a href=&quot;#谁动了我的TCP连接&quot; class=&quot;headerlink&quot; title=&quot;谁动了我的TCP连接&quot;&gt;&lt;/a&gt;谁动了我的TCP连接&lt;/h1&gt;&lt;p&gt;通过一个案例展示TCP连接是如何被reset的，以及identificati
-    
-    </summary>
-    
-      <category term="TCP" scheme="http://yoursite.com/categories/TCP/"/>
-    
-    
-      <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
-    
-      <category term="network" scheme="http://yoursite.com/tags/network/"/>
-    
-      <category term="TCP" scheme="http://yoursite.com/tags/TCP/"/>
-    
-      <category term="TTL" scheme="http://yoursite.com/tags/TTL/"/>
-    
-      <category term="identification" scheme="http://yoursite.com/tags/identification/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>该死的错误</title>
-    <link href="http://yoursite.com/2019/11/05/%E8%AF%A5%E6%AD%BB%E7%9A%84virtualbox/"/>
-    <id>http://yoursite.com/2019/11/05/该死的virtualbox/</id>
-    <published>2019-11-05T04:30:03.000Z</published>
-    <updated>2019-11-05T02:13:03.088Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="该死的错误"><a href="#该死的错误" class="headerlink" title="该死的错误"></a>该死的错误</h1><p>virtualbox+ubuntu用了快10年了，各种莫名其妙的问题，一直没有换掉，也怪自己 virtualbox+ubuntu组合也许确实奇葩吧，每次碰到问题都没法google到真正的答案了。</p>
-<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>用的过程中突然发现挂载的数据盘找不到了（主要存放工作文件）， 看历史记录发现自己执行了：</p>
-<pre><code>sudo dd if=/dev/urandom of=/dev/sdb1 bs=1M count=512
-</code></pre><p>/dev/sdb1 对应的正是我的大磁盘，哭死去，怪自己不认识 /dev/sdb1！！ 从来不知道自己挂载的磁盘的真正名字，df -lh 也没仔细看过，导致了这次故障</p>
-<p>出问题的history:</p>
-<pre><code>29214  01/11/19 10:29:05 vi /tmp/tmp.txt
-29215  01/11/19 10:29:18 cat /tmp/tmp.txt |grep &quot;^172.16&quot;
-29216  01/11/19 10:29:27 cat /tmp/tmp.txt |grep &quot;^172.16&quot; &gt;cainiao.txt
-29217  01/11/19 10:29:31 wc -l cainiao.txt
-29218  01/11/19 10:33:13 cat cainiao.txt 
-29219  01/11/19 13:36:55 sudo dd if=/dev/urandom of=/dev/sdb1 bs=1M count=512 //故障发生
-29220  01/11/19 13:37:08 cd ..
-29221  01/11/19 13:37:46 cd / //尝试解决
-29222  01/11/19 19:13:45 ls -lh
-29223  01/11/19 19:13:49 cd ali 
-29224  03/11/19 10:24:56 dmesg
-29225  03/11/19 10:27:28 dmesg |grep -i sda
-29226  03/11/19 10:27:59 dmesg |grep -i sata
-29227  04/11/19 10:19:46 dmesg
-29228  04/11/19 10:20:20 dmesg |grep -i sda
-29229  04/11/19 10:25:21 dmesg 
-29230  04/11/19 10:25:25 dmesg 
-29231  04/11/19 10:25:34 dmesg |grep -i sda
-</code></pre><h2 id="尝试"><a href="#尝试" class="headerlink" title="尝试"></a>尝试</h2><p>各种重启还是无效，重新删掉数据盘再次挂载启动后依然看不见</p>
-<h2 id="mount"><a href="#mount" class="headerlink" title="mount"></a>mount</h2><p>virtualbox的启动参数里明确能看到这快盘，和挂载配置</p>
-<p>启动后通过fdisk可以看见这块大硬盘</p>
-<pre><code>$sudo fdisk -l
-
-Disk /dev/sda: 20 GiB, 21474836480 bytes, 41943040 sectors
-Units: sectors of 1 * 512 = 512 bytes
-Sector size (logical/physical): 512 bytes / 512 bytes
-I/O size (minimum/optimal): 512 bytes / 512 bytes
-Disklabel type: dos
-Disk identifier: 0x01012f4d
-
-Device     Boot    Start      End  Sectors Size Id Type
-/dev/sda1  *        2048 33554431 33552384  16G 83 Linux
-/dev/sda2       33556478 41940991  8384514   4G  5 Extended
-/dev/sda5       33556480 41940991  8384512   4G 82 Linux swap / Solaris
-
-Disk /dev/sdb: 50 GiB, 53687091200 bytes, 104857600 sectors
-Units: sectors of 1 * 512 = 512 bytes
-Sector size (logical/physical): 512 bytes / 512 bytes
-I/O size (minimum/optimal): 512 bytes / 512 bytes
-Disklabel type: dos
-Disk identifier: 0x000e88f6
-
-Device     Boot    Start       End  Sectors Size Id Type
-/dev/sdb1  *        2048  96471039 96468992  46G 83 Linux
-/dev/sdb2       96473086 104855551  8382466   4G  5 Extended
-/dev/sdb5       96473088 104855551  8382464   4G 82 Linux swap / Solaris
-
-Disk /dev/sdc: 50 GiB, 53687091200 bytes, 104857600 sectors
-Units: sectors of 1 * 512 = 512 bytes
-Sector size (logical/physical): 512 bytes / 512 bytes
-I/O size (minimum/optimal): 512 bytes / 512 bytes
-Disklabel type: dos
-Disk identifier: 0x000e88f6
-
-Device     Boot    Start       End  Sectors Size Id Type
-/dev/sdc1  *        2048  96471039 96468992  46G 83 Linux
-/dev/sdc2       96473086 104855551  8382466   4G  5 Extended
-/dev/sdc5       96473088 104855551  8382464   4G 82 Linux swap / Solaris
-</code></pre><p>尝试手工mount （这时看到的才是root cause）</p>
-<pre><code>write-protected, mounting read-only 和 bad superblock 错误
-</code></pre><p>尝试 fsck(危险动作）</p>
-<pre><code>sudo fsck -y /dev/sdb1
-</code></pre><p>然后再次mount成功了</p>
-<pre><code>sudo mount  /dev/sdb1 /media/ren/a64abcac-657d-42ee-8e7b-575eac99bce3
-</code></pre><p>lsblk(修复后）</p>
-<pre><code>$sudo lsblk
-NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
-sda      8:0    0   20G  0 disk 
-├─sda1   8:1    0   16G  0 part /
-├─sda2   8:2    0    1K  0 part 
-└─sda5   8:5    0    4G  0 part [SWAP]
-sdb      8:16   0   50G  0 disk 
-├─sdb1   8:17   0   46G  0 part /media/ren/a64abcac-657d-42ee-8e7b-575eac99bce3
-├─sdb2   8:18   0    1K  0 part 
-└─sdb5   8:21   0    4G  0 part 
-sr0     11:0    1 73.6M  0 rom  /media/ren/VBox_GAs_6.0.10
-</code></pre><p>进到mount后的目录中，查看磁盘大小正常，但是文件看不见了</p>
-<pre><code>du 发现文件都在lost+found目录下，但是文件夹名字都改成了 inode名字
-</code></pre><p>根据文件夹大小找出之前的文件夹（比较大的），将其复制出来，一切正常了</p>
-<h2 id="修复记录"><a href="#修复记录" class="headerlink" title="修复记录"></a>修复记录</h2><p>其中sda是系统盘，sdb是修复后的大磁盘， sdc 是修复前的大磁盘（备份过的）</p>
-<pre><code>$sudo fdisk -l
-
-Disk /dev/sda: 20 GiB, 21474836480 bytes, 41943040 sectors
-Units: sectors of 1 * 512 = 512 bytes
-Sector size (logical/physical): 512 bytes / 512 bytes
-I/O size (minimum/optimal): 512 bytes / 512 bytes
-Disklabel type: dos
-Disk identifier: 0x01012f4d
-
-Device     Boot    Start      End  Sectors Size Id Type
-/dev/sda1  *        2048 33554431 33552384  16G 83 Linux
-/dev/sda2       33556478 41940991  8384514   4G  5 Extended
-/dev/sda5       33556480 41940991  8384512   4G 82 Linux swap / Solaris
-
-Disk /dev/sdb: 50 GiB, 53687091200 bytes, 104857600 sectors
-Units: sectors of 1 * 512 = 512 bytes
-Sector size (logical/physical): 512 bytes / 512 bytes
-I/O size (minimum/optimal): 512 bytes / 512 bytes
-Disklabel type: dos
-Disk identifier: 0x000e88f6
-
-Device     Boot    Start       End  Sectors Size Id Type
-/dev/sdb1  *        2048  96471039 96468992  46G 83 Linux
-/dev/sdb2       96473086 104855551  8382466   4G  5 Extended
-/dev/sdb5       96473088 104855551  8382464   4G 82 Linux swap / Solaris
-
-Disk /dev/sdc: 50 GiB, 53687091200 bytes, 104857600 sectors
-Units: sectors of 1 * 512 = 512 bytes
-Sector size (logical/physical): 512 bytes / 512 bytes
-I/O size (minimum/optimal): 512 bytes / 512 bytes
-Disklabel type: dos
-Disk identifier: 0x000e88f6
-
-Device     Boot    Start       End  Sectors Size Id Type
-/dev/sdc1  *        2048  96471039 96468992  46G 83 Linux
-/dev/sdc2       96473086 104855551  8382466   4G  5 Extended
-/dev/sdc5       96473088 104855551  8382464   4G 82 Linux swap / Solaris
-</code></pre><p>可以看到没有修复的磁盘 uuid不太正常，类型也识别为 dos(正常应该是ext4）</p>
-<pre><code>[ren@vb 18:12 /home/ren]
-$sudo blkid /dev/sdc
-/dev/sdc: PTUUID=&quot;000e88f6&quot; PTTYPE=&quot;dos&quot;
-
-[ren@vb 18:12 /home/ren]
-$sudo blkid /dev/sdc1
-/dev/sdc1: PARTUUID=&quot;000e88f6-01&quot;
-
-[ren@vb 18:12 /home/ren]
-$sudo blkid /dev/sdb
-/dev/sdb: PTUUID=&quot;000e88f6&quot; PTTYPE=&quot;dos&quot;
-
-[ren@vb 18:12 /home/ren]
-$sudo blkid /dev/sdb1
-/dev/sdb1: UUID=&quot;a64abcac-657d-42ee-8e7b-575eac99bce3&quot; TYPE=&quot;ext4&quot; PARTUUID=&quot;000e88f6-01&quot;
-</code></pre><p>尝试mount失败</p>
-<pre><code>[ren@vb 18:14 /home/ren]
-$sudo mkdir /media/ren/hd
-
-[ren@vb 18:15 /home/ren]
-$sudo mount /dev/sd
-sda   sda1  sda2  sda5  sdb   sdb1  sdb2  sdb5  sdc   sdc1  sdc2  sdc5  
-
-[ren@vb 18:15 /home/ren]
-$sudo mount /dev/sdc1 /media/ren/hd
-mount: /dev/sdc1 is write-protected, mounting read-only
-mount: wrong fs type, bad option, bad superblock on /dev/sdc1,
-       missing codepage or helper program, or other error
-
-       In some cases useful info is found in syslog - try
-       dmesg | tail or so.
-</code></pre><p>dmesg中比较正常和不正常的磁盘日志，是看不出来差别的（还没有触发mount动作）</p>
-<pre><code>[ren@vb 18:16 /home/ren]
-$dmesg |grep sdc
-[一 11月  4 18:06:47 2019] sd 4:0:0:0: [sdc] 104857600 512-byte logical blocks: (53.6 GB/50.0 GiB)
-[一 11月  4 18:06:47 2019] sd 4:0:0:0: [sdc] Write Protect is off
-[一 11月  4 18:06:47 2019] sd 4:0:0:0: [sdc] Mode Sense: 00 3a 00 00
-[一 11月  4 18:06:47 2019] sd 4:0:0:0: [sdc] Write cache: enabled, read cache: enabled, doesn&apos;t support DPO or FUA
-[一 11月  4 18:06:47 2019]  sdc: sdc1 sdc2 &lt; sdc5 &gt;
-[一 11月  4 18:06:47 2019] sd 4:0:0:0: [sdc] Attached SCSI disk
-
-[ren@vb 18:17 /home/ren]
-$dmesg |grep sdb
-[一 11月  4 18:06:47 2019] sd 3:0:0:0: [sdb] 104857600 512-byte logical blocks: (53.6 GB/50.0 GiB)
-[一 11月  4 18:06:47 2019] sd 3:0:0:0: [sdb] Write Protect is off
-[一 11月  4 18:06:47 2019] sd 3:0:0:0: [sdb] Mode Sense: 00 3a 00 00
-[一 11月  4 18:06:47 2019] sd 3:0:0:0: [sdb] Write cache: enabled, read cache: enabled, doesn&apos;t support DPO or FUA
-[一 11月  4 18:06:47 2019]  sdb: sdb1 sdb2 &lt; sdb5 &gt;
-[一 11月  4 18:06:47 2019] sd 3:0:0:0: [sdb] Attached SCSI disk
-[一 11月  4 18:07:02 2019] EXT4-fs (sdb1): mounted filesystem without journal. Opts: (null)
-</code></pre><p>复盘捞到的 syslog 日志</p>
-<pre><code>Nov  4 18:06:57 vb systemd[1]: Device dev-disk-by\x2duuid-5241a10b\x2d5dde\x2d4051\x2d8d8b\x2d05718dd56445.device appeared twice with different sysfs paths /sys/devices/pci0000:00/0000:00:0d.0/ata4/host3/target3:0:0/3:0:0:0/block/sdb/sdb5 and /sys/devices/pci0000:00/0000:00:0d.0/ata5/host4/target4:0:0/4:0:0:0/block/sdc/sdc5
-Nov  4 18:06:57 vb kernel: [    6.754716] sd 4:0:0:0: [sdc] 104857600 512-byte logical blocks: (53.6 GB/50.0 GiB)
-Nov  4 18:06:57 vb kernel: [    6.754744] sd 4:0:0:0: [sdc] Write Protect is off
-Nov  4 18:06:57 vb kernel: [    6.754747] sd 4:0:0:0: [sdc] Mode Sense: 00 3a 00 00
-Nov  4 18:06:57 vb kernel: [    6.754757] sd 4:0:0:0: [sdc] Write cache: enabled, read cache: enabled, doesn&apos;t support DPO or FUA
-Nov  4 18:06:57 vb kernel: [    6.767797]  sdc: sdc1 sdc2 &lt; sdc5 &gt;
-Nov  4 18:06:57 vb kernel: [    6.768061] sd 4:0:0:0: [sdc] Attached SCSI disk
-</code></pre><h2 id="奇葩问题"><a href="#奇葩问题" class="headerlink" title="奇葩问题"></a>奇葩问题</h2><p>virtualbox 太多命名其妙的问题了，争取早日换掉</p>
-<h3 id="磁盘uuid重复后，生成新的uuid"><a href="#磁盘uuid重复后，生成新的uuid" class="headerlink" title="磁盘uuid重复后，生成新的uuid"></a>磁盘uuid重复后，生成新的uuid</h3><p>[/drives/c/Program Files/Oracle/VirtualBox]<br>$./VBoxManage.exe internalcommands sethduuid “D:\vb\ubuntu-disk.vmdk”</p>
-<h3 id="Windows系统突然dns不工作了"><a href="#Windows系统突然dns不工作了" class="headerlink" title="Windows系统突然dns不工作了"></a>Windows系统突然dns不工作了</h3><p>VirtualBox为啥导致了这个问题就是一个很偏的方向，我实在无能为力了，尝试找到了一个和VirtualBox的DNS相关的开关命令，只能死马当活马医了（像极了算命大师和老中医）</p>
-<pre><code>./VBoxManage.exe  modifyvm &quot;ubuntu&quot; --natdnshostresolver1 on
-</code></pre><h3 id="ubuntu-鼠标中键不能复制粘贴的恢复办法-gpointing-device-settings"><a href="#ubuntu-鼠标中键不能复制粘贴的恢复办法-gpointing-device-settings" class="headerlink" title="ubuntu 鼠标中键不能复制粘贴的恢复办法 gpointing-device-settings"></a>ubuntu 鼠标中键不能复制粘贴的恢复办法 gpointing-device-settings</h3><p><a href="http://askubuntu.com/questions/302077/how-to-enable-paste-in-terminal-with-middle-mouse-button" target="_blank" rel="external">http://askubuntu.com/questions/302077/how-to-enable-paste-in-terminal-with-middle-mouse-button</a></p>
-<h3 id="ubuntu无法关闭锁屏，无法修改配置："><a href="#ubuntu无法关闭锁屏，无法修改配置：" class="headerlink" title="ubuntu无法关闭锁屏，无法修改配置："></a>ubuntu无法关闭锁屏，无法修改配置：</h3><p>sudo mv ~/.config/dconf ~/.config/dconf.bak //删掉dconf就好了<br><a href="https://unix.stackexchange.com/questions/296231/cannot-save-changes-made-in-gnome-settings" target="_blank" rel="external">https://unix.stackexchange.com/questions/296231/cannot-save-changes-made-in-gnome-settings</a></p>
-<h2 id="感受"><a href="#感受" class="headerlink" title="感受"></a>感受</h2><p>自己不懂 /dev/sdb 导致了这次问题</p>
-<p>这种错误居然从virtualbox或者ubuntu的系统日志中找不到相关信息，这个应该是没有触发挂载。自己对mount、fsck不够熟悉也是主要原因，运气好在fsck 居然没丢任何数据</p>
-<h2 id="历史老问题"><a href="#历史老问题" class="headerlink" title="历史老问题"></a>历史老问题</h2><p>这种额外挂载的磁盘在ubuntu下启动后不会出现，需要在ubuntu文件系统中人肉访问一次，就触发了挂载动作，然后在bash中才可以正常使用，这个问题我折腾了N年都没解决，实际这次发现是自己对挂载、fstab不够了解。</p>
-<p>在 /etc/fstab 中增加boot时挂载这个问题终于解决掉了</p>
-<pre><code>UUID=a64abcac-657d-42ee-8e7b-575eac99bce3 /media/ren/a64abcac-657d-42ee-8e7b-575eac99bce3  ext4 defaults 1 1
-</code></pre>]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;该死的错误&quot;&gt;&lt;a href=&quot;#该死的错误&quot; class=&quot;headerlink&quot; title=&quot;该死的错误&quot;&gt;&lt;/a&gt;该死的错误&lt;/h1&gt;&lt;p&gt;virtualbox+ubuntu用了快10年了，各种莫名其妙的问题，一直没有换掉，也怪自己 virtualbox+
-    
-    </summary>
-    
-      <category term="Linux" scheme="http://yoursite.com/categories/Linux/"/>
-    
-    
-      <category term="virtualbox" scheme="http://yoursite.com/tags/virtualbox/"/>
-    
-      <category term="ubuntu" scheme="http://yoursite.com/tags/ubuntu/"/>
-    
-      <category term="dd" scheme="http://yoursite.com/tags/dd/"/>
     
   </entry>
   
