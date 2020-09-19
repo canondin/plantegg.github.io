@@ -77,7 +77,7 @@
 <link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="Linux,network,LVS,LoadBalance,wrr,wlc," />
+  <meta name="keywords" content="Linux,LVS,network,LoadBalance,wrr,wlc," />
 
 
 
@@ -96,13 +96,13 @@
 
 
 <meta name="description" content="LVS 20倍的负载不均衡，原来是内核的这个Bug问题由来最近用 sysbench 做压测的时候，sysbench每次创建100个长连接，lvs后面两台RS（通过wlc来均衡），发现每次都是其中一台差不多95个连接，另外一台大概5个连接，不均衡得太离谱了，并且稳定重现，所以想要搞清楚为什么会出现20倍的不均衡。 前面是啰嗦的基础知识部分，bug直达文章末尾 几个术语和缩写vip：Virtual I">
-<meta name="keywords" content="Linux,network,LVS,LoadBalance,wrr,wlc">
+<meta name="keywords" content="Linux,LVS,network,LoadBalance,wrr,wlc">
 <meta property="og:type" content="article">
 <meta property="og:title" content="LVS 20倍的负载不均衡，原来是内核的这个Bug">
 <meta property="og:url" content="http://yoursite.com/2019/07/19/就是要你懂负载均衡--负载均衡调度算法和为什么不均衡/index.html">
 <meta property="og:site_name" content="plantegg">
 <meta property="og:description" content="LVS 20倍的负载不均衡，原来是内核的这个Bug问题由来最近用 sysbench 做压测的时候，sysbench每次创建100个长连接，lvs后面两台RS（通过wlc来均衡），发现每次都是其中一台差不多95个连接，另外一台大概5个连接，不均衡得太离谱了，并且稳定重现，所以想要搞清楚为什么会出现20倍的不均衡。 前面是啰嗦的基础知识部分，bug直达文章末尾 几个术语和缩写vip：Virtual I">
-<meta property="og:updated_time" content="2020-08-26T10:57:01.343Z">
+<meta property="og:updated_time" content="2020-08-22T08:51:13.969Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="LVS 20倍的负载不均衡，原来是内核的这个Bug">
 <meta name="twitter:description" content="LVS 20倍的负载不均衡，原来是内核的这个Bug问题由来最近用 sysbench 做压测的时候，sysbench每次创建100个长连接，lvs后面两台RS（通过wlc来均衡），发现每次都是其中一台差不多95个连接，另外一台大概5个连接，不均衡得太离谱了，并且稳定重现，所以想要搞清楚为什么会出现20倍的不均衡。 前面是啰嗦的基础知识部分，bug直达文章末尾 几个术语和缩写vip：Virtual I">
@@ -481,9 +481,9 @@ ACK-FIN         ----&gt; *** ActiveConn=0 and 0 ESTABLISHED socket on realserver
           
             <a href="/tags/Linux/" rel="tag"># Linux</a>
           
-            <a href="/tags/network/" rel="tag"># network</a>
-          
             <a href="/tags/LVS/" rel="tag"># LVS</a>
+          
+            <a href="/tags/network/" rel="tag"># network</a>
           
             <a href="/tags/LoadBalance/" rel="tag"># LoadBalance</a>
           
@@ -593,7 +593,7 @@ ACK-FIN         ----&gt; *** ActiveConn=0 and 0 ESTABLISHED socket on realserver
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">95</span>
+                <span class="site-state-item-count">84</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -604,7 +604,7 @@ ACK-FIN         ----&gt; *** ActiveConn=0 and 0 ESTABLISHED socket on realserver
             
             <div class="site-state-item site-state-categories">
               <a href="/categories/index.html">
-                <span class="site-state-item-count">32</span>
+                <span class="site-state-item-count">18</span>
                 <span class="site-state-item-name">分类</span>
               </a>
             </div>
@@ -615,7 +615,7 @@ ACK-FIN         ----&gt; *** ActiveConn=0 and 0 ESTABLISHED socket on realserver
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">196</span>
+                <span class="site-state-item-count">173</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>
