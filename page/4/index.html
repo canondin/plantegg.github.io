@@ -281,6 +281,194 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/04/26/如何定位上亿次调用才出现一次的Bug/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/04/26/如何定位上亿次调用才出现一次的Bug/" itemprop="url">如何定位上亿次调用才出现一次的Bug</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-04-26T16:30:03+08:00">
+                2018-04-26
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/troubleshooting/" itemprop="url" rel="index">
+                    <span itemprop="name">troubleshooting</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/04/26/如何定位上亿次调用才出现一次的Bug/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2018/04/26/如何定位上亿次调用才出现一次的Bug/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="如何定位上亿次调用才出现一次的Bug"><a href="#如何定位上亿次调用才出现一次的Bug" class="headerlink" title="如何定位上亿次调用才出现一次的Bug"></a>如何定位上亿次调用才出现一次的Bug</h1><h2 id="引文"><a href="#引文" class="headerlink" title="引文"></a>引文</h2><p>对于那种出现概率非常低，很难重现的bug有时候总是感觉有力使不上，比如<a href="https://zhuanlan.zhihu.com/p/21348220?f3fb8ead20=e041f967b1b416071a11f7702126d7a0&amp;from=singlemessage&amp;isappinstalled=0" target="_blank" rel="external">这个问题</a></p>
+<p>正好最近也碰到一个极低概率下的异常，我介入前一大帮人花了几个月，OS、ECS、网络等等各个环节都被怀疑一遍但是又都没有实锤，所以把过程记录下。</p>
+<h2 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h2><p>客户会调用我们的一个服务，正常都是client request -&gt; server response 如此反复直到client主动完成，然后断开tcp连接。但是就是在这个过程中，有极低的概率client 端抛出连接非正常断开的异常堆栈，由于这个业务比较特殊，客户无法接受这种异常，所以要求一定要解决这个问题。</p>
+<p>重现麻烦，只能在客户环境，让客户把他们的测试跑起来才能一天重现1-2次，每次跟客户沟通成本很高。出现问题的精确时间点不好确定</p>
+<h3 id="tcpdump-抓包所看到的问题表现"><a href="#tcpdump-抓包所看到的问题表现" class="headerlink" title="tcpdump 抓包所看到的问题表现"></a>tcpdump 抓包所看到的问题表现</h3><p>在client 和 server上一直进行tcpdump 抓包，然后压力测试不停地跑，一旦client抛了连接异常，根据时间点、端口信息在两边的抓包中分析当时的tcp会话</p>
+<p>比如，通过tcpdump分析到的会话是这样的：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/ed9b5b2d81bdc58b9cf41217763939e5.png" alt="screenshot.png"></p>
+<p>如上图所示，正常都是client发送request，server返回response，但是出问题的时候（截图红框）server收到了client的request，也回复了ack给client说收到请求了，但是很快server又回复了一个fin包（server主动发起四次挥手断开连接），这是不正常的。</p>
+<p>到这里可以有一个明确的结论：<strong>出问题都是因为server主动发起连接断开的fin包，即使刚收到client的request请求还没有返回response</strong></p>
+<h3 id="开发增加debug日志"><a href="#开发增加debug日志" class="headerlink" title="开发增加debug日志"></a>开发增加debug日志</h3><p>在server端的应用中可能会调用 socket.close 的地方都增加了日志，但是实际发生异常的时候没有任何日志输出，所以到此开发认为应用代码没有问题（毕竟没有证据–实际不能排除）</p>
+<h3 id="怀疑ECS网络抖动（是个好背锅侠，什么锅都可以背）"><a href="#怀疑ECS网络抖动（是个好背锅侠，什么锅都可以背）" class="headerlink" title="怀疑ECS网络抖动（是个好背锅侠，什么锅都可以背）"></a>怀疑ECS网络抖动（是个好背锅侠，什么锅都可以背）</h3><p>申请单独的物理机资源给客户，保证没有其它应用来争抢网络和其它资源，前三天一次异常也没有发生（在ECS上一天发生1-2次），非常高兴以为找到问题了。结果第四天异常再次出现，更换物理机也只是好像偶然性地降低了发生频率而已。</p>
+<h3 id="去底层挖掘tcp协议，到底什么条件下会出现主动断开连接"><a href="#去底层挖掘tcp协议，到底什么条件下会出现主动断开连接" class="headerlink" title="去底层挖掘tcp协议，到底什么条件下会出现主动断开连接"></a>去底层挖掘tcp协议，到底什么条件下会出现主动断开连接</h3><p>实际也没有什么进展</p>
+<h3 id="用strace、pstack去监控-socket-close-这个事件"><a href="#用strace、pstack去监控-socket-close-这个事件" class="headerlink" title="用strace、pstack去监控 socket.close 这个事件"></a>用strace、pstack去监控 socket.close 这个事件</h3><p>但实际可能在上亿次正常的 socket.close (查询全部结束，client主动请求断开连接）才会出现一次不正常的 socket.close .量太大，还没发在这么多事件中区分那个是不正常的close</p>
+<h3 id="应用被-OOM-kill"><a href="#应用被-OOM-kill" class="headerlink" title="应用被 OOM kill"></a>应用被 OOM kill</h3><p>调查过程中为了更快地重现异常，将客户端连接都改成长连接，这样应用不再去调 socket.close ，除非超时、异常之类的，这样一旦出现不正常的 socket.close 就更容易定位了。</p>
+<p>实际跑了一段时间后，发现确实 tcpdump 能抓到很多 server在接收到request还没有返回response的时候主动发送 fin包来断开连接的情况，跟前面的症状是一模一样的。但是最终发现这个时候应用被杀掉了，只是说明应用被杀的情况下 server会主动去掉 socket.close关闭连接，但这只是充分条件，而不是必要条件。实际生产线上也没有被 OOM kill过。</p>
+<h3 id="给力的开发同学"><a href="#给力的开发同学" class="headerlink" title="给力的开发同学"></a>给力的开发同学</h3><p>分析了这个异常后，开发简化了整个测试，实现client上跑一行PHP代码反复调用就能够让这个bug触发，这一下把整个测试重现bug的过程简化了，终于不再需要客户配合了，让问题的定位效率快了一个数量级。</p>
+<p>为了快速地定位到异常的具体连接，实现脚本来自动分析tcpdump结果找到异常close的连接</p>
+<p>快速在tcpdump包中找到出问题的那个stream（这个命令行要求tshark的版本为1.12及以上，默认的阿里服务器上的版本都太低，解析不了_ws.col.Info列）：</p>
+<pre><code>tshark -r capture.pcap135 -T fields -e frame.number -e frame.time_epoch -e ip.addr -e tcp.port  -e tcp.stream   -e _ws.col.Info | egrep &quot;FIN|Request Quit&quot; | awk &apos;{ print $5, $6 $7 }&apos; | sort -k1n | awk &apos;{ print $1 }&apos; | uniq -c | grep -v &quot;^      3&quot; | less
+</code></pre><p>在这一系列的工具作用下，稳定跑上一天，异常能发生3、4次，产生的日志和网络包有几百G。</p>
+<p>出现问题的后，通过上面的脚本分析连接异常断开的client ip+port和时间，同时拿这三个信息到下面的异常堆栈中搜索匹配找到调用 socket.close()的堆栈。</p>
+<h3 id="上Btrace-监听所有-socket-close-事件"><a href="#上Btrace-监听所有-socket-close-事件" class="headerlink" title="上Btrace 监听所有 socket.close 事件"></a>上Btrace 监听所有 socket.close 事件</h3><pre><code>    @OnMethod(clazz=&quot;+java.net.Socket&quot;, method=&quot;close&quot;)
+    public static void onSocketClose(@Self Object me) {
+      println(&quot;\n==== java.net.Socket#close ====&quot;);
+      BTraceUtils.println(BTraceUtils.timestamp() );
+      BTraceUtils.println(BTraceUtils.Time.millis() );
+      println(concat(&quot;Socket closing:&quot;, str(me)));
+      println(concat(&quot;thread: &quot;, str(currentThread())));
+      printFields(me);
+      jstack();
+}
+</code></pre><p>终于在出现异常的时候btrace抓到了异常的堆栈，在之前代码review看来不可能的逻辑里server主动关闭了连接</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/02bcccd66af82c929c4eee8c88875733.png" alt="screenshot.png"></p>
+<p>图左是应用代码，图右是关闭连接的堆栈，有了这个堆栈就可以去修复问题了</p>
+<p>实际上这里可能有几个问题：</p>
+<ol>
+<li>buffer.position 是不可能为0的；</li>
+<li>即使buffer.position 等于0 也不应该直接 socket.close, 可能发送error信息给客户端更好；</li>
+</ol>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
+<li>最终原因是因为NIO过程中buffer有极低的概率被两个socket重用，从而导致出现正在使用的buffer被另外一个socket拿过去并且设置了buffer.position为0，进而导致前一个socket认为数据异常赶紧close了。</li>
+<li>开发简化问题的重现步骤非常关键，同时对异常进行分类分析，加快了定位效率</li>
+<li>能够通过tcpdump去抓包定位到具体问题大概所在点这是比较关键的一步，同时通过btrace再去监控出问题的调用堆栈从而找到具体代码行。</li>
+<li>过程看似简单，实际牵扯了一大波工程师进来，经过几个月才最终定位到出问题的代码行，确实不容易</li>
+</ul>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/03/25/iptables监控reset的连接/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -4276,299 +4464,6 @@ net.ipv4.tcp_keepalive_intvl = 3
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/10/12/ss用法大全/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2016/10/12/ss用法大全/" itemprop="url">就是要你懂网络监控--ss用法大全</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2016-10-12T15:30:03+08:00">
-                2016-10-12
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Network/" itemprop="url" rel="index">
-                    <span itemprop="name">Network</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2016/10/12/ss用法大全/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2016/10/12/ss用法大全/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="就是要你懂网络监控–ss用法大全"><a href="#就是要你懂网络监控–ss用法大全" class="headerlink" title="就是要你懂网络监控–ss用法大全"></a>就是要你懂网络监控–ss用法大全</h1><p>ss是Socket Statistics的缩写。</p>
-<p>netstat命令大家肯定已经很熟悉了，但是在2001年的时候netstat 1.42版本之后就没更新了，之后取代的工具是ss命令，是iproute2 package的一员。</p>
-<pre><code># rpm -ql iproute | grep ss
-/usr/sbin/ss
-</code></pre><p>netstat的替代工具是nstat，当然netstat的大部分功能ss也可以替代</p>
-<p>ss可以显示跟netstat类似的信息，但是速度却比netstat快很多，netstat是基于/proc/net/tcp获取 TCP socket 的相关统计信息，用strace跟踪一下netstat查询tcp的连接，会看到他open的是/proc/net/tcp的信息。ss快的秘密就在于它利用的是TCP协议的tcp_diag模块，而且是从内核直接读取信息，<strong>当内核不支持  tcp_diag 内核模块时，会回退到 /proc/net/tcp 模式</strong>。</p>
-<p>/proc/net/snmp 存放的是系统启动以来的累加值，netstat -s 读取它<br>/proc/net/tcp  是存放目前活跃的tcp连接的统计值，连接断开统计值清空， ss -it 读取它</p>
-<h2 id="ss-查看Buffer窗口"><a href="#ss-查看Buffer窗口" class="headerlink" title="ss 查看Buffer窗口"></a><a href="https://access.redhat.com/discussions/3624151" target="_blank" rel="external">ss 查看Buffer窗口</a></h2><p>–memory/-m ： 展示buffer窗口的大小</p>
-<pre><code>ss -itmpn dst &quot;10.81.212.8&quot;
-State      Recv-Q Send-Q Local Address:Port  Peer Address:Port
-ESTAB      0      0      10.xx.xx.xxx:22     10.yy.yy.yyy:12345  users:((&quot;sshd&quot;,pid=1442,fd=3))
-         skmem:(r0,rb369280,t0,tb87040,f4096,w0,o0,bl0,d92)
-
-Here we can see this socket has Receive Buffer 369280 bytes, and Transmit Buffer 87040 bytes.Keep in mind the kernel will double any socket buffer allocation for overhead. 
-So a process asks for 256 KiB buffer with setsockopt(SO_RCVBUF) then it will get 512 KiB buffer space. This is described on man 7 tcp. 
-</code></pre><p>最后给出的一个工具，knetstat（需要单独安装），也可以查看tcp的状态下的各种参数</p>
-<h2 id="ss-查看拥塞窗口、RTO"><a href="#ss-查看拥塞窗口、RTO" class="headerlink" title="ss 查看拥塞窗口、RTO"></a>ss 查看拥塞窗口、RTO</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">#ss -itn |egrep &quot;cwnd|rto&quot;	</div><div class="line">ESTAB       0      165      [::ffff:192.168.0.174]:48074                [::ffff:192.168.0.173]:3306</div><div class="line">	cubic wscale:7,7 rto:201 rtt:0.24/0.112 ato:40 mss:1448 rcvmss:1448 advmss:1448 cwnd:10 bytes_acked:1910206449 bytes_received:8847784416 segs_out:11273005 segs_in:22997562 data_segs_out:9818729 data_segs_in:13341573 send 482.7Mbps lastsnd:1 lastrcv:1 pacing_rate 963.8Mbps delivery_rate 163.2Mbps app_limited busy:2676463ms retrans:0/183 rcv_rtt:1.001 rcv_space:35904 minrtt:0.135</div><div class="line"></div><div class="line">ESTAB       0      0        [::ffff:192.168.0.174]:48082                [::ffff:192.168.0.173]:3306</div><div class="line">	 cubic wscale:7,7 rto:201 rtt:0.262/0.112 ato:40 mss:1448 rcvmss:1448 advmss:1448 cwnd:10 bytes_acked:1852907381 bytes_received:8346503207 segs_out:10913962 segs_in:22169704 data_segs_out:9531411 data_segs_in:12796151 send 442.1Mbps lastsnd:2 lastack:2 pacing_rate 881.3Mbps delivery_rate 164.3Mbps app_limited busy:2736500ms retrans:0/260 rcv_rtt:1.042 rcv_space:31874 minrtt:0.133</div></pre></td></tr></table></figure>
-<h3 id="从系统cache中查看-tcp-metrics-item"><a href="#从系统cache中查看-tcp-metrics-item" class="headerlink" title="从系统cache中查看 tcp_metrics item"></a>从系统cache中查看 tcp_metrics item</h3><pre><code>$sudo ip tcp_metrics show | grep  100.118.58.7
-100.118.58.7 age 1457674.290sec tw_ts 3195267888/5752641sec ago rtt 1000us rttvar 1000us ssthresh 361 cwnd 40 ----这两个值对传输性能很重要
-
-192.168.1.100 age 1051050.859sec ssthresh 4 cwnd 2 rtt 4805us rttvar 4805us source 192.168.0.174 ---这条记录有问题，缓存的ssthresh 4 cwnd 2都太小，传输速度一定慢 
-
-清除 tcp_metrics, sudo ip tcp_metrics flush all 
-关闭 tcp_metrics 功能，net.ipv4.tcp_no_metrics_save = 1
-sudo ip tcp_metrics delete 100.118.58.7
-</code></pre><p>每个连接的ssthresh默认是个无穷大的值，但是内核会cache对端ip上次的ssthresh（大部分时候两个ip之间的拥塞窗口大小不会变），这样大概率到达ssthresh之后就基本拥塞了，然后进入cwnd的慢增长阶段。</p>
-<h2 id="ss-过滤地址和端口号，有点类似于tcpdump的用法"><a href="#ss-过滤地址和端口号，有点类似于tcpdump的用法" class="headerlink" title="ss 过滤地址和端口号，有点类似于tcpdump的用法"></a>ss 过滤地址和端口号，有点类似于tcpdump的用法</h2><p>过滤目标端口是80的或者源端口是1723的连接，dst后面要跟空格然后加“：”：</p>
-<pre><code># ss -ant dst :80 or src :1723 
-State      Recv-Q Send-Q   Local Address:Port Peer Address:Port 
-LISTEN     0      3        *:1723              *:*     
-TIME-WAIT  0      0                                                     172.31.23.95:37269                                              111.161.68.235:80    
-TIME-WAIT  0      0                                                     172.31.23.95:37263                                              111.161.68.235:80    
-TIME-WAIT  0      0                                                     172.31.23.95:37267 
-</code></pre><p>or：</p>
-<pre><code>ss -ant dport = :80 or sport = :1723
-</code></pre><p>地址筛选，目标地址是111.161.68.235的连接</p>
-<pre><code>ss -ant dst 111.161.68.235
-</code></pre><p>端口大小筛选，源端口大于1024的端口：</p>
-<pre><code>ss sport gt 1024
-</code></pre><p>How Do I Compare Local and/or Remote Port To A Number?<br>Use the following syntax:</p>
-<pre><code>## Compares remote port to a number ##
-ss dport OP PORT
-
-## Compares local port to a number ##
-sport OP PORT
-</code></pre><p>Where OP can be one of the following:</p>
-<pre><code>&lt;= or le : Less than or equal to port
-&gt;= or ge : Greater than or equal to port
-== or eq : Equal to port
-!= or ne : Not equal to port
-&lt; or gt : Less than to port
-&gt; or lt : Greater than to port
-Note: le, gt, eq, ne etc. are use in unix shell and are accepted as well.
-
-###################################################################################
-### Do not forget to escape special characters when typing them in command line ###
-###################################################################################
-
-ss  sport = :http
-ss  dport = :http
-ss  dport \&gt; :1024
-ss  sport \&gt; :1024
-ss sport \&lt; :32000
-ss  sport eq :22
-ss  dport != :22
-ss  state connected sport = :http
-ss \( sport = :http or sport = :https \)
-ss -o state fin-wait-1 \( sport = :http or sport = :https \) dst 192.168.1/24
-</code></pre><h2 id="按连接状态过滤"><a href="#按连接状态过滤" class="headerlink" title="按连接状态过滤"></a>按连接状态过滤</h2><p>Display All Established HTTP Connections</p>
-<pre><code>ss -o state established &apos;( dport = :http or sport = :http )&apos;
-</code></pre><p>List all the TCP sockets in state -FIN-WAIT-1 for our httpd to network 202.54.1/24 and look at their timers:</p>
-<pre><code>ss -o state fin-wait-1 &apos;( sport = :http or sport = :https )&apos; dst 202.54.1/24
-</code></pre><p>Filter Sockets Using TCP States</p>
-<pre><code>ss -4 state FILTER-NAME-HERE
-</code></pre><p>Where FILTER-NAME-HERE can be any one of the following,</p>
-<pre><code>established
-syn-sent
-syn-recv
-fin-wait-1
-fin-wait-2
-time-wait
-closed
-close-wait
-last-ack
-listen
-closing
-all : All of the above states
-connected : All the states except for listen and closed
-synchronized : All the connected states except for syn-sent
-bucket : Show states, which are maintained as minisockets, i.e. time-wait and syn-recv.
-big : Opposite to bucket state.
-</code></pre><h2 id="通过抓取ss命令，可以分析出来重传的包数量，然后将重传的流的数量和重传的包的数量按照对端IP-port的维度分段聚合，参考命令："><a href="#通过抓取ss命令，可以分析出来重传的包数量，然后将重传的流的数量和重传的包的数量按照对端IP-port的维度分段聚合，参考命令：" class="headerlink" title="通过抓取ss命令，可以分析出来重传的包数量，然后将重传的流的数量和重传的包的数量按照对端IP:port的维度分段聚合，参考命令："></a>通过抓取ss命令，可以分析出来重传的包数量，然后将重传的流的数量和重传的包的数量按照对端IP:port的维度分段聚合，参考命令：</h2><pre><code>ss -itn |grep -v &quot;Address:Port&quot; | xargs -L 1  | grep retrans | awk &apos;{gsub(&quot;retrans:.*/&quot;, &quot;&quot;,$21); print $5, $21}&apos; | awk &apos;{arr[$1]+=$2} END {for (i in arr) {print i,arr[i]}}&apos; | sort -rnk 2 
-</code></pre><p>高版本Linux内核的话，可以用systemtap或者bcc来获取每个连接的重传包以及发生重传的阶段</p>
-<h2 id="当前和最大全连接队列确认"><a href="#当前和最大全连接队列确认" class="headerlink" title="当前和最大全连接队列确认"></a>当前和最大全连接队列确认</h2><pre><code>$ss -lt
-State      Recv-Q Send-Q Local Address:Port                 Peer Address:Port                
-LISTEN     0      128    127.0.0.1:10248                       *:*                    
-LISTEN     0      128           *:2376                        *:*                    
-LISTEN     0      128    127.0.0.1:10249                       *:*                    
-LISTEN     0      128           *:7337                        *:*                    
-LISTEN     0      128           *:10250                       *:*                    
-LISTEN     0      128    11.163.187.44:7946                        *:*                    
-LISTEN     0      128    127.0.0.1:55631                       *:*                    
-LISTEN     0      128           *:10256                       *:*                    
-LISTEN     0      10            *:6640                        *:*                    
-LISTEN     0      128    127.0.0.1:vmware-fdm                  *:*                    
-LISTEN     0      128    11.163.187.44:vmware-fdm                  *:*                    
-LISTEN     0      128           *:ssh                         *:*                    
-LISTEN     0      10     127.0.0.1:15772                       *:*                    
-LISTEN     0      10     127.0.0.1:15776                       *:*                    
-LISTEN     0      10     127.0.0.1:19777                       *:*                    
-LISTEN     0      10     11.163.187.44:15778                       *:*                    
-LISTEN     0      128           *:tr-rsrb-p2                  *:*
-</code></pre><h2 id="ss-s"><a href="#ss-s" class="headerlink" title="ss -s"></a>ss -s</h2><p>统计所有连接的状态</p>
-<h2 id="nstat"><a href="#nstat" class="headerlink" title="nstat"></a>nstat</h2><p>nstat -z -t 1 类似 netstat -s  (ss –info 展示rto、拥塞算法等更详细信息； netstat -ant -o 展示keepalive是否)</p>
-<p>netstat<a href="http://perthcharles.github.io/2015/11/10/wiki-netstat-proc/" target="_blank" rel="external">参考</a></p>
-<h2 id="knetstat"><a href="#knetstat" class="headerlink" title="knetstat"></a>knetstat</h2><p>需要单独安装</p>
-<p>example(3306是本地server，4192是后端MySQL）：</p>
-<pre><code>Recv-Q Send-Q Local Address           Foreign Address         Stat Diag Options
- 0      0 0.0.0.0:3306            0.0.0.0:*               LSTN      SO_REUSEADDR=1,SO_REUSEPORT=0,SO_KEEPALIVE=0,TCP_NODELAY=0,TCP_FASTOPEN=0,TCP_DEFER_ACCEPT=0
- 0      0 0.0.0.0:3406            0.0.0.0:*               LSTN      SO_REUSEADDR=1,SO_REUSEPORT=0,SO_KEEPALIVE=0,TCP_NODELAY=0,TCP_FASTOPEN=0,TCP_DEFER_ACCEPT=0
- 0      0 127.0.0.1:8182          0.0.0.0:*               LSTN      SO_REUSEADDR=1,SO_REUSEPORT=0,SO_KEEPALIVE=0,TCP_NODELAY=0,TCP_FASTOPEN=0,TCP_DEFER_ACCEPT=0
- 0      0 10.0.186.73:8182        0.0.0.0:*               LSTN      SO_REUSEADDR=1,SO_REUSEPORT=0,SO_KEEPALIVE=0,TCP_NODELAY=0,TCP_FASTOPEN=0,TCP_DEFER_ACCEPT=0
- 0      0 0.0.0.0:22              0.0.0.0:*               LSTN      SO_REUSEADDR=1,SO_REUSEPORT=0,SO_KEEPALIVE=0,TCP_NODELAY=0,TCP_FASTOPEN=0,TCP_DEFER_ACCEPT=0
- 0      0 0.0.0.0:8188            0.0.0.0:*               LSTN      SO_REUSEADDR=1,SO_REUSEPORT=0,SO_KEEPALIVE=0,TCP_NODELAY=0,TCP_FASTOPEN=0,TCP_DEFER_ACCEPT=0
- 0      0 127.0.0.1:15778         0.0.0.0:*               LSTN      SO_REUSEADDR=1,SO_REUSEPORT=0,SO_KEEPALIVE=0,TCP_NODELAY=0,TCP_FASTOPEN=0,TCP_DEFER_ACCEPT=0 
- 0    138 10.0.186.73:51756       10.0.160.1:4192         ESTB &gt;#   SO_REUSEADDR=0,SO_REUSEPORT=0,SO_KEEPALIVE=1,TCP_NODELAY=1,TCP_DEFER_ACCEPT=0
- 0      0 10.0.186.73:3306        10.0.186.70:37428       ESTB      SO_REUSEADDR=1,SO_REUSEPORT=0,SO_KEEPALIVE=1,SO_RCVBUF=32768,SO_SNDBUF=65536,TCP_NODELAY=1,TCP_DEFER_ACCEPT=0
- 0    138 10.0.186.73:51476       10.0.160.1:4192         ESTB &gt;#   SO_REUSEADDR=0,SO_REUSEPORT=0,SO_KEEPALIVE=1,TCP_NODELAY=1,TCP_DEFER_ACCEPT=0
- 0      0 10.0.186.73:3306        10.0.186.70:37304       ESTB      SO_REUSEADDR=1,SO_REUSEPORT=0,SO_KEEPALIVE=1,SO_RCVBUF=32768,SO_SNDBUF=65536,TCP_NODELAY=1,TCP_DEFER_ACCEPT=0
- 0      0 10.0.186.73:51842       10.0.160.1:4192         ESTB      SO_REUSEADDR=0,SO_REUSEPORT=0,SO_KEEPALIVE=1,TCP_NODELAY=1,TCP_DEFER_ACCEPT=0
-44      0 10.0.186.73:3306        10.0.186.70:36238       ESTB      SO_REUSEADDR=1,SO_REUSEPORT=0,SO_KEEPALIVE=1,SO_RCVBUF=32768,SO_SNDBUF=65536,TCP_NODELAY=1,TCP_DEFER_ACCEPT=0
-44      0 10.0.186.73:3306        10.0.186.70:36160       ESTB      SO_REUSEADDR=1,SO_REUSEPORT=0,SO_KEEPALIVE=1,SO_RCVBUF=32768,SO_SNDBUF=65536,TCP_NODELAY=1,TCP_DEFER_ACCEPT=0
-0      0 10.0.186.73:19030       10.0.171.188:8000       TIMW
-</code></pre><p>3306对应的client上：</p>
-<pre><code>Recv-Q Send-Q Local Address           Foreign Address         Stat Diag Options
- 0     44 10.0.186.70:42428       10.0.186.73:3306        ESTB &gt;#   SO_REUSEADDR=0,SO_REUSEPORT=0,SO_KEEPALIVE=1,SO_RCVTIMEO=31536000000ms,SO_SNDTIMEO=31536000000ms,TCP_NODELAY=1,TCP_DEFER_ACCEPT=0
- 0     44 10.0.186.70:42298       10.0.186.73:3306        ESTB &gt;#   SO_REUSEADDR=0,SO_REUSEPORT=0,SO_KEEPALIVE=1,SO_RCVTIMEO=31536000000ms,SO_SNDTIMEO=31536000000ms,TCP_NODELAY=1,TCP_DEFER_ACCEPT=0
- 0     44 10.0.186.70:42296       10.0.186.73:3306        ESTB &gt;#   SO_REUSEADDR=0,SO_REUSEPORT=0,SO_KEEPALIVE=1,SO_RCVTIMEO=31536000000ms,SO_SNDTIMEO=31536000000ms,TCP_NODELAY=1,TCP_DEFER_ACCEPT=0
- 0     44 10.0.186.70:42322       10.0.186.73:3306        ESTB &gt;#   SO_REUSEADDR=0,SO_REUSEPORT=0,SO_KEEPALIVE=1,SO_RCVTIMEO=31536000000ms,SO_SNDTIMEO=31536000000ms,TCP_NODELAY=1,TCP_DEFER_ACCEPT=0
-</code></pre><p>Diag列的说明</p>
-<pre><code>Indicator        Meaning
-  &gt;|             The sender window (i.e. the window advertised by the remote endpoint) is 0. No data can be sent to the peer.
-  |&lt;             The receiver window (i.e. the window advertised by the local endpoint) is 0. No data can be received from the peer.
-  &gt;#             There are unacknowledged packets and the last ACK was received more than one second ago. This may be an indication that there are network problems or that the peer crashed.
-</code></pre><h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a href="https://www.cyberciti.biz/tips/linux-investigate-sockets-network-connections.html" target="_blank" rel="external">https://www.cyberciti.biz/tips/linux-investigate-sockets-network-connections.html</a></p>
-<p><a href="http://perthcharles.github.io/2015/11/10/wiki-netstat-proc/" target="_blank" rel="external">http://perthcharles.github.io/2015/11/10/wiki-netstat-proc/</a></p>
-<p>源代码：<a href="https://github.com/sivasankariit/iproute2/blob/master/misc/ss.c" target="_blank" rel="external">https://github.com/sivasankariit/iproute2/blob/master/misc/ss.c</a></p>
-<p><a href="https://github.com/veithen/knetstat/tree/master" target="_blank" rel="external">https://github.com/veithen/knetstat/tree/master</a></p>
-<p><a href="https://access.redhat.com/discussions/782343" target="_blank" rel="external">https://access.redhat.com/discussions/782343</a></p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
@@ -4618,7 +4513,7 @@ LISTEN     0      128           *:tr-rsrb-p2                  *:*
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">84</span>
+                <span class="site-state-item-count">85</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
