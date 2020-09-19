@@ -1,0 +1,922 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="docker,kubernetes," />
+
+
+
+
+
+  <link rel="alternate" href="/atom.xml" title="plantegg" type="application/atom+xml" />
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.1" />
+
+
+
+
+
+
+<meta name="description" content="kubernetes 集群部署部署系统参数修改 docker部署 kubeadm install https://www.kubernetes.org.cn/4256.html  https://github.com/opsnull/follow-me-install-kubernetes-cluster 镜像源被墙，可以用阿里云镜像源 12345678910111213# 配置源cat &amp;lt;">
+<meta name="keywords" content="docker,kubernetes">
+<meta property="og:type" content="article">
+<meta property="og:title" content="kubernetes 集群部署">
+<meta property="og:url" content="http://yoursite.com/2020/01/12/kubernetes/index.html">
+<meta property="og:site_name" content="plantegg">
+<meta property="og:description" content="kubernetes 集群部署部署系统参数修改 docker部署 kubeadm install https://www.kubernetes.org.cn/4256.html  https://github.com/opsnull/follow-me-install-kubernetes-cluster 镜像源被墙，可以用阿里云镜像源 12345678910111213# 配置源cat &amp;lt;">
+<meta property="og:updated_time" content="2020-09-19T10:06:28.470Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="kubernetes 集群部署">
+<meta name="twitter:description" content="kubernetes 集群部署部署系统参数修改 docker部署 kubeadm install https://www.kubernetes.org.cn/4256.html  https://github.com/opsnull/follow-me-install-kubernetes-cluster 镜像源被墙，可以用阿里云镜像源 12345678910111213# 配置源cat &amp;lt;">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    sidebar: {"position":"left","display":"post","offset":12,"offset_float":0,"b2t":false,"scrollpercent":false},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2020/01/12/kubernetes/"/>
+
+
+
+
+
+  <title>kubernetes 集群部署 | plantegg</title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  
+
+  <div class="container sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">plantegg</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <h1 class="site-subtitle" itemprop="description">java tcp mysql performance network docker Linux</h1>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-categories"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/01/12/kubernetes/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">kubernetes 集群部署</h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-01-12T17:30:03+08:00">
+                2020-01-12
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/docker/" itemprop="url" rel="index">
+                    <span itemprop="name">docker</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2020/01/12/kubernetes/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2020/01/12/kubernetes/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+            <span class="post-meta-divider">|</span>
+            <span class="page-pv"><i class="fa fa-file-o"></i>
+            <span class="busuanzi-value" id="busuanzi_value_page_pv" ></span>次
+            </span>
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="kubernetes-集群部署"><a href="#kubernetes-集群部署" class="headerlink" title="kubernetes 集群部署"></a>kubernetes 集群部署</h1><h2 id="部署"><a href="#部署" class="headerlink" title="部署"></a>部署</h2><p>系统参数修改</p>
+<p>docker部署</p>
+<p>kubeadm install</p>
+<p><a href="https://www.kubernetes.org.cn/4256.html" target="_blank" rel="external">https://www.kubernetes.org.cn/4256.html</a> </p>
+<p><a href="https://github.com/opsnull/follow-me-install-kubernetes-cluster" target="_blank" rel="external">https://github.com/opsnull/follow-me-install-kubernetes-cluster</a></p>
+<p>镜像源被墙，可以用阿里云镜像源</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"># 配置源</div><div class="line">cat &lt;&lt;EOF &gt; /etc/yum.repos.d/kubernetes.repo</div><div class="line">[kubernetes]</div><div class="line">name=Kubernetes</div><div class="line">baseurl=https://mirrors.aliyun.com/kubernetes/yum/repos/kubernetes-el7-x86_64</div><div class="line">enabled=1</div><div class="line">gpgcheck=1</div><div class="line">repo_gpgcheck=1</div><div class="line">gpgkey=https://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg https://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg</div><div class="line">EOF</div><div class="line"></div><div class="line"># 安装</div><div class="line">yum install -y kubelet kubeadm kubectl ipvsadm</div></pre></td></tr></table></figure>
+<h2 id="初始化集群"><a href="#初始化集群" class="headerlink" title="初始化集群"></a>初始化集群</h2><p>多网卡情况下有必要指定网卡：–apiserver-advertise-address=192.168.0.80</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"># 使用本地 image repository</div><div class="line">kubeadm init --kubernetes-version=1.18.0  --apiserver-advertise-address=192.168.0.110   --image-repository registry:5000/registry.aliyuncs.com/google_containers  --service-cidr=10.10.0.0/16 --pod-network-cidr=10.122.0.0/16 </div><div class="line"></div><div class="line"># node join command</div><div class="line">#kubeadm token create --print-join-command</div><div class="line">kubeadm join 192.168.0.110:6443 --token 1042rl.b4qn9iuz6xv1ri7b     --discovery-token-ca-cert-hash sha256:341a4bcfde9668077ef29211c2a151fe6e9334eea8955f645698706b3bf47a49 </div><div class="line"></div><div class="line">## 查看集群配置</div><div class="line">kubectl get configmap -n kube-system kubeadm-config -o yaml</div></pre></td></tr></table></figure>
+<p>将一个node设置为不可调度，隔离出来，比如master 默认是不可调度的</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"></div><div class="line">kubectl cordon &lt;node-name&gt;</div><div class="line">kubectl uncordon &lt;node-name&gt;</div></pre></td></tr></table></figure>
+<h2 id="kubectl-管理多集群"><a href="#kubectl-管理多集群" class="headerlink" title="kubectl 管理多集群"></a>kubectl 管理多集群</h2><p>一个kubectl可以管理多个集群，主要是 ~/.kube/config 里面的配置，比如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div></pre></td><td class="code"><pre><div class="line">clusters:</div><div class="line">- cluster:</div><div class="line">    certificate-authority: /root/k8s-cluster.ca</div><div class="line">    server: https://192.168.0.80:6443</div><div class="line">  name: context-az1</div><div class="line">- cluster:</div><div class="line">    certificate-authority-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCQl0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K</div><div class="line">    server: https://192.168.0.97:6443</div><div class="line">  name: context-az3</div><div class="line"></div><div class="line">- context:</div><div class="line">    cluster: context-az1</div><div class="line">    namespace: default</div><div class="line">    user: az1-admin</div><div class="line">  name: az1</div><div class="line">- context:</div><div class="line">    cluster: context-az3</div><div class="line">    namespace: default</div><div class="line">    user: az3-read</div><div class="line">  name: az3</div><div class="line">current-context: az3  //当前使用的集群</div><div class="line"></div><div class="line">kind: Config</div><div class="line">preferences: &#123;&#125;</div><div class="line">users:</div><div class="line">- name: az1-admin</div><div class="line">  user:</div><div class="line">    client-certificate: /root/k8s.crt  //key放在配置文件中</div><div class="line">    client-key: /root/k8s.key</div><div class="line">- name: az3-read</div><div class="line">  user:</div><div class="line">    client-certificate-data: LS0tLS1CRUQ0FURS0tLS0tCg==</div><div class="line">    client-key-data: LS0tLS1CRUdJThuL2VPM0YxSWpEcXBQdmRNbUdiU2c9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo=</div></pre></td></tr></table></figure>
+<p>多个集群中切换的话 ： kubectl config use-context az3</p>
+<h3 id="快速合并两个cluster"><a href="#快速合并两个cluster" class="headerlink" title="快速合并两个cluster"></a>快速合并两个cluster</h3><p>简单来讲就是把两个集群的 .kube/config 文件合并，注意context、cluster name别重复了。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"># 必须提前保证两个config文件中的cluster、context名字不能重复</div><div class="line">export KUBECONFIG=~/.kube/config:~/someotherconfig </div><div class="line">kubectl config view --flatten</div><div class="line"></div><div class="line">#激活这个上下文</div><div class="line">kubectl config use-context az1 </div><div class="line"></div><div class="line">#查看所有context</div><div class="line">kubectl config get-contexts </div><div class="line">CURRENT   NAME   CLUSTER       AUTHINFO           NAMESPACE</div><div class="line">          az1    context-az1   az1-admin          default</div><div class="line">*         az2    kubernetes    kubernetes-admin   </div><div class="line">          az3    context-az3   az3-read           default</div></pre></td></tr></table></figure>
+<p>背后的原理类似于这个流程：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"># 添加集群 集群地址上一步有获取 ，需要指定ca文件，上一步有获取 </div><div class="line">kubectl config set-cluster cluster-az1 --server https://192.168.146.150:6444  --certificate-authority=/usr/program/k8s-certs/k8s-cluster.ca</div><div class="line"></div><div class="line"># 添加用户 需要指定crt，key文件，上一步有获取</div><div class="line">kubectl config set-credentials az1-admin --client-certificate=/usr/program/k8s-certs/k8s.crt --client-key=/usr/program/k8s-certs/k8s.key</div><div class="line"></div><div class="line"># 指定一个上下文的名字，我这里叫做 az1，随便你叫啥 关联刚才的用户</div><div class="line">kubectl config set-context az1 --cluster=context-az1  --namespace=default --user=az1-admin</div></pre></td></tr></table></figure>
+<h2 id="apiserver高可用"><a href="#apiserver高可用" class="headerlink" title="apiserver高可用"></a>apiserver高可用</h2><p>默认只有一个apiserver，可以考虑用haproxy和keepalive来做一组apiserver的负载均衡：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">docker run -d --name kube-haproxy \</div><div class="line">-v /etc/haproxy:/usr/local/etc/haproxy:ro \</div><div class="line">-p 8443:8443 \</div><div class="line">-p 1080:1080 \</div><div class="line">--restart always \</div><div class="line">haproxy:1.7.8-alpine</div></pre></td></tr></table></figure>
+<p>haproxy配置</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div></pre></td><td class="code"><pre><div class="line">#cat /etc/haproxy/haproxy.cfg </div><div class="line">global</div><div class="line">  log 127.0.0.1 local0 err</div><div class="line">  maxconn 50000</div><div class="line">  uid 99</div><div class="line">  gid 99</div><div class="line">  #daemon</div><div class="line">  nbproc 1</div><div class="line">  pidfile haproxy.pid</div><div class="line"></div><div class="line">defaults</div><div class="line">  mode http</div><div class="line">  log 127.0.0.1 local0 err</div><div class="line">  maxconn 50000</div><div class="line">  retries 3</div><div class="line">  timeout connect 5s</div><div class="line">  timeout client 30s</div><div class="line">  timeout server 30s</div><div class="line">  timeout check 2s</div><div class="line"></div><div class="line">listen admin_stats</div><div class="line">  mode http</div><div class="line">  bind 0.0.0.0:1080</div><div class="line">  log 127.0.0.1 local0 err</div><div class="line">  stats refresh 30s</div><div class="line">  stats uri     /haproxy-status</div><div class="line">  stats realm   Haproxy\ Statistics</div><div class="line">  stats auth    will:will</div><div class="line">  stats hide-version</div><div class="line">  stats admin if TRUE</div><div class="line"></div><div class="line">frontend k8s-https</div><div class="line">  bind 0.0.0.0:8443</div><div class="line">  mode tcp</div><div class="line">  #maxconn 50000</div><div class="line">  default_backend k8s-https</div><div class="line"></div><div class="line">backend k8s-https</div><div class="line">  mode tcp</div><div class="line">  balance roundrobin</div><div class="line">  server lab1 192.168.1.81:6443 weight 1 maxconn 1000 check inter 2000 rise 2 fall 3</div><div class="line">  server lab2 192.168.1.82:6443 weight 1 maxconn 1000 check inter 2000 rise 2 fall 3</div><div class="line">  server lab3 192.168.1.83:6443 weight 1 maxconn 1000 check inter 2000 rise 2 fall 3</div></pre></td></tr></table></figure>
+<h2 id="网络"><a href="#网络" class="headerlink" title="网络"></a>网络</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml</div><div class="line"></div><div class="line">#或者老版本的calico</div><div class="line">curl https://docs.projectcalico.org/v3.15/manifests/calico.yaml -o calico.yaml</div></pre></td></tr></table></figure>
+<p>默认calico用的是ipip封包（这个性能跟原生网络差多少有待验证，本质也是overlay网络，比flannel那种要好很多吗？）</p>
+<p>在所有node节点都在一个二层网络时候，flannel提供hostgw实现，避免vxlan实现的udp封装开销，估计是目前最高效的；calico也针对L3 Fabric，推出了IPinIP的选项，利用了GRE隧道封装；因此这些插件都能适合很多实际应用场景。</p>
+<p>Service cluster IP尽可在集群内部访问，外部请求需要通过NodePort、LoadBalance或者Ingress来访问</p>
+<h2 id="dashboard"><a href="#dashboard" class="headerlink" title="dashboard"></a>dashboard</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">kubectl apply -f  https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0-rc7/aio/deploy/recommended.yaml</div><div class="line"></div><div class="line">#暴露 dashboard 服务端口 (recommended中如果已经定义了 30000这个nodeport，所以这个命令不需要了)</div><div class="line">kubectl port-forward -n kubernetes-dashboard  svc/kubernetes-dashboard 30000:443 --address 0.0.0.0</div></pre></td></tr></table></figure>
+<p>dashboard login token：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">#kubectl describe secrets -n kubernetes-dashboard   | grep token | awk &apos;NR==3&#123;print $2&#125;&apos;</div><div class="line">eyJhbGciOiJSUzI1NiIsImtpZCI6IndRc0hiMkdpWHRwN1FObTcyeUdhOHI0eUxYLTlvODd2U0NBcU1GY0t1Sk0ifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlcm5ldGVzLWRhc2hib2FyZCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJkZWZhdWx0LXRva2VuLXRia3o5Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6ImRlZmF1bHQiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC51aWQiOiIwYzM2MzBhOS0xMjBjLTRhNmYtYjM0ZS0zM2JhMTE1OWU1OWMiLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6a3ViZXJuZXRlcy1kYXNoYm9hcmQ6ZGVmYXVsdCJ9.SP4JEw0kGDmyxrtcUC3HALq99Xr99E-tie5fk4R8odLJBAYN6HxEx80RbTSnkeSMJNApbtwXBLrp4I_w48kTkr93HJFM-oxie3RVLK_mEpZBF2JcfMk6qhfz4RjPiqmG6mGyW47mmY4kQ4fgpYSmZYR4LPJmVMw5W2zo5CGhZT8rKtgmi5_ROmYpWcd2ZUORaexePgesjjKwY19bLEXFOwdsqekwEvj1_zaJhKAehF_dBdgW9foFXkbXOX0xAC0QNnKUwKPanuFOVZDg1fhyV-eyi6c9-KoTYqZMJTqZyIzscIwruIRw0oauJypcdgi7ykxAubMQ4sWEyyFafSEYWg</div></pre></td></tr></table></figure>
+<p>dashboard 显示为空的话(留意报错信息，一般是用户权限，重新授权即可)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">kubectl delete clusterrolebinding kubernetes-dashboard</div><div class="line">kubectl create clusterrolebinding kubernetes-dashboard --clusterrole=cluster-admin --serviceaccount=kube-system:kubernetes-dashboard --user=&quot;system:serviceaccount:kubernetes-dashboard:default&quot;</div></pre></td></tr></table></figure>
+<p>其中：system:serviceaccount:kubernetes-dashboard:default 来自于报错信息中的用户名</p>
+<p>默认dashboard login很快expired，可以设置不过期：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">$ kubectl -n kubernetes-dashboard edit deployments kubernetes-dashboard</div><div class="line">...</div><div class="line">spec:</div><div class="line">      containers:</div><div class="line">      - args:</div><div class="line">        - --auto-generate-certificates</div><div class="line">        - --token-ttl=0                //增加这行表示不expire</div><div class="line">        </div><div class="line">        --enable-skip-login            //增加这行表示不需要token 就能login，不推荐</div></pre></td></tr></table></figure>
+<h2 id="prometheus"><a href="#prometheus" class="headerlink" title="prometheus"></a>prometheus</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">git clone https://github.com/coreos/kube-prometheus.git</div><div class="line">kubectl apply -f manifests/setup</div><div class="line">kubectl apply -f manifests/</div></pre></td></tr></table></figure>
+<p>暴露grafana端口：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">kubectl port-forward --address 0.0.0.0 svc/grafana -n monitoring 3000:3000</div></pre></td></tr></table></figure>
+<h2 id="部署应用"><a href="#部署应用" class="headerlink" title="部署应用"></a>部署应用</h2><h3 id="DRDS-deployment"><a href="#DRDS-deployment" class="headerlink" title="DRDS deployment"></a>DRDS deployment</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Namespace</div><div class="line">metadata:</div><div class="line">  name: drds</div><div class="line"></div><div class="line">---</div><div class="line"></div><div class="line">apiVersion: apps/v1</div><div class="line">kind: Deployment</div><div class="line">metadata:</div><div class="line">  name: drds-deployment</div><div class="line">  namespace: drds</div><div class="line">  labels:</div><div class="line">    app: drds-server</div><div class="line">spec:</div><div class="line">  # 创建2个nginx容器</div><div class="line">  replicas: 3</div><div class="line">  selector:</div><div class="line">    matchLabels:</div><div class="line">      app: drds-server</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        app: drds-server</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">      - name: drds-server</div><div class="line">        image: registry:5000/drds-image:v5_wisp_5.4.5-15940932</div><div class="line">        ports:</div><div class="line">        - containerPort: 8507</div><div class="line">        - containerPort: 8607</div><div class="line">        env:</div><div class="line">        - name: diamond_server_port</div><div class="line">          value: &quot;8100&quot;</div><div class="line">        - name: diamond_server_list</div><div class="line">          value: &quot;192.168.0.79,192.168.0.82&quot;</div><div class="line">        - name: drds_server_id</div><div class="line">          value: &quot;1&quot;</div></pre></td></tr></table></figure>
+<h3 id="DRDS-Service"><a href="#DRDS-Service" class="headerlink" title="DRDS Service"></a>DRDS Service</h3><p>每个 drds 容器会通过8507提供服务，service通过3306来为一组8507做负载均衡，这个service的3306是在cluster-ip上，外部无法访问</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">apiVersion: v1</div><div class="line">kind: Service</div><div class="line">metadata:</div><div class="line">  name: drds-service</div><div class="line">  namespace: drds</div><div class="line">spec:</div><div class="line">  selector:</div><div class="line">    app: drds-server</div><div class="line">  ports:</div><div class="line">    - protocol: TCP</div><div class="line">      port: 3306</div><div class="line">      targetPort: 8507</div></pre></td></tr></table></figure>
+<p>通过node port来访问 drds service（同时会有负载均衡）：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">kubectl port-forward --address 0.0.0.0 svc/drds-service -n drds 3306:3306</div></pre></td></tr></table></figure>
+<h3 id="部署mysql-statefulset应用"><a href="#部署mysql-statefulset应用" class="headerlink" title="部署mysql statefulset应用"></a>部署mysql statefulset应用</h3><p>drds-pv-mysql-0 后面的mysql 会用来做存储，下面用到了三个mysql(需要三个pvc)</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div></pre></td><td class="code"><pre><div class="line">#cat mysql-deployment.yaml </div><div class="line">apiVersion: v1</div><div class="line">kind: Service</div><div class="line">metadata:</div><div class="line">  name: mysql</div><div class="line">spec:</div><div class="line">  ports:</div><div class="line">  - port: 3306</div><div class="line">  selector:</div><div class="line">    app: mysql</div><div class="line">  clusterIP: None</div><div class="line">---</div><div class="line">apiVersion: apps/v1 </div><div class="line">kind: Deployment</div><div class="line">metadata:</div><div class="line">  name: mysql</div><div class="line">spec:</div><div class="line">  selector:</div><div class="line">    matchLabels:</div><div class="line">      app: mysql</div><div class="line">  strategy:</div><div class="line">    type: Recreate</div><div class="line">  template:</div><div class="line">    metadata:</div><div class="line">      labels:</div><div class="line">        app: mysql</div><div class="line">    spec:</div><div class="line">      containers:</div><div class="line">      - image: mysql:5.7</div><div class="line">        name: mysql</div><div class="line">        env:</div><div class="line">          # Use secret in real usage</div><div class="line">        - name: MYSQL_ROOT_PASSWORD</div><div class="line">          value: &quot;123456&quot;</div><div class="line">        ports:</div><div class="line">        - containerPort: 3306</div><div class="line">          name: mysql</div><div class="line">        volumeMounts:</div><div class="line">        - name: mysql-persistent-storage</div><div class="line">          mountPath: /var/lib/mysql</div><div class="line">      volumes:</div><div class="line">      - name: mysql-persistent-storage</div><div class="line">        persistentVolumeClaim:</div><div class="line">          claimName: pv-claim</div></pre></td></tr></table></figure>
+<p>清理：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">kubectl delete deployment,svc mysql</div><div class="line">kubectl delete pvc mysql-pv-claim</div><div class="line">kubectl delete pv mysql-pv-volume</div></pre></td></tr></table></figure>
+<p>查看所有pod ip以及node ip：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">kubectl get pods -o wide</div></pre></td></tr></table></figure>
+<h2 id="配置-Pod-使用-ConfigMap"><a href="#配置-Pod-使用-ConfigMap" class="headerlink" title="配置 Pod 使用 ConfigMap"></a>配置 Pod 使用 ConfigMap</h2><p>ConfigMap 允许你将配置文件与镜像文件分离，以使容器化的应用程序具有可移植性。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div></pre></td><td class="code"><pre><div class="line"># cat mysql-configmap.yaml  //mysql配置文件放入： configmap</div><div class="line">apiVersion: v1</div><div class="line">kind: ConfigMap</div><div class="line">metadata:</div><div class="line">  name: mysql</div><div class="line">  labels:</div><div class="line">    app: mysql</div><div class="line">data:</div><div class="line">  master.cnf: |</div><div class="line">    # Apply this config only on the master.</div><div class="line">    [mysqld]</div><div class="line">    log-bin</div><div class="line"></div><div class="line">  mysqld.cnf: |</div><div class="line">    [mysqld]</div><div class="line">    pid-file        = /var/run/mysqld/mysqld.pid</div><div class="line">    socket          = /var/run/mysqld/mysqld.sock</div><div class="line">    datadir         = /var/lib/mysql</div><div class="line">    #log-error      = /var/log/mysql/error.log</div><div class="line">    # By default we only accept connections from localhost</div><div class="line">    #bind-address   = 127.0.0.1</div><div class="line">    # Disabling symbolic-links is recommended to prevent assorted security risks</div><div class="line">    symbolic-links=0</div><div class="line">   sql_mode=&apos;STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION&apos;</div><div class="line">    # 慢查询阈值，查询时间超过阈值时写入到慢日志中</div><div class="line">    long_query_time = 2</div><div class="line">    innodb_buffer_pool_size = 257M</div><div class="line"></div><div class="line"></div><div class="line">  slave.cnf: |</div><div class="line">    # Apply this config only on slaves.</div><div class="line">    [mysqld]</div><div class="line">    super-read-only</div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line">  786  26/08/20 15:27:00 kubectl create configmap game-config-env-file --from-env-file=configure-pod-container/configmap/game-env-file.properties</div><div class="line">  787  26/08/20 15:28:10 kubectl get configmap -n kube-system kubeadm-config -o yaml</div><div class="line">  788  26/08/20 15:28:11 kubectl get configmap game-config-env-file -o yaml</div></pre></td></tr></table></figure>
+<p>将mysql root密码放入secret并查看 secret密码：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line"># cat mysql-secret.yaml</div><div class="line">apiVersion: v1</div><div class="line">kind: Secret</div><div class="line">metadata:</div><div class="line">  name: mysql-root-password</div><div class="line">type: Opaque</div><div class="line">data:</div><div class="line">  password: MTIz</div><div class="line"></div><div class="line"># echo -n &apos;123&apos; | base64  //生成密码编码</div><div class="line"># kubectl get secret mysql-root-password -o jsonpath=&apos;&#123;.data.password&#125;&apos; | base64 --decode -</div><div class="line"></div><div class="line">或者创建一个新的 secret：</div><div class="line">kubectl create secret generic my-secret --from-literal=password=&quot;Password&quot;</div></pre></td></tr></table></figure>
+<p>在mysql容器中使用以上configmap中的参数： </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div></pre></td><td class="code"><pre><div class="line">spec:</div><div class="line">  volumes:</div><div class="line">  - name: conf</div><div class="line">    emptyDir: &#123;&#125;</div><div class="line">  - name: myconf</div><div class="line">    emptyDir: &#123;&#125;</div><div class="line">  - name: config-map</div><div class="line">    configMap:</div><div class="line">      name: mysql</div><div class="line">  initContainers:</div><div class="line">  - name: init-mysql</div><div class="line">    image: mysql:5.7</div><div class="line">    command:</div><div class="line">    - bash</div><div class="line">    - &quot;-c&quot;</div><div class="line">    - |</div><div class="line">      set -ex</div><div class="line">      # Generate mysql server-id from pod ordinal index.</div><div class="line">      [[ `hostname` =~ -([0-9]+)$ ]] || exit 1</div><div class="line">      ordinal=$&#123;BASH_REMATCH[1]&#125;</div><div class="line">      echo [mysqld] &gt; /mnt/conf.d/server-id.cnf</div><div class="line">      # Add an offset to avoid reserved server-id=0 value.</div><div class="line">      echo server-id=$((100 + $ordinal)) &gt;&gt; /mnt/conf.d/server-id.cnf</div><div class="line">      #echo &quot;innodb_buffer_pool_size=512m&quot; &gt; /mnt/rds.cnf</div><div class="line">      # Copy appropriate conf.d files from config-map to emptyDir.</div><div class="line">      #if [[ $ordinal -eq 0 ]]; then</div><div class="line">      cp /mnt/config-map/master.cnf /mnt/conf.d/</div><div class="line">      cp /mnt/config-map/mysqld.cnf /mnt/mysql.conf.d/</div><div class="line">      #else</div><div class="line">      #  cp /mnt/config-map/slave.cnf /mnt/conf.d/</div><div class="line">      #fi</div><div class="line">    volumeMounts:</div><div class="line">    - name: conf</div><div class="line">      mountPath: /mnt/conf.d</div><div class="line">    - name: myconf</div><div class="line">      mountPath: /mnt/mysql.conf.d</div><div class="line">    - name: config-map</div><div class="line">      mountPath: /mnt/config-map</div><div class="line">  containers:</div><div class="line">  - name: mysql</div><div class="line">    image: mysql:5.7</div><div class="line">    env:</div><div class="line">    #- name: MYSQL_ALLOW_EMPTY_PASSWORD</div><div class="line">    #  value: &quot;1&quot;</div><div class="line">    - name: MYSQL_ROOT_PASSWORD</div><div class="line">      valueFrom:</div><div class="line">        secretKeyRef:</div><div class="line">          name: mysql-root-password</div><div class="line">          key: password</div></pre></td></tr></table></figure>
+<p><strong>通过挂载方式进入到容器里的 Secret，一旦其对应的 Etcd 里的数据被更新，这些 Volume 里的文件内容，同样也会被更新。其实，这是 kubelet 组件在定时维护这些 Volume。</strong></p>
+<p>集群会自动创建一个 default-token-<em>**</em> 的secret，然后所有pod都会自动将这个 secret通过 Porjected Volume挂载到容器，也叫 ServiceAccountToken，是一种特殊的Secret</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">    Environment:    &lt;none&gt;</div><div class="line">    Mounts:</div><div class="line">      /var/run/secrets/kubernetes.io/serviceaccount from default-token-ncgdl (ro)</div><div class="line">Conditions:</div><div class="line">  Type              Status</div><div class="line">  Initialized       True </div><div class="line">  Ready             True </div><div class="line">  ContainersReady   True </div><div class="line">  PodScheduled      True </div><div class="line">Volumes:</div><div class="line">  default-token-ncgdl:</div><div class="line">    Type:        Secret (a volume populated by a Secret)</div><div class="line">    SecretName:  default-token-ncgdl</div><div class="line">    Optional:    false</div><div class="line">QoS Class:       BestEffort</div></pre></td></tr></table></figure>
+<h2 id="apply-create操作"><a href="#apply-create操作" class="headerlink" title="apply create操作"></a>apply create操作</h2><p>先 kubectl create，再 replace 的操作，我们称为命令式配置文件操作</p>
+<p>kubectl apply 命令才是“声明式 API”</p>
+<blockquote>
+<p>kubectl replace 的执行过程，是使用新的 YAML 文件中的 API 对象，替换原有的 API 对象；</p>
+<p>而 kubectl apply，则是执行了一个对原有 API 对象的 PATCH 操作。</p>
+<p>kubectl set image 和 kubectl edit 也是对已有 API 对象的修改</p>
+</blockquote>
+<p> kube-apiserver 在响应命令式请求（比如，kubectl replace）的时候，一次只能处理一个写请求，否则会有产生冲突的可能。而对于声明式请求（比如，kubectl apply），一次能处理多个写操作，并且具备 Merge 能力</p>
+<p>声明式 API，相当于对外界所有操作（并发接收）串行merge，才是 Kubernetes 项目编排能力“赖以生存”的核心所在</p>
+<blockquote>
+<p>如何使用控制器模式，同 Kubernetes 里 API 对象的“增、删、改、查”进行协作，进而完成用户业务逻辑的编写过程。</p>
+</blockquote>
+<h2 id="helm"><a href="#helm" class="headerlink" title="helm"></a>helm</h2><p>Helm 是 Kubernetes 的包管理器。包管理器类似于我们在 Ubuntu 中使用的apt、Centos中使用的yum 或者Python中的 pip 一样，能快速查找、下载和安装软件包。Helm 由客户端组件 helm 和服务端组件 Tiller 组成, 能够将一组K8S资源打包统一管理, 是查找、共享和使用为Kubernetes构建的软件的最佳方式。</p>
+<p>建立local repo index：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">helm repo index [DIR] [flags]</div></pre></td></tr></table></figure>
+<p>仓库只能index 到 helm package 发布后的tgz包，意义不大。每次index后需要 helm repo update</p>
+<p>然后可以启动一个http服务：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">nohup python -m SimpleHTTPServer 8089 &amp;</div></pre></td></tr></table></figure>
+<p>将local repo加入到仓库：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"> helm repo add local http://127.0.0.1:8089</div><div class="line"> </div><div class="line"> # helm repo list</div><div class="line">NAME 	URL                  </div><div class="line">local	http://127.0.0.1:8089</div></pre></td></tr></table></figure>
+<p>install chart：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">//helm3 默认不自动创建namespace，不带参数就报没有 ame 的namespace错误</div><div class="line">helm install -name wordpress -n test --create-namespace .</div><div class="line"></div><div class="line">helm list -n test</div></pre></td></tr></table></figure>
+<p>quote是一个模板方法，可以将输入的参数添加双引号:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">&#123;&#123; .Release.Name &#125;&#125; 这种是helm内部自带的值，都是一些内建的变量，所有人都可以访问</div><div class="line"></div><div class="line">image: &quot;&#123;&#123; .Values.image.repository &#125;&#125;:&#123;&#123; .Values.image.tag | default .Chart.AppVersion&#125;&#125;&quot;  这种是我们从values.yaml文件中获取或者从命令行中获取的值。</div></pre></td></tr></table></figure>
+<h3 id="模板片段"><a href="#模板片段" class="headerlink" title="模板片段"></a>模板片段</h3><p>之前我们看到有个文件叫做_helpers.tpl，我们介绍是说存储模板片段的地方。</p>
+<p>模板片段其实也可以在文件中定义，但是为了更好管理，可以在_helpers.tpl中定义，使用时直接调用即可。</p>
+<h2 id="自动补全"><a href="#自动补全" class="headerlink" title="自动补全"></a>自动补全</h2><p>kubernetes自动补全：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">source &lt;(kubectl completion bash)</div></pre></td></tr></table></figure>
+<p>helm自动补全：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">cd ~</div><div class="line">helm completion bash &gt; .helmrc &amp;&amp; echo &quot;source .helmrc&quot; &gt;&gt; .bashrc &amp;&amp; source .bashrc</div></pre></td></tr></table></figure>
+<p>两者都需要依赖 auto-completion，所以得先：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># yum install -y bash-completion</div><div class="line"># source /usr/share/bash-completion/bash_completion</div></pre></td></tr></table></figure>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/docker/" rel="tag"># docker</a>
+          
+            <a href="/tags/kubernetes/" rel="tag"># kubernetes</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2020/01/01/2010到2020这10年的碎碎念念/" rel="next" title="2010到2020这10年的碎碎念念">
+                <i class="fa fa-chevron-left"></i> 2010到2020这10年的碎碎念念
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2020/01/13/kubernetes 卷和volume/" rel="prev" title="kubernetes volume and storage">
+                kubernetes volume and storage <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/avatar.gif"
+               alt="weibo @plantegg" />
+          <p class="site-author-name" itemprop="name">weibo @plantegg</p>
+           
+              <p class="site-description motion-element" itemprop="description"></p>
+           
+        </div>
+        <nav class="site-state motion-element">
+
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">99</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-categories">
+              <a href="/categories/index.html">
+                <span class="site-state-item-count">19</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            
+            
+            <div class="site-state-item site-state-tags">
+              <a href="/tags/index.html">
+                <span class="site-state-item-count">185</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+          <div class="feed-link motion-element">
+            <a href="/atom.xml" rel="alternate">
+              <i class="fa fa-rss"></i>
+              RSS
+            </a>
+          </div>
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#kubernetes-集群部署"><span class="nav-number">1.</span> <span class="nav-text">kubernetes 集群部署</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#部署"><span class="nav-number">1.1.</span> <span class="nav-text">部署</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#初始化集群"><span class="nav-number">1.2.</span> <span class="nav-text">初始化集群</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#kubectl-管理多集群"><span class="nav-number">1.3.</span> <span class="nav-text">kubectl 管理多集群</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#快速合并两个cluster"><span class="nav-number">1.3.1.</span> <span class="nav-text">快速合并两个cluster</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#apiserver高可用"><span class="nav-number">1.4.</span> <span class="nav-text">apiserver高可用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#网络"><span class="nav-number">1.5.</span> <span class="nav-text">网络</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#dashboard"><span class="nav-number">1.6.</span> <span class="nav-text">dashboard</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#prometheus"><span class="nav-number">1.7.</span> <span class="nav-text">prometheus</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#部署应用"><span class="nav-number">1.8.</span> <span class="nav-text">部署应用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#DRDS-deployment"><span class="nav-number">1.8.1.</span> <span class="nav-text">DRDS deployment</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DRDS-Service"><span class="nav-number">1.8.2.</span> <span class="nav-text">DRDS Service</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#部署mysql-statefulset应用"><span class="nav-number">1.8.3.</span> <span class="nav-text">部署mysql statefulset应用</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#配置-Pod-使用-ConfigMap"><span class="nav-number">1.9.</span> <span class="nav-text">配置 Pod 使用 ConfigMap</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#apply-create操作"><span class="nav-number">1.10.</span> <span class="nav-text">apply create操作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#helm"><span class="nav-number">1.11.</span> <span class="nav-text">helm</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#模板片段"><span class="nav-number">1.11.1.</span> <span class="nav-text">模板片段</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#自动补全"><span class="nav-number">1.12.</span> <span class="nav-text">自动补全</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+
+<div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">weibo @plantegg</span>
+</div>
+
+
+<div class="powered-by">
+  由 <a class="theme-link" href="https://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Muse
+  </a>
+</div>
+
+<span id="busuanzi_container_site_pv">
+    本站总访问量<span id="busuanzi_value_site_pv"></span>次
+</span>
+<span id="busuanzi_container_site_uv">
+  本站访客数<span id="busuanzi_value_site_uv"></span>人次
+</span>
+
+
+        
+<div class="busuanzi-count">
+  <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+  
+    <span class="site-uv">
+      <i class="fa fa-user"></i> 访问人数
+      <span class="busuanzi-value" id="busuanzi_value_site_uv"></span>
+      人
+    </span>
+  
+
+  
+    <span class="site-pv">
+      <i class="fa fa-eye"></i>
+      <span class="busuanzi-value" id="busuanzi_value_site_pv"></span>
+      次
+    </span>
+  
+</div>
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.1"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.1"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'http://yoursite.com/2020/01/12/kubernetes/';
+          this.page.identifier = '2020/01/12/kubernetes/';
+          this.page.title = 'kubernetes 集群部署';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+<script>
+(function(){
+    var bp = document.createElement('script');
+    var curProtocol = window.location.protocol.split(':')[0];
+    if (curProtocol === 'https') {
+        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+    }
+    else {
+        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+    }
+    var s = document.getElementsByTagName("script")[0];
+    s.parentNode.insertBefore(bp, s);
+})();
+</script>
+
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
