@@ -115,9 +115,9 @@
       <category term="docker" scheme="http://yoursite.com/categories/docker/"/>
     
     
-      <category term="network" scheme="http://yoursite.com/tags/network/"/>
-    
       <category term="docker" scheme="http://yoursite.com/tags/docker/"/>
+    
+      <category term="network" scheme="http://yoursite.com/tags/network/"/>
     
       <category term="kubernetes" scheme="http://yoursite.com/tags/kubernetes/"/>
     
@@ -1140,7 +1140,7 @@ LISTEN    0     511              *:8085           *:*
     <link href="http://yoursite.com/2020/01/22/kubernetes%20service/"/>
     <id>http://yoursite.com/2020/01/22/kubernetes service/</id>
     <published>2020-01-22T09:30:03.000Z</published>
-    <updated>2020-09-19T09:53:35.857Z</updated>
+    <updated>2020-09-19T09:55:03.565Z</updated>
     
     <content type="html"><![CDATA[<h1 id="kubernetes-service-详解"><a href="#kubernetes-service-详解" class="headerlink" title="kubernetes service 详解"></a>kubernetes service 详解</h1><h2 id="service"><a href="#service" class="headerlink" title="service"></a>service</h2><p>根据创建Service的<code>type</code>类型不同，可分成4种模式：</p>
 <ul>
