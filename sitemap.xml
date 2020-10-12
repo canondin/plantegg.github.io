@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>http://yoursite.com/2020/09/22/kubernetes%20service%20%E5%92%8C%20kube-proxy%E8%AF%A6%E8%A7%A3/</loc>
+    
+    <lastmod>2020-10-12T01:06:42.477Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://yoursite.com/2018/12/26/%E7%BD%91%E7%BB%9C%E4%B8%A2%E5%8C%85/</loc>
     
     <lastmod>2020-10-12T01:02:49.949Z</lastmod>
@@ -40,13 +47,6 @@
     <loc>http://yoursite.com/2020/01/22/kubernetes%20service/</loc>
     
     <lastmod>2020-10-12T01:02:49.893Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>http://yoursite.com/2020/09/22/kubernetes%20service%20%E5%92%8C%20kube-proxy%E8%AF%A6%E8%A7%A3/</loc>
-    
-    <lastmod>2020-10-12T01:02:49.885Z</lastmod>
     
   </url>
   
