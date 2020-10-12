@@ -106,7 +106,7 @@
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2a8116a867726e3fea20e0f45e9ed9fa.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/b0d3f9bb8cc2a4bdcd2378e173ba8cf1.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/245e70b53aee4bfcdc9a921993ddad6f.png">
-<meta property="og:updated_time" content="2020-09-19T09:58:07.741Z">
+<meta property="og:updated_time" content="2020-10-12T01:02:49.925Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="nslookup-OK-but-ping-fail">
 <meta name="twitter:description" content="nslookup 域名结果正确，但是 ping 域名 返回 unknown host 2018-02 update : 最根本的原因 https://access.redhat.com/solutions/1426263  下面让我们来看看这个问题的定位过程先Google一下: nslookup ok but ping fail, 这个关键词居然被Google自动提示了，看来碰到这个问题同学的好多">
@@ -427,7 +427,7 @@
 <li>如果 /etc/resolv.conf 中配置了多个nameserver，默认使用第一个，只有第一个失败【如53端口不响应、查不到域名后再用后面的nameserver顶上】</li>
 <li>如果 /etc/resolv.conf 中配置了rotate，那么多个nameserver轮流使用. <a href="https://access.redhat.com/solutions/1426263" target="_blank" rel="external">但是因为底层库的原因用了rotate 会触发nameserver排序的时候第二个总是排在第一位</a></li>
 </ul>
-<p><strong>nslookup和dig程序是bind程序包所带的工具，专门用来检测DNS Server的，实现上更简单，就是一个目的，给DNS Server发DNS解析请求，没有调gethostbyname()函数，也就不遵循上述流程，而是直接到 /etc/resolv.conf 取第一个nameserver当dns server进行解析</strong></p>
+<p><strong>nslookup和dig程序是bind程序包所带的工具，专门用来检测DNS Server的，实现上更简单，就一个目的，给DNS Server发DNS解析请求，没有调gethostbyname()函数，也就不遵循上述流程，而是直接到 /etc/resolv.conf 取第一个nameserver当dns server进行解析</strong></p>
 <h3 id="glibc函数"><a href="#glibc函数" class="headerlink" title="glibc函数"></a>glibc函数</h3><p>glibc 的解析器(revolver code) 提供了下面两个函数实现名称到 ip 地址的解析, gethostbyname 函数以同步阻塞的方式提供服务, 没有超时等选项, 仅提供 IPv4 的解析. getaddrinfo 则没有这些限制, 同时支持 IPv4, IPv6, 也支持 IPv4 到 IPv6 的映射选项. 包含 Linux 在内的很多系统都已废弃 gethostbyname 函数, 使用 getaddrinfo 函数代替. 不过从现实的情况来看, 还是有很多程序或网络库使用 gethostbyname 进行服务.</p>
 <p>备注:<br>线上开启 nscd 前, 建议做好程序的测试, nscd 仅支持通过 glibc, c 标准机制运行的程序, 没有基于 glibc 运行的程序可能不支持 nscd. 另外一些 go, perl 等编程语言网络库的解析函数是单独实现的, 不会走 nscd 的 socket, 这种情况下程序可以进行名称解析, 但不会使用 nscd 缓存. 不过我们在测试环境中使用go, java 的常规网络库都可以正常连接 nscd 的 socket 进行请求; perl 语言使用 Net::DNS 模块, 不会使用 nscd 缓存; python 语言使用 python-dns 模块, 不会使用 nscd 缓存. python 和 perl 不使用模块的时候进行解析还是遵循上述的过程, 同时使用 nscd 缓存.</p>
 <h2 id="下面是glibc中对rotate的处理："><a href="#下面是glibc中对rotate的处理：" class="headerlink" title="下面是glibc中对rotate的处理："></a>下面是glibc中对rotate的处理：</h2><p>这是glibc 2.2.5(2010年的版本），如果有rotate逻辑就是把第一个nameserver总是丢到最后一个去（为了均衡nameserver的负载，保护第一个nameserver）：</p>
@@ -596,7 +596,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">98</span>
+                <span class="site-state-item-count">99</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>

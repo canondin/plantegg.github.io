@@ -108,7 +108,7 @@
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/16fda9322e9a59c37c11629acc611bf3.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/c6d1706b6f8162cfac528ddf5319c8e2.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/5c7172e2422579eb99c66e881d47bf99.png">
-<meta property="og:updated_time" content="2020-09-01T03:58:14.348Z">
+<meta property="og:updated_time" content="2020-10-12T01:02:49.877Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="kubernetes calico 网络">
 <meta name="twitter:description" content="kubernetes calico 网络kubernetes 集群下安装 calico 网络1234kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml#或者老版本的calicocurl https://docs.projectcalico.org/v3.15/manifests/calico.yaml -o c">
@@ -401,7 +401,7 @@
 <h2 id="calico-ipip网络不通"><a href="#calico-ipip网络不通" class="headerlink" title="calico ipip网络不通"></a>calico ipip网络不通</h2><p>集群有五台机器192.168.0.110-114, 同时每个node都有另外一个ip：192.168.3.110-114，部分节点之间不通。每台机器部署好calico网络后，会分配一个 /26 CIRD 子网（64个ip）。</p>
 <h3 id="案例1"><a href="#案例1" class="headerlink" title="案例1"></a>案例1</h3><p>目标机是10.122.127.128（宿主机ip 192.168.3.112），如果从10.122.17.64（宿主机ip 192.168.3.110） ping 10.122.127.128不通，查看10.122.127.128路由表：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">[root@az3-k8s-13 ~]# ip route |grep tunl0</div><div class="line">10.122.17.64/26 via 10.122.127.128 dev tunl0  //这条路由不通</div><div class="line">[root@az3-k8s-13 ~]# ip route del 10.122.17.64/26 via 10.122.127.128 dev tunl0 ; ip route add 10.122.17.64/26 via 192.168.3.110 dev tunl0 proto bird onlink</div><div class="line">RTNETLINK answers: File exists</div><div class="line">[root@az3-k8s-13 ~]# ip route |grep tunl0</div><div class="line">10.122.17.64/26 via 192.168.3.110 dev tunl0 proto bird onlink //这样就通了</div></pre></td></tr></table></figure>
-<p>在10.122.127.128抓包如下，明显可以看到icmp request到了 tunl0网卡，tunl0网卡也回复了，但是回复包没有经过kerneli pip模块封装后发到eth1上：</p>
+<p>在10.122.127.128抓包如下，明显可以看到icmp request到了 tunl0网卡，tunl0网卡也回复了，但是回复包没有经过kernel ipip模块封装后发到eth1上：</p>
 <p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d3111417ce646ca1475def5bea01e6b9.png" alt="image.png"></p>
 <p>正常机器应该是这样，上图不正常的时候缺少红框中的reply：</p>
 <p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/9ea9041af1211b2a5b8de4e216044465.png" alt="image.png"></p>
@@ -573,7 +573,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">98</span>
+                <span class="site-state-item-count">99</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>

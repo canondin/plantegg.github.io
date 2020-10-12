@@ -77,7 +77,7 @@
 <link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="Linux,performance,TCP,sendBuffer,rmem,wmem,recvBuffer,接收窗口,发送窗口," />
+  <meta name="keywords" content="performance,Linux,TCP,sendBuffer,rmem,wmem,recvBuffer,接收窗口,发送窗口," />
 
 
 
@@ -96,7 +96,7 @@
 
 
 <meta name="description" content="前言本文希望解析清楚，当我们在代码中写下 socket.setSendBufferSize 和 sysctl 看到的rmem/wmem系统参数以及最终我们在TCP常常谈到的接收发送窗口的关系，以及他们怎样影响TCP传输的性能，同时如何通过图形来展示哪里是传输瓶颈。 拥塞窗口相关文章比较多，他们跟带宽紧密相关，所以大家比较好判断，反而是接收、发送窗口一旦出现瓶颈，就没这么好判断了。 先明确一下：文章">
-<meta name="keywords" content="Linux,performance,TCP,sendBuffer,rmem,wmem,recvBuffer,接收窗口,发送窗口">
+<meta name="keywords" content="performance,Linux,TCP,sendBuffer,rmem,wmem,recvBuffer,接收窗口,发送窗口">
 <meta property="og:type" content="article">
 <meta property="og:title" content="TCP性能和发送接收窗口、Buffer的关系">
 <meta property="og:url" content="http://yoursite.com/2019/09/28/就是要你懂TCP--性能和发送接收Buffer的关系/index.html">
@@ -135,7 +135,7 @@
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d56f87a19a10b0ac9a3b7009641247a0.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d5e2e358dd1a24e104f54815c84875c9.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/48eae3dcd7c78a68b0afd5c66f783f23.png">
-<meta property="og:updated_time" content="2020-09-19T09:19:51.761Z">
+<meta property="og:updated_time" content="2020-09-19T10:00:19.247Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="TCP性能和发送接收窗口、Buffer的关系">
 <meta name="twitter:description" content="前言本文希望解析清楚，当我们在代码中写下 socket.setSendBufferSize 和 sysctl 看到的rmem/wmem系统参数以及最终我们在TCP常常谈到的接收发送窗口的关系，以及他们怎样影响TCP传输的性能，同时如何通过图形来展示哪里是传输瓶颈。 拥塞窗口相关文章比较多，他们跟带宽紧密相关，所以大家比较好判断，反而是接收、发送窗口一旦出现瓶颈，就没这么好判断了。 先明确一下：文章">
@@ -716,9 +716,9 @@ net.ipv4.tcp_mem = 88560        118080  177120
       
         <div class="post-tags">
           
-            <a href="/tags/Linux/" rel="tag"># Linux</a>
-          
             <a href="/tags/performance/" rel="tag"># performance</a>
+          
+            <a href="/tags/Linux/" rel="tag"># Linux</a>
           
             <a href="/tags/TCP/" rel="tag"># TCP</a>
           
@@ -836,7 +836,7 @@ net.ipv4.tcp_mem = 88560        118080  177120
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">98</span>
+                <span class="site-state-item-count">99</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>

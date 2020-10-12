@@ -105,7 +105,7 @@
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/5478d28fb7aaba3adeb4260bc15c0c65.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/48fb8755f8e96b8df58c6c537650b81b.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/04283745fd082003e5f77e78a55e0d67.png">
-<meta property="og:updated_time" content="2020-07-16T06:02:41.943Z">
+<meta property="og:updated_time" content="2020-10-12T01:02:49.949Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="网络丢包">
 <meta name="twitter:description" content="网络丢包查看网卡是否丢包，一般是ring buffer太小ethtool -S eth0 | grep rx_ | grep errors 当驱动处理速度跟不上网卡收包速度时，驱动来不及分配缓冲区，NIC接收到的数据包无法及时写到sk_buffer(由网卡驱动直接在内核中分配的内存，并存放数据包，供内核软中断的时候读取)，就会产生堆积，当NIC内部缓冲区写满后，就会丢弃部分数据，引起丢包。这部分丢">
@@ -447,8 +447,11 @@
 0xffffffff8107d254 : local_bh_enable_ip+0x94/0xa0 [kernel]
 0xffffffff81634f4b : _raw_spin_unlock_bh+0x1b/0x40 [kernel]
 0xffffffff8150d968 : release_sock+0x118/0x170 [kernel]
-</code></pre><p>参考资料：</p>
-<p><a href="https://mp.weixin.qq.com/s?__biz=MjM5NjQ5MTI5OA==&amp;mid=2651747704&amp;idx=3&amp;sn=cd76ad912729a125fd56710cb42792ba&amp;chksm=bd12ac358a6525235f51e3937d99ea113ed45542c51bc58bb9588fa1198f34d95b7d13ae1ae2&amp;mpshare=1&amp;scene=1&amp;srcid=07047U4tN9Y3m97WQUJSLENt#rd" target="_blank" rel="external">https://mp.weixin.qq.com/s?__biz=MjM5NjQ5MTI5OA==&amp;mid=2651747704&amp;idx=3&amp;sn=cd76ad912729a125fd56710cb42792ba&amp;chksm=bd12ac358a6525235f51e3937d99ea113ed45542c51bc58bb9588fa1198f34d95b7d13ae1ae2&amp;mpshare=1&amp;scene=1&amp;srcid=07047U4tN9Y3m97WQUJSLENt#rd</a></p>
+</code></pre><h2 id="iptables和tcpdump"><a href="#iptables和tcpdump" class="headerlink" title="iptables和tcpdump"></a>iptables和tcpdump</h2><blockquote>
+<p>sudo iptables -A INPUT -p tcp –destination-port 8089 -j DROP</p>
+</blockquote>
+<p>tcpdump 在如上iptables之前，也就是即使被DROP还是能tcpdump到8089的packet</p>
+<h2 id="参考资料："><a href="#参考资料：" class="headerlink" title="参考资料："></a>参考资料：</h2><p><a href="https://mp.weixin.qq.com/s?__biz=MjM5NjQ5MTI5OA==&amp;mid=2651747704&amp;idx=3&amp;sn=cd76ad912729a125fd56710cb42792ba&amp;chksm=bd12ac358a6525235f51e3937d99ea113ed45542c51bc58bb9588fa1198f34d95b7d13ae1ae2&amp;mpshare=1&amp;scene=1&amp;srcid=07047U4tN9Y3m97WQUJSLENt#rd" target="_blank" rel="external">https://mp.weixin.qq.com/s?__biz=MjM5NjQ5MTI5OA==&amp;mid=2651747704&amp;idx=3&amp;sn=cd76ad912729a125fd56710cb42792ba&amp;chksm=bd12ac358a6525235f51e3937d99ea113ed45542c51bc58bb9588fa1198f34d95b7d13ae1ae2&amp;mpshare=1&amp;scene=1&amp;srcid=07047U4tN9Y3m97WQUJSLENt#rd</a></p>
 <p><a href="http://blog.hyfather.com/blog/2013/03/04/ifconfig/" target="_blank" rel="external">http://blog.hyfather.com/blog/2013/03/04/ifconfig/</a></p>
 
       
@@ -589,7 +592,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">98</span>
+                <span class="site-state-item-count">99</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -653,7 +656,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#网络丢包"><span class="nav-number">1.</span> <span class="nav-text">网络丢包</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#查看网卡是否丢包，一般是ring-buffer太小"><span class="nav-number">1.1.</span> <span class="nav-text">查看网卡是否丢包，一般是ring buffer太小</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#查看ring-buffer的大小设置"><span class="nav-number">1.2.</span> <span class="nav-text">查看ring buffer的大小设置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Socket-buffer太小导致的丢包（一般不多见）"><span class="nav-number">1.3.</span> <span class="nav-text">Socket buffer太小导致的丢包（一般不多见）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#net-core-netdev-budget"><span class="nav-number">1.4.</span> <span class="nav-text">net.core.netdev_budget</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#net-core-netdev-max-backlog"><span class="nav-number">1.5.</span> <span class="nav-text">net.core.netdev_max_backlog</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#rp-filter"><span class="nav-number">1.6.</span> <span class="nav-text">rp_filter</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#关于ifconfig的种种解释"><span class="nav-number">1.7.</span> <span class="nav-text">关于ifconfig的种种解释</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#核心流程"><span class="nav-number">1.8.</span> <span class="nav-text">核心流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#通过Dropwatch来查看丢包点"><span class="nav-number">1.9.</span> <span class="nav-text">通过Dropwatch来查看丢包点</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#网络丢包"><span class="nav-number">1.</span> <span class="nav-text">网络丢包</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#查看网卡是否丢包，一般是ring-buffer太小"><span class="nav-number">1.1.</span> <span class="nav-text">查看网卡是否丢包，一般是ring buffer太小</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#查看ring-buffer的大小设置"><span class="nav-number">1.2.</span> <span class="nav-text">查看ring buffer的大小设置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Socket-buffer太小导致的丢包（一般不多见）"><span class="nav-number">1.3.</span> <span class="nav-text">Socket buffer太小导致的丢包（一般不多见）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#net-core-netdev-budget"><span class="nav-number">1.4.</span> <span class="nav-text">net.core.netdev_budget</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#net-core-netdev-max-backlog"><span class="nav-number">1.5.</span> <span class="nav-text">net.core.netdev_max_backlog</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#rp-filter"><span class="nav-number">1.6.</span> <span class="nav-text">rp_filter</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#关于ifconfig的种种解释"><span class="nav-number">1.7.</span> <span class="nav-text">关于ifconfig的种种解释</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#核心流程"><span class="nav-number">1.8.</span> <span class="nav-text">核心流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#通过Dropwatch来查看丢包点"><span class="nav-number">1.9.</span> <span class="nav-text">通过Dropwatch来查看丢包点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#iptables和tcpdump"><span class="nav-number">1.10.</span> <span class="nav-text">iptables和tcpdump</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料："><span class="nav-number">1.11.</span> <span class="nav-text">参考资料：</span></a></li></ol></li></ol></div>
             
 
           </div>
