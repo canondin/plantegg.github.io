@@ -117,7 +117,7 @@
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/f6efb2e51abbd2c88a099ee9dc942d37.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/e013d356145d1be6d6a69e2f1b32bdc8.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/1b69dfd206a91dc4007781163fd55f41.png">
-<meta property="og:updated_time" content="2020-10-12T01:02:49.893Z">
+<meta property="og:updated_time" content="2020-10-13T06:12:01.058Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="kubernetes service">
 <meta name="twitter:description" content="kubernetes service 和 kube-proxy详解service 模式根据创建Service的type类型不同，可分成4种模式：  ClusterIP： 默认方式。根据是否生成ClusterIP又可分为普通Service和Headless Service两类： 普通Service：通过为Kubernetes的Service分配一个集群内部可访问的固定虚拟IP（Cluster IP）">
@@ -567,11 +567,8 @@
 <p>由于所有这些操作都是发生在 XDP 层的，因此它称为 AF_XDP。插入到这里的 BPF 代码 能直接将包送到 socket。</p>
 <p>Facebook 公布了生产环境 XDP+eBPF 使用案例（DDoS &amp; LB）</p>
 <ul>
-<li><ul>
 <li>用 XDP/eBPF 重写了原来基于 IPVS 的 L4LB，性能 10x。</li>
 <li>eBPF 经受住了严苛的考验：从 2017 开始，每个进入 facebook.com 的包，都是经过了 XDP &amp; eBPF 处理的。</li>
-</ul>
-</li>
 </ul>
 <p><strong>Cilium 1.6 发布</strong> 第一次支持完全干掉基于 iptables 的 kube-proxy，全部功能基于 eBPF。Cilium 1.8 支持基于 XDP 的 Service 负载均衡和 host network policies。</p>
 <p>传统的 kube-proxy 处理 Kubernetes Service 时，包在内核中的 转发路径是怎样的？如下图所示：</p>

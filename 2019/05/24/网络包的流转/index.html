@@ -112,7 +112,7 @@
 <meta property="og:image" content="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1557291324544-ca69d448-08e4-46c4-9c49-8cf516fc3eaa.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d42ccdb0b8f6270d8b559145c0b89c86.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/a067b484c593aa3a4b6a525d1f93506e.png">
-<meta property="og:updated_time" content="2020-09-24T04:56:46.129Z">
+<meta property="og:updated_time" content="2020-10-13T06:12:01.078Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Linux Network Stack">
 <meta name="twitter:description" content="Linux Network Stack一个网络包进到网卡后续如何流转，中间有哪些关键参数，有什么工具能帮忙可以看到各个环节的一些指征，怎么调整他们 接收流程 网络包进到网卡，网卡驱动校验MAC，看是否扔掉，取决是否是混杂 promiscuous mode 网卡在启动时会申请一个接收ring buffer，其条目都会指向一个skb的内存。 DMA完成数据报文从网卡硬件到内存到拷贝 网卡发送一个中断通">
@@ -400,8 +400,8 @@
 <li>网卡在启动时会申请一个接收ring buffer，其条目都会指向一个skb的内存。</li>
 <li>DMA完成数据报文从网卡硬件到内存到拷贝</li>
 <li>网卡发送一个中断通知CPU。</li>
-<li>CPU执行网卡驱动注册的中断处理函数，中断处理函数只做一些必要的工作，如读取硬件状态等，并把当前该网卡挂在NAPI的链表中，</li>
-<li>Driver“触发” soft IRQ(NET_RX_SOFTIRQ 其实就是设置对应软中断的标志位) </li>
+<li>CPU执行网卡驱动注册的中断处理函数，中断处理函数只做一些必要的工作，如读取硬件状态等，并把当前该网卡挂在NAPI的链表中;</li>
+<li>Driver “触发” soft IRQ(NET_RX_SOFTIRQ (其实就是设置对应软中断的标志位) </li>
 <li>CPU中断处理函数返回后，会检查是否有软中断需要执行。因第三步设置了NET_RX_SOFTIRQ，则执行报文接收软中断。</li>
 <li>在NET_RX_SOFTIRQ软中断中，执行NAPI操作，回调第三步挂载的驱动poll函数。</li>
 <li>驱动会对interface进行poll操作，检查网卡是否有接收完毕的数据报文。</li>
@@ -410,7 +410,7 @@
 <li>内核分配 sk_buff 内存</li>
 <li>内核填充 metadata: 协议等，移除 ethernet 包头信息</li>
 <li><strong>将skb 传送给内核协议栈 netif_receive_skb</strong></li>
-<li>复制 skb to taps(i.e. tcpdump)</li>
+<li><code>__netif_receive_skb_core</code>：将数据送到抓包点（tap）或协议层(i.e. tcpdump)</li>
 <li>进入到由 netdev_max_backlog 控制的qdisc</li>
 <li>开始 <strong>ip_rcv</strong> 处理流程，主要处理ip协议包头相关信息</li>
 <li>调用内核 netfilter 框架(iptables PREROUTING)</li>
@@ -419,6 +419,9 @@
 <li>根据 tcp_rmem 进入接收缓冲队列</li>
 <li>内核将数据送给接收的应用</li>
 </ol>
+<blockquote>
+<p> 软中断：可以把软中断系统想象成一系列<strong>内核线程</strong>（每个 CPU 一个），这些线程执行针对不同 事件注册的处理函数（handler）。如果你用过 <code>top</code> 命令，可能会注意到 <code>ksoftirqd/0</code> 这个内核线程，其表示这个软中断线程跑在 CPU 0 上。</p>
+</blockquote>
 <h3 id="典型的接收堆栈"><a href="#典型的接收堆栈" class="headerlink" title="典型的接收堆栈"></a>典型的接收堆栈</h3><p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1557292725626-2e4b452b-8a9e-4d9f-91a6-64357fbd4e0e.png" alt="undefined"> </p>
 <h3 id="从四层协议栈来看收包流程"><a href="#从四层协议栈来看收包流程" class="headerlink" title="从四层协议栈来看收包流程"></a>从四层协议栈来看收包流程</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ddd50d2c70215d477d72734b0834410a.png" alt="image.png"></p>
 <h3 id="DMA驱动部分流程图"><a href="#DMA驱动部分流程图" class="headerlink" title="DMA驱动部分流程图"></a>DMA驱动部分流程图</h3><p><a href="https://ylgrgyq.github.io/2017/07/23/linux-receive-packet-1/" target="_blank" rel="external">DMA是一个硬件逻辑</a>，数据传输到系统物理内存的过程中，全程不需要CPU的干预，除了占用总线之外(期间CPU不能使用总线)，没有任何额外开销。</p>
@@ -438,7 +441,7 @@
 <li>根据 tcp_wmem 缓存需要发送的包</li>
 <li>构造TCP包头(src/dst port)</li>
 <li>ipv4 调用 tcp_write_xmit 和 tcp_transmit_skb</li>
-<li>ip_queue_xmit, 构建 ip 包头</li>
+<li>ip_queue_xmit, 构建 ip 包头(获取目标ip和port)</li>
 <li>进入 netfilter 流程 nf_hook()</li>
 <li>路由流程 POST_ROUTING</li>
 <li>ip_output 分片</li>
@@ -449,6 +452,8 @@
 </ol>
 <h3 id="典型的发送堆栈"><a href="#典型的发送堆栈" class="headerlink" title="典型的发送堆栈"></a>典型的发送堆栈</h3><p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1557292508719-5b5a2507-a638-4035-a47a-a8599e69f879.png" alt="undefined"> </p>
 <h3 id="从四层协议栈来看发包流程"><a href="#从四层协议栈来看发包流程" class="headerlink" title="从四层协议栈来看发包流程"></a>从四层协议栈来看发包流程</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/0126bbb59ac317337ca963ef83817159.png" alt="image.png"></p>
+<p><code>net.core.dev_weight</code> 用来调整 <code>__qdisc_run</code> 的循环处理权重，调大后也就是 <code>__netif_schedule</code> 更多的被调用执</p>
+<p>用 <code>sudo ifconfig eth0 txqueuelen **</code> 来控制qdisc 发送队列长度</p>
 <h2 id="内核相关参数"><a href="#内核相关参数" class="headerlink" title="内核相关参数"></a>内核相关参数</h2><h3 id="Ring-Buffer"><a href="#Ring-Buffer" class="headerlink" title="Ring Buffer"></a>Ring Buffer</h3><p>Ring Buffer位于NIC和IP层之间，是一个典型的FIFO（先进先出）环形队列。Ring Buffer没有包含数据本身，而是包含了指向sk_buff（socket kernel buffers）的描述符。<br>可以使用ethtool -g eth0查看当前Ring Buffer的设置：</p>
 <pre><code>$sudo ethtool -g eth0
 Ring parameters for eth0:
@@ -508,17 +513,27 @@ cat /proc/interrupts
 <li>RX errors：表示总的收包的错误数量，这包括 too-long-frames 错误，Ring Buffer 溢出错误，crc 校验错误，帧同步错误，fifo overruns 以及 missed pkg 等等。</li>
 </ul>
 <h4 id="overruns"><a href="#overruns" class="headerlink" title="overruns"></a>overruns</h4><p>当驱动处理速度跟不上网卡收包速度时，驱动来不及分配缓冲区，NIC接收到的数据包无法及时写到sk_buffer，就会产生堆积，当NIC内部缓冲区写满后，就会丢弃部分数据，引起丢包。这部分丢包为rx_fifo_errors，在 /proc/net/dev中体现为fifo字段增长，在ifconfig中体现为overruns指标增长。</p>
-<h3 id="监控指标-proc-net-softnet-stat"><a href="#监控指标-proc-net-softnet-stat" class="headerlink" title="监控指标 /proc/net/softnet_stat"></a>监控指标 /proc/net/softnet_stat</h3><h4 id="net-core-netdev-budget"><a href="#net-core-netdev-budget" class="headerlink" title="net.core.netdev_budget"></a>net.core.netdev_budget</h4><p>sysctl net.core.netdev_budget //默认300， The default value of the budget is 300. This will<br>cause the SoftIRQ process to drain 300 messages from the NIC before getting off the CPU</p>
-<p>如果 /proc/net/softnet_stat 第三列一直在增加的话需要，表示SoftIRQ 获取的CPU时间太短，来不及处理足够多的网络包，那么需要增大这个值</p>
-<p>增大和查看 net.core.netdev_budget</p>
-<pre><code>sysctl -a | grep net.core.netdev_budget
-sysctl -w net.core.netdev_budget=400 //临时性增大
-</code></pre><h4 id="netdev-max-backlog"><a href="#netdev-max-backlog" class="headerlink" title="netdev_max_backlog"></a>netdev_max_backlog</h4><p>The netdev_max_backlog is a queue within the Linux kernel where traffic is stored after reception from the NIC, but before processing by the protocol stacks (IP, TCP, etc). There is one backlog queue per CPU core. </p>
+<h3 id="监控指标-proc-net-softnet-stat"><a href="#监控指标-proc-net-softnet-stat" class="headerlink" title="监控指标 /proc/net/softnet_stat"></a>监控指标 /proc/net/softnet_stat</h3><h4 id="net-core-netdev-budget"><a href="#net-core-netdev-budget" class="headerlink" title="net.core.netdev_budget"></a>net.core.netdev_budget</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sysctl net.core.netdev_budget //默认300， The default value of the budget is 300. This will cause the SoftIRQ process to drain 300 messages from the NIC before getting off the CPU</div></pre></td></tr></table></figure>
+<p>如果 /proc/net/softnet_stat <strong>第三列</strong>一直在增加的话需要，表示SoftIRQ 获取的CPU时间太短，来不及处理足够多的网络包，那么需要增大这个值</p>
+<p>增大和查看 net.core.netdev_budget<br>        sysctl -a | grep net.core.netdev_budget<br>        sysctl -w net.core.netdev_budget=400 //临时性增大</p>
+<h4 id="netdev-max-backlog"><a href="#netdev-max-backlog" class="headerlink" title="netdev_max_backlog"></a>netdev_max_backlog</h4><p>The netdev_max_backlog is a queue within the Linux kernel where traffic is stored after reception from the NIC, but before processing by the protocol stacks (IP, TCP, etc). There is one backlog queue per CPU core. </p>
 <p>如果 /proc/net/softnet_stat 第二列一直在增加的话表示netdev backlog queue overflows. 需要增大 netdev_max_backlog</p>
 <p>增大和查看 netdev_max_backlog：</p>
 <pre><code>sysctl -a |grep netdev_max_backlog
 sysctl -w net.core.netdev_max_backlog=1024 //临时性增大
 </code></pre><p>netdev_max_backlog(接收)和txqueuelen(发送)相对应 </p>
+<h4 id="softnet-stat"><a href="#softnet-stat" class="headerlink" title="softnet_stat"></a>softnet_stat</h4><p>关于<code>/proc/net/softnet_stat</code> 的重要细节:</p>
+<ol>
+<li>每一行代表一个 <code>struct softnet_data</code> 变量。因为每个 CPU 只有一个该变量，所以每行 其实代表一个 CPU</li>
+<li>每列用空格隔开，数值用 16 进制表示</li>
+<li>第一列 <code>sd-&gt;processed</code>，是处理的网络帧的数量。如果你使用了 ethernet bonding， 那这个值会大于总的网络帧的数量，因为 ethernet bonding 驱动有时会触发网络数据被 重新处理（re-processed）</li>
+<li>第二列，<code>sd-&gt;dropped</code>，是因为处理不过来而 drop 的网络帧数量。后面会展开这一话题</li>
+<li>第三列，<code>sd-&gt;time_squeeze</code>，前面介绍过了，由于 budget 或 time limit 用完而退出 <code>net_rx_action</code> 循环的次数</li>
+<li>接下来的 5 列全是 0</li>
+<li>第九列，<code>sd-&gt;cpu_collision</code>，是为了发送包而获取锁的时候有冲突的次数</li>
+<li>第十列，<code>sd-&gt;received_rps</code>，是这个 CPU 被其他 CPU 唤醒去收包的次数</li>
+<li>最后一列，<code>flow_limit_count</code>，是达到 flow limit 的次数。flow limit 是 RPS 的特性， 后面会稍微介绍一下</li>
+</ol>
 <h3 id="TCP协议栈Buffer"><a href="#TCP协议栈Buffer" class="headerlink" title="TCP协议栈Buffer"></a>TCP协议栈Buffer</h3><pre><code>    sysctl -a | grep net.ipv4.tcp_rmem   // receive
     sysctl -a | grep net.ipv4.tcp_wmem   // send
     //监控
@@ -562,6 +577,8 @@ sysctl -w net.core.netdev_max_backlog=1024 //临时性增大
 <p><a href="https://www.cnblogs.com/fczjuever/archive/2013/04/17/3026694.html" target="_blank" rel="external">Linux之TCPIP内核参数优化</a></p>
 <p><a href="https://access.redhat.com/sites/default/files/attachments/20150325_network_performance_tuning.pdf" target="_blank" rel="external">https://access.redhat.com/sites/default/files/attachments/20150325_network_performance_tuning.pdf</a></p>
 <p><a href="https://ylgrgyq.github.io/2017/07/23/linux-receive-packet-1/" target="_blank" rel="external">Linux 网络协议栈收消息过程-Ring Buffer</a> : 支持 RSS 的网卡内部会有多个 Ring Buffer，NIC 收到 Frame 的时候能通过 Hash Function 来决定 Frame 该放在哪个 Ring Buffer 上，触发的 IRQ 也可以通过操作系统或者手动配置 IRQ affinity 将 IRQ 分配到多个 CPU 上。这样 IRQ 能被不同的 CPU 处理，从而做到 Ring Buffer 上的数据也能被不同的 CPU 处理，从而提高数据的并行处理能力。</p>
+<p><a href="http://arthurchiao.art/blog/tuning-stack-tx-zh/" target="_blank" rel="external">Linux 网络栈监控和调优：发送数据</a></p>
+<p><a href="http://arthurchiao.art/blog/tuning-stack-rx-zh/" target="_blank" rel="external">Linux 网络栈监控和调优：接收数据（2016）</a></p>
 
       
     </div>
@@ -763,7 +780,7 @@ sysctl -w net.core.netdev_max_backlog=1024 //临时性增大
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Linux-Network-Stack"><span class="nav-number">1.</span> <span class="nav-text">Linux Network Stack</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#接收流程"><span class="nav-number">1.1.</span> <span class="nav-text">接收流程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#典型的接收堆栈"><span class="nav-number">1.1.1.</span> <span class="nav-text">典型的接收堆栈</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#从四层协议栈来看收包流程"><span class="nav-number">1.1.2.</span> <span class="nav-text">从四层协议栈来看收包流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DMA驱动部分流程图"><span class="nav-number">1.1.3.</span> <span class="nav-text">DMA驱动部分流程图</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#网卡传递数据包到内核的流程图及参数"><span class="nav-number">1.1.4.</span> <span class="nav-text">网卡传递数据包到内核的流程图及参数</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#发送流程"><span class="nav-number">1.2.</span> <span class="nav-text">发送流程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#典型的发送堆栈"><span class="nav-number">1.2.1.</span> <span class="nav-text">典型的发送堆栈</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#从四层协议栈来看发包流程"><span class="nav-number">1.2.2.</span> <span class="nav-text">从四层协议栈来看发包流程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#内核相关参数"><span class="nav-number">1.3.</span> <span class="nav-text">内核相关参数</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Ring-Buffer"><span class="nav-number">1.3.1.</span> <span class="nav-text">Ring Buffer</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#调整-Ring-Buffer-队列数量"><span class="nav-number">1.3.1.1.</span> <span class="nav-text">调整 Ring Buffer 队列数量</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#网卡各种统计数据查看"><span class="nav-number">1.3.1.2.</span> <span class="nav-text">网卡各种统计数据查看</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#网卡进出队列大小调整"><span class="nav-number">1.3.1.3.</span> <span class="nav-text">网卡进出队列大小调整</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#txqueuelen"><span class="nav-number">1.3.2.</span> <span class="nav-text">txqueuelen</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Interrupt-Coalescence-IC-rx-usecs-tx-usecs-rx-frames-tx-frames-hardware-IRQ"><span class="nav-number">1.3.3.</span> <span class="nav-text">Interrupt Coalescence (IC) - rx-usecs, tx-usecs, rx-frames, tx-frames (hardware IRQ)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ifconfig-监控指标"><span class="nav-number">1.3.4.</span> <span class="nav-text">ifconfig 监控指标</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#overruns"><span class="nav-number">1.3.4.1.</span> <span class="nav-text">overruns</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#监控指标-proc-net-softnet-stat"><span class="nav-number">1.3.5.</span> <span class="nav-text">监控指标 /proc/net/softnet_stat</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#net-core-netdev-budget"><span class="nav-number">1.3.5.1.</span> <span class="nav-text">net.core.netdev_budget</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#netdev-max-backlog"><span class="nav-number">1.3.5.2.</span> <span class="nav-text">netdev_max_backlog</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#TCP协议栈Buffer"><span class="nav-number">1.3.6.</span> <span class="nav-text">TCP协议栈Buffer</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#接收Buffer"><span class="nav-number">1.3.6.1.</span> <span class="nav-text">接收Buffer</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总体简略收包流程"><span class="nav-number">1.4.</span> <span class="nav-text">总体简略收包流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总体简略发送包流程"><span class="nav-number">1.5.</span> <span class="nav-text">总体简略发送包流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#案例"><span class="nav-number">1.6.</span> <span class="nav-text">案例</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#snat-dnat-宿主机port冲突，丢包"><span class="nav-number">1.6.1.</span> <span class="nav-text">snat/dnat 宿主机port冲突，丢包</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#容器-bridge-通过udp访问宿主机服务失败"><span class="nav-number">1.6.2.</span> <span class="nav-text">容器(bridge)通过udp访问宿主机服务失败</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">1.7.</span> <span class="nav-text">参考资料</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Linux-Network-Stack"><span class="nav-number">1.</span> <span class="nav-text">Linux Network Stack</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#接收流程"><span class="nav-number">1.1.</span> <span class="nav-text">接收流程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#典型的接收堆栈"><span class="nav-number">1.1.1.</span> <span class="nav-text">典型的接收堆栈</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#从四层协议栈来看收包流程"><span class="nav-number">1.1.2.</span> <span class="nav-text">从四层协议栈来看收包流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DMA驱动部分流程图"><span class="nav-number">1.1.3.</span> <span class="nav-text">DMA驱动部分流程图</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#网卡传递数据包到内核的流程图及参数"><span class="nav-number">1.1.4.</span> <span class="nav-text">网卡传递数据包到内核的流程图及参数</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#发送流程"><span class="nav-number">1.2.</span> <span class="nav-text">发送流程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#典型的发送堆栈"><span class="nav-number">1.2.1.</span> <span class="nav-text">典型的发送堆栈</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#从四层协议栈来看发包流程"><span class="nav-number">1.2.2.</span> <span class="nav-text">从四层协议栈来看发包流程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#内核相关参数"><span class="nav-number">1.3.</span> <span class="nav-text">内核相关参数</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Ring-Buffer"><span class="nav-number">1.3.1.</span> <span class="nav-text">Ring Buffer</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#调整-Ring-Buffer-队列数量"><span class="nav-number">1.3.1.1.</span> <span class="nav-text">调整 Ring Buffer 队列数量</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#网卡各种统计数据查看"><span class="nav-number">1.3.1.2.</span> <span class="nav-text">网卡各种统计数据查看</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#网卡进出队列大小调整"><span class="nav-number">1.3.1.3.</span> <span class="nav-text">网卡进出队列大小调整</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#txqueuelen"><span class="nav-number">1.3.2.</span> <span class="nav-text">txqueuelen</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Interrupt-Coalescence-IC-rx-usecs-tx-usecs-rx-frames-tx-frames-hardware-IRQ"><span class="nav-number">1.3.3.</span> <span class="nav-text">Interrupt Coalescence (IC) - rx-usecs, tx-usecs, rx-frames, tx-frames (hardware IRQ)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ifconfig-监控指标"><span class="nav-number">1.3.4.</span> <span class="nav-text">ifconfig 监控指标</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#overruns"><span class="nav-number">1.3.4.1.</span> <span class="nav-text">overruns</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#监控指标-proc-net-softnet-stat"><span class="nav-number">1.3.5.</span> <span class="nav-text">监控指标 /proc/net/softnet_stat</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#net-core-netdev-budget"><span class="nav-number">1.3.5.1.</span> <span class="nav-text">net.core.netdev_budget</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#netdev-max-backlog"><span class="nav-number">1.3.5.2.</span> <span class="nav-text">netdev_max_backlog</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#softnet-stat"><span class="nav-number">1.3.5.3.</span> <span class="nav-text">softnet_stat</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#TCP协议栈Buffer"><span class="nav-number">1.3.6.</span> <span class="nav-text">TCP协议栈Buffer</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#接收Buffer"><span class="nav-number">1.3.6.1.</span> <span class="nav-text">接收Buffer</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总体简略收包流程"><span class="nav-number">1.4.</span> <span class="nav-text">总体简略收包流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总体简略发送包流程"><span class="nav-number">1.5.</span> <span class="nav-text">总体简略发送包流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#案例"><span class="nav-number">1.6.</span> <span class="nav-text">案例</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#snat-dnat-宿主机port冲突，丢包"><span class="nav-number">1.6.1.</span> <span class="nav-text">snat/dnat 宿主机port冲突，丢包</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#容器-bridge-通过udp访问宿主机服务失败"><span class="nav-number">1.6.2.</span> <span class="nav-text">容器(bridge)通过udp访问宿主机服务失败</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">1.7.</span> <span class="nav-text">参考资料</span></a></li></ol></li></ol></div>
             
 
           </div>

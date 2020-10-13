@@ -687,8 +687,9 @@
 <p>在实际的使用中，你只需要从社区里选择一个具体的 Ingress Controller，把它部署在 Kubernetes 集群里即可。然后，这个 Ingress Controller 会根据你定义的 Ingress 对象，提供对应的代理能力。</p>
 <p>目前，业界常用的各种反向代理项目，比如 Nginx、HAProxy、Envoy、Traefik 等，都已经为 Kubernetes 专门维护了对应的 Ingress Controller。</p>
 <p>一个 Ingress Controller 可以根据 Ingress 对象和被代理后端 Service 的变化，来自动进行更新的 Nginx 负载均衡器。</p>
-<h2 id="eBPF（extended-Berkeley-Packet-Filter）和网络"><a href="#eBPF（extended-Berkeley-Packet-Filter）和网络" class="headerlink" title="eBPF（extended Berkeley Packet Filter）和网络"></a>eBPF（extended Berkeley Packet Filter）和网络</h2><p>eBPF 最早出现在 3.18 内核中，此后原来的 BPF 就被称为 <strong>“经典” BPF</strong>（classic BPF, cBPF），cBPF 现在基本已经废弃了。很多人知道 cBPF 是因为它是 <code>tcpdump</code> 的包过滤语言。<strong>现在，Linux 内核只运行 eBPF，内核会将加载的 cBPF 字节码 透明地转换成 eBPF 再执行</strong>。如无特殊说明，本文中所说的 BPF 都是泛指 BPF 技术。</p>
-<p>2015年<strong>eBPF 添加了一个新 fast path：XDP</strong>，XDP 是 eXpress DataPath 的缩写，支持在网卡驱动中运行 eBPF 代码，而无需将包送 到复杂的协议栈进行处理，因此处理代价很小，速度极快。</p>
+<h2 id="eBPF（extended-Berkeley-Packet-Filter）和网络"><a href="#eBPF（extended-Berkeley-Packet-Filter）和网络" class="headerlink" title="eBPF（extended Berkeley Packet Filter）和网络"></a>eBPF（extended Berkeley Packet Filter）和网络</h2><p>eBPF允许程序<strong>对内核本身进行编程</strong>（即 通过程序动态修改内核的行为。传统方式要么是<strong>给内核打补丁</strong>，要么是<strong>修改内核源码 重新编译</strong>）。一句话来概括：<strong>编写代码监听内核事件，当事件发生时，BPF 代码就会在内核执行</strong>。</p>
+<p>eBPF 最早出现在 3.18 内核中，此后原来的 BPF 就被称为 <strong>“经典” BPF</strong>（classic BPF, cBPF），cBPF 现在基本已经废弃了。很多人知道 cBPF 是因为它是 <code>tcpdump</code> 的包过滤语言。<strong>现在，Linux 内核只运行 eBPF，内核会将加载的 cBPF 字节码 透明地转换成 eBPF 再执行</strong>。如无特殊说明，本文中所说的 BPF 都是泛指 BPF 技术。</p>
+<p>2015年<strong>eBPF 添加了一个新 fast path：XDP</strong>，XDP 是 eXpress DataPath 的缩写，支持在网卡驱动中运行 eBPF 代码（在软件中最早可以处理包的位置），而无需将包送 到复杂的协议栈进行处理，因此处理代价很小，速度极快。</p>
 <p>BPF 当时用于 tcpdump，在内核中尽量前面的位置抓包，它不会 crash 内核；</p>
 <p>bcc 是 tracing frontend for eBPF。</p>
 <p>内核添加了一个新 socket 类型 AF_XDP。它提供的能力是：在零拷贝（ zero-copy）的前提下将包从网卡驱动送到用户空间。</p>
@@ -701,11 +702,8 @@
 <p>由于所有这些操作都是发生在 XDP 层的，因此它称为 AF_XDP。插入到这里的 BPF 代码 能直接将包送到 socket。</p>
 <p>Facebook 公布了生产环境 XDP+eBPF 使用案例（DDoS &amp; LB）</p>
 <ul>
-<li><ul>
 <li>用 XDP/eBPF 重写了原来基于 IPVS 的 L4LB，性能 10x。</li>
 <li>eBPF 经受住了严苛的考验：从 2017 开始，每个进入 facebook.com 的包，都是经过了 XDP &amp; eBPF 处理的。</li>
-</ul>
-</li>
 </ul>
 <p><strong>Cilium 1.6 发布</strong> 第一次支持完全干掉基于 iptables 的 kube-proxy，全部功能基于 eBPF。Cilium 1.8 支持基于 XDP 的 Service 负载均衡和 host network policies。</p>
 <p>传统的 kube-proxy 处理 Kubernetes Service 时，包在内核中的 转发路径是怎样的？如下图所示：</p>
@@ -3574,11 +3572,8 @@ LISTEN    0     511              *:8085           *:*
 <p>由于所有这些操作都是发生在 XDP 层的，因此它称为 AF_XDP。插入到这里的 BPF 代码 能直接将包送到 socket。</p>
 <p>Facebook 公布了生产环境 XDP+eBPF 使用案例（DDoS &amp; LB）</p>
 <ul>
-<li><ul>
 <li>用 XDP/eBPF 重写了原来基于 IPVS 的 L4LB，性能 10x。</li>
 <li>eBPF 经受住了严苛的考验：从 2017 开始，每个进入 facebook.com 的包，都是经过了 XDP &amp; eBPF 处理的。</li>
-</ul>
-</li>
 </ul>
 <p><strong>Cilium 1.6 发布</strong> 第一次支持完全干掉基于 iptables 的 kube-proxy，全部功能基于 eBPF。Cilium 1.8 支持基于 XDP 的 Service 负载均衡和 host network policies。</p>
 <p>传统的 kube-proxy 处理 Kubernetes Service 时，包在内核中的 转发路径是怎样的？如下图所示：</p>
