@@ -2834,13 +2834,13 @@ space. This is described on man 7 tcp.
 <p>案例描述：从中国访问美国的服务器下载图片，只能跑到220K，远远没有达到带宽能力，其中中美之间的网络延时时150ms，这个150ms已经不能再优化了。业务结构是：</p>
 <p>client ——150ms—–&gt;&gt;&gt;LVS—1ms–&gt;&gt;&gt;美国的统一接入server—–1ms—–&gt;&gt;&gt;nginx</p>
 <p>通过下载一个4M的文件大概需要20秒，分别在client和nginx上抓包来分析这个问题（统一接入server没权限上去）</p>
-<h2 id="Nginx上抓包"><a href="#Nginx上抓包" class="headerlink" title="Nginx上抓包"></a>Nginx上抓包</h2><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/259767fb17f7dbffe7f77ab059c47dbd.png" alt="image.png"></p>
+<h3 id="Nginx上抓包"><a href="#Nginx上抓包" class="headerlink" title="Nginx上抓包"></a>Nginx上抓包</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/259767fb17f7dbffe7f77ab059c47dbd.png" alt="image.png"></p>
 <p>从这里可以看到Nginx大概在60ms内就将4M的数据都发完了</p>
-<h2 id="client上抓包"><a href="#client上抓包" class="headerlink" title="client上抓包"></a>client上抓包</h2><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/466fba92829f6a922ccd2d57a7e3fdac.png" alt="image.png"></p>
+<h3 id="client上抓包"><a href="#client上抓包" class="headerlink" title="client上抓包"></a>client上抓包</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/466fba92829f6a922ccd2d57a7e3fdac.png" alt="image.png"></p>
 <p>从这个图上可以清楚看到大概每传输大概30K数据就有一个150ms的等待平台，这个150ms基本是client到美国的rt。</p>
 <p>从我们前面的阐述可以清楚了解到因为rt比较高，统一接入server每发送30K数据后要等150ms才能收到client的ack，然后继续发送，猜是因为上面设置的发送buffer大概是30K。</p>
 <p>检查统一接入server的配置，可以看到接入server的配置里面果然有个32K buffer设置</p>
-<h2 id="将buffer改大"><a href="#将buffer改大" class="headerlink" title="将buffer改大"></a>将buffer改大</h2><p>速度可以到420K，但是还没有跑满带宽：</p>
+<h3 id="将buffer改大"><a href="#将buffer改大" class="headerlink" title="将buffer改大"></a>将buffer改大</h3><p>速度可以到420K，但是还没有跑满带宽：</p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/93e254c5154ce2e065bec9fb34f3db2b.png" alt="image.png"></p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/0a8c68a58da6f169573b57cde0ffba93.png" alt="image.png"></p>
 <p>接着看一下client上的抓包</p>
@@ -2881,6 +2881,16 @@ vm.lowmem_reserve_ratio = 256    256    32
 net.ipv4.tcp_mem = 88560        118080  177120
 </code></pre><p>发送buffer系统比较好自动调节，依靠发送数据大小和rt延时大小，可以相应地进行调整；但是接受buffer就不一定了，接受buffer的使用取决于收到的数据快慢和应用读走数据的速度，只能是OS根据系统内存的压力来调整接受buffer。系统内存的压力取决于 net.ipv4.tcp_mem.</p>
 <p>需要特别注意：<strong>tcp_wmem 和 tcp_rmem 的单位是字节，而 tcp_mem 的单位的页面</strong></p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/ea04e40acda986675bf0ad0ea7b9b8ff.png" alt="image.png"></p>
+<h2 id="内核观测tcp-mem是否不足"><a href="#内核观测tcp-mem是否不足" class="headerlink" title="内核观测tcp_mem是否不足"></a>内核观测tcp_mem是否不足</h2><p>因 tcp_mem 达到限制而无法发包或者产生抖动的问题，我们也是可以观测到的。为了方便地观测这类问题，Linux 内核里面预置了静态观测点：sock_exceed_buf_limit（需要 4.16+ 的内核版本）。</p>
+<blockquote>
+<p>$ echo 1 &gt; /sys/kernel/debug/tracing/events/sock/sock_exceed_buf_limit/enable</p>
+</blockquote>
+<p>然后去看是否有该事件发生：</p>
+<blockquote>
+<p> $ cat /sys/kernel/debug/tracing/trace_pipe</p>
+</blockquote>
+<p>如果有日志输出（即发生了该事件），就意味着你需要调大 tcp_mem 了，或者是需要断开一些 TCP 连接了。</p>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
 <li>一般来说绝对不要在程序中手工设置SO_SNDBUF和SO_RCVBUF，内核自动调整比你做的要好；</li>
 <li>SO_SNDBUF一般会比发送滑动窗口要大，因为发送出去并且ack了的才能从SO_SNDBUF中释放；</li>

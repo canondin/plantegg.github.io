@@ -115,7 +115,7 @@
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/f16438b744a248d7671d5ac7317b0a98.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/cf58f10a523e1e4f0db443be3f54fc04.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d5446b656e8d91a9fb72200a7b97e723.png">
-<meta property="og:updated_time" content="2020-09-19T10:00:19.183Z">
+<meta property="og:updated_time" content="2020-10-14T10:16:37.805Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Linux 内存问题汇总">
 <meta name="twitter:description" content="Linux 内存问题汇总内存使用观察# free -m          total       used       free     shared    buffers     cached Mem:          7515       1115       6400          0        189        492 -/+ buffers/cache:        43">
@@ -526,6 +526,7 @@ test.x86_64.rpm
 <p>目前透明大页与传统HugePages联用会出现一些问题，导致性能问题和系统重启。Oracle 建议禁用透明大页（Transparent Huge Pages）</p>
 <p>hugetlbfs比THP要好，开thp的机器碎片化严重（不开THP会有更严重的碎片化问题），最后和没开THP一样 <a href="https://www.atatech.org/articles/152660" target="_blank" rel="external">https://www.atatech.org/articles/152660</a></p>
 <h2 id="THP"><a href="#THP" class="headerlink" title="THP"></a>THP</h2><p>Linux kernel在2.6.38内核增加了Transparent Huge Pages (THP)特性 ，支持大内存页(2MB)分配，默认开启。当开启时可以降低fork子进程的速度，但fork之后，每个内存页从原来4KB变为2MB，会大幅增加重写期间父进程内存消耗。同时每次写命令引起的复制内存页单位放大了512倍，会拖慢写操作的执行时间，导致大量写操作慢查询。例如简单的incr命令也会出现在慢查询中。因此Redis日志中建议将此特性进行禁用。  </p>
+<p>THP 的目的是用一个页表项来映射更大的内存（大页），这样可以减少 Page Fault，因为需要的页数少了。当然，这也会提升 TLB 命中率，因为需要的页表项也少了。如果进程要访问的数据都在这个大页中，那么这个大页就会很热，会被缓存在 Cache 中。而大页对应的页表项也会出现在 TLB 中，从上一讲的存储层次我们可以知道，这有助于性能提升。但是反过来，假设应用程序的数据局部性比较差，它在短时间内要访问的数据很随机地位于不同的大页上，那么大页的优势就会消失。</p>
 <p>THP 对redis、monglodb 这种cache类推荐关闭，对drds这种java应用最好打开</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">grep &quot;Huge&quot; /proc/meminfo</div><div class="line">AnonHugePages:   1286144 kB</div><div class="line">ShmemHugePages:        0 kB</div><div class="line">HugePages_Total:       0</div><div class="line">HugePages_Free:        0</div><div class="line">HugePages_Rsvd:        0</div><div class="line">HugePages_Surp:        0</div><div class="line">Hugepagesize:       2048 kB</div><div class="line">Hugetlb:               0 kB</div><div class="line">$grep -e AnonHugePages  /proc/*/smaps | awk  &apos;&#123; if($2&gt;4) print $0&#125; &apos; |  awk -F &quot;/&quot;  &apos;&#123;print $0; system(&quot;ps -fp &quot; $3)&#125; &apos;</div><div class="line"></div><div class="line">//查看pagesize（默认4K） </div><div class="line">$getconf PAGESIZE</div></pre></td></tr></table></figure>
 <p>在透明大页功能打开时，造成系统性能下降的主要原因可能是 <code>khugepaged</code> 守护进程。该进程会在（它认为）系统空闲时启动，扫描系统中剩余的空闲内存，并将普通 4k 页转换为大页。该操作会在内存路径中加锁，而该守护进程可能会在错误的时间启动扫描和转换大页的操作，从而影响应用性能。</p>

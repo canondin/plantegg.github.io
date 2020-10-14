@@ -1000,8 +1000,10 @@ RX:        4096
 RX Mini:    0
 RX Jumbo:    0
 TX:        512
-</code></pre><p>这是一台物理机，接收队列为4096，传输队列为256。接受队列已经调到了最大，传输队列还可以调大。</p>
+</code></pre><p>这是一台物理机，接收队列为4096，传输队列为512。接收队列已经调到了最大，传输队列还可以调大。<strong>队列越大丢包的可能越小，但数据延迟会增加</strong></p>
 <h4 id="调整-Ring-Buffer-队列数量"><a href="#调整-Ring-Buffer-队列数量" class="headerlink" title="调整 Ring Buffer 队列数量"></a>调整 Ring Buffer 队列数量</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line">ethtool -l eth0</div><div class="line">Channel parameters for eth0:</div><div class="line">Pre-set maximums:</div><div class="line">RX:             0</div><div class="line">TX:             0</div><div class="line">Other:          1</div><div class="line">Combined:       8</div><div class="line">Current hardware settings:</div><div class="line">RX:             0</div><div class="line">TX:             0</div><div class="line">Other:          1</div><div class="line">Combined:       8</div><div class="line"></div><div class="line">sudo ethtool -L eth0 combined 8</div><div class="line">sudo ethtool -L eth0 rx 8</div></pre></td></tr></table></figure>
+<p>网卡多队列就是指的有多个RingBuffer，每个RingBufffer可以由一个core来处理</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/51f13ecb5002f628fbe1900ab8b820aa.png" alt="image.png"></p>
 <h4 id="网卡各种统计数据查看"><a href="#网卡各种统计数据查看" class="headerlink" title="网卡各种统计数据查看"></a>网卡各种统计数据查看</h4><pre><code>ethtool -S eth0 | grep errors
 
 ethtool -S eth0 | grep rx_ | grep errors //查看网卡是否丢包，一般是ring buffer太小
@@ -1014,13 +1016,15 @@ ethtool -g eth0
  ethtool -G eth0 rx 8192 tx 8192
 </code></pre><p>要注意如果设置的值超过了允许的最大值，用默认的最大值，一些ECS之类的虚拟机、容器就不允许修改这个值。</p>
 <h3 id="txqueuelen"><a href="#txqueuelen" class="headerlink" title="txqueuelen"></a>txqueuelen</h3><p>ifconfig 看到的 txqueuelen 跟Ring Buffer是两个东西，IP协议下面就是 txqueuelen，txqueuelen下面才到Ring Buffer. </p>
-<p>常用的tc qdisc、netfilter就是在txqueuelen这一环节。 </p>
-<p>发送队列就是指的这个txqueuelen，和网卡关联着。 而每个Core接收队列由内核参数： net.core.netdev_max_backlog来设置</p>
-<pre><code>//当前值通过ifconfig可以查看到，修改：
-ifconfig eth0 txqueuelen 2000
-//监控
-ip -s link
-</code></pre><h3 id="Interrupt-Coalescence-IC-rx-usecs-tx-usecs-rx-frames-tx-frames-hardware-IRQ"><a href="#Interrupt-Coalescence-IC-rx-usecs-tx-usecs-rx-frames-tx-frames-hardware-IRQ" class="headerlink" title="Interrupt Coalescence (IC) - rx-usecs, tx-usecs, rx-frames, tx-frames (hardware IRQ)"></a>Interrupt Coalescence (IC) - rx-usecs, tx-usecs, rx-frames, tx-frames (hardware IRQ)</h3><p>这块目前没碰到过瓶颈</p>
+<p>常用的tc qdisc、netfilter就是在txqueuelen这一环节。 qdisc 的队列长度是我们用 ifconfig 来看到的 txqueuelen</p>
+<p>发送队列就是指的这个txqueuelen，和网卡关联着。 而每个Core接收队列由内核参数： net.core.netdev_max_backlog来设置<br>        //当前值通过ifconfig可以查看到，修改：<br>        ifconfig eth0 txqueuelen 2000<br>        //监控<br>        ip -s link</p>
+<p>如果txqueuelen 太小导致数据包被丢弃的情况，这类问题可以通过下面这个命令来观察：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">$ ip -s -s link ls dev eth0</div><div class="line">2: eth0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc mq state UP mode DEFAULT group default qlen 1000</div><div class="line">    link/ether 00:16:3e:12:9b:c0 brd ff:ff:ff:ff:ff:ff</div><div class="line">    RX: bytes  packets  errors  dropped overrun mcast</div><div class="line">    13189414480980 22529315912 0       0       0       0</div><div class="line">    RX errors: length   crc     frame   fifo    missed</div><div class="line">               0        0       0       0       0</div><div class="line">    TX: bytes  packets  errors  dropped carrier collsns</div><div class="line">    15487121408466 12925733540 0       0       0       0</div><div class="line">    TX errors: aborted  fifo   window heartbeat transns</div><div class="line">               0        0       0       0       2</div></pre></td></tr></table></figure>
+<p>如果观察到 dropped 这一项不为 0，那就有可能是 txqueuelen 太小导致的。当遇到这种情况时，你就需要增大该值了，比如增加 eth0 这个网络接口的 txqueuelen：</p>
+<blockquote>
+<p> $ ifconfig eth0 txqueuelen 2000</p>
+</blockquote>
+<h3 id="Interrupt-Coalescence-IC-rx-usecs-tx-usecs-rx-frames-tx-frames-hardware-IRQ"><a href="#Interrupt-Coalescence-IC-rx-usecs-tx-usecs-rx-frames-tx-frames-hardware-IRQ" class="headerlink" title="Interrupt Coalescence (IC) - rx-usecs, tx-usecs, rx-frames, tx-frames (hardware IRQ)"></a>Interrupt Coalescence (IC) - rx-usecs, tx-usecs, rx-frames, tx-frames (hardware IRQ)</h3><p>这块目前没碰到过瓶颈</p>
 <pre><code>//检查
 ethtool -c eth0
 //修改, 
@@ -1064,8 +1068,14 @@ sysctl -w net.core.netdev_max_backlog=1024 //临时性增大
 17671 packets pruned from receive queue because of socket buffer overrun
 18671 packets pruned from receive queue because of socket buffer overrun
 </code></pre><p>如果 “pruning” 一直在增加很有可能是程序中调用了 setsockopt(SO_RCVBUF) 导致内核关闭了动态调整功能，或者压力大，缓存不够了。具体Case：<a href="https://blog.cloudflare.com/the-story-of-one-latency-spike/" target="_blank" rel="external">https://blog.cloudflare.com/the-story-of-one-latency-spike/</a></p>
+<p>nstat也可以看到比较多的数据</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">$nstat -z |grep -i drop</div><div class="line">TcpExtLockDroppedIcmps          0                  0.0</div><div class="line">TcpExtListenDrops               0                  0.0</div><div class="line">TcpExtTCPBacklogDrop            0                  0.0</div><div class="line">TcpExtPFMemallocDrop            0                  0.0</div><div class="line">TcpExtTCPMinTTLDrop             0                  0.0</div><div class="line">TcpExtTCPDeferAcceptDrop        0                  0.0</div><div class="line">TcpExtTCPReqQFullDrop           0                  0.0</div><div class="line">TcpExtTCPOFODrop                0                  0.0</div><div class="line">TcpExtTCPZeroWindowDrop         0                  0.0</div><div class="line">TcpExtTCPRcvQDrop               0                  0.0</div></pre></td></tr></table></figure>
 <h2 id="总体简略收包流程"><a href="#总体简略收包流程" class="headerlink" title="总体简略收包流程"></a>总体简略收包流程</h2><p><img src="http://img3.tbcdn.cn/L1/461/1/73d01c4c8164ae8642ff09d5d3fe0548d4162874" alt=""></p>
-<h2 id="总体简略发送包流程"><a href="#总体简略发送包流程" class="headerlink" title="总体简略发送包流程"></a>总体简略发送包流程</h2><p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1557291324544-ca69d448-08e4-46c4-9c49-8cf516fc3eaa.png" alt="undefined"> </p>
+<p>带参数版收包流程：</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/aaf4ff8bbcc26e9e5efe48c984abe508.png" alt="image.png"></p>
+<h2 id="总体简略发送包流程"><a href="#总体简略发送包流程" class="headerlink" title="总体简略发送包流程"></a>总体简略发送包流程</h2><p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1557291324544-ca69d448-08e4-46c4-9c49-8cf516fc3eaa.png" alt=""></p>
+<p>带参数版发包流程：</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/955fc732d8620561a9ebce992b0129b1.png" alt="image.png"></p>
 <h2 id="案例"><a href="#案例" class="headerlink" title="案例"></a>案例</h2><h3 id="snat-dnat-宿主机port冲突，丢包"><a href="#snat-dnat-宿主机port冲突，丢包" class="headerlink" title="snat/dnat 宿主机port冲突，丢包"></a>snat/dnat 宿主机port冲突，丢包</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d42ccdb0b8f6270d8b559145c0b89c86.png" alt="image.png"></p>
 <ol>
 <li>snat 就是要把 192.168.1.10和192.168.1.11的两个连接替换成宿主机的ip:port</li>
