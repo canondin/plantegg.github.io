@@ -2,6 +2,27 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>http://yoursite.com/2117/06/07/%E6%96%87%E7%AB%A0%E7%B4%A2%E5%BC%95index/</loc>
+    
+    <lastmod>2020-10-16T05:21:05.780Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>http://yoursite.com/2019/09/16/SystemStap/</loc>
+    
+    <lastmod>2020-10-16T05:21:05.756Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>http://yoursite.com/2018/02/24/Linux%20LVS%E9%85%8D%E7%BD%AE/</loc>
+    
+    <lastmod>2020-10-16T05:21:05.724Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://yoursite.com/2018/01/01/%E9%80%9A%E8%BF%87tcpdump%E5%AF%B9Unix%20Socket%20%E8%BF%9B%E8%A1%8C%E6%8A%93%E5%8C%85%E8%A7%A3%E6%9E%90/</loc>
     
     <lastmod>2020-10-14T10:16:37.953Z</lastmod>
@@ -103,13 +124,6 @@
     <loc>http://yoursite.com/2016/08/24/Linux%20tc%20qdisc%E7%9A%84%E4%BD%BF%E7%94%A8%E6%A1%88%E4%BE%8B/</loc>
     
     <lastmod>2020-10-12T01:02:49.917Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>http://yoursite.com/2018/02/24/Linux%20LVS%E9%85%8D%E7%BD%AE/</loc>
-    
-    <lastmod>2020-10-12T01:02:49.909Z</lastmod>
     
   </url>
   
@@ -310,13 +324,6 @@
   </url>
   
   <url>
-    <loc>http://yoursite.com/2019/09/16/SystemStap/</loc>
-    
-    <lastmod>2020-07-16T06:55:48.986Z</lastmod>
-    
-  </url>
-  
-  <url>
     <loc>http://yoursite.com/2019/01/13/%E4%B8%AD%E9%97%B4%E4%BB%B6%E7%9A%84%E8%87%AA%E5%B7%B1%E7%9A%84DNS%E6%9C%8D%E5%8A%A1%E5%9C%A8alios7%E4%B8%8A%E5%9F%9F%E5%90%8D%E8%A7%A3%E6%9E%90%E5%A4%B1%E8%B4%A5/</loc>
     
     <lastmod>2020-07-16T06:54:26.431Z</lastmod>
@@ -411,13 +418,6 @@
     <loc>http://yoursite.com/2019/01/10/windows7%E7%9A%84wifi%E6%80%BB%E6%98%AF%E6%8A%A5DNS%E5%9F%9F%E5%90%8D%E5%BC%82%E5%B8%B8%E6%97%A0%E6%B3%95%E4%B8%8A%E7%BD%91/</loc>
     
     <lastmod>2020-07-16T06:23:23.749Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>http://yoursite.com/2117/06/07/%E6%96%87%E7%AB%A0%E7%B4%A2%E5%BC%95index/</loc>
-    
-    <lastmod>2020-07-16T06:23:01.423Z</lastmod>
     
   </url>
   

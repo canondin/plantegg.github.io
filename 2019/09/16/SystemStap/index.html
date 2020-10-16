@@ -95,22 +95,22 @@
 
 
 
-<meta name="description" content="SystemStap、BCC、bpftrace安装sudo stap-prep //安装好systemtap所有依赖的（debugfs等等） 执行安装内核debug等等需要的一些包，然后才能运行systemtap # 简单的脚本，打印4s内所有进程打开了哪些文件 #!/usr/bin/stap probe begin {     log(&amp;quot;begin to probe&amp;quot;) }">
+<meta name="description" content="SystemStap、BCC、bpftraceLinux 4.4+ 支持 eBPF。基于 eBPF 可以将任何内核函数调用转换成可带任何 数据的用户空间事件。bcc 作为一个更上层的工具使这个过程更加方便。内核探测 代码用 C 写，数据处理代码用 Python。 从 Linux 3.15 开始，BPF 被扩展成了 eBPF，extended BPF 的缩写。它从 2 个 32bit 寄存器扩展到了">
 <meta name="keywords" content="SystemStap,BCC,bpftrace,dtrace,tcpretrans">
 <meta property="og:type" content="article">
 <meta property="og:title" content="SystemStap、BCC、bpftrace">
 <meta property="og:url" content="http://yoursite.com/2019/09/16/SystemStap/index.html">
 <meta property="og:site_name" content="plantegg">
-<meta property="og:description" content="SystemStap、BCC、bpftrace安装sudo stap-prep //安装好systemtap所有依赖的（debugfs等等） 执行安装内核debug等等需要的一些包，然后才能运行systemtap # 简单的脚本，打印4s内所有进程打开了哪些文件 #!/usr/bin/stap probe begin {     log(&amp;quot;begin to probe&amp;quot;) }">
+<meta property="og:description" content="SystemStap、BCC、bpftraceLinux 4.4+ 支持 eBPF。基于 eBPF 可以将任何内核函数调用转换成可带任何 数据的用户空间事件。bcc 作为一个更上层的工具使这个过程更加方便。内核探测 代码用 C 写，数据处理代码用 Python。 从 Linux 3.15 开始，BPF 被扩展成了 eBPF，extended BPF 的缩写。它从 2 个 32bit 寄存器扩展到了">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/be6ac944fb72b089dc0357298a47dc37.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e9efaffe357a2d1ac72806ce36066532.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/9340023fac65d9c1d0aeda8e73557792.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/297eb625b1e157d85a29754108871c08.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/74b0a393a6334421957a032f1f141a9c.png">
-<meta property="og:updated_time" content="2020-07-16T06:55:48.986Z">
+<meta property="og:updated_time" content="2020-10-16T05:21:05.756Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="SystemStap、BCC、bpftrace">
-<meta name="twitter:description" content="SystemStap、BCC、bpftrace安装sudo stap-prep //安装好systemtap所有依赖的（debugfs等等） 执行安装内核debug等等需要的一些包，然后才能运行systemtap # 简单的脚本，打印4s内所有进程打开了哪些文件 #!/usr/bin/stap probe begin {     log(&amp;quot;begin to probe&amp;quot;) }">
+<meta name="twitter:description" content="SystemStap、BCC、bpftraceLinux 4.4+ 支持 eBPF。基于 eBPF 可以将任何内核函数调用转换成可带任何 数据的用户空间事件。bcc 作为一个更上层的工具使这个过程更加方便。内核探测 代码用 C 写，数据处理代码用 Python。 从 Linux 3.15 开始，BPF 被扩展成了 eBPF，extended BPF 的缩写。它从 2 个 32bit 寄存器扩展到了">
 <meta name="twitter:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/be6ac944fb72b089dc0357298a47dc37.png">
 
 
@@ -389,7 +389,11 @@
       
 
       
-        <h1 id="SystemStap、BCC、bpftrace"><a href="#SystemStap、BCC、bpftrace" class="headerlink" title="SystemStap、BCC、bpftrace"></a>SystemStap、BCC、bpftrace</h1><h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><p>sudo stap-prep //安装好systemtap所有依赖的（debugfs等等）</p>
+        <h1 id="SystemStap、BCC、bpftrace"><a href="#SystemStap、BCC、bpftrace" class="headerlink" title="SystemStap、BCC、bpftrace"></a>SystemStap、BCC、bpftrace</h1><p>Linux <code>4.4+</code> 支持 <code>eBPF</code>。基于 <code>eBPF</code> 可以将任何<strong>内核函数调用</strong>转换成<strong>可带任何 数据</strong>的<strong>用户空间事件</strong>。<code>bcc</code> 作为一个更上层的工具使这个过程更加方便。内核探测 代码用 C 写，数据处理代码用 Python。</p>
+<p>从 Linux 3.15 开始，BPF 被扩展成了 eBPF，extended BPF 的缩写。它<strong>从 2 个 32bit 寄存器扩展到了 10 个 64bit 寄存器，并增加了后向跳转</strong>。Linux 3.18 中又进行了进一 步扩展，将它从网络子系统中移出来，并添加了 maps 等工具。为了保证安全性又引入了一 个检测器，用于验证内存访问的合法性和可能的代码路径。如果检测器不能推断出程序会在 有限的步骤内结束，就会拒绝程序的注入（内核）。</p>
+<p>SystemTap 是一个 tracing 系统，<strong>简单来说，它提供了一种领域特定语言（DSL），代码编译成内核模块，然后热加 载到运行中的内核</strong>。但<strong>出于安全考虑，一些生产系统禁止动态模块加载</strong>，例如我研究 eBPF 时所用的系统就不允许。</p>
+<p><code>perf</code> 是 Linux 上的最重要的性能分析工具之一。它和内核出自同一个源码树（source tree），但编译需要针对指定的内核版本。<code>perf</code> 可以跟踪内核，也可以跟踪用户程序， 还可用于采样或者设置跟踪点。<strong>可以把它想象成开销更低，但功能更强大的 <code>strace</code></strong>。 本文只会使用非常简单的 <code>perf</code> 命令。想了解更多，强烈建议访问 <a href="http://www.brendangregg.com/perf.html" target="_blank" rel="external">Brendan Gregg</a>的博客。</p>
+<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><p>sudo stap-prep //安装好systemtap所有依赖的（debugfs等等）</p>
 <p>执行安装内核debug等等需要的一些包，然后才能运行systemtap</p>
 <pre><code># 简单的脚本，打印4s内所有进程打开了哪些文件
 #!/usr/bin/stap
@@ -448,7 +452,7 @@ probe syscall.write.return {
           printf(&quot;write delay detail: tid: %d func:%s  sleep: %d \n&quot;,tid(),probefunc(),DELAY);
     }
 }
-</code></pre><p>​<br>​    probe syscall.fsync.return {<br>​       if (pid() == target() &amp;&amp; !quit ) {<br>​            mdelay( DELAY );<br>​            printf(“fsync delay detail: tid: %d func:%s  sleep: %d \n”,tid(),probefunc(),DELAY);<br>​        }<br>​<br>    }</p>
+</code></pre><p>​<br>​    probe syscall.fsync.return {<br>​       if (pid() == target() &amp;&amp; !quit ) {<br>​            mdelay( DELAY );<br>​            printf(“fsync delay detail: tid: %d func:%s  sleep: %d \n”,tid(),probefunc(),DELAY);<br>​        }<br>​<br>​    }<br>​     </p>
 <pre><code># 任务持续时间
 probe timer.s(20) {
     if (!found) {
@@ -519,35 +523,21 @@ PID    COMM         IP SADDR            DADDR            DPORT LAT(ms)
 </code></pre><h2 id="TCP队列实时查看"><a href="#TCP队列实时查看" class="headerlink" title="TCP队列实时查看"></a>TCP队列实时查看</h2><p>bpftrace工具包</p>
 <pre><code>cat tcpsynbl_example.txt
 Demonstrations of tcpsynbl, the Linux bpftrace/eBPF version.
-</code></pre><p>​<br>​    This tool shows the TCP SYN backlog size during SYN arrival as a histogram.<br>​    This lets you see how close your applications are to hitting the backlog limit<br>​    and dropping SYNs (causing performance issues with SYN retransmits). For<br>​    example:<br>​    </p>
-<pre><code># ./tcpsynbl.bt 
-Attaching 4 probes...
-Tracing SYN backlog size. Ctrl-C to end.
-^C
-@backlog[backlog limit]: histogram of backlog size
-</code></pre><p>​<br>​    @backlog[500]:<br>​    [0]                 2266 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|<br>​    [1]                    3 |                                                    |<br>​    [2, 4)                 1 |                                                    |</p>
+</code></pre><p>​<br>​    This tool shows the TCP SYN backlog size during SYN arrival as a histogram.<br>​    This lets you see how close your applications are to hitting the backlog limit<br>​    and dropping SYNs (causing performance issues with SYN retransmits). For<br>​    example:<br>​<br>​    # ./tcpsynbl.bt<br>​    Attaching 4 probes…<br>​    Tracing SYN backlog size. Ctrl-C to end.<br>​    ^C<br>​    @backlog[backlog limit]: histogram of backlog size</p>
+<p>​<br>​    @backlog[500]:<br>​    [0]                 2266 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|<br>​    [1]                    3 |                                                    |<br>​    [2, 4)                 1 |                                                    |</p>
 <pre><code>$sudo bpftrace ./tcpsynbl.bt
 Attaching 4 probes...
 Tracing SYN backlog size. Ctrl-C to end.
 
 ^C
 @backlog[backlog limit]: histogram of backlog size
-</code></pre><p>​<br>​    @backlog[10]:<br>​    [0]                    3 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|<br>​<br>    @backlog[256]:<br>    [0]                   59 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|</p>
+</code></pre><p>​<br>​    @backlog[10]:<br>​    [0]                    3 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|<br>​<br>​    @backlog[256]:<br>​    [0]                   59 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@|</p>
 <p>或者 bpftrace tcpaccept.bt</p>
 <pre><code>cat tcpaccept_example.txt 
 Demonstrations of tcpaccept, the Linux bpftrace/eBPF version.
-</code></pre><p>​<br>​    This tool traces the kernel function accepting TCP socket connections (eg, a<br>​    passive connection via accept(); not connect()). Some example output (IP<br>​    addresses changed to protect the innocent):<br>​    </p>
-<pre><code># ./tcpaccept
-Tracing tcp accepts. Hit Ctrl-C to end.
-TIME     PID     COMM           RADDR          RPORT LADDR          LPORT BL
-00:34:19 3949061 nginx          10.228.22.228  44226 10.229.20.169  8080  0/128
-00:34:19 3951399 ruby           127.0.0.1      52422 127.0.0.1      8000  0/128
-00:34:19 3949062 nginx          10.228.23.128  35408 10.229.20.169  8080  0/128
-</code></pre><p>​<br>​    This output shows three connections, an IPv4 connections to PID 1463622, a “redis-server”<br>​    process listening on port 6379, and one IPv6 connection to a “thread.rb” process<br>​    listening on port 8000. The remote address and port are also printed, and the accept queue<br>​    current size as well as maximum size are shown.<br>​<br>    The overhead of this tool should be negligible, since it is only tracing the<br>    kernel function performing accept. It is not tracing every packet and then<br>    filtering.</p>
-<pre><code>This tool only traces successful TCP accept()s. Connection attempts to closed
-ports will not be shown (those can be traced via other functions).
-
-There is another version of this tool in bcc: https://github.com/iovisor/bcc
+</code></pre><p>​<br>​    This tool traces the kernel function accepting TCP socket connections (eg, a<br>​    passive connection via accept(); not connect()). Some example output (IP<br>​    addresses changed to protect the innocent):<br>​<br>​    # ./tcpaccept<br>​    Tracing tcp accepts. Hit Ctrl-C to end.<br>​    TIME     PID     COMM           RADDR          RPORT LADDR          LPORT BL<br>​    00:34:19 3949061 nginx          10.228.22.228  44226 10.229.20.169  8080  0/128<br>​    00:34:19 3951399 ruby           127.0.0.1      52422 127.0.0.1      8000  0/128<br>​    00:34:19 3949062 nginx          10.228.23.128  35408 10.229.20.169  8080  0/128</p>
+<p>​<br>​    This output shows three connections, an IPv4 connections to PID 1463622, a “redis-server”<br>​    process listening on port 6379, and one IPv6 connection to a “thread.rb” process<br>​    listening on port 8000. The remote address and port are also printed, and the accept queue<br>​    current size as well as maximum size are shown.<br>​<br>​    The overhead of this tool should be negligible, since it is only tracing the<br>​    kernel function performing accept. It is not tracing every packet and then<br>​    filtering.<br>​<br>    This tool only traces successful TCP accept()s. Connection attempts to closed<br>    ports will not be shown (those can be traced via other functions).</p>
+<pre><code>There is another version of this tool in bcc: https://github.com/iovisor/bcc
 </code></pre><p>最后一列就是backlog最大大小和已经多少</p>
 <h2 id="DNS-域名解析时间"><a href="#DNS-域名解析时间" class="headerlink" title="DNS 域名解析时间"></a>DNS 域名解析时间</h2><pre><code>$sudo ./gethostlatency 
 TIME      PID    COMM                  LATms HOST
@@ -747,10 +737,12 @@ java[4457] lock 0x7f5d23c5e1b4 contended 3 times, 70979 avg us
 java[4457] lock 0x7f5d23bc3154 contended 1 times, 4342 avg us
 java[4457] lock 0x7f5da2b897b4 contended 1 times, 70190 avg us
 java[4457] lock 0x7f5d533a0d54 contended 1 times, 2202 avg us
-</code></pre><p>参考：<a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/systemtap_beginners_guide/futexcontentionsect" target="_blank" rel="external">https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/systemtap_beginners_guide/futexcontentionsect</a></p>
-<p>Demo集锦：<br><a href="https://github.com/openresty/openresty-systemtap-toolkit/blob/master/README-CN.markdown" target="_blank" rel="external">openresty systemtap demo</a></p>
+</code></pre><h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/systemtap_beginners_guide/futexcontentionsect" target="_blank" rel="external">https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/systemtap_beginners_guide/futexcontentionsect</a></p>
+<p>Demo集锦：<a href="https://github.com/openresty/openresty-systemtap-toolkit/blob/master/README-CN.markdown" target="_blank" rel="external">openresty systemtap demo</a></p>
 <p><a href="https://yq.aliyun.com/articles/174916" target="_blank" rel="external">SystemTap原理、安装、入门、脚本语言及技巧</a></p>
 <p><a href="https://yq.aliyun.com/articles/697679" target="_blank" rel="external">eBCC性能分析最佳实践–开启性能分析新篇章</a></p>
+<p><a href="http://arthurchiao.art/blog/ebpf-turn-syscall-to-event-zh/" target="_blank" rel="external">eBPF 内核探测：如何将任意系统调用转换成事件（2016）</a></p>
+<p><a href="http://arthurchiao.art/blog/trace-packet-with-tracepoint-perf-ebpf-zh/" target="_blank" rel="external">使用 Linux tracepoint、perf 和 eBPF 跟踪数据包 (2017)</a></p>
 
       
     </div>
@@ -914,7 +906,7 @@ java[4457] lock 0x7f5d533a0d54 contended 1 times, 2202 avg us
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">185</span>
+                <span class="site-state-item-count">186</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>
@@ -956,7 +948,7 @@ java[4457] lock 0x7f5d533a0d54 contended 1 times, 2202 avg us
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#SystemStap、BCC、bpftrace"><span class="nav-number">1.</span> <span class="nav-text">SystemStap、BCC、bpftrace</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#安装"><span class="nav-number">1.1.</span> <span class="nav-text">安装</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#案例"><span class="nav-number">1.2.</span> <span class="nav-text">案例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#案例2-需要模拟磁盘hang导致的io延迟，可以用systemtab来搞"><span class="nav-number">1.3.</span> <span class="nav-text">案例2:需要模拟磁盘hang导致的io延迟，可以用systemtab来搞</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#网络重传"><span class="nav-number">1.4.</span> <span class="nav-text">网络重传</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#网络包大小分布"><span class="nav-number">1.5.</span> <span class="nav-text">网络包大小分布</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#产看网络流量由哪个进程发出，或者说哪个进程在发包"><span class="nav-number">1.6.</span> <span class="nav-text">产看网络流量由哪个进程发出，或者说哪个进程在发包</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#网络连接创建rt？"><span class="nav-number">1.7.</span> <span class="nav-text">网络连接创建rt？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TCP队列实时查看"><span class="nav-number">1.8.</span> <span class="nav-text">TCP队列实时查看</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DNS-域名解析时间"><span class="nav-number">1.9.</span> <span class="nav-text">DNS 域名解析时间</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#统计线程执行时间排名"><span class="nav-number">1.10.</span> <span class="nav-text">统计线程执行时间排名</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#内核函数执行时间"><span class="nav-number">1.11.</span> <span class="nav-text">内核函数执行时间</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#磁盘"><span class="nav-number">1.12.</span> <span class="nav-text">磁盘</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#fs-latency"><span class="nav-number">1.13.</span> <span class="nav-text">fs latency</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cache"><span class="nav-number">1.14.</span> <span class="nav-text">cache</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#中断发生，主要是网卡"><span class="nav-number">1.15.</span> <span class="nav-text">中断发生，主要是网卡</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#futex"><span class="nav-number">1.16.</span> <span class="nav-text">futex</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#SystemStap、BCC、bpftrace"><span class="nav-number">1.</span> <span class="nav-text">SystemStap、BCC、bpftrace</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#安装"><span class="nav-number">1.1.</span> <span class="nav-text">安装</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#案例"><span class="nav-number">1.2.</span> <span class="nav-text">案例</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#案例2-需要模拟磁盘hang导致的io延迟，可以用systemtab来搞"><span class="nav-number">1.3.</span> <span class="nav-text">案例2:需要模拟磁盘hang导致的io延迟，可以用systemtab来搞</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#网络重传"><span class="nav-number">1.4.</span> <span class="nav-text">网络重传</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#网络包大小分布"><span class="nav-number">1.5.</span> <span class="nav-text">网络包大小分布</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#产看网络流量由哪个进程发出，或者说哪个进程在发包"><span class="nav-number">1.6.</span> <span class="nav-text">产看网络流量由哪个进程发出，或者说哪个进程在发包</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#网络连接创建rt？"><span class="nav-number">1.7.</span> <span class="nav-text">网络连接创建rt？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TCP队列实时查看"><span class="nav-number">1.8.</span> <span class="nav-text">TCP队列实时查看</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DNS-域名解析时间"><span class="nav-number">1.9.</span> <span class="nav-text">DNS 域名解析时间</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#统计线程执行时间排名"><span class="nav-number">1.10.</span> <span class="nav-text">统计线程执行时间排名</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#内核函数执行时间"><span class="nav-number">1.11.</span> <span class="nav-text">内核函数执行时间</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#磁盘"><span class="nav-number">1.12.</span> <span class="nav-text">磁盘</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#fs-latency"><span class="nav-number">1.13.</span> <span class="nav-text">fs latency</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cache"><span class="nav-number">1.14.</span> <span class="nav-text">cache</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#中断发生，主要是网卡"><span class="nav-number">1.15.</span> <span class="nav-text">中断发生，主要是网卡</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#futex"><span class="nav-number">1.16.</span> <span class="nav-text">futex</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">1.17.</span> <span class="nav-text">参考资料</span></a></li></ol></li></ol></div>
             
 
           </div>
