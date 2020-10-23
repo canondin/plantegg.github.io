@@ -3989,7 +3989,7 @@ Swap:            0          0          0
 <h2 id="cached过高回收"><a href="#cached过高回收" class="headerlink" title="cached过高回收"></a>cached过高回收</h2><p>回收：<br>    echo 1/2/3 &gt;/proc/sys/vm/drop_cached</p>
 <p>查看回收后：</p>
 <pre><code>cat /proc/meminfo
-</code></pre><p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/7cedcb6daa53cbcfc9c68568086500b7.png" alt="image.png"></p>
+</code></pre><p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/7cedcb6daa53cbcfc9c68568086500b7.png" alt="image.png" style="zoom:67%;"></p>
 <p>当我们执行 echo 2 来 drop slab 的时候，它也会把 Page Cache(inode可能会有对应的pagecache，inode释放后对应的pagecache也释放了)给 drop 掉</p>
 <p>在系统内存紧张的时候，运维人员或者开发人员会想要通过 drop_caches 的方式来释放一些内存，但是由于他们清楚 Page Cache 被释放掉会影响业务性能，所以就期望只去 drop slab 而不去 drop pagecache。于是很多人这个时候就运行 echo 2 &gt; /proc/sys/vm/drop_caches，但是结果却出乎了他们的意料：Page Cache 也被释放掉了，业务性能产生了明显的下降。</p>
 <p>查看 drop_caches 是否执行过释放：</p>
@@ -4591,7 +4591,7 @@ test.x86_64.rpm
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/01/01/2010到2020这10年的碎碎念念/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/01/02/Linux 问题总结/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="weibo @plantegg">
@@ -4610,7 +4610,7 @@ test.x86_64.rpm
         
           <h2 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2020/01/01/2010到2020这10年的碎碎念念/" itemprop="url">2010到2020这10年的碎碎念念</a></h2>
+                <a class="post-title-link" href="/2020/01/02/Linux 问题总结/" itemprop="url">Linux 问题总结</a></h2>
         
 
         <div class="post-meta">
@@ -4622,8 +4622,8 @@ test.x86_64.rpm
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-01-01T00:30:03+08:00">
-                2020-01-01
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-01-02T17:30:03+08:00">
+                2020-01-02
               </time>
             
 
@@ -4645,8 +4645,8 @@ test.x86_64.rpm
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/others/" itemprop="url" rel="index">
-                    <span itemprop="name">others</span>
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
                   </a>
                 </span>
 
@@ -4663,9 +4663,9 @@ test.x86_64.rpm
                 <span class="post-meta-item-icon">
                   <i class="fa fa-comment-o"></i>
                 </span>
-                <a href="/2020/01/01/2010到2020这10年的碎碎念念/#comments" itemprop="discussionUrl">
+                <a href="/2020/01/02/Linux 问题总结/#comments" itemprop="discussionUrl">
                   <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2020/01/01/2010到2020这10年的碎碎念念/" itemprop="commentCount"></span>
+                        data-disqus-identifier="2020/01/02/Linux 问题总结/" itemprop="commentCount"></span>
                 </a>
               </span>
             
@@ -4692,58 +4692,138 @@ test.x86_64.rpm
       
         
           
-            <h1 id="2010到2020这10年的碎碎念念"><a href="#2010到2020这10年的碎碎念念" class="headerlink" title="2010到2020这10年的碎碎念念"></a>2010到2020这10年的碎碎念念</h1><h2 id="来自网络的一些数据"><a href="#来自网络的一些数据" class="headerlink" title="来自网络的一些数据"></a>来自网络的一些数据</h2><p>这十年，中国的人均GDP从大约3300美金干到了9800美金。这意味着：更多的中国人脱贫，更多的中国人变成了中产。这是这一轮消费升级的核心原动力，没有之一。</p>
-<p>这十年，中国的进出口的总额从2009年占GDP的44.86%，降至34.35%。</p>
-<p>互联网从美国copy开始变成创新、走在前列，因为有庞大的存量市场</p>
-<p>2010年，一个数据发生了逆势波动。那就是中国的适龄小学人口增速。在此之前从1997年后，基本呈负增长。这是因为中国80后家长开始登上历史舞台。这带动了诸多产业的蓬勃发展，比如互联网教育，当然还有学区房。</p>
-<p>10年吉利收购沃尔沃，18年吉利收购戴姆勒10%的股份。</p>
-<p>微信崛起、头条崛起、百度走下神坛。</p>
-<p>12年2月6号的王护士长外逃美国大使馆也让大家兴奋了，11年的郭美美红十字会事件快要被忘记了，但是也让大家对慈善事件更加警惕，倒是谅解了汶川地震的王石10块捐款事件，不过老王很快因为娶了年轻的影星田朴珺一下子人设坍塌，大家更热衷老王的负面言论了。</p>
-<p>温州动车事件让高铁降速了</p>
-<p>我爸是李刚、药家鑫、李天一、邓玉娇（09年），陈冠希艳照门、三鹿奶粉、汶川地震、奥运会（08年）</p>
-<p>2018年：中美贸易站、问题疫苗、个税改革、中兴被美制裁，北京驱赶低端人口，鸿茅药酒，p2p暴雷，昆山反杀案，相互宝</p>
-<p>2015年：雾霾、柴静纪录片《穹顶之下》，屠呦呦诺贝尔奖，放开二胎</p>
-<p>2014年：东莞扫黄、马航370事件；周师傅被查、占中</p>
-<p>2013年：劳教正式被废除，想起2003年的孙志刚事件废除收容制度</p>
-<p>2012年：方韩之争，韩寒走下神坛</p>
-<p>2011年：日本海啸地震，中国抢盐事件；郭美美，温州动车</p>
-<p>2010年：google退出中国，上海世博会开幕，富士康N连跳楼事件；我爸是李刚，腾讯大战360</p>
-<h2 id="自我记忆"><a href="#自我记忆" class="headerlink" title="自我记忆"></a>自我记忆</h2><p>刚看到有人在说乐清钱云会事件，一晃10年了，10年前微博开始流行改变了好多新闻、热点事件的引爆方式。</p>
-<p>这十年BBS、门户慢慢在消亡，10年前大家都知道三大门户网站和天涯，现在的新网民应该知道的不多了。</p>
-<p>影响最大的还是移动网络的崛起，这也取决于4G和山寨机以及后来的小米手机，真正给中国的移动互联网带来巨大的红利，注入的巨大的增长。<br>我自己对移动互联网的判断是极端错误的，即使09年我就开始用上了iphone手机，那又怎么样，看问题还是用静态的视觉观点。手机没有键盘、手机屏幕狭小，这些确实是限制，到2014年我还想不明白为什么要在手机上购物，比较、看物品图片太不方便了，结果便利性秒杀了这些不方便；只有手机的群体秒杀了办公室里的白领，最后大家都很高兴地用手机购物了，甚至PC端bug更多，更甚至有些网站不提供PC端。</p>
-<p>移动网络的崛起和微信的成功也相辅相成的，在移动网络时代每个人都有自己的手机，所以账号系统的打通不再是问题，尤其是都被微信这个移动航母在吞噬，其它公司都活在微信的阴影里。</p>
-<p>当然移动支付的崛起就理所当然了。</p>
-<p>即使今天网上购物还是PC上要方便，那又怎么样，很多时候网上购物都是不在电脑前的零碎时间。</p>
-<p>10多年前第一次看到智能手机是室友购买的多普达，20年前也是这个室友半夜里很兴奋地播报台湾大选，让我知道了台湾大选这个事情。</p>
-<p>基本的价值观、世界观，没怎么改变，不应该是年龄大了僵化了，应该是掌握信息的手段和能力增强了，翻墙获取信息也很容易，基本的逻辑还在也没那么容易跑偏了。可能就是别人看到的年纪大了脑子僵化了吧，自我感觉不一定对。</p>
-<p>最近10年经济发展的非常好，政府对言论的控制越来越精准，舆论引导也非常”成功”,所以网络上看到这5年和5年前基本差别很大，5年前公知是个褒义词，5年后居然成了贬义词。</p>
-<p>房价自然是这10年最火的话题，07年大家开始感觉到房价上涨快、房价高，08年金融危机本来是最好的机会，结果4万亿刺激下09年年底房价开始翻倍，到10年面对翻倍了的房价政府、媒体、老百姓都在喊高，实际也只是横盘，13-14年小拉一波，16年涨价去库存再大拉一波。基本让很多人绝望了</p>
-<p>这十年做的最错的事情除了没有早点买房外就是想搞点投资收入投了制造外加炒股，踩点能力太差了，虽然前5年像任志强一样一直看多房价的不多，这个5年都被现实教育了，房价也基本到头了。</p>
-<p>工作上应该更早地、坚定地进入互联网、移动互联网，这10年互联网对人才的需求实在太大了，虽然最终能伴随公司成长的太少，毕竟活下来长大的公司不多。</p>
-<p>Google退出中国、看着小杨同学和一些同事移民、360大战QQ、诺贝尔和平奖、华为251事件都算是自己在一些公众事情上投入比较多的。非常不舍google的离开，这些年也基本还是只用google，既是无奈中用下百度也还是觉得搜不到什么有效信息；好奇移民的想法和他们出去后的各种生活；360跟QQ大战的时候觉得腾讯的垄断太牛叉了，同时认为可能360有这种资源的话会更作恶和垄断的更厉害，至少腾讯还是在乎外面的看法和要面子的；LXB到现在也是敏感词，直到病死在软禁中，这些年敏感词越来越多，言论的控制更严厉了；华为251也是个奇葩事件了，暴漏了资本家的粗野和枉法。</p>
-<p>自己工作上最幸运的事情是换到了现在的公司，才能够继续做一个北漂，要不已经被淘汰走了。这也导致了这几年能赚到前面10多年都赚不到钱。现在的公司对自己的方法论改变确实比较大，近距离看到了一些成功因素方面的逻辑（更有效的激励和企业文化）。</p>
-<p>经历了从外企到私企，从小公司到大公司的不同，外企英语是天花板，也看到了华为所谓的狼性、在金钱激励下的狼性，和对企业文化的维护，不能否认90%以上的人工作是为了钱</p>
-<p>这几年也开始习惯写技术文章来总结了，这得益于Markdown+截图表述的便利，也深刻感受到深抠，然后总结分享的方法真的很好（高斯学习方法），也体会到了抓手、触类旁通的运用。10年前在搜狐blog写过一两年的博客放弃的很快，很难一直有持续的高水平总结和输出。</p>
-<p>10年前还在比较MSN和QQ谁更好（我是坚定站在QQ这边的），10年后MSN再也看不见了，QQ也有了更好的替代工具微信。用处不大的地方倒是站对了，对自己最有用的关键地方都站错了。</p>
-<p>10年前差点要去豆瓣，10年后豆瓣还活着，依然倔强地保持自己的品味，这太难得了。相反十年前好用得不得了的RSS订阅，从抓虾转到google reader再到feedly好东西就是活得这么艰难。反过来公众号起来了、贴吧式微了，公众号运作新闻类是没问题的（看完就过），但是对技术类深度一点的就很不合适了，你看看一篇文章24小时内的阅读量占据了98%以上，再到后面就存亡了！但是公众号有流量，流量可以让大家跪在地上。</p>
-<p>10年前坑老是被看不起的，10年后早结婚、多啃老也基本成了这10年更对的事情，结婚得买房，啃老买的更早，不对的事情变对了（结婚早没错）。</p>
-<p>很成功地组织了一次初中同学20周年的聚会，也看到了远则亲、近则仇的现实情况，自己组织统筹能力还可以。</p>
-<p>情绪控制能力太差、容易失眠。这十年爱上了羽毛球和滑雪，虽然最近几年滑雪少了。</p>
-<p>体会到自小贫穷带来的一些抠门的坏习惯。</p>
-<p>2015年的股票大跌让自己很痛苦，这个过程反馈出来的不愿意撒手、在股市上的鸵鸟方式，股市上总是踩不到正确的点。割肉太难，割掉的总是错误的。</p>
-<p>15、16年我认为云计算不怎么样，觉得无非就是新瓶装旧酒，现在云计算不再有人质疑了，即使现在都还是亏钱。</p>
-<p>当然我也质疑过外卖就是一跑腿的，确实撑不起那么大的盘子，虽然没有像团购一样消亡，基本跟共享单车一样了，主要因为我是共享单车的重度用户，而我极端不喜欢外卖，所以要站出来看问题、屁股坐在哪边会严重影响看法，也就是不够客观。</p>
-<p>网约车和移动支付一起在硝烟中混战</p>
-<p>电动车开始起来，主要受政府弯道超车的刺激，目前看取决于自有充电位（适合三四线城市），可是三四线城市用户舍不得花这个溢价，汽油车都还没爽够呢。</p>
-<p>对世界杯不再那么关注，对AlphaGo的新闻倒是很在意了。魏则西事件牢牢地把百度钉死在耻辱柱上。</p>
-<p>随着12306的发展和高铁的起来，终于过年回家的火车票不用再靠半夜排队了。</p>
-<p>2019年年末行政强制安装ETC，让我想起20年前物理老师在课堂上跟我们描述的将来小汽车走高速公路再也不用停下来收费了，会自动感应，开过去就自动扣钱了。我一直对这个未来场景念念不忘，最近10年我经常问别人为什么不办ETC，这个年底看到的是行政命令下的各种抱怨。</p>
-<h3 id="看到："><a href="#看到：" class="headerlink" title="看到："></a>看到：</h3><ul>
-<li><p>老人、家人更不愿意听身边亲近人员的建议；</p>
-</li>
-<li><p>老人思维为什么固化、怎么样在自己老后不是那样固化；</p>
-</li>
+            <h1 id="Linux-问题总结"><a href="#Linux-问题总结" class="headerlink" title="Linux 问题总结"></a>Linux 问题总结</h1><h2 id="文件权限的坑"><a href="#文件权限的坑" class="headerlink" title="文件权限的坑"></a>文件权限的坑</h2><p>crond第一次加载的时候（刚启动）会去检查文件属性，不是644的话以后都不会执行了，即使后面chmod改成了644. </p>
+<p>手工随便修改一下该文件的内容就能触发自动执行了，或者重启crond, 或者 sudo service crond reload， 或者 /etc/cron.d/下有任何修改都会触发crond reload配置(包含 touch )。</p>
+<p>总之 crond会每分钟去检查job有没有change，有的话才触发reload，这个change看的时候change time有没有变化，不看权限的变化，仅仅是权限的变化不会触发crond reload。</p>
+<p> crond会每分钟去检查一下job有没有修改，有修改的话会reload，但是这个<strong>修改不包含权限的修改</strong>。可以简单地理解这个修改是指文件的change time。</p>
+<h2 id="容器中ulimit限制了crond的执行"><a href="#容器中ulimit限制了crond的执行" class="headerlink" title="容器中ulimit限制了crond的执行"></a>容器中ulimit限制了crond的执行</h2><p>容器启动的时候默认nofile为65535（可以通过 docker run –ulimit nofile=655360 来设置），如果容器中的 /etc/security/limits.conf 中设置的nofile大于 65535就会报错，因为容器的1号进程就是65535了，比如在容器中用root用户执行sudo ls报错：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">#sudo ls</div><div class="line">sudo: pam_open_session: Permission denied</div><div class="line">sudo: policy plugin failed session initialization</div></pre></td></tr></table></figure>
+<p>可以修改容器中的 ulimit 不要超过默认的65535或者修改容器的启动参数来解决。</p>
+<p>子进程都会继承父进程的一些环境变量，比如 limits.conf, sudo/su/crond/passwd等都会触发重新加载limits, </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">grep -rin pam_limit /etc/pam.d //可以看到触发重新加载的场景</div></pre></td></tr></table></figure>
+<h3 id="关于ulimit的一些知识点"><a href="#关于ulimit的一些知识点" class="headerlink" title="关于ulimit的一些知识点"></a>关于ulimit的一些知识点</h3><p>参考 <a href="https://feichashao.com/ulimit_demo/" target="_blank" rel="external">Ulimit</a> <a href="http://blog.yufeng.info/archives/2568" target="_blank" rel="external">http://blog.yufeng.info/archives/2568</a></p>
+<ul>
+<li>limit的设定值是 per-process 的</li>
+<li>在 Linux 中，每个普通进程可以调用 getrlimit() 来查看自己的 limits，也可以调用 setrlimit() 来改变自身的 soft limits</li>
+<li>要改变 hard limit, 则需要进程有 CAP_SYS_RESOURCE 权限</li>
+<li>进程 fork() 出来的子进程，会继承父进程的 limits 设定</li>
+<li><code>ulimit</code> 是 shell 的内置命令。在执行<code>ulimit</code>命令时，其实是 shell 自身调用 getrlimit()/setrlimit() 来获取/改变自身的 limits. 当我们在 shell 中执行应用程序时，相应的进程就会继承当前 shell 的 limits 设定</li>
+<li>shell 的初始 limits 是谁设定的: 通常是 pam_limits 设定的。顾名思义，pam_limits 是一个 PAM 模块，用户登录后，pam_limits 会给用户的 shell 设定在 limits.conf 定义的值</li>
 </ul>
+<p>ulimit, limits.conf 和 pam_limits 的关系，大致是这样的：</p>
+<ol>
+<li>用户进行登录，触发 pam_limits;</li>
+<li>pam_limits 读取 limits.conf，相应地设定用户所获得的 shell 的 limits；</li>
+<li>用户在 shell 中，可以通过 ulimit 命令，查看或者修改当前 shell 的 limits;</li>
+<li>当用户在 shell 中执行程序时，该程序进程会继承 shell 的 limits 值。于是，limits 在进程中生效了</li>
+</ol>
+<h2 id="pam-权限报错"><a href="#pam-权限报错" class="headerlink" title="pam 权限报错"></a>pam 权限报错</h2><p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b646979272e71e015de4a47c62b89747.png" alt="image.png"></p>
+<p>从debug信息看如果是pam权限报错的话，需要将 required 改成 sufficientS</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">$cat /etc/pam.d/crond </div><div class="line">#</div><div class="line"># The PAM configuration file for the cron daemon</div><div class="line">#</div><div class="line">#</div><div class="line"># No PAM authentication called, auth modules not needed</div><div class="line">account    required   pam_access.so</div><div class="line">account    include    system-auth</div><div class="line">session    required   pam_loginuid.so //required 改成 sufficient</div><div class="line">session    include    system-auth</div><div class="line">auth       include    system-auth</div></pre></td></tr></table></figure>
+<p>PAM 提供四个安全领域的特性，但是应用程序不太可能同时需要所有这些方面。例如，<code>passwd</code> 命令只需要下面列表中的第三组：</p>
+<ul>
+<li><code>account</code> 处理账户限制。对于有效的用户，允许他做什么？</li>
+<li><code>auth</code> 处理用户识别 — 例如，通过输入用户名和密码。</li>
+<li><code>password</code> 只处理与密码相关的问题，比如设置新密码。</li>
+<li><code>session</code> 处理连接管理，包括日志记录。</li>
+</ul>
+<p>在 /etc/pam.d 目录中为将使用 PAM 的每个应用程序创建一个配置文件，文件名与应用程序名相同。例如，<code>login</code> 命令的配置文件是 /etc/pam.d/login。</p>
+<p>必须定义将应用哪些模块，创建一个动作 “堆”。PAM 运行堆中的所有模块，根据它们的结果允许或拒绝用户的请求。还必须定义检查是否是必需的。最后，<em>other</em> 文件为没有特殊规则的所有应用程序提供默认规则。</p>
+<ul>
+<li><code>optional</code> 模块可以成功，也可以失败；PAM 根据模块是否最终成功返回 <code>success</code> 或 <code>failure</code>。</li>
+<li><code>required</code> 模块必须成功。如果失败，PAM 返回 <code>failure</code>，但是会在运行堆中的其他模块之后返回。</li>
+<li><code>requisite</code> 模块也必须成功。但是，如果失败，PAM 立即返回 <code>failure</code>，不再运行其他模块。</li>
+<li><code>sufficient</code> 模块在成功时导致 PAM 立即返回 <code>success</code>，不再运行其他模块。</li>
+</ul>
+<p>当pam安装之后有两大部分：在/lib64/security目录下的各种pam模块以及/etc/pam.d和/etc/pam.d目录下的针对各种服务和应用已经定义好的pam配置文件。当某一个有认证需求的应用程序需要验证的时候，一般在应用程序中就会定义负责对其认证的PAM配置文件。以vsftpd为例，在它的配置文件/etc/vsftpd/vsftpd.conf中就有这样一行定义：</p>
+<blockquote>
+<p>pam_service_name=vsftpd</p>
+</blockquote>
+<p>表示登录FTP服务器的时候进行认证是根据/etc/pam.d/vsftpd文件定义的内容进行。</p>
+<h3 id="PAM-认证过程"><a href="#PAM-认证过程" class="headerlink" title="PAM 认证过程"></a>PAM 认证过程</h3><p>当程序需要认证的时候已经找到相关的pam配置文件，认证过程是如何进行的？下面我们将通过解读/etc/pam.d/system-auth文件予以说明。</p>
+<p>首先要声明一点的是：system-auth是一个非常重要的pam配置文件，主要负责用户登录系统的认证工作。而且该文件不仅仅只是负责用户登录系统认证，其它的程序和服务通过include接口也可以调用到它，从而节省了很多重新自定义配置的工作。所以应该说该文件是系统安全的总开关和核心的pam配置文件。</p>
+<p>下面是/etc/pam.d/system-auth文件的全部内容：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line">$cat /etc/pam.d/system-auth</div><div class="line">#%PAM-1.0</div><div class="line"># This file is auto-generated.</div><div class="line"># User changes will be destroyed the next time authconfig is run.</div><div class="line">auth        required      pam_env.so</div><div class="line">auth        required      pam_faildelay.so delay=2000000</div><div class="line">auth        sufficient    pam_unix.so nullok try_first_pass</div><div class="line">auth        requisite     pam_succeed_if.so uid &gt;= 1000 quiet_success</div><div class="line">auth        required      pam_deny.so</div><div class="line"></div><div class="line">account     required      pam_unix.so</div><div class="line">account     sufficient    pam_localuser.so</div><div class="line">account     sufficient    pam_succeed_if.so uid &lt; 1000 quiet</div><div class="line">account     required      pam_permit.so</div><div class="line"></div><div class="line">password    requisite     pam_pwquality.so try_first_pass local_users_only retry=3 authtok_type=</div><div class="line">password    sufficient    pam_unix.so sha512 shadow nullok try_first_pass use_authtok</div><div class="line">password    required      pam_deny.so</div><div class="line"></div><div class="line">session     optional      pam_keyinit.so revoke</div><div class="line">session     required      pam_limits.so</div><div class="line">-session     optional      pam_systemd.so</div><div class="line">session     [success=1 default=ignore] pam_succeed_if.so service in crond quiet use_uid</div><div class="line">session     required      pam_unix.so</div></pre></td></tr></table></figure>
+<h4 id="第一部分"><a href="#第一部分" class="headerlink" title="第一部分"></a>第一部分</h4><p>当用户登录的时候，首先会通过auth类接口对用户身份进行识别和密码认证。所以在该过程中验证会经过几个带auth的配置项。</p>
+<p>其中的第一步是通过pam_env.so模块来定义用户登录之后的环境变量， pam_env.so允许设置和更改用户登录时候的环境变量，默认情况下，若没有特别指定配置文件，将依据/etc/security/pam_env.conf进行用户登录之后环境变量的设置。</p>
+<p>然后通过pam_unix.so模块来提示用户输入密码，并将用户密码与/etc/shadow中记录的密码信息进行对比，如果密码比对结果正确则允许用户登录，而且<strong>该配置项的使用的是“sufficient”控制位，即表示只要该配置项的验证通过，用户即可完全通过认证而不用再去走下面的认证项</strong>。不过在特殊情况下，用户允许使用空密码登录系统，例如当将某个用户在/etc/shadow中的密码字段删除之后，该用户可以只输入用户名直接登录系统。</p>
+<p>下面的配置项中，通过pam_succeed_if.so对用户的登录条件做一些限制，表示允许uid大于500的用户在通过密码验证的情况下登录，在Linux系统中，一般系统用户的uid都在500之内，所以该项即表示允许使用useradd命令以及默认选项建立的普通用户直接由本地控制台登录系统。</p>
+<p>最后通过pam_deny.so模块对所有不满足上述任意条件的登录请求直接拒绝，pam_deny.so是一个特殊的模块，该模块返回值永远为否，类似于大多数安全机制的配置准则，在所有认证规则走完之后，对不匹配任何规则的请求直接拒绝。</p>
+<h4 id="第二部分"><a href="#第二部分" class="headerlink" title="第二部分"></a>第二部分</h4><p>三个配置项主要表示通过account账户类接口来识别账户的合法性以及登录权限。</p>
+<p>第一行仍然使用pam_unix.so模块来声明用户需要通过密码认证。第二行承认了系统中uid小于500的系统用户的合法性。之后对所有类型的用户登录请求都开放控制台。</p>
+<h4 id="第三部分"><a href="#第三部分" class="headerlink" title="第三部分"></a>第三部分</h4><p>会通过password口令类接口来确认用户使用的密码或者口令的合法性。第一行配置项表示需要的情况下将调用pam_cracklib来验证用户密码复杂度。如果用户输入密码不满足复杂度要求或者密码错，最多将在三次这种错误之后直接返回密码错误的提示，否则期间任何一次正确的密码验证都允许登录。需要指出的是，pam_cracklib.so是一个常用的控制密码复杂度的pam模块，关于其用法举例我们会在之后详细介绍。之后带pam_unix.so和pam_deny.so的两行配置项的意思与之前类似。都表示需要通过密码认证并对不符合上述任何配置项要求的登录请求直接予以拒绝。不过用户如果执行的操作是单纯的登录，则这部分配置是不起作用的。</p>
+<h4 id="第四部分"><a href="#第四部分" class="headerlink" title="第四部分"></a>第四部分</h4><p>主要将通过session会话类接口为用户初始化会话连接。其中几个比较重要的地方包括，使用pam_keyinit.so表示当用户登录的时候为其建立相应的密钥环，并在用户登出的时候予以撤销。不过该行配置的控制位使用的是optional，表示这并非必要条件。之后通过pam_limits.so限制用户登录时的会话连接资源，相关pam_limit.so配置文件是/etc/security/limits.conf，默认情况下对每个登录用户都没有限制。关于该模块的配置方法在后面也会详细介绍。</p>
+<h3 id="常用的PAM模块介绍"><a href="#常用的PAM模块介绍" class="headerlink" title="常用的PAM模块介绍"></a>常用的PAM模块介绍</h3><table>
+<thead>
+<tr>
+<th>PAM模块</th>
+<th>结合管理类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>pam_unix.so</td>
+<td>auth</td>
+<td>提示用户输入密码,并与/etc/shadow文件相比对.匹配返回0</td>
+</tr>
+<tr>
+<td>pam_unix.so</td>
+<td>account</td>
+<td>检查用户的账号信息(包括是否过期等).帐号可用时,返回0.</td>
+</tr>
+<tr>
+<td>pam_unix.so</td>
+<td>password</td>
+<td>修改用户的密码. 将用户输入的密码,作为用户的新密码更新shadow文件</td>
+</tr>
+<tr>
+<td>pam_shells.so</td>
+<td>auth、account</td>
+<td>如果用户想登录系统，那么它的shell必须是在/etc/shells文件中之一的shell</td>
+</tr>
+<tr>
+<td>pam_deny.so</td>
+<td>account、auth、password、session</td>
+<td>该模块可用于拒绝访问</td>
+</tr>
+<tr>
+<td>pam_permit.so</td>
+<td>account、auth、password、session</td>
+<td>模块任何时候都返回成功.</td>
+</tr>
+<tr>
+<td>pam_securetty.so</td>
+<td>auth</td>
+<td>如果用户要以root登录时,则登录的tty必须在/etc/securetty之中.</td>
+</tr>
+<tr>
+<td>pam_listfile.so</td>
+<td>account、auth、password、session</td>
+<td>访问应用程的控制开关</td>
+</tr>
+<tr>
+<td>pam_cracklib.so</td>
+<td>password</td>
+<td>这个模块可以插入到一个程序的密码栈中,用于检查密码的强度.</td>
+</tr>
+<tr>
+<td>pam_limits.so</td>
+<td>session</td>
+<td>定义使用系统资源的上限，root用户也会受此限制，可以通过/etc/security/limits.conf或/etc/security/limits.d/*.conf来设定</td>
+</tr>
+</tbody>
+</table>
+<h2 id="debug-crond"><a href="#debug-crond" class="headerlink" title="debug crond"></a>debug crond</h2><p>先停掉 crond service，然后开启debug参数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">systemctl stop crond</div><div class="line">crond -x proc //不想真正执行的话：test</div></pre></td></tr></table></figure>
+<p>或者增加更多的debug信息， debug sudo/sudoers , 在 /etc/sudo.conf 中增加了：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">Debug sudo /var/log/sudo_debug all@warn</div><div class="line">Debug sudoers.so /var/log/sudoers_debug all@debug</div></pre></td></tr></table></figure>
+<h2 id="systemd-limits"><a href="#systemd-limits" class="headerlink" title="systemd limits"></a>systemd limits</h2><p>/etc/security/limits.conf 的配置，只适用于通过PAM 认证登录用户的资源限制，它对systemd 的service 的资源限制不生效。</p>
+<p>因此登录用户的限制，通过/etc/security/limits.conf 与/etc/security/limits.d 下的文件设置即可。</p>
+<p>对于systemd service 的资源设置，则需修改全局配置，全局配置文件放在/etc/systemd/system.conf 和/etc/systemd/user.conf，同时也会加载两个对应目录中的所有.conf 文件/etc/systemd/system.conf.d/.conf<br>和/etc/systemd/user.conf.d/.conf。</p>
+<h2 id="强制重启系统"><a href="#强制重启系统" class="headerlink" title="强制重启系统"></a>强制重启系统</h2><p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/ee2e438907fa72c70d5393a651dc9113.png" alt="image.png"></p>
+<h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a href="https://www.cnblogs.com/kevingrace/p/8671964.html" target="_blank" rel="external">https://www.cnblogs.com/kevingrace/p/8671964.html</a></p>
+<p><a href="https://www.jianshu.com/p/ac3e7009a764" target="_blank" rel="external">https://www.jianshu.com/p/ac3e7009a764</a></p>
 
           
         
@@ -4827,7 +4907,7 @@ test.x86_64.rpm
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">99</span>
+                <span class="site-state-item-count">100</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>

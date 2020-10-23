@@ -106,12 +106,13 @@
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/1423013fe76719cfa3088ebc4704c023.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/b6f4a952cdf8ffbb8f6e9434d1432e05.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/321f96243eef2f6437fe4e1559c15efe.png">
+<meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/9fbe15fa8b913ba76048f3b2ad2b923a.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/9db33f9304f8236b1ebcb215064bb2af.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/45c6d36ce8b17a5c0442e66fce002ab4.png">
 <meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/5322d0cf77a3a1ae6c87a972cc5843d0.png">
-<meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/9fbe15fa8b913ba76048f3b2ad2b923a.png">
+<meta property="og:image" content="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2703fc07dfc4dd5b6e1bb4c2ce620e59.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b3d075782450b0c8d2615c5d2b75d923.png">
-<meta property="og:updated_time" content="2020-10-14T10:16:37.905Z">
+<meta property="og:updated_time" content="2020-10-23T01:21:45.645Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="就是要你懂TCP--握手和挥手">
 <meta name="twitter:description" content="就是要你懂TCP–握手和挥手看过太多tcp相关文章，但是看完总是不过瘾，似懂非懂，反复考虑过后，我觉得是那些文章太过理论，看起来没有体感，所以吸收不了。  希望这篇文章能做到言简意赅，帮助大家透过案例来理解原理 tcp的特点这个大家基本都能说几句，面试的时候候选人也肯定会告诉你这些：  三次握手 四次挥手 可靠连接 丢包重传 速度自我调整  但是我只希望大家记住一个核心的：tcp是可以可靠传输协议">
@@ -455,6 +456,7 @@
 <p>net.ipv4.tcp_fin_timeout = 2</p>
 </blockquote>
 <p>TIME_WAIT 状态存在的意义是：最后发送的这个 ACK 包可能会被丢弃掉或者有延迟，这样对端就会再次发送 FIN 包。如果不维持 TIME_WAIT 这个状态，那么再次收到对端的 FIN 包后，本端就会回一个 Reset 包，这可能会产生一些异常。</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/9fbe15fa8b913ba76048f3b2ad2b923a.png" alt="image.png"></p>
 <h3 id="为什么握手三次、挥手四次"><a href="#为什么握手三次、挥手四次" class="headerlink" title="为什么握手三次、挥手四次"></a>为什么握手三次、挥手四次</h3><p>这个问题太恶心，面试官太喜欢问，其实大部分面试官只会背诵：因为TCP是双向的，所以关闭需要四次挥手……。</p>
 <p>你要是想怼面试官的话可以问他握手也是双向的但是只需要三次呢？</p>
 <p>我也不知道怎么回答。网上都说tcp是双向的，所以断开要四次。但是我认为建连接也是双向的（双向都协调告知对方自己的seq号），为什么不需要四次握手呢，所以网上说的不一定精准。</p>
@@ -480,12 +482,26 @@
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"># netstat -ant |grep 1808</div><div class="line">tcp        0      0 0.0.0.0:18080           0.0.0.0:*               LISTEN      </div><div class="line">tcp        0      0 192.168.1.79:18089      192.168.1.79:18080      TIME_WAIT</div></pre></td></tr></table></figure>
 <p>如果Server断开连接(也就是18080）那么就会看到client端的连接在CLOSE_WAIT 而Server在FIN_WAIT2：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"># netstat -ant |grep 1808</div><div class="line">tcp    0      0 192.168.1.79:18080      192.168.1.79:18089      FIN_WAIT2  --&lt;&lt; server</div><div class="line">tcp    0      0 192.168.1.79:18089      192.168.1.79:18080      CLOSE_WAIT --&lt;&lt; client</div></pre></td></tr></table></figure>
-<p>CLOSE_WAIT是被动关闭端在等待应用进程的关闭</p>
-<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/9fbe15fa8b913ba76048f3b2ad2b923a.png" alt="image.png"></p>
-<h3 id="此时client有两种选择"><a href="#此时client有两种选择" class="headerlink" title="此时client有两种选择"></a>此时client有两种选择</h3><p>1 如果client也立即断开，那么Server的这个连接会进入 TIME_WAIT状态</p>
+<h3 id="被动关闭方收到fin后有两种选择"><a href="#被动关闭方收到fin后有两种选择" class="headerlink" title="被动关闭方收到fin后有两种选择"></a>被动关闭方收到fin后有两种选择</h3><p>1 如果client也立即断开，那么Server的这个连接会进入 TIME_WAIT状态</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"># netstat -ant |grep 1808</div><div class="line">tcp    0      0 0.0.0.0:18080           0.0.0.0:*               LISTEN  --&lt;&lt; server还在  </div><div class="line">tcp    0      0 192.168.1.79:18080      192.168.1.79:18089      TIME_WAIT --&lt;&lt; server</div></pre></td></tr></table></figure>
 <p>2 client 坚持不断开过 Server 一段时间后（3.10：net.netfilter.nf_conntrack_tcp_timeout_fin_wait = 120， 4.19：net.ipv4.tcp_fin_timeout = 15）会结束这个连接但是client还是会 在CLOSE_WAIT 直到client进程退出</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># netstat -ant |grep 1808</div><div class="line">tcp        0      0 192.168.1.79:18089      192.168.1.79:18080      CLOSE_WAIT</div></pre></td></tr></table></figure>
+<h3 id="CLOSE-WAIT"><a href="#CLOSE-WAIT" class="headerlink" title="CLOSE_WAIT"></a>CLOSE_WAIT</h3><p>CLOSE_WAIT是被动关闭端在等待应用进程的关闭</p>
+<p>通常，CLOSE_WAIT 状态在服务器停留时间很短，如果你发现大量的 CLOSE_WAIT 状态，那么就意味着被动关闭的一方没有及时发出 FIN 包，一般有如下几种可能：</p>
+<ul>
+<li><strong>程序问题</strong>：如果代码层面忘记了 close 相应的 socket 连接，那么自然不会发出 FIN 包，从而导致 CLOSE_WAIT 累积；或者代码不严谨，出现死循环之类的问题，导致即便后面写了 close 也永远执行不到。</li>
+<li>响应太慢或者超时设置过小：如果连接双方不和谐，一方不耐烦直接 timeout，另一方却还在忙于耗时逻辑，就会导致 close 被延后。响应太慢是首要问题，不过换个角度看，也可能是 timeout 设置过小。</li>
+<li>BACKLOG 太大：此处的 backlog 不是 syn backlog，而是 accept 的 backlog，如果 backlog 太大的话，设想突然遭遇大访问量的话，即便响应速度不慢，也可能出现来不及消费的情况，导致多余的请求还在<a href="http://jaseywang.me/2014/07/20/tcp-queue-的一些问题/" target="_blank" rel="external">队列</a>里就被对方关闭了。</li>
+</ul>
+<p>如果你通过「netstat -ant」或者「ss -ant」命令发现了很多 CLOSE_WAIT 连接，请注意结果中的「Recv-Q」和「Local Address」字段，通常「Recv-Q」会不为空，它表示应用还没来得及接收数据，而「Local Address」表示哪个地址和端口有问题，我们可以通过「lsof -i:<port>」来确认端口对应运行的是什么程序以及它的进程号是多少。</port></p>
+<p>如果是我们自己写的一些程序，比如用 HttpClient 自定义的蜘蛛，那么八九不离十是程序问题，如果是一些使用广泛的程序，比如 Tomcat 之类的，那么更可能是响应速度太慢或者 timeout 设置太小或者 BACKLOG 设置过大导致的故障。</p>
+<h4 id="server端大量close-wait案例"><a href="#server端大量close-wait案例" class="headerlink" title="server端大量close_wait案例"></a>server端大量close_wait案例</h4><blockquote>
+<p>服务端出现大量close_wait 个数正好 等于somaxconn（调整somaxconn后 close_wait也会跟着变成一样的值）</p>
+</blockquote>
+<p>从这里看起来，client跟server成功建立了somaxconn个连接（somaxconn小于backlog，所以accept queue只有这么大），但是应用没有accept这个连接，导致这些连接一直在accept queue中。但是这些连接的状态已经是ESTABLISHED了，也就是client可以发送数据了，数据发送到server后OS ack了，并放在buffer中，但是应用一直没有accept也就没取数据。client于是发送fin（可能是超时、也可能是简单发送数据任务完成了得结束连接），这时Server上这个连接变成了CLOSE_WAIT .</p>
+<p>也就是从开始到结束这些连结都在accept queue中，没有被应用accept，很快他们又因为client fin变成了CLOSE_WAIT ，所以始终看到的是服务端出现大量close_wait 个数正好等于somaxconn（调整somaxconn后 close_wait也会跟着变成一样的值）。</p>
+<p>如下图所示，在连接进入accept queue后状态就是ESTABLISED了，也就是可以正常收发数据和fin了。client是感知不到server是否accept()了，只是发了数据后server的os代为保存在buffer中，因为应用没来取自然在CLOSE_WAIT 后应用也没有close()，所以一直维持CLOSE_WAIT 。</p>
+<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2703fc07dfc4dd5b6e1bb4c2ce620e59.png" alt="image.png"></p>
 <h2 id="状态图"><a href="#状态图" class="headerlink" title="状态图"></a>状态图</h2><p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b3d075782450b0c8d2615c5d2b75d923.png" alt="image.png"></p>
 <h2 id="总结下"><a href="#总结下" class="headerlink" title="总结下"></a>总结下</h2><p>tcp所有特性基本上核心都是为了<strong>可靠传输</strong>这个目标来服务的，然后有一些是出于优化性能的目的</p>
 <p>三次握手建连接的详细过程可以参考我这篇： <a href="https://www.atatech.org/articles/78858" target="_blank" rel="external">关于TCP 半连接队列和全连接队列</a></p>
@@ -632,7 +648,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">99</span>
+                <span class="site-state-item-count">100</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -696,7 +712,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#就是要你懂TCP–握手和挥手"><span class="nav-number">1.</span> <span class="nav-text">就是要你懂TCP–握手和挥手</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#tcp的特点"><span class="nav-number">1.1.</span> <span class="nav-text">tcp的特点</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#那么tcp是怎么样来保障可靠传输呢？"><span class="nav-number">1.1.1.</span> <span class="nav-text">那么tcp是怎么样来保障可靠传输呢？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tcp建连接的三次握手"><span class="nav-number">1.1.2.</span> <span class="nav-text">tcp建连接的三次握手</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#建连接失败经常碰到的问题"><span class="nav-number">1.1.3.</span> <span class="nav-text">建连接失败经常碰到的问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tcp断开连接的四次挥手"><span class="nav-number">1.1.4.</span> <span class="nav-text">tcp断开连接的四次挥手</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么握手三次、挥手四次"><span class="nav-number">1.1.5.</span> <span class="nav-text">为什么握手三次、挥手四次</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ack-seq-len"><span class="nav-number">1.1.6.</span> <span class="nav-text">ack=seq+len</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#三次握手中协商的其它信息"><span class="nav-number">1.1.7.</span> <span class="nav-text">三次握手中协商的其它信息</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TIME-WAIT-和-CLOSE-WAIT"><span class="nav-number">1.2.</span> <span class="nav-text">TIME_WAIT 和 CLOSE_WAIT</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#此时client有两种选择"><span class="nav-number">1.2.1.</span> <span class="nav-text">此时client有两种选择</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#状态图"><span class="nav-number">1.3.</span> <span class="nav-text">状态图</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结下"><span class="nav-number">1.4.</span> <span class="nav-text">总结下</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#什么是工程效率，什么是知识效率"><span class="nav-number">1.5.</span> <span class="nav-text">什么是工程效率，什么是知识效率</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#就是要你懂TCP–握手和挥手"><span class="nav-number">1.</span> <span class="nav-text">就是要你懂TCP–握手和挥手</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#tcp的特点"><span class="nav-number">1.1.</span> <span class="nav-text">tcp的特点</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#那么tcp是怎么样来保障可靠传输呢？"><span class="nav-number">1.1.1.</span> <span class="nav-text">那么tcp是怎么样来保障可靠传输呢？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tcp建连接的三次握手"><span class="nav-number">1.1.2.</span> <span class="nav-text">tcp建连接的三次握手</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#建连接失败经常碰到的问题"><span class="nav-number">1.1.3.</span> <span class="nav-text">建连接失败经常碰到的问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tcp断开连接的四次挥手"><span class="nav-number">1.1.4.</span> <span class="nav-text">tcp断开连接的四次挥手</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么握手三次、挥手四次"><span class="nav-number">1.1.5.</span> <span class="nav-text">为什么握手三次、挥手四次</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ack-seq-len"><span class="nav-number">1.1.6.</span> <span class="nav-text">ack=seq+len</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#三次握手中协商的其它信息"><span class="nav-number">1.1.7.</span> <span class="nav-text">三次握手中协商的其它信息</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TIME-WAIT-和-CLOSE-WAIT"><span class="nav-number">1.2.</span> <span class="nav-text">TIME_WAIT 和 CLOSE_WAIT</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#被动关闭方收到fin后有两种选择"><span class="nav-number">1.2.1.</span> <span class="nav-text">被动关闭方收到fin后有两种选择</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CLOSE-WAIT"><span class="nav-number">1.2.2.</span> <span class="nav-text">CLOSE_WAIT</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#server端大量close-wait案例"><span class="nav-number">1.2.2.1.</span> <span class="nav-text">server端大量close_wait案例</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#状态图"><span class="nav-number">1.3.</span> <span class="nav-text">状态图</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结下"><span class="nav-number">1.4.</span> <span class="nav-text">总结下</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#什么是工程效率，什么是知识效率"><span class="nav-number">1.5.</span> <span class="nav-text">什么是工程效率，什么是知识效率</span></a></li></ol></li></ol></div>
             
 
           </div>

@@ -115,7 +115,7 @@
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/f16438b744a248d7671d5ac7317b0a98.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/cf58f10a523e1e4f0db443be3f54fc04.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d5446b656e8d91a9fb72200a7b97e723.png">
-<meta property="og:updated_time" content="2020-10-14T10:16:37.805Z">
+<meta property="og:updated_time" content="2020-10-23T01:21:45.609Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Linux 内存问题汇总">
 <meta name="twitter:description" content="Linux 内存问题汇总内存使用观察# free -m          total       used       free     shared    buffers     cached Mem:          7515       1115       6400          0        189        492 -/+ buffers/cache:        43">
@@ -412,7 +412,7 @@ Swap:            0          0          0
 <h2 id="cached过高回收"><a href="#cached过高回收" class="headerlink" title="cached过高回收"></a>cached过高回收</h2><p>回收：<br>    echo 1/2/3 &gt;/proc/sys/vm/drop_cached</p>
 <p>查看回收后：</p>
 <pre><code>cat /proc/meminfo
-</code></pre><p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/7cedcb6daa53cbcfc9c68568086500b7.png" alt="image.png"></p>
+</code></pre><p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/7cedcb6daa53cbcfc9c68568086500b7.png" alt="image.png" style="zoom:67%;"></p>
 <p>当我们执行 echo 2 来 drop slab 的时候，它也会把 Page Cache(inode可能会有对应的pagecache，inode释放后对应的pagecache也释放了)给 drop 掉</p>
 <p>在系统内存紧张的时候，运维人员或者开发人员会想要通过 drop_caches 的方式来释放一些内存，但是由于他们清楚 Page Cache 被释放掉会影响业务性能，所以就期望只去 drop slab 而不去 drop pagecache。于是很多人这个时候就运行 echo 2 &gt; /proc/sys/vm/drop_caches，但是结果却出乎了他们的意料：Page Cache 也被释放掉了，业务性能产生了明显的下降。</p>
 <p>查看 drop_caches 是否执行过释放：</p>
@@ -680,7 +680,7 @@ test.x86_64.rpm
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">99</span>
+                <span class="site-state-item-count">100</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
