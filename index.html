@@ -3278,6 +3278,7 @@ LISTEN    0     511              *:8085           *:*
 <h2 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h2><p>测试的话可以指定repo 源： yum install ansible –enablerepo=drds （drds 优先级最高）</p>
 <p>本地会cache一些rpm的版本信息，可以执行 yum clean all 得到一个干净的测试环境</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">yum clean all</div><div class="line">yum list</div><div class="line">yum deplist ansible</div></pre></td></tr></table></figure>
+<h2 id="yum-源问题处理"><a href="#yum-源问题处理" class="headerlink" title="yum 源问题处理"></a>yum 源问题处理</h2><p><a href="https://access.redhat.com/solutions/641093" target="_blank" rel="external">Yum commands error “pycurl.so: undefined symbol”</a></p>
 
           
         
@@ -4822,6 +4823,7 @@ test.x86_64.rpm
 <p>因此登录用户的限制，通过/etc/security/limits.conf 与/etc/security/limits.d 下的文件设置即可。</p>
 <p>对于systemd service 的资源设置，则需修改全局配置，全局配置文件放在/etc/systemd/system.conf 和/etc/systemd/user.conf，同时也会加载两个对应目录中的所有.conf 文件/etc/systemd/system.conf.d/.conf<br>和/etc/systemd/user.conf.d/.conf。</p>
 <h2 id="强制重启系统"><a href="#强制重启系统" class="headerlink" title="强制重启系统"></a>强制重启系统</h2><p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/ee2e438907fa72c70d5393a651dc9113.png" alt="image.png"></p>
+<h2 id="hostname"><a href="#hostname" class="headerlink" title="hostname"></a>hostname</h2><p>hostname -i 是根据机器的hostname去解析ip，如果 /etc/hosts里面没有指定hostname对应的ip就会走dns 流程libnss_myhostname 返回所有ip</p>
 <h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a href="https://www.cnblogs.com/kevingrace/p/8671964.html" target="_blank" rel="external">https://www.cnblogs.com/kevingrace/p/8671964.html</a></p>
 <p><a href="https://www.jianshu.com/p/ac3e7009a764" target="_blank" rel="external">https://www.jianshu.com/p/ac3e7009a764</a></p>
 

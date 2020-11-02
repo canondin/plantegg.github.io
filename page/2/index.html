@@ -1118,7 +1118,7 @@ btr_estimate_n_rows_in_range_on_level(
 <p><strong>问题总结：</strong><br> 我们知道perf top是通过读取PMU的PC寄存器来获取当前执行的指令进而根据汇编的symbol信息获得是执行的哪条指令。所以看起来CPU在执行pause指令的时候，从PMU中看到的PC值指向到了下一条指令，进而导致我们看到的这个现象。通过查阅《Intel® 64 and IA-32 Architectures Optimization Reference Manual》目前还无法得知这是CPU的一个设计缺陷还是PMU的一个bug(需要对pause指令做特殊处理)。<strong>不管怎样，这个实验证明了我们统计spin lock的CPU占比还是准确的，不会因为pause指令导致PMU采样出错导致统计信息的整体失真。只是对于指令级的CPU统计，我们能确定的就是它把pause的执行cycles 数统计到了下一条指令。</strong></p>
 <p><strong>补充说明：</strong></p>
 <p>​    <strong>经过测试，非skylake CPU也同样存在perf top会把pause(执行数cycles是10)的执行cycles数统计到下一条指令的问题，看来这是X86架构都存在的问题。</strong></p>
-<h2 id="总结分析"><a href="#总结分析" class="headerlink" title="总结分析"></a>总结分析</h2><p>CPU 架构不同Pause 指令的不同导致了 MySQL innodb_spin_wait_delay 在spin lock失败的时候delay更久，导致调用方看到了MySQL更大的rt，导致Tomcat Server上并发跑不起来，所以最终压力上不去。</p>
+<h2 id="总结分析"><a href="#总结分析" class="headerlink" title="总结分析"></a>总结分析</h2><p>CPU 架构不同Pause 指令的需要的CPU Cycles不同导致了 MySQL innodb_spin_wait_delay 在spin lock失败的时候（此时需要 pause<em> innodb_spin_wait_delay</em>N）delay更久，使得调用方看到了MySQL更大的rt，进而Tomcat Server上并发跑不起来，所以最终压力上不去。</p>
 <p>在长链路的排查中，细化定位是哪个节点出了问题是最难的，这里大量的时间都花在了client、slb、Tomcat节点等等有没有问题，就是因为MySQL有32个节点，他们的CPU都不高，让大家很快排除了他的嫌疑。</p>
 <p>在一开始排除MySQL嫌疑(主要是这种场景下对抖动太敏感了)后花了大量的工作在简化链路上，实际因为他们都不是瓶颈，所以没有任何效果。</p>
 <p>在极端环境下（比如没有网络、工具不健全）排查问题太困难了，比如这个问题MySQL早装perf可能很快就发现了问题。</p>

@@ -104,7 +104,7 @@
 <meta property="og:description" content="MySQL知识体系的三驾马车在我看来要掌握好MySQL的话要理解好这三个东西：  索引（B+树） 日志（WAL） 事务(可见性)  索引决定了查询的性能，也是用户感知到的数据库的关键所在，日常使用过程中抱怨最多的就是查询太慢了； 而日志是一个数据库的灵魂，他决定了数据库为什么可靠，还要保证性能，核心原理就是将随机写转换成顺序写； 事务则是数据库的皇冠。 索引索引主要是解决查询性能的问题，数据一般都">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/87f90b5535714486f4e0c86982b54141.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d1c817af83ba09c6ee6da2eca87af6d3.png">
-<meta property="og:updated_time" content="2020-07-16T03:42:02.951Z">
+<meta property="og:updated_time" content="2020-11-02T01:28:26.239Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="MySQL知识体系的三驾马车">
 <meta name="twitter:description" content="MySQL知识体系的三驾马车在我看来要掌握好MySQL的话要理解好这三个东西：  索引（B+树） 日志（WAL） 事务(可见性)  索引决定了查询的性能，也是用户感知到的数据库的关键所在，日常使用过程中抱怨最多的就是查询太慢了； 而日志是一个数据库的灵魂，他决定了数据库为什么可靠，还要保证性能，核心原理就是将随机写转换成顺序写； 事务则是数据库的皇冠。 索引索引主要是解决查询性能的问题，数据一般都">
@@ -424,7 +424,7 @@
 <h2 id="日志"><a href="#日志" class="headerlink" title="日志"></a>日志</h2><p>数据库的关键瓶颈在于写，因为每次更新都要落盘防止丢数据，而磁盘最怕的就是随机写。</p>
 <h3 id="Write-Ahead-logging（WAL）"><a href="#Write-Ahead-logging（WAL）" class="headerlink" title="Write-Ahead logging（WAL）"></a>Write-Ahead logging（WAL）</h3><p>写磁盘前先写日志，这样不用担心丢数据问题，写日志又是一个顺序写,性能比随机写好多了，这样将性能很差的随机写转换成了顺序写。然后每过一段时间将这些日志合并后真正写入到表空间，这次是随机写，但是有机会将多个写合并成一个，比如多个写在同一个Page上。</p>
 <p>这是数据库优化的关键。</p>
-<h3 id="bin-log"><a href="#bin-log" class="headerlink" title="bin-log"></a>bin-log</h3><p>MySQL Server用来记录执行修改数据的SQL，Replication基本就是复制并重放这个日志。有statement、row和混合模式三种</p>
+<h3 id="bin-log"><a href="#bin-log" class="headerlink" title="bin-log"></a>bin-log</h3><p>MySQL Server用来记录执行修改数据的SQL，Replication基本就是复制并重放这个日志。有statement、row和混合模式三种。</p>
 <h3 id="redo-log"><a href="#redo-log" class="headerlink" title="redo-log"></a>redo-log</h3><p>INNODB引擎用来保证事务的完整性，也就是crash-safe。MySQL 默认是保证不了不丢数据的，如果写了表空间还没来得及写bin-log就会造成主从数据不一致；或者在事务中需要执行多个SQL，bin-log保证不了完整性。</p>
 <p>而在redo-log中任何修改都会先记录到redo-log中，即使断电MySQL重启后也会先检查redo-log将redo-log中记录了但是没有提交到表空间的数据进行提交（刷脏）</p>
 <p>redo-log和bin-log的比较：</p>
@@ -433,7 +433,7 @@
 <li>redo log 是物理日志，记录的是“在某个数据页上做了什么修改”；binlog 是逻辑日志，记录的是这个语句的原始逻辑，比如“给 ID=2 这一行的 c 字段加 1 ”。</li>
 <li>redo log 是循环写的，空间固定会用完；binlog 是可以追加写入的。“追加写”是指 binlog 文件写到一定大小后会切换到下一个，并不会覆盖以前的日志。</li>
 </ul>
-<p>redo-log中记录的是对页的操作，而不是修改后的数据页，buffer pool（或者说change buffer）中记录的才是数据页。正常刷脏是指的将change buffer中的脏页刷到磁盘，如果没来得及刷脏就崩溃了，那么就只能从redo-log来将没有刷盘的操作再执行一次让他们真正落盘</p>
+<p><strong>redo-log中记录的是对页的操作，而不是修改后的数据页</strong>，buffer pool（或者说change buffer）中记录的才是数据页。正常刷脏是指的将change buffer中的脏页刷到磁盘，如果没来得及刷脏就崩溃了，那么就只能从redo-log来将没有刷盘的操作再执行一次让他们真正落盘</p>
 <p>只有当commit（非两阶段的commit）的时候才会真正把redo-log写到磁盘上。</p>
 <h3 id="binlog和redo-log一致性的保证"><a href="#binlog和redo-log一致性的保证" class="headerlink" title="binlog和redo-log一致性的保证"></a>binlog和redo-log一致性的保证</h3><p>bin-log和redo-log的一致性是通过两阶段提交来保证的，两阶段提交过程中prepare是非常重的，prepare一定会持久化（日志），记录如何commit和rollback，一旦prepare成功就一定能commit和rollback，如果其他节点commit后崩溃，恢复后会有一个协商过程，其它节点发现崩溃节点已经commit，所以会跟随commit；如果崩溃节点还没有prepare那么其它节点只能rollback。</p>
 <p>实际崩溃后恢复时MySQL是这样保证redo-log和bin-log的完整性的：</p>
@@ -453,7 +453,7 @@
 <li>系统空闲的时候也会趁机刷脏</li>
 </ul>
 <p>在 MySQL 5.5 及以前的版本，<strong>回滚日志是跟数据字典一起放在 ibdata 文件里的</strong>，即使长事务最终提交，回滚段被清理，文件也不会变小。我见过数据只有 20GB，而回滚段有 200GB 的库。最终只好为了清理回滚段，重建整个库。</p>
-<p>长事务意味着系统里面会存在很老的事务视图。由于这些事务随时可能访问数据库里面的任何数据，所以这个事务提交之前，数据库里面它可能用到的回滚记录都必须保留，这就会导致大量占用存储空间。除了对回滚段的影响，长事务还占用锁资源，也可能拖垮整个库，这个我们会在后面讲锁的时候展开</p>
+<p>长事务意味着系统里面会存在很老的事务视图。由于这些事务随时可能访问数据库里面的任何数据，所以这个事务提交之前，数据库里面它可能用到的回滚记录都必须保留，这就会导致大量占用存储空间。除了对回滚段的影响，长事务还占用锁资源，也可能拖垮整个库。</p>
 <h2 id="事务"><a href="#事务" class="headerlink" title="事务"></a>事务</h2><h3 id="可见性"><a href="#可见性" class="headerlink" title="可见性"></a>可见性</h3><p>是基于事务的隔离级别而言的，常用的事务的隔离级别有可重复读RR（Repeatable Read，MySQL默认的事务隔离级别）和读已提交RC（Read Committed）。</p>
 <h3 id="可重复读"><a href="#可重复读" class="headerlink" title="可重复读"></a>可重复读</h3><p>读已提交：A事务能读到B事务已经commit了的结果，即使B事务开始时间晚于A事务</p>
 <p>重复读的定义：一个事务启动的时候，能够看到所有已经提交的事务结果。但是之后，这个事务执行期间，其他事务的更新对它不可见。</p>
@@ -466,6 +466,13 @@
 <li>如果是读已提交RC（Read Committed），后开始的事务提交的结果对前面的事务可见</li>
 </ul>
 <h3 id="当前读"><a href="#当前读" class="headerlink" title="当前读"></a>当前读</h3><p>更新数据都是先读后写的，而这个读，只能读当前的值，称为“当前读”（current read）。除了 update 语句外，select 语句如果加锁，也是当前读。</p>
+<p>事务的可重复读的能力是怎么实现的？</p>
+<p>可重复读的核心就是一致性读（consistent read）；而事务更新数据的时候，只能用当前读。如果<br>当前的记录的行锁被其他事务占用的话，就需要进入锁等待。</p>
+<p>而读提交的逻辑和可重复读的逻辑类似，它们最主要的区别是：</p>
+<ul>
+<li>在可重复读隔离级别下，只需要在事务开始的时候创建一致性视图，之后事务里的其他查询都共<br>用这个一致性视图；</li>
+<li>在读提交隔离级别下，每一个语句执行前都会重新算出一个新的视图。</li>
+</ul>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>理解好索引是程序员是否掌握数据库的最关键知识点，理解好索引才会写出更高效的SQL，避免慢查询搞死MySQL。</p>
 <p>对日志的理解可以看到一个数据库为了提升性能（刷磁盘的瓶颈）采取的各种手段。也是最重要的一些设计思想所在。</p>
 <p>事务则是数据库皇冠。</p>
