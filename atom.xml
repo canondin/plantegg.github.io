@@ -58,7 +58,7 @@
     <link href="http://yoursite.com/2020/11/02/%E4%B8%BE%E4%B8%89%E5%8F%8D%E4%B8%80--%E4%BB%8E%E7%90%86%E8%AE%BA%E7%9F%A5%E8%AF%86%E5%88%B0%E5%AE%9E%E9%99%85%E9%97%AE%E9%A2%98%E7%9A%84%E6%8E%A8%E5%AF%BC/"/>
     <id>http://yoursite.com/2020/11/02/举三反一--从理论知识到实际问题的推导/</id>
     <published>2020-11-02T02:30:03.000Z</published>
-    <updated>2020-11-03T09:02:42.990Z</updated>
+    <updated>2020-11-03T10:11:18.843Z</updated>
     
     <content type="html"><![CDATA[<h1 id="举三反一–从理论知识到实际问题的推导"><a href="#举三反一–从理论知识到实际问题的推导" class="headerlink" title="举三反一–从理论知识到实际问题的推导"></a>举三反一–从理论知识到实际问题的推导</h1><blockquote>
 <p>怎么样才能获取举三反一的秘籍， 普通人为什么要案例来深化对理论知识的理解。</p>
@@ -104,6 +104,30 @@
 <p>如果你通过「netstat -ant」或者「ss -ant」命令发现了很多 CLOSE_WAIT 连接，请注意结果中的「Recv-Q」和「Local Address」字段，通常「Recv-Q」会不为空，它表示应用还没来得及接收数据，而「Local Address」表示哪个地址和端口有问题，我们可以通过「lsof -i:<port>」来确认端口对应运行的是什么程序以及它的进程号是多少。</port></p>
 <p>如果是我们自己写的一些程序，比如用 HttpClient 自定义的蜘蛛，那么八九不离十是程序问题，如果是一些使用广泛的程序，比如 Tomcat 之类的，那么更可能是响应速度太慢或者 timeout 设置太小或者 BACKLOG 设置过大导致的故障。</p>
 <p>看完这段 CLOSE_WAIT 更具体深入点的分析后再来分析上面的案例看看，能否推导得到正确的结论。</p>
+<h2 id="一些疑问"><a href="#一些疑问" class="headerlink" title="一些疑问"></a>一些疑问</h2><ul>
+<li>连接都没有被accept(), client端就能发送数据了？</li>
+</ul>
+<p>答：是的。因为这些动作都是由内核完成的，内核收到数据后会先将数据放在内核的tcp buffer中，然后os回复ack。</p>
+<ul>
+<li>CLOSE_WAIT与accept queue有关系吗？</li>
+</ul>
+<p>答：没有关系。只是本案例中因为open files不够了，影响了应用accept(), 导致accept queue满了，同时因为即使应用不accept，client也能发送数据和发 fin断连接，这些响应都是os来负责，跟上层应用没关系。CLOSE_WAIT只跟应用不调 close() 有关系。 </p>
+<ul>
+<li>CLOSE_WAIT与accept queue为什么刚好一致并且联动了？</li>
+</ul>
+<p>答：这里他们的数量刚好一致是因为所有新建连接都没有accept，堵在queue中。同时client发现问题后把所有连接都fin了，所以导致他们的值一致并且联动了</p>
+<ul>
+<li>openfiles和accept()的关系是？</li>
+</ul>
+<p>答：accept()的时候才会创建文件句柄，消耗openfiles</p>
+<ul>
+<li>一个连接如果在accept queue中了，但是还没有被server accept，那么这个时候在server上看这个连接的状态他是ESTABLISHED的吗？</li>
+</ul>
+<p>答：是</p>
+<ul>
+<li>如果server的os参数 open files到了上限（就是os没法打开新的文件句柄了）会导致这个accept queue中的连接一直没法被accept对吗？</li>
+</ul>
+<p>答：是</p>
 ]]></content>
     
     <summary type="html">
