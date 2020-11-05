@@ -401,7 +401,7 @@
 <li>接入集团DRC来保障数据的高可用</li>
 <li>对业务进行改造支持Amazon的全链路压测</li>
 </ul>
-<h2 id="主要的压测过程"><a href="#主要的压测过程" class="headerlink" title="主要的压测过程"></a>主要的压测过程</h2><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/6b24a854d91aba4dcdbd4f0155683d93.png" alt="screenshot.png"></p>
+<h2 id="主要的压测过程"><a href="#主要的压测过程" class="headerlink" title="主要的压测过程"></a>主要的压测过程</h2><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/6b24a854d91aba4dcdbd4f0155683d93.png" alt="screenshot.png"></p>
 <p><strong>上图是压测过程中主要的阶段中问题和改进,主要的问题和优化过程如下：</strong></p>
 <pre><code>- docker bridge网络性能问题和网络中断si不均衡    (优化后：500-&gt;1000TPS)
 - 短连接导致的local port不够                   (优化后：1000-3000TPS)
@@ -416,22 +416,22 @@
 <li>userservice    处理登录后的业务逻辑，比如将优酷账号和淘宝账号绑定</li>
 </ul>
 <p>为了更好地利用资源每台物理加上部署三个docker 容器，跑在不同的端口上(8081、8082、8083），通过bridge网络来互相通讯</p>
-<h3 id="Passport机器大致结构"><a href="#Passport机器大致结构" class="headerlink" title="Passport机器大致结构"></a>Passport机器大致结构</h3><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/b509b30218dd22e03149985cf5e15f8e.png" alt="screenshot.png"></p>
+<h3 id="Passport机器大致结构"><a href="#Passport机器大致结构" class="headerlink" title="Passport机器大致结构"></a>Passport机器大致结构</h3><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b509b30218dd22e03149985cf5e15f8e.png" alt="screenshot.png"></p>
 <!--这里的500 TPS到5400 TPS是指登录和将优酷账号和淘宝账号绑定的TPS，也是促销活动主要的瓶颈-->
 <h3 id="userservice服务网络相关的各种问题"><a href="#userservice服务网络相关的各种问题" class="headerlink" title="userservice服务网络相关的各种问题"></a>userservice服务网络相关的各种问题</h3><hr>
-<h4 id="太多SocketConnect异常-如上图）"><a href="#太多SocketConnect异常-如上图）" class="headerlink" title="太多SocketConnect异常(如上图）"></a>太多SocketConnect异常(如上图）</h4><p>在userservice机器上通过netstat也能看到大量的SYN_SENT状态，如下图：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/99bf952b880f17243953da790ff0e710.png" alt="image.png"></p>
-<h4 id="因为docker-bridge通过nat来实现，尝试去掉docker，让tomcat直接跑在物理机上"><a href="#因为docker-bridge通过nat来实现，尝试去掉docker，让tomcat直接跑在物理机上" class="headerlink" title="因为docker bridge通过nat来实现，尝试去掉docker，让tomcat直接跑在物理机上"></a>因为docker bridge通过nat来实现，尝试去掉docker，让tomcat直接跑在物理机上</h4><p>这时SocketConnect异常不再出现<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/6ed62fd6b50ad2785e5b57687d95ad6e.png" alt="image.png"></p>
+<h4 id="太多SocketConnect异常-如上图）"><a href="#太多SocketConnect异常-如上图）" class="headerlink" title="太多SocketConnect异常(如上图）"></a>太多SocketConnect异常(如上图）</h4><p>在userservice机器上通过netstat也能看到大量的SYN_SENT状态，如下图：<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/99bf952b880f17243953da790ff0e710.png" alt="image.png"></p>
+<h4 id="因为docker-bridge通过nat来实现，尝试去掉docker，让tomcat直接跑在物理机上"><a href="#因为docker-bridge通过nat来实现，尝试去掉docker，让tomcat直接跑在物理机上" class="headerlink" title="因为docker bridge通过nat来实现，尝试去掉docker，让tomcat直接跑在物理机上"></a>因为docker bridge通过nat来实现，尝试去掉docker，让tomcat直接跑在物理机上</h4><p>这时SocketConnect异常不再出现<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/6ed62fd6b50ad2785e5b57687d95ad6e.png" alt="image.png"></p>
 <h4 id="从新梳理一下网络流程"><a href="#从新梳理一下网络流程" class="headerlink" title="从新梳理一下网络流程"></a>从新梳理一下网络流程</h4><p>docker(bridge)—-短连接—&gt;访问淘宝API(淘宝open api只能短连接访问），性能差，cpu都花在si上； </p>
 <p>如果 docker(bridge)—-长连接到宿主机的某个代理上(比如haproxy）—–短连接—&gt;访问淘宝API， 性能就能好一点。问题可能是短连接放大了Docker bridge网络的性能损耗</p>
-<h4 id="当时看到的cpu-si非常高，截图如下："><a href="#当时看到的cpu-si非常高，截图如下：" class="headerlink" title="当时看到的cpu si非常高，截图如下："></a>当时看到的cpu si非常高，截图如下：</h4><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/4c1eff0f925f59977e2557acff5cf03b.png" alt="image.png"></p>
+<h4 id="当时看到的cpu-si非常高，截图如下："><a href="#当时看到的cpu-si非常高，截图如下：" class="headerlink" title="当时看到的cpu si非常高，截图如下："></a>当时看到的cpu si非常高，截图如下：</h4><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/4c1eff0f925f59977e2557acff5cf03b.png" alt="image.png"></p>
 <p>去掉Docker后，性能有所提升，继续通过perf top看到内核态寻找可用的Local Port消耗了比较多的CPU，gif动态截图如下(可以点击看高清大图）：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/fff502ca73e3112e585560ffe4a4dbf1.gif" alt="perf-top-netLocalPort-issue.gif"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/fff502ca73e3112e585560ffe4a4dbf1.gif" alt="perf-top-netLocalPort-issue.gif"></p>
 <p><strong>注意图中ipv6_rcv_saddr_equal和inet_csk_get_port 总共占了30%的CPU</strong> (系统态的CPU使用率高意味着共享资源有竞争或者I/O设备之间有大量的交互。)</p>
 <p><strong>一般来说一台机器默认配置的可用 Local Port 3万多个，如果是短连接的话，一个连接释放后默认需要60秒回收，30000/60 =500 这是大概的理论TPS值【这里只考虑连同一个server IP:port 的时候】</strong></p>
 <p>这500的tps算是一个老中医的经验。不过有些系统调整过Local Port取值范围，比如从1024到65534，那么这个tps上限就是1000附近。</p>
-<p>同时观察这个时候CPU的主要花在sy上，最理想肯定是希望CPU主要用在us上，截图如下：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/05703c168e63e96821ea9f921d83712b.png" alt="image.png"></p>
+<p>同时观察这个时候CPU的主要花在sy上，最理想肯定是希望CPU主要用在us上，截图如下：<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/05703c168e63e96821ea9f921d83712b.png" alt="image.png"></p>
 <p><strong>规则：性能优化要先把CPU从SI、SY上的消耗赶到US上去(通过架构、系统配置）；然后提升 US CPU的效率(代码级别的优化）</strong></p>
-<p>sy占用了30-50%的CPU，这太不科学了，同时通过 netstat 分析连接状态，确实看到很多TIME_WAIT：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2ae2cb8b0cb324b68ca22c48c019e029.png" alt="localportissue-time-wait.png"></p>
+<p>sy占用了30-50%的CPU，这太不科学了，同时通过 netstat 分析连接状态，确实看到很多TIME_WAIT：<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/2ae2cb8b0cb324b68ca22c48c019e029.png" alt="localportissue-time-wait.png"></p>
 <p><strong>cpu要花在us上，这部分才是我们代码吃掉的</strong></p>
 <p><strong><em>于是让PE修改了tcp相关参数：降低 tcp_max_tw_buckets和开启tcp_tw_reuse，这个时候TPS能从1000提升到3000</em></strong></p>
 <p>鼓掌，赶紧休息，迎接双11啊</p>
@@ -455,15 +455,15 @@
 <h3 id="进一步挖掘代码中的优化空间"><a href="#进一步挖掘代码中的优化空间" class="headerlink" title="进一步挖掘代码中的优化空间"></a>进一步挖掘代码中的优化空间</h3><p>双11前的这段封网其实是比较无聊的，于是和Passport的开发同学们一起挖掘代码中的可以优化的部分。这个过程中使用到的主要工具是这三个：火焰图、perf、perf-map-java。相关链接：<a href="http://www.brendangregg.com/perf.html" target="_blank" rel="external">http://www.brendangregg.com/perf.html</a> ; <a href="https://github.com/jrudolph/perf-map-agent" target="_blank" rel="external">https://github.com/jrudolph/perf-map-agent</a></p>
 <h3 id="通过Perf发现的一个SpringMVC-的性能问题"><a href="#通过Perf发现的一个SpringMVC-的性能问题" class="headerlink" title="通过Perf发现的一个SpringMVC 的性能问题"></a>通过Perf发现的一个SpringMVC 的性能问题</h3><p>这个问题具体参考我之前发表的优化文章<a href="http://www.atatech.org/articles/65232" title="spring mvc issue" target="_blank" rel="external">http://www.atatech.org/articles/65232</a> 。 主要是通过火焰图发现spring mapping path消耗了过多CPU的性能问题，CPU热点都在methodMapping相关部分，于是修改代码去掉spring中的methodMapping解析后性能提升了40%，TPS能从3000提升到4200.</p>
 <h3 id="著名的fillInStackTrace导致的性能问题"><a href="#著名的fillInStackTrace导致的性能问题" class="headerlink" title="著名的fillInStackTrace导致的性能问题"></a>著名的fillInStackTrace导致的性能问题</h3><p>代码中的第二个问题是我们程序中很多异常(fillInStackTrace），实际业务上没有这么多错误，应该是一些不重要的异常，不会影响结果，但是异常频率很高，对这种我们可以找到触发的地方，catch住，然后不要抛出去(也就是别触发fillInStackTrace)，打印一行error日志就行，这块也能省出10%的CPU，对应到TPS也有几百的提升。</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/36ef4b16c3c400abf6eb7e6b0fbb2f58.png" alt="screenshot.png"></p>
-<p>部分触发fillInStackTrace的场景和具体代码行(点击看高清大图）：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/7eb2cbb4afc2c7d7007c35304c95342a.png" alt="screenshot.png"></p>
-<p>对应的火焰图(点击看高清大图）：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/894bd736dd03060e89e3fa49cc98ae5e.png" alt="screenshot.png"></p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2bb7395a2cc6833c9c7587b38402a301.png" alt="screenshot.png"></p>
-<h3 id="解析useragent-代码部分的性能问题"><a href="#解析useragent-代码部分的性能问题" class="headerlink" title="解析useragent 代码部分的性能问题"></a>解析useragent 代码部分的性能问题</h3><p>整个useragent调用堆栈和cpu占用情况，做了个汇总(useragent不启用TPS能从4700提升到5400）<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/8a4a97cb74724b8baa3b90072a1914e0.png" alt="screenshot.png"></p>
-<p>实际火焰图中比较分散：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/afacc681a9550cd087838c2383be54c8.png" alt="screenshot.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/36ef4b16c3c400abf6eb7e6b0fbb2f58.png" alt="screenshot.png"></p>
+<p>部分触发fillInStackTrace的场景和具体代码行(点击看高清大图）：<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/7eb2cbb4afc2c7d7007c35304c95342a.png" alt="screenshot.png"></p>
+<p>对应的火焰图(点击看高清大图）：<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/894bd736dd03060e89e3fa49cc98ae5e.png" alt="screenshot.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/2bb7395a2cc6833c9c7587b38402a301.png" alt="screenshot.png"></p>
+<h3 id="解析useragent-代码部分的性能问题"><a href="#解析useragent-代码部分的性能问题" class="headerlink" title="解析useragent 代码部分的性能问题"></a>解析useragent 代码部分的性能问题</h3><p>整个useragent调用堆栈和cpu占用情况，做了个汇总(useragent不启用TPS能从4700提升到5400）<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/8a4a97cb74724b8baa3b90072a1914e0.png" alt="screenshot.png"></p>
+<p>实际火焰图中比较分散：<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/afacc681a9550cd087838c2383be54c8.png" alt="screenshot.png"></p>
 <p><strong>最终通过对代码的优化勉勉强强将TPS从3000提升到了5400(太不容易了，改代码过程太辛苦，不如改配置来得快）</strong></p>
 <p>优化代码后压测tps可以跑到5400，截图：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/38bb043c85c7b50007609484c7bf5698.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/38bb043c85c7b50007609484c7bf5698.png" alt="image.png"></p>
 <h2 id="最后再次总结整个压测过程的问题和优化历程"><a href="#最后再次总结整个压测过程的问题和优化历程" class="headerlink" title="最后再次总结整个压测过程的问题和优化历程"></a>最后再次总结整个压测过程的问题和优化历程</h2><pre><code>- docker bridge网络性能问题和网络中断si不均衡    (优化后：500-&gt;1000TPS)
 - 短连接导致的local port不够                   (优化后：1000-3000TPS）
 - 生产环境snat单核导致的网络延时增大             (优化后能达到测试环境的3000TPS）
@@ -835,7 +835,7 @@ sudo curl --no-buffer -XGET --unix-socket /var/run/docker.sock http://localhost/
           
             <h1 id="从知识到能力，你到底欠缺了什么"><a href="#从知识到能力，你到底欠缺了什么" class="headerlink" title="从知识到能力，你到底欠缺了什么"></a>从知识到能力，你到底欠缺了什么</h1><h2 id="写在最前面的"><a href="#写在最前面的" class="headerlink" title="写在最前面的"></a>写在最前面的</h2><p>前面推送过文章<a href="https://mp.weixin.qq.com/s/JlXWLpQSyj3Z_KMyUmzBPA" target="_blank" rel="external">《毕业3年，为何技术能力相差越来越大？》</a> 有些同学觉得还是不知道如何落地，那么本文希望借助一个程序员经常遇到的一个问题：网络为什么不通？ 来具体展开实践一下怎么将书本上的死知识真正变成我们解决问题的能力。</p>
 <h2 id="大学学到的基本概念"><a href="#大学学到的基本概念" class="headerlink" title="大学学到的基本概念"></a>大学学到的基本概念</h2><p>我相信你脑子里关于网络基础知识的概念都在下面这张图上，但是有点乱，都认识，又都模模糊糊，更谈不上将他们转化成生产力，用来解决实际问题了。这就是因为知识没有贯通、没有实践、没有组织。</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/d37028807148f8ec630512bdd4223335.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d37028807148f8ec630512bdd4223335.png" alt="image.png"></p>
 <p>上图中知识点的作用在<a href="https://tools.ietf.org/html/rfc1180" target="_blank" rel="external">RFC1180</a>中讲的无比的通熟易懂了，看第一遍你也许就看懂了，但是一个月后又忘记了。其实这些东西我们在大学也学了，但是还是忘了（能够理解，缺少实操环境和条件），或者碰到问题才发现之前即使觉得看懂了的东西实际没懂</p>
 <p><strong>所以接下来我们将示范书本知识到实践的贯通，希望把网络概念之间的联系通过实践来组织起来</strong></p>
 <h2 id="还是从一个网络不通的问题入手"><a href="#还是从一个网络不通的问题入手" class="headerlink" title="还是从一个网络不通的问题入手"></a>还是从一个网络不通的问题入手</h2><p>最近的环境碰到一个网络ping不通的问题，当时的网络链路是（大概是这样，略有简化）：</p>
@@ -928,7 +928,7 @@ listening on eth0, link-type EN10MB (Ethernet), capture size 65535 bytes
 </code></pre><p>我换了个IP地址，接着再ping同一个IP地址，arp有缓存了就看不到arp广播查询过程了。</p>
 <h3 id="如果目标IP不是同一个子网"><a href="#如果目标IP不是同一个子网" class="headerlink" title="如果目标IP不是同一个子网"></a>如果目标IP不是同一个子网</h3><p>arp只是同一子网广播查询，如果目标IP不是同一子网的话就要经过本IP网关进行转发(知识点–网关的作用)，如果本机没有缓存网关mac（一般肯定缓存了），那么先发送一次arp查询网关的mac，然后流程跟上面一样，只是这个icmp包发到网关上去了（mac地址填写的是网关的mac）</p>
 <p>从本机1.1.3.33 ping 11.239.161.60的过程，因为不是同一子网按照路由规则匹配，根据route表应该走1.1.15.254这个网关，如下截图：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/85e8fc6b2614aed26bc3a6d70050bf36.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/85e8fc6b2614aed26bc3a6d70050bf36.png" alt="image.png"></p>
 <p>首先是目标IP 11.239.161.60 符合最上面红框中的路由规则，又不是同一子网，所以查找路由规则中的网关1.1.15.254的Mac地址，arp cache中有，于是将 0c:da:41:6e:23:00 填入包头，那么这个icmp request包就发到1.1.15.254上了，虽然包头的mac是 0c:da:41:6e:23:00，但是IP还是 11.239.161.60.</p>
 <p>看看目标IP 11.239.161.60 的真正mac信息（跟ping包包头的Mac是不同的）：</p>
 <pre><code>eth0: flags=4163&lt;UP,BROADCAST,RUNNING,MULTICAST&gt;  mtu 1500
@@ -950,7 +950,7 @@ listening on eth0, link-type EN10MB (Ethernet), capture size 65535 bytes
 <p>对于1能通，我认为这个测试不严格，新物理机所用的mac不一样，并且所接的交换机口也不一样，影响了测试结果。</p>
 <h3 id="祭出万能手段–抓包"><a href="#祭出万能手段–抓包" class="headerlink" title="祭出万能手段–抓包"></a>祭出万能手段–抓包</h3><p><strong>抓包在网络问题中是万能的，但是第一次容易被tcpdump抓包命令的众多参数吓晕，不去操作你永远上不了手，差距也就拉开了，你看差距有时候只是你对一条命令的执行</strong></p>
 <p>在物理机2上抓包：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/cab05a87298fc4b6ff6152b2ff4c061b.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/cab05a87298fc4b6ff6152b2ff4c061b.png" alt="image.png"></p>
 <pre><code>tcpdump: listening on em1, link-type EN10MB (Ethernet), capture size 65535 bytes
 f4:0f:1b:ae:15:fb &gt; 18:66:da:f0:15:90, ethertype 802.1Q (0x8100), length 102: vlan 134, p 0, ethertype IPv4, (tos 0x0, ttl 63, id 5654, offset 0, flags [DF], proto ICMP (1), length 84)
 10.159.43.162 &gt; 10.159.43.1: ICMP echo request, id 6285, seq 1, length 64
@@ -960,7 +960,7 @@ f4:0f:1b:ae:15:fb &gt; 18:66:da:f0:15:90, ethertype 802.1Q (0x8100), length 102:
 <p>同时在物理机1上抓包（抓包截图略掉）只能看到ping包出去，回包没有到物理机1（所以回包肯定不会回到容器里了）</p>
 <p><strong>到这里问题的核心在交换机没有正确把物理机2的回包送到物理机1上面。</strong></p>
 <p>同时观察到的不正常延时都在网关那一跳：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/7a6acf5f4897118e511e7165059b33c5.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/7a6acf5f4897118e511e7165059b33c5.png" alt="image.png"></p>
 <h3 id="最终的原因"><a href="#最终的原因" class="headerlink" title="最终的原因"></a>最终的原因</h3><p>最后在交换机上分析包没正确发到物理机1上的原因跟客户交换机使用了HSRP（热备份路由器协议，就是多个交换机HA高可用，也就是同一子网可以有多个网关的IP），停掉HSRP后所有IP容器都能通了，并且前面的某些容器延时也恢复正常了。</p>
 <p><strong>通俗点说就是HSRP把回包拐跑了，有些回包拐跑了又送回来了（延时200ms那些）</strong></p>
 <p>至于HSRP为什么会这么做，要厂家出来解释了。这里关键在于能让客户认同问题出现在交换机上还是前面的抓包证据充分，无可辩驳。实际中我们都习惯不给证据就说：我的程序没问题，就是你的问题。这样表述没有一点意义，我们是要拿着证据这么说，对方也好就着证据来反驳，这叫优雅地甩锅。</p>
@@ -986,11 +986,11 @@ telnet: connect to address 11.239.161.60: Connection refused
 <li>有很多这样的异常日志：[Server  SocketTimeoutException]</li>
 </ol>
 <p>检查一下当时的网络状态非常好，出问题时间段的网卡的流量信息也非常正常：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/81199130d4b2d5cf441944d9e11cc5fd.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/81199130d4b2d5cf441944d9e11cc5fd.png" alt="image.png"></p>
 <p>上图是通过sar监控到的9号 v24d9e0f23d40 这个网卡的流量，看起来也是正常，流量没有出现明显的波动</p>
 <p>为了监控网络到底有没有问题，接着在出问题的两个容器上各启动一个http server，然后在对方每1秒钟互相发一次发http get请求访问这个http server，基本认识告诉我们如果网络丢包、卡顿严重，那么我这个http server的监控日志时间戳也会跳跃，如果应用是因为网络出现异常那么我启动的http服务也会出现异常–宁愿写个工具都不背锅（主要是背了锅也不一定能解决掉问题）。</p>
 <p>从实际监控来看，应用出现异常的时候我的http服务是正常的（写了脚本判断日志的连续性）：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/c9d5ff245eac6a023acd7148b7676b4f.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/c9d5ff245eac6a023acd7148b7676b4f.png" alt="image.png"></p>
 <p>这也强有力地证明了网络没问题，所以写业务代码的同学一门心思集中火力查看应用的问题。后来的实际调查发现是应用假死掉了（内部线程太多，卡死了），服务端口不响应请求了。</p>
 <p>如果基础知识缺乏一点那么甩过来的这个锅网络是扛不动的，同时也阻碍了问题的真正发现。</p>
 <h3 id="TCP建连接过程跟前面ping一样，只是把ping的icmp协议换成TCP协议，也是要先根据route，然后arp"><a href="#TCP建连接过程跟前面ping一样，只是把ping的icmp协议换成TCP协议，也是要先根据route，然后arp" class="headerlink" title="TCP建连接过程跟前面ping一样，只是把ping的icmp协议换成TCP协议，也是要先根据route，然后arp"></a>TCP建连接过程跟前面ping一样，只是把ping的icmp协议换成TCP协议，也是要先根据route，然后arp</h3><h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p><strong>网络丢包，卡顿，抖动很容易做扛包侠，只有找到真正的原因解决问题才会更快，要不在错误的方向上怎么发力都不对。准确的方向要靠好的基础知识和正确的逻辑以及证据来支撑，而不是猜测</strong></p>
@@ -1160,7 +1160,7 @@ telnet: connect to address 11.239.161.60: Connection refused
 <p>同一个Docker集群中两个容器中通过 nslookup 同一个域名，这个域名是容器启动的时候通过net alias指定的，但是返回来的IP不一样</p>
 </blockquote>
 <p>如图所示：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/892a98b53c7f9e65da79d1d6d890c3b0.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/892a98b53c7f9e65da79d1d6d890c3b0.png" alt="image.png"></p>
 <p>图中上面的容器中 nslookup 返回来了两个IP，但是只有146是正确的，155是多出来，不对的。</p>
 <p>要想解决这个问题抓包就没用了，因为Docker 中的net alias 域名是 Docker Daemon自己来解析的，也就是在容器中做域名解析（nslookup、ping）的时候，Docker Daemon先看这个域名是不是net alias的，是的话返回对应的ip，如果不是（比如 www.baidu.com) ，那么Docker Daemon再把这个域名丢到宿主机上去解析，在宿主机上的解析过程就是标准的DNS，可以抓包分析。但是Docker Daemon内部的解析过程没有走DNS协议，不好分析，所以得先了解一下 Docker Daemon的域名解析原理</p>
 <p>具体参考文章： <a href="http://www.jianshu.com/p/4433f4c70cf0" target="_blank" rel="external">http://www.jianshu.com/p/4433f4c70cf0</a> <a href="http://www.bijishequ.com/detail/261401?p=70-67" target="_blank" rel="external">http://www.bijishequ.com/detail/261401?p=70-67</a></p>
@@ -1336,17 +1336,17 @@ telnet: connect to address 11.239.161.60: Connection refused
 <li>不用DHCP，而是手工填入一个DNS服务器，比如114.114.114.114【公司域名就无法解析了】</li>
 </ol>
 <p>如果只是停用一下wifi再启用问题还在。</p>
-<h2 id="找IT升级了网卡驱动不管用"><a href="#找IT升级了网卡驱动不管用" class="headerlink" title="找IT升级了网卡驱动不管用"></a>找IT升级了网卡驱动不管用</h2><h2 id="重现的时候抓包看看"><a href="#重现的时候抓包看看" class="headerlink" title="重现的时候抓包看看"></a>重现的时候抓包看看</h2><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/c110f232829cbea9d5503166531d7f1d.png" alt="image.png"></p>
+<h2 id="找IT升级了网卡驱动不管用"><a href="#找IT升级了网卡驱动不管用" class="headerlink" title="找IT升级了网卡驱动不管用"></a>找IT升级了网卡驱动不管用</h2><h2 id="重现的时候抓包看看"><a href="#重现的时候抓包看看" class="headerlink" title="重现的时候抓包看看"></a>重现的时候抓包看看</h2><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/c110f232829cbea9d5503166531d7f1d.png" alt="image.png"></p>
 <p>这肯定不对了，254上根本就没有跑DNS服务，可是当时没有检查 ipconfig，看看是否将网关IP动态配置到dns server里面去了，等下次重现后再确认吧。</p>
 <p>第二次重现后抓包，发现不一样了：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/295797df3c311d6902d68fb16f6212d8.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/295797df3c311d6902d68fb16f6212d8.png" alt="image.png"></p>
 <p>出来一个 NBNS 的鬼东西，赶紧查了一下，把它禁掉，如下图所示：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/9f06b680ae1f8b4cb781360f7c0ac2eb.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/9f06b680ae1f8b4cb781360f7c0ac2eb.png" alt="image.png"></p>
 <p>把NBNS服务关了就能上网了，同时也能抓到各种DNS Query包</p>
 <h2 id="事情没有这么简单"><a href="#事情没有这么简单" class="headerlink" title="事情没有这么简单"></a>事情没有这么简单</h2><p>过一段时间后还是会出现上面的症状，但是因为NBNS关闭了，所以这次 ping www.baidu.com 的时候没有任何包了，没有DNS Query包，也没有NBNS包，这下好尴尬。</p>
 <p>尝试Enable NBNS，又恢复了正常，看来开关 NBNS 仍然只是一个workaround，他不是导致问题的根因，开关一下没有真正解决问题，只是临时相当于重启了dns修复了问题而已。</p>
 <p>继续在网络不通的时候尝试直接ping dns server ip，发现一个奇怪的现象，丢包很多，丢包的时候还总是从 192.168.0.11返回来的，这就奇怪了，我的笔记本基本IP是30开头的，dns server ip也是30开头的，route 路由表也是对的，怎么就走到 192.168.0.11 上了啊（<a href="https://www.atatech.org/articles/80573" target="_blank" rel="external">参考我的另外一篇文章，网络到底通不通</a>），赶紧 ipconfig /all | grep 192 </p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/5212ee5e7496dafb122ce144293184e1.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/5212ee5e7496dafb122ce144293184e1.png" alt="image.png"></p>
 <p>发现这个IP是VirtualBox虚拟机在笔记本上虚拟出来的网卡IP，这下我倒是能理解为啥总是我碰到这个问题了，因为我的工作笔记本一拿到后第一件事情就是装VirtualBox 跑虚拟机。</p>
 <p>VirtualBox为啥导致了这个问题就是一个很偏的方向，我实在无能为力了，尝试找到了一个和VirtualBox的DNS相关的开关命令，只能死马当或马医了（像极了算命大师和老中医）</p>
 <pre><code>./VBoxManage.exe  modifyvm &quot;ubuntu&quot; --natdnshostresolver1 on
@@ -2144,25 +2144,25 @@ sudo tcptrack -r 5 -i eth0 host 10.0.48.1 //filter 语法和tcpdump一样
             <h1 id="Load很高，CPU使用率很低"><a href="#Load很高，CPU使用率很低" class="headerlink" title="Load很高，CPU使用率很低"></a>Load很高，CPU使用率很低</h1><blockquote>
 <p>第一次碰到这种Case：物理机的Load很高，CPU使用率很低</p>
 </blockquote>
-<h3 id="先看CPU、Load情况"><a href="#先看CPU、Load情况" class="headerlink" title="先看CPU、Load情况"></a>先看CPU、Load情况</h3><p>如图一：<br>vmstat显示很有多任务等待排队执行（r）top都能看到Load很高，但是CPU idle 95%以上<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/046077102b3a0fd89e53f62cf32874c0.png" alt="image.png"><br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/d905abc4576e0c6ac952c71005696131.png" alt="image.png"></p>
+<h3 id="先看CPU、Load情况"><a href="#先看CPU、Load情况" class="headerlink" title="先看CPU、Load情况"></a>先看CPU、Load情况</h3><p>如图一：<br>vmstat显示很有多任务等待排队执行（r）top都能看到Load很高，但是CPU idle 95%以上<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/046077102b3a0fd89e53f62cf32874c0.png" alt="image.png"><br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d905abc4576e0c6ac952c71005696131.png" alt="image.png"></p>
 <p>这个现象不太合乎常规，也许是在等磁盘IO、也许在等网络返回会导致CPU利用率很低而Load很高</p>
-<p>贴个vmstat 说明文档（图片来源于网络N年了，找不到出处）<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/9a0c040b24699d4128bbecae1af08b1d.png" alt="image.png"></p>
-<h3 id="检查磁盘状态，很正常（vmstat-第二列也一直为0）"><a href="#检查磁盘状态，很正常（vmstat-第二列也一直为0）" class="headerlink" title="检查磁盘状态，很正常（vmstat 第二列也一直为0）"></a>检查磁盘状态，很正常（vmstat 第二列也一直为0）</h3><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/19d7d02c9472ddb2b057a4d09b497463.png" alt="image.png"></p>
-<h3 id="再看Load是在5号下午15：50突然飙起来的："><a href="#再看Load是在5号下午15：50突然飙起来的：" class="headerlink" title="再看Load是在5号下午15：50突然飙起来的："></a>再看Load是在5号下午15：50突然飙起来的：</h3><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/71127256e8e33a716770f74cb563a1b6.png" alt="image.png"></p>
-<h3 id="同一时间段的网络流量、TCP连接相关数据很平稳："><a href="#同一时间段的网络流量、TCP连接相关数据很平稳：" class="headerlink" title="同一时间段的网络流量、TCP连接相关数据很平稳："></a>同一时间段的网络流量、TCP连接相关数据很平稳：</h3><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/8f7ff0bf2f313409f521f6863f2375aa.png" alt="image.png"></p>
+<p>贴个vmstat 说明文档（图片来源于网络N年了，找不到出处）<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/9a0c040b24699d4128bbecae1af08b1d.png" alt="image.png"></p>
+<h3 id="检查磁盘状态，很正常（vmstat-第二列也一直为0）"><a href="#检查磁盘状态，很正常（vmstat-第二列也一直为0）" class="headerlink" title="检查磁盘状态，很正常（vmstat 第二列也一直为0）"></a>检查磁盘状态，很正常（vmstat 第二列也一直为0）</h3><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/19d7d02c9472ddb2b057a4d09b497463.png" alt="image.png"></p>
+<h3 id="再看Load是在5号下午15：50突然飙起来的："><a href="#再看Load是在5号下午15：50突然飙起来的：" class="headerlink" title="再看Load是在5号下午15：50突然飙起来的："></a>再看Load是在5号下午15：50突然飙起来的：</h3><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/71127256e8e33a716770f74cb563a1b6.png" alt="image.png"></p>
+<h3 id="同一时间段的网络流量、TCP连接相关数据很平稳："><a href="#同一时间段的网络流量、TCP连接相关数据很平稳：" class="headerlink" title="同一时间段的网络流量、TCP连接相关数据很平稳："></a>同一时间段的网络流量、TCP连接相关数据很平稳：</h3><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/8f7ff0bf2f313409f521f6863f2375aa.png" alt="image.png"></p>
 <p>所以分析到此，可以得出：<strong>Load高跟磁盘、网络、压力都没啥关系</strong></p>
-<h3 id="物理机上是跑的Docker，分析了一下CPUSet情况："><a href="#物理机上是跑的Docker，分析了一下CPUSet情况：" class="headerlink" title="物理机上是跑的Docker，分析了一下CPUSet情况："></a>物理机上是跑的Docker，分析了一下CPUSet情况：</h3><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/e7996a82da2c140594835e3264c6ef4b.png" alt="image.png"></p>
+<h3 id="物理机上是跑的Docker，分析了一下CPUSet情况："><a href="#物理机上是跑的Docker，分析了一下CPUSet情况：" class="headerlink" title="物理机上是跑的Docker，分析了一下CPUSet情况："></a>物理机上是跑的Docker，分析了一下CPUSet情况：</h3><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/e7996a82da2c140594835e3264c6ef4b.png" alt="image.png"></p>
 <p><strong>发现基本上所有容器都绑定在CPU1上</strong></p>
-<h3 id="进而检查top每个核的状态，果然CPU1-的idle一直为0"><a href="#进而检查top每个核的状态，果然CPU1-的idle一直为0" class="headerlink" title="进而检查top每个核的状态，果然CPU1 的idle一直为0"></a>进而检查top每个核的状态，果然CPU1 的idle一直为0</h3><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2b32adb2071b3fdb334e0735db899a2e.png" alt="image.png"></p>
+<h3 id="进而检查top每个核的状态，果然CPU1-的idle一直为0"><a href="#进而检查top每个核的状态，果然CPU1-的idle一直为0" class="headerlink" title="进而检查top每个核的状态，果然CPU1 的idle一直为0"></a>进而检查top每个核的状态，果然CPU1 的idle一直为0</h3><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/2b32adb2071b3fdb334e0735db899a2e.png" alt="image.png"></p>
 <p>看到这里大致明白了，虽然CPU整体很闲但是因为很多进程都绑定在CPU1上，导致CPU1上排队很长，看前面tsar的–load负载截图的 等待运行进程排队长度（runq）确实也很长。</p>
 <blockquote>
 <p>物理机有32个核，如果100个任务同时进来，Load大概是3，这是正常的。如果这100个任务都跑在CPU1上，Load还是3（因为Load是所有核的平均值）。但是如果有源源不断的100个任务进来，前面100个还没完后面又来了100个，这个时候CPU1前面队列很长，其它31个核没事做，这个时候整体Load就是6了，时间一长很快Load就能到几百。</p>
 <p>这是典型的瓶颈导致积压进而高Load。</p>
 </blockquote>
 <h3 id="为什么会出现这种情况"><a href="#为什么会出现这种情况" class="headerlink" title="为什么会出现这种情况"></a>为什么会出现这种情况</h3><p>检查Docker系统日志，发现同一时间点所有物理机同时批量执行docker update 把几百个容器都绑定到CPU1上，导致这个核忙死了，其它核闲得要死（所以看到整体CPU不忙，最忙的那个核被平均掩盖掉了），但是Load高（CPU1上排队太长，即使平均到32个核，这个队列还是长，这就是瓶颈啊）。</p>
-<p>如下Docker日志，Load飙升的那个时间点有人批量调docker update 把所有容器都绑定到CPU1上：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/f4925c698c9fd4edb56fcfc2ebb9f625.png" alt="image.png"></p>
+<p>如下Docker日志，Load飙升的那个时间点有人批量调docker update 把所有容器都绑定到CPU1上：<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/f4925c698c9fd4edb56fcfc2ebb9f625.png" alt="image.png"></p>
 <p>检查Docker集群Swarm的日志，发现Swarm没有发起这样的update操作，似乎是每个Docker Daemon自己的行为，谁触发了这个CPU的绑定过程的原因还没找到，求指点。</p>
-<h3 id="手动执行docker-update-把容器打散到不同的cpu核上，恢复正常："><a href="#手动执行docker-update-把容器打散到不同的cpu核上，恢复正常：" class="headerlink" title="手动执行docker update, 把容器打散到不同的cpu核上，恢复正常："></a>手动执行docker update, 把容器打散到不同的cpu核上，恢复正常：</h3><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/9e1adae472cf0b4f95af83390adaead9.png" alt="image.png"></p>
+<h3 id="手动执行docker-update-把容器打散到不同的cpu核上，恢复正常："><a href="#手动执行docker-update-把容器打散到不同的cpu核上，恢复正常：" class="headerlink" title="手动执行docker update, 把容器打散到不同的cpu核上，恢复正常："></a>手动执行docker update, 把容器打散到不同的cpu核上，恢复正常：</h3><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/9e1adae472cf0b4f95af83390adaead9.png" alt="image.png"></p>
 <h2 id="关于这个Case的总结"><a href="#关于这个Case的总结" class="headerlink" title="关于这个Case的总结"></a>关于这个Case的总结</h2><ul>
 <li>技术拓展商业边界，同样技能、熟练能力能拓展解决问题的能力。 开始我注意到了Swarm集群显示的CPU绑定过多，同时也发现有些容器绑定在CPU1上。所以我尝试通过API： GET /containers/json 拿到了所有容器的参数，然后搜索里面的CPUSet，结果这个API返回来的参数不包含CPUSet，那我只能挨个 GET /containers/id/json, 要写个循环，偷懒没写，所以没发现这个问题。</li>
 <li>这种多个进程绑定到同一个核然后导致Load过高的情况确实很少见，也算是个教训</li>
@@ -2332,7 +2332,7 @@ sudo tcptrack -r 5 -i eth0 host 10.0.48.1 //filter 语法和tcpdump一样
 2.出问题的时间点，会同时有很多连接出现这个问题。
 3.selector没有销毁重建，一直用的都是一个。
 4.程序刚启动的时候必会出现一些，之后会间歇性出现。
-</code></pre><h3 id="分析问题"><a href="#分析问题" class="headerlink" title="分析问题"></a>分析问题</h3><h4 id="正常TCP建连接三次握手过程："><a href="#正常TCP建连接三次握手过程：" class="headerlink" title="正常TCP建连接三次握手过程："></a>正常TCP建连接三次握手过程：</h4><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/159a331ff8cdd4b8994dfe6a209d035f.png" alt="image.png"></p>
+</code></pre><h3 id="分析问题"><a href="#分析问题" class="headerlink" title="分析问题"></a>分析问题</h3><h4 id="正常TCP建连接三次握手过程："><a href="#正常TCP建连接三次握手过程：" class="headerlink" title="正常TCP建连接三次握手过程："></a>正常TCP建连接三次握手过程：</h4><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/159a331ff8cdd4b8994dfe6a209d035f.png" alt="image.png"></p>
 <ul>
 <li>第一步：client 发送 syn 到server 发起握手；</li>
 <li>第二步：server 收到 syn后回复syn+ack给client；</li>
@@ -2352,7 +2352,7 @@ sudo tcptrack -r 5 -i eth0 host 10.0.48.1 //filter 语法和tcpdump一样
 <blockquote>
 <p>但是不能只是满足问题的解决，而是要去复盘解决过程，中间涉及到了哪些知识点是我所缺失或者理解不到位的；这个问题除了上面的异常信息表现出来之外，还有没有更明确地指征来查看和确认这个问题。</p>
 </blockquote>
-<h3 id="深入理解TCP握手过程中建连接的流程和队列"><a href="#深入理解TCP握手过程中建连接的流程和队列" class="headerlink" title="深入理解TCP握手过程中建连接的流程和队列"></a>深入理解TCP握手过程中建连接的流程和队列</h3><p>[^_^]:<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2703fc07dfc4dd5b6e1bb4c2ce620e59.png" alt="image.png"><br><a href="!--（图片来源：http://www.cnxct.com/something-about-phpfpm-s-backlog/）--">!--（图片来源：http://www.cnxct.com/something-about-phpfpm-s-backlog/）--</a></p>
+<h3 id="深入理解TCP握手过程中建连接的流程和队列"><a href="#深入理解TCP握手过程中建连接的流程和队列" class="headerlink" title="深入理解TCP握手过程中建连接的流程和队列"></a>深入理解TCP握手过程中建连接的流程和队列</h3><p>[^_^]:<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/2703fc07dfc4dd5b6e1bb4c2ce620e59.png" alt="image.png"><br><a href="!--（图片来源：http://www.cnxct.com/something-about-phpfpm-s-backlog/）--">!--（图片来源：http://www.cnxct.com/something-about-phpfpm-s-backlog/）--</a></p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d5947bd339c58c631217100f80ee7078.png" alt="image.png"></p>
 <p>如上图所示，这里有两个队列：syns queue(半连接队列）；accept queue（全连接队列）</p>
 <p>三次握手中，在第一步server收到client的syn后，把这个连接信息放到半连接队列中，同时回复syn+ack给client（第二步）；</p>
@@ -2418,7 +2418,7 @@ tcp    0  0 server:2376  client-1:60269 ESTABLISHED
         tcp_get_info(sk, info);
 }
 </code></pre><p>比如如下netstat -t 看到的Recv-Q有大量数据堆积，那么一般是CPU处理不过来导致的：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/77ed9ba81f70f7940546f0a22dabf010.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/77ed9ba81f70f7940546f0a22dabf010.png" alt="image.png"></p>
 <h5 id="netstat看到的listen状态的Recv-Q-Send-Q"><a href="#netstat看到的listen状态的Recv-Q-Send-Q" class="headerlink" title="netstat看到的listen状态的Recv-Q/Send-Q"></a>netstat看到的listen状态的Recv-Q/Send-Q</h5><p>netstat 看到的listen状态下的Recv-Q/Send-Q意义跟 ss -lnt看到的完全不一样。上面的 netstat 对非listen的描述没问题，但是listen状态似乎Send-Q这个值总是0，这要去看netstat的代码了，实际上Listen状态它不是一个连接，所以肯定统计不到流量，netstat似乎只是针对连接的统计</p>
 <p>从网上找了两个Case，server的8765端口故意不去读取对方发过来的2000字节，所看到的是：</p>
 <pre><code>$ netstat -ano | grep 8765  
@@ -2430,10 +2430,10 @@ tcp      129      0 0.0.0.0:8000            0.0.0.0:*               LISTEN      
 tcp        0      0 9.11.6.36:8000          9.11.6.37:48306         SYN_RECV    - 
 tcp        0      0 9.11.6.36:8000          9.11.6.34:44936         SYN_RECV    - 
 tcp      365      0 9.11.6.36:8000          9.11.6.37:58446         CLOSE_WAIT  -  
-</code></pre><h3 id="案列：如果TCP连接队列溢出，抓包是什么现象呢？"><a href="#案列：如果TCP连接队列溢出，抓包是什么现象呢？" class="headerlink" title="案列：如果TCP连接队列溢出，抓包是什么现象呢？"></a>案列：如果TCP连接队列溢出，抓包是什么现象呢？</h3><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/c0849615ae52531887ce6b0313d7d2d1.png" alt="image.png"></p>
+</code></pre><h3 id="案列：如果TCP连接队列溢出，抓包是什么现象呢？"><a href="#案列：如果TCP连接队列溢出，抓包是什么现象呢？" class="headerlink" title="案列：如果TCP连接队列溢出，抓包是什么现象呢？"></a>案列：如果TCP连接队列溢出，抓包是什么现象呢？</h3><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/c0849615ae52531887ce6b0313d7d2d1.png" alt="image.png"></p>
 <p>如上图server端8989端口的服务全连接队列已经满了（设置最大5，已经6了，通过后面步骤的ss -lnt可以验证）， 所以 server尝试过一会假装继续三次握手的第二步，跟client说我们继续谈恋爱吧。可是这个时候client比较性急，忙着分手了，server觉得都没恋上那什么分手啊。所以接下来两边自说自话也就是都不停滴重传</p>
-<h4 id="通过ss和netstat所观察到的状态"><a href="#通过ss和netstat所观察到的状态" class="headerlink" title="通过ss和netstat所观察到的状态"></a>通过ss和netstat所观察到的状态</h4><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/ec25ccb6cce8f554b7ef6927f05bd530.png" alt="image.png"></p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2fbdd05162e9fd51e803682b8a18cc51.png" alt="image.png"></p>
+<h4 id="通过ss和netstat所观察到的状态"><a href="#通过ss和netstat所观察到的状态" class="headerlink" title="通过ss和netstat所观察到的状态"></a>通过ss和netstat所观察到的状态</h4><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/ec25ccb6cce8f554b7ef6927f05bd530.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/2fbdd05162e9fd51e803682b8a18cc51.png" alt="image.png"></p>
 <p><a href="https://plantegg.github.io/2019/08/31/%E5%B0%B1%E6%98%AF%E8%A6%81%E4%BD%A0%E6%87%82TCP%E9%98%9F%E5%88%97--%E9%80%9A%E8%BF%87%E5%AE%9E%E6%88%98%E6%A1%88%E4%BE%8B%E6%9D%A5%E5%B1%95%E7%A4%BA%E9%97%AE%E9%A2%98/" target="_blank" rel="external">另外一个案例，虽然最终的锅不是TCP全连接队列太小，但是也能从重传、队列溢出找到根因</a></p>
 <h3 id="实践验证一下上面的理解"><a href="#实践验证一下上面的理解" class="headerlink" title="实践验证一下上面的理解"></a>实践验证一下上面的理解</h3><p>上面是通过一些具体的工具、指标来认识全连接队列，接下来结合文章开始的问题来具体验证一下 </p>
 <p>把java中backlog改成10（越小越容易溢出），继续跑压力，这个时候client又开始报异常了，然后在server上通过 ss 命令观察到：</p>
@@ -2454,7 +2454,7 @@ LISTEN    0     511              *:8085           *:*
 <p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/01dc036aca4b445ed86e3e295bf245b8.png" alt="image.png"></p>
 <h3 id="进一步思考"><a href="#进一步思考" class="headerlink" title="进一步思考"></a>进一步思考</h3><p>如果client走完第三步在client看来连接已经建立好了，但是server上的对应连接实际没有准备好，这个时候如果client发数据给server，server会怎么处理呢？（有同学说会reset，还是实践看看）</p>
 <p>先来看一个例子：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/3f5f1eeb0646a3af8afd6bbff2a9ea0b.png" alt="image.png"><br>（图片来自：<a href="http://blog.chinaunix.net/uid-20662820-id-4154399.html）" target="_blank" rel="external">http://blog.chinaunix.net/uid-20662820-id-4154399.html）</a></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/3f5f1eeb0646a3af8afd6bbff2a9ea0b.png" alt="image.png"><br>（图片来自：<a href="http://blog.chinaunix.net/uid-20662820-id-4154399.html）" target="_blank" rel="external">http://blog.chinaunix.net/uid-20662820-id-4154399.html）</a></p>
 <p>如上图，150166号包是三次握手中的第三步client发送ack给server，然后150167号包中client发送了一个长度为816的包给server，因为在这个时候client认为连接建立成功，但是server上这个连接实际没有ready，所以server没有回复，一段时间后client认为丢包了然后重传这816个字节的包，一直到超时，client主动发fin包断开该连接。</p>
 <p>这个问题也叫client fooling，可以看这里：<a href="https://github.com/torvalds/linux/commit/5ea8ea2cb7f1d0db15762c9b0bb9e7330425a071" target="_blank" rel="external">https://github.com/torvalds/linux/commit/5ea8ea2cb7f1d0db15762c9b0bb9e7330425a071</a> （感谢 @刘欢(浅奕(16:00后答疑) 的提示) </p>
 <p><strong>从上面的实际抓包来看不是reset，而是server忽略这些包，然后client重传，一定次数后client认为异常，然后断开连接。
@@ -2470,7 +2470,7 @@ Fri May  5 15:39:59 CST 2017
 1641906 SYNs to LISTEN sockets ignored
 </code></pre><p>如上所示：<br>overflowed和ignored居然总是一样多，并且都是同步增加，overflowed表示全连接队列溢出次数，socket ignored表示半连接队列溢出次数，没这么巧吧。</p>
 <p>翻看内核源代码（<a href="http://elixir.free-electrons.com/linux/v3.18/source/net/ipv4/tcp_ipv4.c）：" target="_blank" rel="external">http://elixir.free-electrons.com/linux/v3.18/source/net/ipv4/tcp_ipv4.c）：</a></p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/a5616904df3a505572d99d557b534db2.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/a5616904df3a505572d99d557b534db2.png" alt="image.png"></p>
 <p>可以看到overflow的时候一定会drop++（socket ignored），也就是drop一定大于等于overflow。</p>
 <p>同时我也查看了另外几台server的这两个值来证明drop一定大于等于overflow：</p>
 <pre><code>server1
@@ -2491,7 +2491,7 @@ server5
 984932 times the listen queue of a socket overflowed
 988003 SYNs to LISTEN sockets dropped
 </code></pre><h3 id="那么全连接队列满了会影响半连接队列吗？"><a href="#那么全连接队列满了会影响半连接队列吗？" class="headerlink" title="那么全连接队列满了会影响半连接队列吗？"></a>那么全连接队列满了会影响半连接队列吗？</h3><p>来看三次握手第一步的源代码（<a href="http://elixir.free-electrons.com/linux/v2.6.33/source/net/ipv4/tcp_ipv4.c#L1249）：" target="_blank" rel="external">http://elixir.free-electrons.com/linux/v2.6.33/source/net/ipv4/tcp_ipv4.c#L1249）：</a></p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/0c6bbb5d4a10f40c8b3c4ba6cab82292.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/0c6bbb5d4a10f40c8b3c4ba6cab82292.png" alt="image.png"></p>
 <p>TCP三次握手第一步的时候如果全连接队列满了会影响第一步drop 半连接的发生。大概流程的如下：</p>
 <pre><code>tcp_v4_do_rcv-&gt;tcp_rcv_state_process-&gt;tcp_v4_conn_request
 //如果accept backlog队列已满，且未超时的request socket的数量大于1，则丢弃当前请求  
@@ -2807,7 +2807,7 @@ net.ipv4.tcp_keepalive_intvl = 3
 <p>但是我只希望大家记住一个核心的：<strong>tcp是可以可靠传输协议，它的所有特点都为这个可靠传输服务</strong>。</p>
 <h3 id="那么tcp是怎么样来保障可靠传输呢？"><a href="#那么tcp是怎么样来保障可靠传输呢？" class="headerlink" title="那么tcp是怎么样来保障可靠传输呢？"></a>那么tcp是怎么样来保障可靠传输呢？</h3><p>tcp在传输过程中都有一个ack，接收方通过ack告诉发送方收到那些包了。这样发送方能知道有没有丢包，进而确定重传</p>
 <h3 id="tcp建连接的三次握手"><a href="#tcp建连接的三次握手" class="headerlink" title="tcp建连接的三次握手"></a>tcp建连接的三次握手</h3><p>来看一个java代码连接数据库的三次握手过程</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/6d66dadecb72e11e3e5ab765c6c3ea2e.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/6d66dadecb72e11e3e5ab765c6c3ea2e.png" alt="image.png"></p>
 <p>三个红框表示建立连接的三次握手：</p>
 <ul>
 <li>第一步：client 发送 syn 到server 发起握手；</li>
@@ -2839,7 +2839,7 @@ net.ipv4.tcp_keepalive_intvl = 3
 <li>NAT 哈希表满导致 ECS 实例丢包 nf_conntrack full</li>
 </ul>
 <h3 id="tcp断开连接的四次挥手"><a href="#tcp断开连接的四次挥手" class="headerlink" title="tcp断开连接的四次挥手"></a>tcp断开连接的四次挥手</h3><p>再来看java连上mysql后，执行了一个SQL： select sleep(2); 然后就断开了连接</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/b6f4a952cdf8ffbb8f6e9434d1432e05.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b6f4a952cdf8ffbb8f6e9434d1432e05.png" alt="image.png"></p>
 <p>四个红框表示断开连接的四次挥手：</p>
 <ul>
 <li>第一步： client主动发送fin包给server</li>
@@ -2861,19 +2861,19 @@ net.ipv4.tcp_keepalive_intvl = 3
 <p>我也不知道怎么回答。网上都说tcp是双向的，所以断开要四次。但是我认为建连接也是双向的（双向都协调告知对方自己的seq号），为什么不需要四次握手呢，所以网上说的不一定精准。</p>
 <p>你再看三次握手的第二步发 syn+ack，如果拆分成两步先发ack再发syn完全也是可以的（效率略低），这样三次握手也变成四次握手了。</p>
 <p>看起来挥手的时候多一次，主要是收到第一个fin包后单独回复了一个ack包，如果能回复fin+ack那么四次挥手也就变成三次了。 来看一个案例：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/9db33f9304f8236b1ebcb215064bb2af.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/9db33f9304f8236b1ebcb215064bb2af.png" alt="image.png"></p>
 <p>图中第二个红框就是回复的fin+ack，这样四次挥手变成三次了（如果一个包就是一次的话）。</p>
 <p>我的理解：之所以绝大数时候我们看到的都是四次挥手，是因为收到fin后，知道对方要关闭了，然后OS通知应用层要关闭，这里应用层可能需要做些准备工作，可能还有数据没发送完，所以内核先回ack，等应用准备好了主动调close时再发fin 。 握手过程没有这个准备过程所以可以立即发送syn+ack（把这里的两步合成一步了）。 内核收到对方的fin后，只能ack，不能主动替应用来fin，因为他不清楚应用能不能关闭。</p>
 <h3 id="ack-seq-len"><a href="#ack-seq-len" class="headerlink" title="ack=seq+len"></a>ack=seq+len</h3><p>ack总是seq+len（包的大小），这样发送方明确知道server收到那些东西了</p>
 <p>但是特例是三次握手和四次挥手，虽然len都是0，但是syn和fin都要占用一个seq号，所以这里的ack都是seq+1</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/45c6d36ce8b17a5c0442e66fce002ab4.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/45c6d36ce8b17a5c0442e66fce002ab4.png" alt="image.png"></p>
 <p>看图中左边红框里的len+seq就是接收方回复的ack的数字，表示这个包接收方收到了。然后下一个包的seq就是前一个包的len+seq，依次增加，一旦中间发出去的东西没有收到ack就是丢包了，过一段时间（或者其他方式）触发重传，保障了tcp传输的可靠性。</p>
 <h3 id="三次握手中协商的其它信息"><a href="#三次握手中协商的其它信息" class="headerlink" title="三次握手中协商的其它信息"></a>三次握手中协商的其它信息</h3><p>MSS 最大一个包中能传输的信息（不含tcp、ip包头），MSS+包头就是MTU（最大传输单元），如果MTU过大可能在传输的过程中被卡住过不去造成卡死（这个大小的包一直传输不过去），跟丢包还不一样</p>
 <p>MSS的问题具体可以看我这篇文章： <a href="https://www.atatech.org/articles/60633" target="_blank" rel="external">scp某个文件的时候卡死问题的解决过程</a></p>
 <p>SACK_PERM 用于丢包的话提升重传效率，比如client一次发了1、2、3、4、5 这5个包给server，实际server收到了 1、3、4、5这四个包，中间2丢掉了。这个时候server回复ack的时候，都只能回复2，表示2前面所有的包都收到了，给我发第二个包吧，如果server 收到3、4、5还是没有收到2的话，也是回复ack 2而不是回复ack 3、4、5、6的，表示快点发2过来。</p>
 <p>但是这个时候client虽然知道2丢了，然后会重发2，但是不知道3、4、5有没有丢啊，实际3、4、5 server都收到了，如果支持sack，那么可以ack 2的时候同时告诉client 3、4、5都收到了，这样client重传的时候只重传2就可以，如果没有sack的话那么可能会重传2、3、4、5，这样效率就低了。</p>
 <p>来看一个例子：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/5322d0cf77a3a1ae6c87a972cc5843d0.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/5322d0cf77a3a1ae6c87a972cc5843d0.png" alt="image.png"></p>
 <p>图中的红框就是SACK。</p>
 <p>知识点：ack数字表示这个数字前面的数据<strong>都</strong>收到了</p>
 <h2 id="TIME-WAIT-和-CLOSE-WAIT"><a href="#TIME-WAIT-和-CLOSE-WAIT" class="headerlink" title="TIME_WAIT 和 CLOSE_WAIT"></a>TIME_WAIT 和 CLOSE_WAIT</h2><p>假设服务端和客户端跑在同一台机器上，服务端监听在 18080端口上，客户端使用18089端口建立连接。</p>
@@ -2907,7 +2907,7 @@ net.ipv4.tcp_keepalive_intvl = 3
 <p>也就是从开始到结束这些连接都在accept queue中，没有被应用accept，很快他们又因为client 发送 fin 包变成了CLOSE_WAIT ，所以始终看到的是服务端出现大量CLOSE_WAIT 并且个数正好等于somaxconn（调整somaxconn后 CLOSE_WAIT 也会跟着变成一样的值）。</p>
 <p>如下图所示，在连接进入accept queue后状态就是ESTABLISED了，也就是可以正常收发数据和fin了。client是感知不到server是否accept()了，只是发了数据后server的os代为保存在OS的TCP buffer中，因为应用没来取自然在CLOSE_WAIT 后应用也没有close()，所以一直维持CLOSE_WAIT 。</p>
 <p>得检查server 应用为什么没有accept。</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2703fc07dfc4dd5b6e1bb4c2ce620e59.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/2703fc07dfc4dd5b6e1bb4c2ce620e59.png" alt="image.png"></p>
 <p>结论：</p>
 <blockquote>
 <p>这个case的最终原因是因为<strong>OS的open files设置的是1024,达到了上限</strong>，进而导致server不能accept，但这个时候的tcp连接状态已经是ESTABLISHED了（这个状态变换是取决于内核收发包，跟应用是否accept()无关）。</p>
@@ -3444,7 +3444,7 @@ net.ipv4.tcp_keepalive_intvl = 3
 <p>volume路径在物理机上也有可能是 /var/lib/docker 或者 /mw/mvdocker/ 之类的路径下，这个要依据安装参数来确定，可以用如下命令来找到这个路径：</p>
 <p><code>sudo systemctl status docker -l | grep --color graph</code></p>
 <p>结果如下，红色参数后面的路径就是docker 安装目录，到里面去找带volume的字眼：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/9b7e489576840f72a5bd13e969abce39.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/9b7e489576840f72a5bd13e969abce39.png" alt="image.png"></p>
 <p>找到 volume很大的文件件后同样可以进到这个文件夹中执行如下命令快速发现大文件：</p>
 <p><code>du . --max-depth=2</code></p>
 <h3 id="方法三-容器的系统日志没有限制大小"><a href="#方法三-容器的系统日志没有限制大小" class="headerlink" title="方法三 容器的系统日志没有限制大小"></a>方法三 容器的系统日志没有限制大小</h3><p>这种情况只针对2017年上半年之前的部署环境，后面部署的环境默认都控制了这些日志不会超过150M</p>

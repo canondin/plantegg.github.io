@@ -385,25 +385,25 @@
             <h1 id="Load很高，CPU使用率很低"><a href="#Load很高，CPU使用率很低" class="headerlink" title="Load很高，CPU使用率很低"></a>Load很高，CPU使用率很低</h1><blockquote>
 <p>第一次碰到这种Case：物理机的Load很高，CPU使用率很低</p>
 </blockquote>
-<h3 id="先看CPU、Load情况"><a href="#先看CPU、Load情况" class="headerlink" title="先看CPU、Load情况"></a>先看CPU、Load情况</h3><p>如图一：<br>vmstat显示很有多任务等待排队执行（r）top都能看到Load很高，但是CPU idle 95%以上<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/046077102b3a0fd89e53f62cf32874c0.png" alt="image.png"><br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/d905abc4576e0c6ac952c71005696131.png" alt="image.png"></p>
+<h3 id="先看CPU、Load情况"><a href="#先看CPU、Load情况" class="headerlink" title="先看CPU、Load情况"></a>先看CPU、Load情况</h3><p>如图一：<br>vmstat显示很有多任务等待排队执行（r）top都能看到Load很高，但是CPU idle 95%以上<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/046077102b3a0fd89e53f62cf32874c0.png" alt="image.png"><br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d905abc4576e0c6ac952c71005696131.png" alt="image.png"></p>
 <p>这个现象不太合乎常规，也许是在等磁盘IO、也许在等网络返回会导致CPU利用率很低而Load很高</p>
-<p>贴个vmstat 说明文档（图片来源于网络N年了，找不到出处）<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/9a0c040b24699d4128bbecae1af08b1d.png" alt="image.png"></p>
-<h3 id="检查磁盘状态，很正常（vmstat-第二列也一直为0）"><a href="#检查磁盘状态，很正常（vmstat-第二列也一直为0）" class="headerlink" title="检查磁盘状态，很正常（vmstat 第二列也一直为0）"></a>检查磁盘状态，很正常（vmstat 第二列也一直为0）</h3><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/19d7d02c9472ddb2b057a4d09b497463.png" alt="image.png"></p>
-<h3 id="再看Load是在5号下午15：50突然飙起来的："><a href="#再看Load是在5号下午15：50突然飙起来的：" class="headerlink" title="再看Load是在5号下午15：50突然飙起来的："></a>再看Load是在5号下午15：50突然飙起来的：</h3><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/71127256e8e33a716770f74cb563a1b6.png" alt="image.png"></p>
-<h3 id="同一时间段的网络流量、TCP连接相关数据很平稳："><a href="#同一时间段的网络流量、TCP连接相关数据很平稳：" class="headerlink" title="同一时间段的网络流量、TCP连接相关数据很平稳："></a>同一时间段的网络流量、TCP连接相关数据很平稳：</h3><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/8f7ff0bf2f313409f521f6863f2375aa.png" alt="image.png"></p>
+<p>贴个vmstat 说明文档（图片来源于网络N年了，找不到出处）<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/9a0c040b24699d4128bbecae1af08b1d.png" alt="image.png"></p>
+<h3 id="检查磁盘状态，很正常（vmstat-第二列也一直为0）"><a href="#检查磁盘状态，很正常（vmstat-第二列也一直为0）" class="headerlink" title="检查磁盘状态，很正常（vmstat 第二列也一直为0）"></a>检查磁盘状态，很正常（vmstat 第二列也一直为0）</h3><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/19d7d02c9472ddb2b057a4d09b497463.png" alt="image.png"></p>
+<h3 id="再看Load是在5号下午15：50突然飙起来的："><a href="#再看Load是在5号下午15：50突然飙起来的：" class="headerlink" title="再看Load是在5号下午15：50突然飙起来的："></a>再看Load是在5号下午15：50突然飙起来的：</h3><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/71127256e8e33a716770f74cb563a1b6.png" alt="image.png"></p>
+<h3 id="同一时间段的网络流量、TCP连接相关数据很平稳："><a href="#同一时间段的网络流量、TCP连接相关数据很平稳：" class="headerlink" title="同一时间段的网络流量、TCP连接相关数据很平稳："></a>同一时间段的网络流量、TCP连接相关数据很平稳：</h3><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/8f7ff0bf2f313409f521f6863f2375aa.png" alt="image.png"></p>
 <p>所以分析到此，可以得出：<strong>Load高跟磁盘、网络、压力都没啥关系</strong></p>
-<h3 id="物理机上是跑的Docker，分析了一下CPUSet情况："><a href="#物理机上是跑的Docker，分析了一下CPUSet情况：" class="headerlink" title="物理机上是跑的Docker，分析了一下CPUSet情况："></a>物理机上是跑的Docker，分析了一下CPUSet情况：</h3><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/e7996a82da2c140594835e3264c6ef4b.png" alt="image.png"></p>
+<h3 id="物理机上是跑的Docker，分析了一下CPUSet情况："><a href="#物理机上是跑的Docker，分析了一下CPUSet情况：" class="headerlink" title="物理机上是跑的Docker，分析了一下CPUSet情况："></a>物理机上是跑的Docker，分析了一下CPUSet情况：</h3><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/e7996a82da2c140594835e3264c6ef4b.png" alt="image.png"></p>
 <p><strong>发现基本上所有容器都绑定在CPU1上（感谢 @辺客 发现这个问题）</strong></p>
-<h3 id="进而检查top每个核的状态，果然CPU1-的idle一直为0"><a href="#进而检查top每个核的状态，果然CPU1-的idle一直为0" class="headerlink" title="进而检查top每个核的状态，果然CPU1 的idle一直为0"></a>进而检查top每个核的状态，果然CPU1 的idle一直为0</h3><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/2b32adb2071b3fdb334e0735db899a2e.png" alt="image.png"></p>
+<h3 id="进而检查top每个核的状态，果然CPU1-的idle一直为0"><a href="#进而检查top每个核的状态，果然CPU1-的idle一直为0" class="headerlink" title="进而检查top每个核的状态，果然CPU1 的idle一直为0"></a>进而检查top每个核的状态，果然CPU1 的idle一直为0</h3><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/2b32adb2071b3fdb334e0735db899a2e.png" alt="image.png"></p>
 <p>看到这里大致明白了，虽然CPU整体很闲但是因为很多进程都绑定在CPU1上，导致CPU1上排队很长，看前面tsar的–load负载截图的 等待运行进程排队长度（runq）确实也很长。</p>
 <blockquote>
 <p>物理机有32个核，如果100个任务同时进来，Load大概是3，这是正常的。如果这100个任务都跑在CPU1上，Load还是3（因为Load是所有核的平均值）。但是如果有源源不断的100个任务进来，前面100个还没完后面又来了100个，这个时候CPU1前面队列很长，其它31个核没事做，这个时候整体Load就是6了，时间一长很快Load就能到几百。</p>
 <p>这是典型的瓶颈导致积压进而高Load。</p>
 </blockquote>
 <h3 id="为什么会出现这种情况"><a href="#为什么会出现这种情况" class="headerlink" title="为什么会出现这种情况"></a>为什么会出现这种情况</h3><p>检查Docker系统日志，发现同一时间点所有物理机同时批量执行docker update 把几百个容器都绑定到CPU1上，导致这个核忙死了，其它核闲得要死（所以看到整体CPU不忙，最忙的那个核被平均掩盖掉了），但是Load高（CPU1上排队太长，即使平均到32个核，这个队列还是长，这就是瓶颈啊）。</p>
-<p>如下Docker日志，Load飙升的那个时间点有人批量调docker update 把所有容器都绑定到CPU1上：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/f4925c698c9fd4edb56fcfc2ebb9f625.png" alt="image.png"></p>
+<p>如下Docker日志，Load飙升的那个时间点有人批量调docker update 把所有容器都绑定到CPU1上：<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/f4925c698c9fd4edb56fcfc2ebb9f625.png" alt="image.png"></p>
 <p>检查Docker集群Swarm的日志，发现Swarm没有发起这样的update操作，似乎是每个Docker Daemon自己的行为，谁触发了这个CPU的绑定过程的原因还没找到，求指点。</p>
-<h3 id="手动执行docker-update-把容器打散到不同的cpu核上，恢复正常："><a href="#手动执行docker-update-把容器打散到不同的cpu核上，恢复正常：" class="headerlink" title="手动执行docker update, 把容器打散到不同的cpu核上，恢复正常："></a>手动执行docker update, 把容器打散到不同的cpu核上，恢复正常：</h3><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/9e1adae472cf0b4f95af83390adaead9.png" alt="image.png"></p>
+<h3 id="手动执行docker-update-把容器打散到不同的cpu核上，恢复正常："><a href="#手动执行docker-update-把容器打散到不同的cpu核上，恢复正常：" class="headerlink" title="手动执行docker update, 把容器打散到不同的cpu核上，恢复正常："></a>手动执行docker update, 把容器打散到不同的cpu核上，恢复正常：</h3><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/9e1adae472cf0b4f95af83390adaead9.png" alt="image.png"></p>
 <h2 id="关于这个Case的总结"><a href="#关于这个Case的总结" class="headerlink" title="关于这个Case的总结"></a>关于这个Case的总结</h2><ul>
 <li>技术拓展商业边界，同样技能、熟练能力能拓展解决问题的能力。 开始我注意到了Swarm集群显示的CPU绑定过多，同时也发现有些容器绑定在CPU1上。所以我尝试通过API： GET /containers/json 拿到了所有容器的参数，然后搜索里面的CPUSet，结果这个API返回来的参数不包含CPUSet，那我只能挨个 GET /containers/id/json, 要写个循环，偷懒没写，所以没发现这个问题。</li>
 <li>这种多个进程绑定到同一个核然后导致Load过高的情况确实很少见，也算是个教训</li>
@@ -562,7 +562,7 @@
           
             <h1 id="部分机器网络不通"><a href="#部分机器网络不通" class="headerlink" title="部分机器网络不通"></a>部分机器网络不通</h1><h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>应用机器： 10.100.10.201 这台机器抛502异常比较多，进一步诊断发现 ping youku.tddl.tbsite.net 的时候解析到 10.100.53.15/16就不通</p>
 <p>直接ping 10.100.53.15/16 也不通，经过诊断发现是交换机上记录了两个 10.100.10.201的mac地址导致网络不通。</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/9deff3045e3213df81c3ad785cfddefa.gif" alt="youku-mac-ip.gif"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/9deff3045e3213df81c3ad785cfddefa.gif" alt="youku-mac-ip.gif"></p>
 <p><strong>上图是不通的IP，下图是正常IP</strong></p>
 <p>经过调查发现是土豆业务也用了10.100.10.201这个IP导致交换机的ARP mac table冲突，土豆删除这个IP后故障就恢复了。</p>
 <h3 id="当时交换机上发现的两条记录："><a href="#当时交换机上发现的两条记录：" class="headerlink" title="当时交换机上发现的两条记录："></a>当时交换机上发现的两条记录：</h3><pre><code>00:18:51:38:b1:cd 10.100.10.201 
@@ -716,13 +716,13 @@
 Client: socat -dd - tcp:localhost:2000,keepalive,keepidle=10,keepcnt=2,keepintvl=1
 Drop Connection (Unplug Cable, Shut down Link(WiFi/Interface)): sudo iptables -A INPUT -p tcp --dport 2000 -j DROP
 </code></pre><p>server监听在2000端口，支持keepalive， client连接上server后每隔10秒发送一个keepalive包，一旦keepalive包得不对对方的响应，每隔1秒继续发送keepalive, 重试两次，如果一直得不到对方的响应那么这个时候client主动发送一个reset包，那么在client这边这个socket就断开了。server上会一直傻傻的等知道真正要发送数据了才抛异常。</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/90d1c4919d86764242ab726b4c69f006.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/90d1c4919d86764242ab726b4c69f006.png" alt="image.png"></p>
 <p>假如client上层是一个Java应用的连接池，那么这个socket断开后Java能感知吗？</p>
 <p><a href="https://stackoverflow.com/questions/10240694/java-socket-api-how-to-tell-if-a-connection-has-been-closed" target="_blank" rel="external">https://stackoverflow.com/questions/10240694/java-socket-api-how-to-tell-if-a-connection-has-been-closed</a></p>
 <p>Java对Socket的控制比较弱，比如只能指定是否keepalive，不能用特定的keepalive参数(intvl/cnt等），除非走JNI，不推荐。</p>
-<p>如下图（dup ack其实都是keepalive包，这是因为没有抓到握手包导致wireshark识别错误而已）<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/c2893e5ad89ee450c61a370ec7bf6f06.png" alt="image.png"></p>
+<p>如下图（dup ack其实都是keepalive包，这是因为没有抓到握手包导致wireshark识别错误而已）<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/c2893e5ad89ee450c61a370ec7bf6f06.png" alt="image.png"></p>
 <p>如上图，client 21512在多次keepalive server都不响应后，发送了reset断开这个连接（server没收到），server以为还连着，这个时候当server正常发数据给client，如果防火墙还在就丢掉，server不停滴重传，如果防火墙不在，那么对方os收到这个包后知道21512这个端口对应的连接已经关闭了，再次发送reset给server，这时候server抛异常，中断这个连接。</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/78427c329e72d526aa8908942409f092.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/78427c329e72d526aa8908942409f092.png" alt="image.png"></p>
 <p>os层面目前看起来除了用socket去读数据感知到内核已经reset了连接外也没什么好办法检测到。</p>
 
           
@@ -871,16 +871,16 @@ Drop Connection (Unplug Cable, Shut down Link(WiFi/Interface)): sudo iptables -A
             <h1 id="如何徒手撕Bug"><a href="#如何徒手撕Bug" class="headerlink" title="如何徒手撕Bug"></a>如何徒手撕Bug</h1><p>经常碰到bug，如果有源代码，或者源代码比较简单一般通过bug现象结合读源代码，基本能比较快解决掉。但是有些时候源代码过于复杂，比如linux kernel，比如 docker，复杂的另一方面是没法比较清晰地去理清源代码的结构。</p>
 <p>所以不到万不得已不要碰复杂的源代码</p>
 <h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>docker daemon重启，上面有几十个容器，重启后daemon基本上卡死不动了。 docker ps/exec 都没有任何响应，同时能看到很多这样的进程：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/ed7f275935b32c7fd5fef3e0caf2eb0c.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/ed7f275935b32c7fd5fef3e0caf2eb0c.png" alt="image.png"></p>
 <p>这个进程是docker daemon在启动的时候去设置每个容器的iptables，来实现dns解析。</p>
-<p>这个时候执行 sudo iptables -L 也告诉你有其他应用锁死iptables了：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/901fd2057fb3b32ff79dc5a29c9cdd67.png" alt="image.png"></p>
+<p>这个时候执行 sudo iptables -L 也告诉你有其他应用锁死iptables了：<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/901fd2057fb3b32ff79dc5a29c9cdd67.png" alt="image.png"></p>
 <pre><code>$sudo fuser /run/xtables.lock 
 /run/xtables.lock:1203  5544 10161 14451 14482 14503 14511 14530 14576 14602 14617 14637 14659 14664 14680 14698 14706 14752 14757 14777 14807 14815 14826 14834 14858 14872 14889 14915 14972 14973 14979 14991 15006 15031 15067 15076 15104 15127 15155 15176 15178 15179 15180 16506 17656 17657 17660 21904 21910 24174 28424 29741 29839 29847 30018 32418 32424 32743 33056 33335 59949 64006
 </code></pre><p>通过上面的命令基本可以看到哪些进程在等iptables这个锁，之所以有这么多进程在等这个锁，应该是拿到锁的进程执行比较慢所以导致后面的进程拿不到锁，卡在这里</p>
 <h2 id="跟踪具体拿到锁的进程"><a href="#跟踪具体拿到锁的进程" class="headerlink" title="跟踪具体拿到锁的进程"></a>跟踪具体拿到锁的进程</h2><pre><code>$sudo lsof  /run/xtables.lock | grep 3rW
 iptables 36057 root3rW  REG   0,190 48341 /run/xtables.lock
 </code></pre><p>通过strace这个拿到锁的进程可以看到：</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/27d266ab8fd492f009fb7047d9337518.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/27d266ab8fd492f009fb7047d9337518.png" alt="image.png"></p>
 <p>发现在这个配置容器dns的进程同时还在执行一些dns查询任务（容器发起了dns查询），但是这个时候dns还没配置好，所以这个查询会超时</p>
 <p>看看物理机上的dns服务器配置：</p>
 <pre><code>$cat /etc/resolv.conf   
@@ -889,7 +889,7 @@ nameserver 10.0.0.1
 nameserver 10.0.0.2
 nameserver 10.0.0.3
 </code></pre><p>尝试将 timeout 改到20秒、1秒分别验证一下，发现如果timeout改到20秒strace这里也会卡20秒，如果是1秒（这个时候attempts改成1，后面两个dns去掉），那么整体没有感知到任何卡顿，就是所有iptables修改的进程都很快执行完毕了</p>
-<h2 id="strace某个等锁的进程，拿到锁后非常快"><a href="#strace某个等锁的进程，拿到锁后非常快" class="headerlink" title="strace某个等锁的进程，拿到锁后非常快"></a>strace某个等锁的进程，拿到锁后非常快</h2><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/25ab3e2385e08e8e23eeb1309d949839.png" alt="image.png"></p>
+<h2 id="strace某个等锁的进程，拿到锁后非常快"><a href="#strace某个等锁的进程，拿到锁后非常快" class="headerlink" title="strace某个等锁的进程，拿到锁后非常快"></a>strace某个等锁的进程，拿到锁后非常快</h2><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/25ab3e2385e08e8e23eeb1309d949839.png" alt="image.png"></p>
 <p>拿到锁后如果这个时候没有收到 dns 查询，那么很快iptables修改完毕，也不会导致卡住</p>
 <h2 id="strace工作原理"><a href="#strace工作原理" class="headerlink" title="strace工作原理"></a>strace工作原理</h2><blockquote>
 <p>strace -T -tt -ff -p pid -o strace.out</p>
@@ -1643,18 +1643,18 @@ msg_size  =4 KiB (4,096)
             <h1 id="双11全链路压测中通过Perf发现的一个SpringMVC-的性能问题"><a href="#双11全链路压测中通过Perf发现的一个SpringMVC-的性能问题" class="headerlink" title="双11全链路压测中通过Perf发现的一个SpringMVC 的性能问题"></a>双11全链路压测中通过Perf发现的一个SpringMVC 的性能问题</h1><blockquote>
 <p>在最近的全链路压测中TPS不够理想，然后通过perf 工具（perf record 采样， perf report 展示）看到(可以点击看大图)：</p>
 </blockquote>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/b5610fa7e994b1e4578d38347a1478a7" alt="screenshot"></p>
-<h2 id="再来看CPU消耗的火焰图："><a href="#再来看CPU消耗的火焰图：" class="headerlink" title="再来看CPU消耗的火焰图："></a>再来看CPU消耗的火焰图：</h2><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/d228b47200f56fbbf5aadf0da56cbf15" alt="screenshot"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b5610fa7e994b1e4578d38347a1478a7" alt="screenshot"></p>
+<h2 id="再来看CPU消耗的火焰图："><a href="#再来看CPU消耗的火焰图：" class="headerlink" title="再来看CPU消耗的火焰图："></a>再来看CPU消耗的火焰图：</h2><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d228b47200f56fbbf5aadf0da56cbf15" alt="screenshot"></p>
 <p>图中CPU的消耗占21%，不太正常。</p>
 <blockquote>
 <p>可以看到Spring框架消耗了比较多的CPU，具体原因就是在Spring MVC中会大量使用到<br>@RequestMapping<br>@PathVariable<br>带来使用上的便利</p>
 </blockquote>
-<h2 id="业务方修改代码去掉spring中的methodMapping解析后的结果（性能提升了40-）："><a href="#业务方修改代码去掉spring中的methodMapping解析后的结果（性能提升了40-）：" class="headerlink" title="业务方修改代码去掉spring中的methodMapping解析后的结果（性能提升了40%）："></a>业务方修改代码去掉spring中的methodMapping解析后的结果（性能提升了40%）：</h2><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/a97e6f1da93173055b1385eebba8e327.png" alt="screenshot.png"></p>
+<h2 id="业务方修改代码去掉spring中的methodMapping解析后的结果（性能提升了40-）："><a href="#业务方修改代码去掉spring中的methodMapping解析后的结果（性能提升了40-）：" class="headerlink" title="业务方修改代码去掉spring中的methodMapping解析后的结果（性能提升了40%）："></a>业务方修改代码去掉spring中的methodMapping解析后的结果（性能提升了40%）：</h2><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/a97e6f1da93173055b1385eebba8e327.png" alt="screenshot.png"></p>
 <p>图中核心业务逻辑能抢到的cpu是21%（之前是15%）。spring methodMapping相关的也在火焰图中找不到了</p>
 <h3 id="Spring收到请求URL后要取出请求变量和做业务运算，具体代码-对照第一个图的调用堆栈）："><a href="#Spring收到请求URL后要取出请求变量和做业务运算，具体代码-对照第一个图的调用堆栈）：" class="headerlink" title="Spring收到请求URL后要取出请求变量和做业务运算，具体代码(对照第一个图的调用堆栈）："></a>Spring收到请求URL后要取出请求变量和做业务运算，具体代码(对照第一个图的调用堆栈）：</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line">170	public RequestMappingInfo More ...getMatchingCondition(HttpServletRequest request) &#123;</div><div class="line">171		RequestMethodsRequestCondition methods = methodsCondition.getMatchingCondition(request);</div><div class="line">172		ParamsRequestCondition params = paramsCondition.getMatchingCondition(request);</div><div class="line">173		HeadersRequestCondition headers = headersCondition.getMatchingCondition(request);</div><div class="line">174		ConsumesRequestCondition consumes = consumesCondition.getMatchingCondition(request);</div><div class="line">175		ProducesRequestCondition produces = producesCondition.getMatchingCondition(request);</div><div class="line">176</div><div class="line">177		if (methods == null || params == null || headers == null || consumes == null || produces == null) &#123;</div><div class="line">178			return null;</div><div class="line">179		&#125;</div><div class="line">180</div><div class="line">181		PatternsRequestCondition patterns = patternsCondition.getMatchingCondition(request);</div><div class="line">182		if (patterns == null) &#123;</div><div class="line">183			return null;</div><div class="line">184		&#125;</div><div class="line">185</div><div class="line">186		RequestConditionHolder custom = customConditionHolder.getMatchingCondition(request);</div><div class="line">187		if (custom == null) &#123;</div><div class="line">188			return null;</div><div class="line">189		&#125;</div><div class="line">190</div><div class="line">191		return new RequestMappingInfo(patterns, methods, params, headers, consumes, produces, custom.getCondition());</div><div class="line">192	&#125;</div></pre></td></tr></table></figure>
 <h3 id="doMatch-代码："><a href="#doMatch-代码：" class="headerlink" title="doMatch 代码："></a>doMatch 代码：</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div><div class="line">99</div><div class="line">100</div><div class="line">101</div><div class="line">102</div><div class="line">103</div><div class="line">104</div><div class="line">105</div><div class="line">106</div><div class="line">107</div><div class="line">108</div><div class="line">109</div><div class="line">110</div><div class="line">111</div><div class="line">112</div><div class="line">113</div><div class="line">114</div><div class="line">115</div><div class="line">116</div><div class="line">117</div><div class="line">118</div><div class="line">119</div><div class="line">120</div><div class="line">121</div><div class="line">122</div><div class="line">123</div><div class="line">124</div><div class="line">125</div><div class="line">126</div><div class="line">127</div></pre></td><td class="code"><pre><div class="line">96 </div><div class="line">97 	protected boolean More ...doMatch(String pattern, String path, boolean fullMatch,</div><div class="line">98 			Map&lt;String, String&gt; uriTemplateVariables) &#123;</div><div class="line">99 </div><div class="line">100		if (path.startsWith(this.pathSeparator) != pattern.startsWith(this.pathSeparator)) &#123;</div><div class="line">101			return false;</div><div class="line">102		&#125;</div><div class="line">103</div><div class="line">104		String[] pattDirs = StringUtils.tokenizeToStringArray(pattern, this.pathSeparator, this.trimTokens, true);</div><div class="line">105		String[] pathDirs = StringUtils.tokenizeToStringArray(path, this.pathSeparator, this.trimTokens, true);</div><div class="line">106</div><div class="line">107		int pattIdxStart = 0;</div><div class="line">108		int pattIdxEnd = pattDirs.length - 1;</div><div class="line">109		int pathIdxStart = 0;</div><div class="line">110		int pathIdxEnd = pathDirs.length - 1;</div><div class="line">111</div><div class="line">112		// Match all elements up to the first **</div><div class="line">113		while (pattIdxStart &lt;= pattIdxEnd &amp;&amp; pathIdxStart &lt;= pathIdxEnd) &#123;</div><div class="line">114			String patDir = pattDirs[pattIdxStart];</div><div class="line">115			if (&quot;**&quot;.equals(patDir)) &#123;</div><div class="line">116				break;</div><div class="line">117			&#125;</div><div class="line">118			if (!matchStrings(patDir, pathDirs[pathIdxStart], uriTemplateVariables)) &#123;</div><div class="line">119				return false;</div><div class="line">120			&#125;</div><div class="line">121			pattIdxStart++;</div><div class="line">122			pathIdxStart++;</div><div class="line">123		&#125;</div><div class="line">124</div><div class="line">125		if (pathIdxStart &gt; pathIdxEnd) &#123;</div><div class="line">126			// Path is exhausted, only match if rest of pattern is * or **&apos;s</div><div class="line">127			if (pattIdxStart &gt; pattIdxEnd) &#123;</div><div class="line">128				return (pattern.endsWith(this.pathSeparator) ? path.endsWith(this.pathSeparator) :</div><div class="line">129						!path.endsWith(this.pathSeparator));</div><div class="line">130			&#125;</div><div class="line">131			if (!fullMatch) &#123;</div><div class="line">132				return true;</div><div class="line">133			&#125;</div><div class="line">134			if (pattIdxStart == pattIdxEnd &amp;&amp; pattDirs[pattIdxStart].equals(&quot;*&quot;) &amp;&amp; path.endsWith(this.pathSeparator)) &#123;</div><div class="line">135				return true;</div><div class="line">136			&#125;</div><div class="line">137			for (int i = pattIdxStart; i &lt;= pattIdxEnd; i++) &#123;</div><div class="line">138				if (!pattDirs[i].equals(&quot;**&quot;)) &#123;</div><div class="line">139					return false;</div><div class="line">140				&#125;</div><div class="line">141			&#125;</div><div class="line">142			return true;</div><div class="line">143		&#125;</div><div class="line">144		else if (pattIdxStart &gt; pattIdxEnd) &#123;</div><div class="line">145			// String not exhausted, but pattern is. Failure.</div><div class="line">146			return false;</div><div class="line">147		&#125;</div><div class="line">148		else if (!fullMatch &amp;&amp; &quot;**&quot;.equals(pattDirs[pattIdxStart])) &#123;</div><div class="line">149			// Path start definitely matches due to &quot;**&quot; part in pattern.</div><div class="line">150			return true;</div><div class="line">151		&#125;</div><div class="line">152</div><div class="line">153		// up to last &apos;**&apos;</div><div class="line">154		while (pattIdxStart &lt;= pattIdxEnd &amp;&amp; pathIdxStart &lt;= pathIdxEnd) &#123;</div><div class="line">155			String patDir = pattDirs[pattIdxEnd];</div><div class="line">156			if (patDir.equals(&quot;**&quot;)) &#123;</div><div class="line">157				break;</div><div class="line">158			&#125;</div><div class="line">159			if (!matchStrings(patDir, pathDirs[pathIdxEnd], uriTemplateVariables)) &#123;</div><div class="line">160				return false;</div><div class="line">161			&#125;</div><div class="line">162			pattIdxEnd--;</div><div class="line">163			pathIdxEnd--;</div><div class="line">164		&#125;</div><div class="line">165		if (pathIdxStart &gt; pathIdxEnd) &#123;</div><div class="line">166			// String is exhausted</div><div class="line">167			for (int i = pattIdxStart; i &lt;= pattIdxEnd; i++) &#123;</div><div class="line">168				if (!pattDirs[i].equals(&quot;**&quot;)) &#123;</div><div class="line">169					return false;</div><div class="line">170				&#125;</div><div class="line">171			&#125;</div><div class="line">172			return true;</div><div class="line">173		&#125;</div><div class="line">174</div><div class="line">175		while (pattIdxStart != pattIdxEnd &amp;&amp; pathIdxStart &lt;= pathIdxEnd) &#123;</div><div class="line">176			int patIdxTmp = -1;</div><div class="line">177			for (int i = pattIdxStart + 1; i &lt;= pattIdxEnd; i++) &#123;</div><div class="line">178				if (pattDirs[i].equals(&quot;**&quot;)) &#123;</div><div class="line">179					patIdxTmp = i;</div><div class="line">180					break;</div><div class="line">181				&#125;</div><div class="line">182			&#125;</div><div class="line">183			if (patIdxTmp == pattIdxStart + 1) &#123;</div><div class="line">184				// &apos;**/**&apos; situation, so skip one</div><div class="line">185				pattIdxStart++;</div><div class="line">186				continue;</div><div class="line">187			&#125;</div><div class="line">188			// Find the pattern between padIdxStart &amp; padIdxTmp in str between</div><div class="line">189			// strIdxStart &amp; strIdxEnd</div><div class="line">190			int patLength = (patIdxTmp - pattIdxStart - 1);</div><div class="line">191			int strLength = (pathIdxEnd - pathIdxStart + 1);</div><div class="line">192			int foundIdx = -1;</div><div class="line">193</div><div class="line">194			strLoop:</div><div class="line">195			for (int i = 0; i &lt;= strLength - patLength; i++) &#123;</div><div class="line">196				for (int j = 0; j &lt; patLength; j++) &#123;</div><div class="line">197					String subPat = pattDirs[pattIdxStart + j + 1];</div><div class="line">198					String subStr = pathDirs[pathIdxStart + i + j];</div><div class="line">199					if (!matchStrings(subPat, subStr, uriTemplateVariables)) &#123;</div><div class="line">200						continue strLoop;</div><div class="line">201					&#125;</div><div class="line">202				&#125;</div><div class="line">203				foundIdx = pathIdxStart + i;</div><div class="line">204				break;</div><div class="line">205			&#125;</div><div class="line">206</div><div class="line">207			if (foundIdx == -1) &#123;</div><div class="line">208				return false;</div><div class="line">209			&#125;</div><div class="line">210</div><div class="line">211			pattIdxStart = patIdxTmp;</div><div class="line">212			pathIdxStart = foundIdx + patLength;</div><div class="line">213		&#125;</div><div class="line">214</div><div class="line">215		for (int i = pattIdxStart; i &lt;= pattIdxEnd; i++) &#123;</div><div class="line">216			if (!pattDirs[i].equals(&quot;**&quot;)) &#123;</div><div class="line">217				return false;</div><div class="line">218			&#125;</div><div class="line">219		&#125;</div><div class="line">220</div><div class="line">221		return true;</div><div class="line">222	&#125;</div></pre></td></tr></table></figure>
 <p>最后补一个找到瓶颈点后 Google到类似问题的文章，并给出了具体数据和解决方法：<a href="http://www.cnblogs.com/ucos/articles/5542012.html" target="_blank" rel="external">http://www.cnblogs.com/ucos/articles/5542012.html</a></p>
-<p>以及这篇文章中给出的优化前后对比图：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/3c61ad759ae5f44bbb2a24e4714c2ee8" alt="screenshot"></p>
+<p>以及这篇文章中给出的优化前后对比图：<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/3c61ad759ae5f44bbb2a24e4714c2ee8" alt="screenshot"></p>
 
           
         
@@ -1805,7 +1805,7 @@ msg_size  =4 KiB (4,096)
 <h2 id="问题的原因"><a href="#问题的原因" class="headerlink" title="问题的原因"></a>问题的原因</h2><p>因为TCP协议为了对带宽利用率、性能方面优化，而做了一些特殊处理。比如Delay Ack和Nagle算法。</p>
 <p>这个原因对大家理解TCP基本的概念后能在实战中了解一些TCP其它方面的性能和影响。</p>
 <h3 id="什么是delay-ack"><a href="#什么是delay-ack" class="headerlink" title="什么是delay ack"></a>什么是delay ack</h3><p>由我前面的TCP介绍文章大家都知道，TCP是可靠传输，可靠的核心是收到包后回复一个ack来告诉对方收到了。</p>
-<p>来看一个例子：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/06e6b04614ce57e4624346ea6311a411.png" alt="image.png"></p>
+<p>来看一个例子：<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/06e6b04614ce57e4624346ea6311a411.png" alt="image.png"></p>
 <p>截图中的Nignx(8085端口），收到了一个http request请求，然后立即回复了一个ack包给client，接着又回复了一个http response 给client。大家注意回复的ack包长度66，实际内容长度为0，ack信息放在TCP包头里面，也就是这里发了一个66字节的空包给客户端来告诉客户端我收到你的请求了。</p>
 <p>这里没毛病，逻辑很对，符合TCP的核心可靠传输的意义。但是带来的一个问题是：性能不够好（用了一个空包用于特意回复ack，有点浪费）。那能不能优化呢？</p>
 <p>这里的优化方法就是delay ack。</p>
@@ -1889,15 +1889,15 @@ if (CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_URL, oss.str().c_str())) 
 <li>ssthresh：Slow Start Threshold，慢启动阈值。当数据发送方感知到丢包时，会记录此时的 CWND，并计算合理的 ssthresh 值（ssthresh &lt;= 丢包时的 CWND），当 CWND 重新由小至大增长，直到 sshtresh 时，不再 SS 而是 CA。但因为数据确认超时（数据发送端始终收不到对端的接收确认报文），发送端会骤降 CWND 到最初始的状态。</li>
 <li>tcp_wmem 对应send buffer，也就是滑动窗口大小</li>
 </ul>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/1a468a5a3060792647713d3cf307c986.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/1a468a5a3060792647713d3cf307c986.png" alt="image.png"></p>
 <p>上图一旦发生丢包，cwnd降到1 ssthresh降到cwnd/2,一夜回到解放前，太保守了，实际大多情况下都是公网带宽还有空余但是链路过长，非带宽不够丢包概率增大，对此没必要这么保守（tcp诞生的背景主要针对局域网、双绞线来设计，偏保守）。RTT越大的网络环境（长肥管道）这个问题越是严重，表现就是传输速度抖动非常厉害。</p>
 <p>所以改进的拥塞算法一旦发现丢包，cwnd和ssthresh降到原来的cwnd的一半。</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/e24ad7655c10a82f35879503ecabc98f.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/e24ad7655c10a82f35879503ecabc98f.png" alt="image.png"></p>
 <h3 id="TCP性能优化点"><a href="#TCP性能优化点" class="headerlink" title="TCP性能优化点"></a>TCP性能优化点</h3><ul>
 <li>建连优化：TCP 在建立连接时，如果丢包，会进入重试，重试时间是 1s、2s、4s、8s 的指数递增间隔，缩短定时器可以让 TCP 在丢包环境建连时间更快，非常适用于高并发短连接的业务场景。</li>
 <li>首包优化：此优化其实没什么实质意义，若要说一定会有意义的话，可能就是满足一些评测标准的需要吧，例如有些客户以首包时间作为性能评判的一个依据。所谓首包时间，简单解释就是从 HTTP Client 发出 GET 请求开始计时，到收到 HTTP 响应的时间。为此，Server 端可以通过 TCP_NODELAY 让服务器先吐出 HTTP 头，再吐出实际内容（分包发送，原本是粘到一起的），来进行提速和优化。据说更有甚者先让服务器无条件返回 “HTTP/“ 这几个字符，然后再去 upstream 拿数据。这种做法在真实场景中没有任何帮助，只能欺骗一下探测者罢了，因此还没见过有直接发 “HTTP/“ 的，其实是一种作弊行为。</li>
 </ul>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/28532cb2bc6aa674be3d7693595f6f2b.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/28532cb2bc6aa674be3d7693595f6f2b.png" alt="image.png"></p>
 <ul>
 <li>平滑发包：如前文所述，在 RTT 内均匀发包，规避微分时间内的流量突发，尽量避免瞬间拥塞，此处不再赘述。</li>
 <li>丢包预判：有些网络的丢包是有规律性的，例如每隔一段时间出现一次丢包，例如每次丢包都连续丢几个等，如果程序能自动发现这个规律（有些不明显），就可以针对性提前多发数据，减少重传时间、提高有效发包率。</li>
@@ -1906,7 +1906,7 @@ if (CURLE_OK == (code = curl_easy_setopt(curl, CURLOPT_URL, oss.str().c_str())) 
 <li>带宽争抢：有些场景（例如合租）是大家互相挤占带宽的，假如你和室友各 1Mbps 的速度看电影，会把 2Mbps 出口占满，而如果一共有 3 个人看，则每人只能分到 1/3。若此时你的流量流量达到 2Mbps，而他俩还都是 1Mbps，则你至少仍可以分到 2/(2+1+1) * 2Mbps = 1Mbps 的 50% 的带宽，甚至更多，代价就是服务器侧的出口流量加大，增加成本。（TCP 优化的本质就是用带宽换用户体验感）</li>
 <li><strong>链路质量记忆</strong>(后面有反面案例)：如果一个 Client IP 或一个 C 段 Network，若已经得知了网络质量规律（例如 CWND 多大合适，丢包规律是怎样的等），就可以在下次连接时，优先使用历史经验值，取消慢启动环节直接进入告诉发包状态，以提升客户端接收数据速率。</li>
 </ul>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/68314efb651bcb3144d4243bf0c15820.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/68314efb651bcb3144d4243bf0c15820.png" alt="image.png"></p>
 <h3 id="参数"><a href="#参数" class="headerlink" title="参数"></a>参数</h3><h4 id="net-ipv4-tcp-slow-start-after-idle"><a href="#net-ipv4-tcp-slow-start-after-idle" class="headerlink" title="net.ipv4.tcp_slow_start_after_idle"></a>net.ipv4.tcp_slow_start_after_idle</h4><p>内核协议栈参数 net.ipv4.tcp_slow_start_after_idle 默认是开启的，这个参数的用途，是为了规避 CWND 无休止增长，因此在连接不断开，但一段时间不传输数据的话，就将 CWND 收敛到 initcwnd，kernel-2.6.32 是 10，kernel-2.6.18 是 2。因此在 HTTP Connection: keep-alive 的环境下，若连续两个 GET 请求之间存在一定时间间隔，则此时服务器端会降低 CWND 到初始值，当 Client 再次发起 GET 后，服务器会重新进入慢启动流程。</p>
 <p>这种友善的保护机制，对于 CDN 来说是帮倒忙，因此我们可以通过命令将此功能关闭，以提高 HTTP Connection: keep-alive 环境下的用户体验感。</p>
 <pre><code>sysctl net.ipv4.tcp_slow_start_after_idle=0
@@ -2187,7 +2187,7 @@ debug1: Entering interactive session.
 debug2: set_control_persist_exit_time: schedule exit in 259200 seconds
 debug1: multiplexing control connection
 </code></pre><p> /home/ren/tmp/ssh_mux_10.16.<em>.</em>_22_alibaba 这个就是保存好的socket，下次可以重用，免密码。 in 259200 seconds 对应 72小时</p>
-<p>看动画过程，注意过程中都是通过 -vvv 来看到ssh的具体行为<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/43c4e0b4ad0f6aa5cb76a7008e53e4cd.gif" alt="ssh-demo.gif"></p>
+<p>看动画过程，注意过程中都是通过 -vvv 来看到ssh的具体行为<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/43c4e0b4ad0f6aa5cb76a7008e53e4cd.gif" alt="ssh-demo.gif"></p>
 <h3 id="我有很多不同机房（或者说不同客户）的机器都需要跳板机来登录，能一次直接ssh上去吗？"><a href="#我有很多不同机房（或者说不同客户）的机器都需要跳板机来登录，能一次直接ssh上去吗？" class="headerlink" title="我有很多不同机房（或者说不同客户）的机器都需要跳板机来登录，能一次直接ssh上去吗？"></a>我有很多不同机房（或者说不同客户）的机器都需要跳板机来登录，能一次直接ssh上去吗？</h3><p>比如有一批客户机房的机器IP都是192.168.<em>.</em>, 然后需要走跳板机100.10.1.2才能访问到，那么我希望以后在笔记本上直接 ssh 192.168.1.5 就能连上</p>
 <pre><code>$ cat /etc/ssh/ssh_config
 
@@ -2223,7 +2223,7 @@ debug1: Control socket &quot;/home/ren/tmp/ssh_mux_10.16.1.*_22_alibaba&quot; do
 debug1: Executing proxy command: exec ssh -l alibaba 139.*.*.* exec /usr/bin/nc 10.16.1.* 22
 </code></pre><p>本来我的笔记本跟 10.16.1.<em> 是不通的(ping 不通），但是ssh可以直接连上，实际ssh登录过程中自动走跳板机139.</em>.<em>.</em> 就连上了</p>
 <p>-vvv 参数是debug，把ssh登录过程的日志全部打印出来。 </p>
-<h3 id="ssh-免打通、免登陆跳板机、免密码直接访问日常环境机器"><a href="#ssh-免打通、免登陆跳板机、免密码直接访问日常环境机器" class="headerlink" title="ssh 免打通、免登陆跳板机、免密码直接访问日常环境机器"></a>ssh 免打通、免登陆跳板机、免密码直接访问日常环境机器</h3><p>先来看效果图：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/0d6bc0800b3dc8b8988f6cb7ab410010.gif" alt="ssh_docker.gif"></p>
+<h3 id="ssh-免打通、免登陆跳板机、免密码直接访问日常环境机器"><a href="#ssh-免打通、免登陆跳板机、免密码直接访问日常环境机器" class="headerlink" title="ssh 免打通、免登陆跳板机、免密码直接访问日常环境机器"></a>ssh 免打通、免登陆跳板机、免密码直接访问日常环境机器</h3><p>先来看效果图：<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/0d6bc0800b3dc8b8988f6cb7ab410010.gif" alt="ssh_docker.gif"></p>
 <h4 id="实现过程："><a href="#实现过程：" class="headerlink" title="实现过程："></a>实现过程：</h4><ol>
 <li>先ssh到线上跳板机：login1.cm10.alibaba.org</li>
 <li>复制 ~/.ssh/id_dsa.pub 和 ~/.ssh/id_dsa到你的笔记本的~/.ssh/ 下</li>
@@ -2234,7 +2234,7 @@ debug1: Executing proxy command: exec ssh -l alibaba 139.*.*.* exec /usr/bin/nc 
 </ol>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">Host 11.239.*.*</div><div class="line">ProxyCommand ssh -l xijun.rxj login1.et2sqa.tbsite.net exec /usr/bin/nc %h %p</div></pre></td></tr></table></figure>
 <p><strong>第一次需要输入你的域账户密码，只要你的域账户密码不改以后永远不需要再次输入了。另外你需要在kfc上申请过机器的访问权限，kfc帮你打通了免密登陆，不仅仅是Docker，t4也默认打通了账号</strong><br>这个技能基本综合了前面所有技巧，综合性比较强，需要点时间配合-vvv慢慢理解消化</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/b4e460a501c21eac1e4104b9324910d3.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b4e460a501c21eac1e4104b9324910d3.png" alt="image.png"></p>
 <h3 id="为什么有时候ssh-比较慢，比如总是需要30秒钟后才能正常登录"><a href="#为什么有时候ssh-比较慢，比如总是需要30秒钟后才能正常登录" class="headerlink" title="为什么有时候ssh 比较慢，比如总是需要30秒钟后才能正常登录"></a>为什么有时候ssh 比较慢，比如总是需要30秒钟后才能正常登录</h3><p>先了解如下知识点，在 ~/.ssh/config 配置文件中：</p>
 <pre><code>GSSAPIAuthentication=no
 </code></pre><p>禁掉 GSSAPI认证，GSSAPIAuthentication是个什么鬼东西请自行 Google(多一次没必要的授权认证过程，然后等待超时)。 这里要理解ssh登录的时候有很多种认证方式（公钥、密码等等），具体怎么调试请记住强大的命令参数 ssh -vvv 上面讲到的技巧都能通过 -vvv 看到具体过程。</p>
@@ -2680,7 +2680,7 @@ net.ipv4.ip_no_pmtu_disc = 0 //默认似乎是没有启用PMTUD
 net.ipv4.route.min_pmtu = 552
 </code></pre><p><a href="https://medium.com/@fcamel/tcp-maximum-segment-size-%E6%98%AF%E4%BB%80%E9%BA%BC%E4%BB%A5%E5%8F%8A%E6%98%AF%E5%A6%82%E4%BD%95%E6%B1%BA%E5%AE%9A%E7%9A%84-b5fd9005702e" target="_blank" rel="external">IPv4规定路由器至少要能处理576bytes的包，Ethernet规定的是1500 bytes，所以一般都是假设链路上MTU不小于1500</a></p>
 <p><a href="https://medium.com/@fcamel/%E7%94%A8-systemtap-%E6%89%BE%E5%87%BA-tcp-%E5%A6%82%E4%BD%95%E6%B1%BA%E5%AE%9A-mss-%E7%9A%84%E5%80%BC-4b6b7a969d04" target="_blank" rel="external">TCP中的MSS总是在SYN包中设置成下一站的MTU减去HeaderSize（40）。</a></p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/23df36d95295c839722627b5d63bac48.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/23df36d95295c839722627b5d63bac48.png" alt="image.png"></p>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
 <li>因为这是客户给的同一批宿主机默认想当然的认为他们的配置到一样，尤其是mtu这种值，只要不是故意捣乱就不应该乱修改才对，我只检查了两个容器的mtu，没看宿主机的mtu，导致诊断中走了一些弯路</li>
 <li>通过这个案例对mtu/mss等有了进一步的了解</li>
@@ -2838,7 +2838,7 @@ net.ipv4.route.min_pmtu = 552
 <h2 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h2><p>客户会调用我们的一个服务，正常都是client request -&gt; server response 如此反复直到client主动完成，然后断开tcp连接。但是就是在这个过程中，有极低的概率client 端抛出连接非正常断开的异常堆栈，由于这个业务比较特殊，客户无法接受这种异常，所以要求一定要解决这个问题。</p>
 <p>重现麻烦，只能在客户环境，让客户把他们的测试跑起来才能一天重现1-2次，每次跟客户沟通成本很高。出现问题的精确时间点不好确定</p>
 <h3 id="tcpdump-抓包所看到的问题表现"><a href="#tcpdump-抓包所看到的问题表现" class="headerlink" title="tcpdump 抓包所看到的问题表现"></a>tcpdump 抓包所看到的问题表现</h3><p>在client 和 server上一直进行tcpdump 抓包，然后压力测试不停地跑，一旦client抛了连接异常，根据时间点、端口信息在两边的抓包中分析当时的tcp会话</p>
-<p>比如，通过tcpdump分析到的会话是这样的：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/ed9b5b2d81bdc58b9cf41217763939e5.png" alt="screenshot.png"></p>
+<p>比如，通过tcpdump分析到的会话是这样的：<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/ed9b5b2d81bdc58b9cf41217763939e5.png" alt="screenshot.png"></p>
 <p>如上图所示，正常都是client发送request，server返回response，但是出问题的时候（截图红框）server收到了client的request，也回复了ack给client说收到请求了，但是很快server又回复了一个fin包（server主动发起四次挥手断开连接），这是不正常的。</p>
 <p>到这里可以有一个明确的结论：<strong>出问题都是因为server主动发起连接断开的fin包，即使刚收到client的request请求还没有返回response</strong></p>
 <h3 id="开发增加debug日志"><a href="#开发增加debug日志" class="headerlink" title="开发增加debug日志"></a>开发增加debug日志</h3><p>在server端的应用中可能会调用 socket.close 的地方都增加了日志，但是实际发生异常的时候没有任何日志输出，所以到此开发认为应用代码没有问题（毕竟没有证据–实际不能排除）</p>
@@ -2864,7 +2864,7 @@ net.ipv4.route.min_pmtu = 552
       jstack();
 }
 </code></pre><p>终于在出现异常的时候btrace抓到了异常的堆栈，在之前代码review看来不可能的逻辑里server主动关闭了连接</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/02bcccd66af82c929c4eee8c88875733.png" alt="screenshot.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/02bcccd66af82c929c4eee8c88875733.png" alt="screenshot.png"></p>
 <p>图左是应用代码，图右是关闭连接的堆栈，有了这个堆栈就可以去修复问题了</p>
 <p>实际上这里可能有几个问题：</p>
 <ol>
@@ -3250,7 +3250,7 @@ else
     pathmunge /usr/sbin after
 fi
 </code></pre><p>这几行代码就是把 /usr/sbin 添加到 PATH 变量中，正是他们的区别决定了这里的环境变量不一样。</p>
-<p><strong>用一张图来表述他们的结构，箭头代表加载顺序，红框代表不同的shell的初始入口</strong>：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/ae3095f063dede80a8c1ee79ec25685c.png" alt="image.png"></p>
+<p><strong>用一张图来表述他们的结构，箭头代表加载顺序，红框代表不同的shell的初始入口</strong>：<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/ae3095f063dede80a8c1ee79ec25685c.png" alt="image.png"></p>
 <p>像 ansible 这种自动化工具，或者我们自己写的自动化脚本，底层通过ssh这种non-login的方式来执行的话，那么都有可能碰到这个问题，如何修复呢？</p>
 <p>在 /etc/profile.d/ 下创建一个文件：/etc/profile.d/my_bashenv.sh 内容如下：</p>
 <pre><code>$cat /etc/profile.d/my_bashenv.sh 
@@ -3571,7 +3571,7 @@ else
     pathmunge /usr/sbin after
 fi
 </code></pre><p>这几行代码就是把 /usr/sbin 添加到 PATH 变量中，正是他们的区别决定了这里的环境变量不一样。</p>
-<p><strong>用一张图来表述他们的结构，箭头代表加载顺序，红框代表不同的shell的初始入口</strong>：<br><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/ae3095f063dede80a8c1ee79ec25685c.png" alt="image.png"></p>
+<p><strong>用一张图来表述他们的结构，箭头代表加载顺序，红框代表不同的shell的初始入口</strong>：<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/ae3095f063dede80a8c1ee79ec25685c.png" alt="image.png"></p>
 <p>像 ansible 这种自动化工具，或者我们自己写的自动化脚本，底层通过ssh这种non-login的方式来执行的话，那么都有可能碰到这个问题，如何修复呢？</p>
 <p>在 /etc/profile.d/ 下创建一个文件：/etc/profile.d/my_bashenv.sh 内容如下：</p>
 <pre><code>$cat /etc/profile.d/my_bashenv.sh 

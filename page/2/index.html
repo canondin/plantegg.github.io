@@ -2640,7 +2640,7 @@ __wake_up_common
 <li>修改 bind 系统调用实现，以便支持可以绑定到相同的 IP 和端口</li>
 <li>修改处理新建连接的实现，查找 listener 的时候，能够支持在监听相同 IP 和端口的多个 sock 之间均衡选择。</li>
 </ul>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/64ae30f3d1937d913f2a440d5ae3c920.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/64ae30f3d1937d913f2a440d5ae3c920.png" alt="image.png"></p>
 <ul>
 <li>Nginx的accept_mutex通过抢锁来控制是否将监听套接字加入到epoll 中。监听套接字只在一个子进程的 epoll 中，当新的连接来到时，其他子进程当然不会惊醒了。通过 accept_mutex加锁性能要比reuseport差</li>
 <li>Linux内核解决了epoll_wait 惊群的问题，Nginx 1.9.1利用Linux3.10 的reuseport也能解决惊群、提升性能。</li>
@@ -4847,7 +4847,7 @@ public BufferedOutputStream(OutputStream out) {
 <li>内核将数据从内核空间拷贝到用户空间</li>
 </ul>
 <h3 id="零拷贝"><a href="#零拷贝" class="headerlink" title="零拷贝"></a>零拷贝</h3><p>零拷贝可以做到用户空间和内核空间共用同一块内存（Java中的DirectBuffer），这样少做一次拷贝。普通Buffer是在JVM堆上分配的内存，而DirectBuffer是堆外分配的（内核和JVM可以同时读写），这样不需要再多一次内核到用户Buffer的拷贝</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/83e2dfbd25d703c58877b2faf71c4944.jpg" alt=""></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/83e2dfbd25d703c58877b2faf71c4944.jpg" alt=""></p>
 <p>比如通过网络下载文件，普通拷贝的流程会复制4次并有4次上下文切换，上下文切换是因为读写慢导致了IO的阻塞，进而线程被内核挂起，所以发生了上下文切换。在极端情况下如果read/write没有导致阻塞是不会发生上下文切换的：</p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/b2d0ffb366ef78faca4b7924c2a66cc1.png" alt="image.png"></p>
 <p>改成零拷贝后，也就是将read和write合并成一次，直接在内核中完成磁盘到网卡的数据复制</p>
@@ -5062,9 +5062,9 @@ serverSock.configureBlocking(true);
 <p>Select和epoll本质是为了IO多路复用（多个连接共用一个线程–监听是否连接有数据到达）。有报文进来的时候触发Select，Select轮询所有连接确认是哪个连接有报文进来了。连接过多放大了这种无用轮询。<br>epoll通过一颗红黑树维护所有连接，同时将有数据进来的连接通过回调更新到一个队列中，那么epoll每次检查的时候只需要检查队列而不是整个红黑树，效率大大提高了。</p>
 <p>事件驱动适合于I/O密集型服务，多进程或线程适合于CPU密集型服务<br>多路复用有很多种实现，在linux上，2.4内核前主要是select和poll，现在主流是epoll<br>select解决了一个线程监听多个socket的问题，但是因为依靠fd_set结构体记录所监控的socket，带来了能监听的socket数量有限（不超过1024）<br>poll在select的基础上解决了1024个的问题，但是还是要依次轮询这1024个socket，效率太低<br>epoll 异步非阻塞多路复用</p>
 <p>闲置线程或进程不会导致系统上下文切换过高(但是每个线程都会消耗内存)。只有ready状态过多时上下文切换才不堪重负。对于CPU连说调度10M的线程、进程不现实，这个时候适合用协程</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/0c09f7457cd7914fc26573d9a4625de4.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/0c09f7457cd7914fc26573d9a4625de4.png" alt="image.png"></p>
 <h3 id="MySQL-Thread-Pool-带来的问题"><a href="#MySQL-Thread-Pool-带来的问题" class="headerlink" title="MySQL Thread Pool 带来的问题"></a>MySQL Thread Pool 带来的问题</h3><p>MySQL Thread Pool根据参数thread_pool_size被分为若干个group,每个group维护client 发起的 connections,当MySQL建立 connection 时, MySQL 根据connection的id 对thread_pool_size取模,将connection 发起的sql 语句分配到对应的group。每个group的最大worker数量为thread_pool_oversubscribe+1。若worker达到最大数量后还是不足以处理会话请求,则连接在本group上等待（即使其他Group里面的thread完全空闲–类似如上Nginx 边缘触发的问题）,导致sql 语句的rt 增大，这个等待不会计入slow_query时间。</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/80c19a50442290e7f79e97d94a585cc3.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/80c19a50442290e7f79e97d94a585cc3.png" alt="image.png"></p>
 <p>连接池可以起到避免了连接频繁创建和销毁（一个连接对应一个线程），但是无法起到控制MySQL活动线程数的目标，在高并发场景下，无法起到保护DB的作用。比较好的方式是将连接池和线程池结合起来使用。</p>
 <p><strong>MySQL Thread Pool之所有分成多个小的Thread Group Pool而不是一个大的Pool，是为了分解锁（每个group中都有队列，队列需要加锁。类似ConcurrentHashMap提高并发的原理），提高并发效率。</strong></p>
 <p>group中的队列是用来区分优先级的，事务中的语句会放到高优先队列（非事务语句和autocommit 都会在低优先队列）；等待太久的SQL也会挪到高优先队列，防止饿死。</p>
@@ -5571,11 +5571,11 @@ avg: 0.005937
 </blockquote>
 <p>tshark分析抓包文件数据库服务器网卡中断瓶颈导致rtt非常高，进一步导致每个Query的ResponseTime非常高（图中左边都是出问题、右边都是问题解决后的响应时间）</p>
 <p>下面两个图是吧tshark解析结果丢到了数据库中好用SQL可以进一步分析</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/d99665729dbc0ccbcbebd5176900ce6c.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d99665729dbc0ccbcbebd5176900ce6c.png" alt="image.png"></p>
 <p><strong> 问题修复后数据库每个查询的平均响应时间从47毫秒下降到了4.5毫秒 </strong></p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/3a80fa647b634e1671a0ebfd40a468bd.png" alt="image.png"></p>
-<h4 id="从wireshark中也可以看到类似的rtt不正常（超过150ms的比较多）"><a href="#从wireshark中也可以看到类似的rtt不正常（超过150ms的比较多）" class="headerlink" title="从wireshark中也可以看到类似的rtt不正常（超过150ms的比较多）"></a>从wireshark中也可以看到类似的rtt不正常（超过150ms的比较多）</h4><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/52cb9d61ce948f9b64737b7be88ac84e.png" alt="image.png"></p>
-<h4 id="从wireshark中也可以看到类似的rtt正常-99-都在10ms以内）"><a href="#从wireshark中也可以看到类似的rtt正常-99-都在10ms以内）" class="headerlink" title="从wireshark中也可以看到类似的rtt正常(99%都在10ms以内）"></a>从wireshark中也可以看到类似的rtt正常(99%都在10ms以内）</h4><p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/196033f267c33c08a4ca6b6fdb957cf3.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/3a80fa647b634e1671a0ebfd40a468bd.png" alt="image.png"></p>
+<h4 id="从wireshark中也可以看到类似的rtt不正常（超过150ms的比较多）"><a href="#从wireshark中也可以看到类似的rtt不正常（超过150ms的比较多）" class="headerlink" title="从wireshark中也可以看到类似的rtt不正常（超过150ms的比较多）"></a>从wireshark中也可以看到类似的rtt不正常（超过150ms的比较多）</h4><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/52cb9d61ce948f9b64737b7be88ac84e.png" alt="image.png"></p>
+<h4 id="从wireshark中也可以看到类似的rtt正常-99-都在10ms以内）"><a href="#从wireshark中也可以看到类似的rtt正常-99-都在10ms以内）" class="headerlink" title="从wireshark中也可以看到类似的rtt正常(99%都在10ms以内）"></a>从wireshark中也可以看到类似的rtt正常(99%都在10ms以内）</h4><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/196033f267c33c08a4ca6b6fdb957cf3.png" alt="image.png"></p>
 
           
         
@@ -5792,15 +5792,15 @@ sudo tc qdisc add dev eth0 root tbf rate 500kbit latency 50ms burst 15kb
 <li>ssthresh：Slow Start Threshold，慢启动阈值。当数据发送方感知到丢包时，会记录此时的 CWND，并计算合理的 ssthresh 值（ssthresh &lt;= 丢包时的 CWND），当 CWND 重新由小至大增长，直到 sshtresh 时，不再 SS 而是 CA。但因为数据确认超时（数据发送端始终收不到对端的接收确认报文），发送端会骤降 CWND 到最初始的状态。</li>
 <li>SO_SNDBUF、SO_RCVBUF 发送、接收buffer</li>
 </ul>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/1a468a5a3060792647713d3cf307c986.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/1a468a5a3060792647713d3cf307c986.png" alt="image.png"></p>
 <p>上图一旦发生丢包，cwnd降到1 ssthresh降到cwnd/2,一夜回到解放前，太保守了，实际大多情况下都是公网带宽还有空余但是链路过长，非带宽不够丢包概率增大，对此没必要这么保守（tcp诞生的背景主要针对局域网、双绞线来设计，偏保守）。RTT越大的网络环境（长肥管道）这个问题越是严重，表现就是传输速度抖动非常厉害。</p>
 <p>所以改进的拥塞算法一旦发现丢包，cwnd和ssthresh降到原来的cwnd的一半。</p>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/e24ad7655c10a82f35879503ecabc98f.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/e24ad7655c10a82f35879503ecabc98f.png" alt="image.png"></p>
 <h2 id="TCP性能优化点"><a href="#TCP性能优化点" class="headerlink" title="TCP性能优化点"></a>TCP性能优化点</h2><ul>
 <li>建连优化：TCP 在建立连接时，如果丢包，会进入重试，重试时间是 1s、2s、4s、8s 的指数递增间隔，缩短定时器可以让 TCP 在丢包环境建连时间更快，非常适用于高并发短连接的业务场景。</li>
 <li>首包优化：此优化其实没什么实质意义，若要说一定会有意义的话，可能就是满足一些评测标准的需要吧，例如有些客户以首包时间作为性能评判的一个依据。所谓首包时间，简单解释就是从 HTTP Client 发出 GET 请求开始计时，到收到 HTTP 响应的时间。为此，Server 端可以通过 TCP_NODELAY 让服务器先吐出 HTTP 头，再吐出实际内容（分包发送，原本是粘到一起的），来进行提速和优化。据说更有甚者先让服务器无条件返回 “HTTP/“ 这几个字符，然后再去 upstream 拿数据。这种做法在真实场景中没有任何帮助，只能欺骗一下探测者罢了，因此还没见过有直接发 “HTTP/“ 的，其实是一种作弊行为。</li>
 </ul>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/28532cb2bc6aa674be3d7693595f6f2b.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/28532cb2bc6aa674be3d7693595f6f2b.png" alt="image.png"></p>
 <ul>
 <li>平滑发包：如前文所述，在 RTT 内均匀发包，规避微分时间内的流量突发，尽量避免瞬间拥塞，此处不再赘述。</li>
 <li>丢包预判：有些网络的丢包是有规律性的，例如每隔一段时间出现一次丢包，例如每次丢包都连续丢几个等，如果程序能自动发现这个规律（有些不明显），就可以针对性提前多发数据，减少重传时间、提高有效发包率。</li>
@@ -5809,7 +5809,7 @@ sudo tc qdisc add dev eth0 root tbf rate 500kbit latency 50ms burst 15kb
 <li>带宽争抢：有些场景（例如合租）是大家互相挤占带宽的，假如你和室友各 1Mbps 的速度看电影，会把 2Mbps 出口占满，而如果一共有 3 个人看，则每人只能分到 1/3。若此时你的流量流量达到 2Mbps，而他俩还都是 1Mbps，则你至少仍可以分到 2/(2+1+1) * 2Mbps = 1Mbps 的 50% 的带宽，甚至更多，代价就是服务器侧的出口流量加大，增加成本。（TCP 优化的本质就是用带宽换用户体验感）</li>
 <li><strong>链路质量记忆</strong>(后面有反面案例)：如果一个 Client IP 或一个 C 段 Network，若已经得知了网络质量规律（例如 CWND 多大合适，丢包规律是怎样的等），就可以在下次连接时，优先使用历史经验值，取消慢启动环节直接进入告诉发包状态，以提升客户端接收数据速率。</li>
 </ul>
-<p><img src="http://ata2-img.cn-hangzhou.img-pub.aliyun-inc.com/68314efb651bcb3144d4243bf0c15820.png" alt="image.png"></p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/68314efb651bcb3144d4243bf0c15820.png" alt="image.png"></p>
 <p>这些经验都来自CDN @辟拾 的 <a href="https://www.atatech.org/articles/109721" target="_blank" rel="external">网络优化 - TCP 是如何做到提速 20 倍的</a></p>
 <h2 id="重要参数"><a href="#重要参数" class="headerlink" title="重要参数"></a>重要参数</h2><h3 id="net-ipv4-tcp-slow-start-after-idle"><a href="#net-ipv4-tcp-slow-start-after-idle" class="headerlink" title="net.ipv4.tcp_slow_start_after_idle"></a>net.ipv4.tcp_slow_start_after_idle</h3><p>内核协议栈参数 net.ipv4.tcp_slow_start_after_idle 默认是开启的，这个参数的用途，是为了规避 CWND 无休止增长，因此在连接不断开，但一段时间不传输数据的话，就将 CWND 收敛到 initcwnd，kernel-2.6.32 是 10，kernel-2.6.18 是 2。因此在 HTTP Connection: keep-alive 的环境下，若连续两个 GET 请求之间存在一定时间间隔，则此时服务器端会降低 CWND 到初始值，当 Client 再次发起 GET 后，服务器会重新进入慢启动流程。</p>
 <p>这种友善的保护机制，但是对于目前的网络坏境没必要这么谨慎和彬彬有礼，建议将此功能关闭，以提高长连接环境下的用户体验感。</p>
