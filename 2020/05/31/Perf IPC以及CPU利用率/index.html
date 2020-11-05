@@ -112,7 +112,7 @@
 <meta property="og:image" content="https://images.gitbook.cn/227f3af0-5075-11e9-aece-c5816949b340">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/f5728a2afb29c653a3e1bf21f4d56056.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ad19b92ccc97763aa7f78d8d1d514c84.png">
-<meta property="og:updated_time" content="2020-07-31T04:38:00.031Z">
+<meta property="og:updated_time" content="2020-11-05T08:47:12.785Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Perf IPC以及CPU利用率">
 <meta name="twitter:description" content="Perf IPC以及CPU利用率perf 使用可以通过perf看到cpu的使用情况： $sudo perf stat -a -- sleep 10   Performance counter stats for &amp;apos;system wide&amp;apos;:   239866.330098      task-clock (msec)         #   23.985 CPUs utiliz">
@@ -434,9 +434,8 @@
 <p> 对标量流水计算机而言，上一条指令与下一条指令的 5 个子过程在时间上可以重叠执行，当流水线满 载时，每一个时钟周期就可以输出一个结果。因此，图中仅用了 9 个时钟周期就完成了 5 条指令，每条指令平均用时 1.8 个时钟周期。</p>
 <p>采用标量流水线工作方式，<strong>虽然每条指令的执行时间并未缩短，但 CPU 运行指令的总体速度却能成倍 提高</strong>。当然，作为速度提高的代价，需要增加部分硬件才能实现标量流水。</p>
 <ul>
-<li>超标量流水线：</li>
+<li>超标量流水线：所谓超标量（Superscalar）流 水计算机，是指它<strong>具有两条以上的指令流水线</strong></li>
 </ul>
-<p>所谓超标量（Superscalar）流 水计算机，是指它<strong>具有两条以上的指令流水线</strong></p>
 <p><img src="http://static.oschina.net/uploads/space/2018/0330/200055_5w6G_2896894.png" alt=""></p>
 <p>当流水线满载时，每一个时钟周期可以执行 2 条以上的指令。图中仅用了 9 个时钟周期就完成了 10 条指令，每条指令平均用时 0.9 个时钟周期。 超标量流水计算机是时间并行技术和空间并行技术的综合应用。</p>
 <p>在流水计算机中，指令的处理是重叠进行的，前一条指令还没有结束，第二、三条指令就陆续开始工 作。由于多条指令的重叠处理，当后继指令所需的操作数刚好是前一指令的运算结果时，便发生数据相关冲突。由于这两条指令的执行顺序直接影响到操作数读取的内容，必须等前一条指令执行完毕后才能执行后一条指令。</p>

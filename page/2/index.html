@@ -517,6 +517,8 @@
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line"># yum check update</div><div class="line">There was a problem importing one of the Python modules</div><div class="line">required to run yum. The error leading to this problem was:</div><div class="line"></div><div class="line">/usr/lib64/python2.6/site-packages/pycurl.so: undefined symbol: CRYPTO_set_locking_callback</div><div class="line"></div><div class="line">Please install a package which provides this module, or</div><div class="line">verify that the module is installed correctly.</div><div class="line"></div><div class="line">It&apos;s possible that the above module doesn&apos;t match the</div><div class="line">current version of Python, which is:</div><div class="line">2.6.6 (r266:84292, Sep  4 2013, 07:46:00)</div><div class="line">[GCC 4.4.7 20120313 (Red Hat 4.4.7-3)]</div><div class="line"></div><div class="line">If you cannot solve this problem yourself, please go to</div><div class="line">the yum faq at:</div><div class="line">http://yum.baseurl.org/wiki/Faq</div></pre></td></tr></table></figure>
 <h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a href="https://www.cnblogs.com/kevingrace/p/8671964.html" target="_blank" rel="external">https://www.cnblogs.com/kevingrace/p/8671964.html</a></p>
 <p><a href="https://www.jianshu.com/p/ac3e7009a764" target="_blank" rel="external">https://www.jianshu.com/p/ac3e7009a764</a></p>
+<p>B 站哈工大操作系统视频地址：<a href="https://www.bilibili.com/video/BV1d4411v7u7?from=search&amp;seid=2361361014547524697" target="_blank" rel="external">https://www.bilibili.com/video/BV1d4411v7u7?from=search&amp;seid=2361361014547524697</a></p>
+<p>B 站清华大学操作系统视频地址：<a href="https://www.bilibili.com/video/BV1js411b7vg?from=search&amp;seid=2361361014547524697" target="_blank" rel="external">https://www.bilibili.com/video/BV1js411b7vg?from=search&amp;seid=2361361014547524697</a></p>
 
           
         
@@ -1312,6 +1314,24 @@ while (true) {
 <h4 id="Cache-Line-伪共享"><a href="#Cache-Line-伪共享" class="headerlink" title="Cache Line 伪共享"></a>Cache Line 伪共享</h4><p>Cache Line 伪共享问题，就是由多个 CPU 上的多个线程同时修改自己的变量引发的。这些变量表面上是不同的变量，但是实际上却存储在同一条 Cache Line 里（Cache Line 失效的最小单位是整个Line，而不是一个变量）。<br>在这种情况下，由于 Cache 一致性协议，两个处理器都存储有相同的 Cache Line 拷贝的前提下，本地 CPU 变量的修改会导致本地 Cache Line 变成 Modified 状态，然后在其它共享此 Cache Line 的 CPU 上，<br>引发 Cache Line 的 Invaidate 操作，导致 Cache Line 变为 Invalidate 状态，从而使 Cache Line 再次被访问时，发生本地 Cache Miss，从而伤害到应用的性能。<br>在此场景下，多个线程在不同的 CPU 上高频反复访问这种 Cache Line 伪共享的变量，则会因 Cache 颠簸引发严重的性能问题。</p>
 <h4 id="MESI-protocol"><a href="#MESI-protocol" class="headerlink" title="MESI protocol"></a><a href="https://en.wikipedia.org/wiki/MESI_protocol" target="_blank" rel="external">MESI protocol</a></h4><p>MySQL 这里读取Mutex or rw-lock 会导致其它core的cache line 失效，这个读取应该不是一个 Shared读，猜测是一个Exclusive读（加锁成功肯定会Modified），意味着读取就会让其他 cache line失效。</p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/2a5245c81a37d166c7e0b2ace45b9e4b.png" alt="image.png"></p>
+<p>我们举个具体的例子来看看这四个状态的转换：</p>
+<ol>
+<li>当 A 号 CPU 核心从内存读取变量 i 的值，数据被缓存在 A 号 CPU 核心自己的 Cache 里面，此时其他 CPU 核心的 Cache 没有缓存该数据，于是标记 Cache Line 状态为「独占」，此时其 Cache 中的数据与内存是一致的；</li>
+<li>然后 B 号 CPU 核心也从内存读取了变量 i 的值，此时会发送消息给其他 CPU 核心，由于 A 号 CPU 核心已经缓存了该数据，所以会把数据返回给 B 号 CPU 核心。在这个时候， A 和 B 核心缓存了相同的数据，Cache Line 的状态就会变成「共享」，并且其 Cache 中的数据与内存也是一致的；</li>
+<li>当 A 号 CPU 核心要修改 Cache 中 i 变量的值，发现数据对应的 Cache Line 的状态是共享状态，则要向所有的其他 CPU 核心广播一个请求，要求先把其他核心的 Cache 中对应的 Cache Line 标记为「无效」状态，<strong>然后 A 号 CPU 核心才更新 Cache 里面的数据，同时标记 Cache Line 为「已修改」状态，此时 Cache 中的数据就与内存不一致了</strong>。</li>
+<li>如果 A 号 CPU 核心「继续」修改 Cache 中 i 变量的值，由于此时的 Cache Line 是「已修改」状态，因此不需要给其他 CPU 核心发送消息，直接更新数据即可。</li>
+<li>如果 A 号 CPU 核心的 Cache 里的 i 变量对应的 Cache Line 要被「替换」，发现 Cache Line 状态是「已修改」状态，就会在替换前先把数据同步到内存。</li>
+</ol>
+<p>可以发现当 Cache Line 状态是「已修改」或者「独占」状态时，修改更新其数据不需要发送广播给其他 CPU 核心，这在一定程度上减少了总线带宽压力。</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/29c4ae48501984787dfc232e4673b86d.png" alt="image.png"></p>
+<p>如果内存中的数据已经在 CPU Cache 中了，那 CPU 访问一个内存地址的时候，会经历这 4 个步骤：</p>
+<ol>
+<li>根据内存地址中索引信息，计算在 CPU Cache 中的索引，也就是找出对应的 CPU Line 的地址；</li>
+<li>找到对应 CPU Line 后，判断 CPU Line 中的有效位，确认 CPU Line 中数据是否是有效的，如果是无效的，CPU 就会直接访问内存，并重新加载数据，如果数据有效，则往下执行；</li>
+<li>对比内存地址中组标记和 CPU Line 中的组标记，确认 CPU Line 中的数据是我们要访问的内存数据，如果不是的话，CPU 就会直接访问内存，并重新加载数据，如果是的话，则往下执行；</li>
+<li>根据内存地址中偏移量信息，从 CPU Line 的数据块中，读取对应的字。</li>
+</ol>
+<p>（题外话：<strong>除了提高cache line命中率外还得考虑分支预测准确性，这两对提升cpu运算性能有非常大的帮助</strong>）</p>
 <p>在NUMA架构中，多个处理器中的同一个缓存页面必定在其中一个处理器中属于 F 状态(可以修改的状态)，这个页面在这个处理器中没有理由不可以多核心共享(可以多核心共享就意味着这个能进入修改状态的页面的多个有效位被设置为一)。MESIF协议应该是工作在核心(L1+L2)层面而不是处理器(L3)层面，这样同一处理器里多个核心共享的页面，只有其中一个是出于 F 状态(可以修改的状态)。见后面对 NUMA 和 MESIF 的解析。(L1/L2/L3 的同步应该是不需要 MESIF 的同步机制)</p>
 <h2 id="分析源代码"><a href="#分析源代码" class="headerlink" title="分析源代码"></a>分析源代码</h2><p>另外分析了MySQL源代码后，在select中通过使用force index来绕过优化器是可以达到相同的效果（不再走statistics流程，也就不会有这个锁争抢了）</p>
 <p>从下面的源代码中可以看到perf top中fil_space_get，在这个函数里面确实会对fil_system_mutex加锁（跟awr监控对应上了）</p>
