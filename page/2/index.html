@@ -515,6 +515,21 @@
 <h2 id="hostname"><a href="#hostname" class="headerlink" title="hostname"></a>hostname</h2><p>hostname -i 是根据机器的hostname去解析ip，如果 /etc/hosts里面没有指定hostname对应的ip就会走dns 流程libnss_myhostname 返回所有ip</p>
 <h2 id="yum-源问题处理"><a href="#yum-源问题处理" class="headerlink" title="yum 源问题处理"></a>yum 源问题处理</h2><p><a href="https://access.redhat.com/solutions/641093" target="_blank" rel="external">Yum commands error “pycurl.so: undefined symbol”</a></p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line"># yum check update</div><div class="line">There was a problem importing one of the Python modules</div><div class="line">required to run yum. The error leading to this problem was:</div><div class="line"></div><div class="line">/usr/lib64/python2.6/site-packages/pycurl.so: undefined symbol: CRYPTO_set_locking_callback</div><div class="line"></div><div class="line">Please install a package which provides this module, or</div><div class="line">verify that the module is installed correctly.</div><div class="line"></div><div class="line">It&apos;s possible that the above module doesn&apos;t match the</div><div class="line">current version of Python, which is:</div><div class="line">2.6.6 (r266:84292, Sep  4 2013, 07:46:00)</div><div class="line">[GCC 4.4.7 20120313 (Red Hat 4.4.7-3)]</div><div class="line"></div><div class="line">If you cannot solve this problem yourself, please go to</div><div class="line">the yum faq at:</div><div class="line">http://yum.baseurl.org/wiki/Faq</div></pre></td></tr></table></figure>
+<h2 id="软中断、系统调用和上下文切换"><a href="#软中断、系统调用和上下文切换" class="headerlink" title="软中断、系统调用和上下文切换"></a>软中断、系统调用和上下文切换</h2><p>“你可以把内核看做是不断对请求进行响应的服务器，这些请求可能来自在CPU上执行的进程，也可能来自发出中断的外部设备。老板的请求相当于中断，而顾客的请求相当于用户态进程发出的系统调用”。</p>
+<p>软中断和系统调用一样，都是CPU停止掉当前用户态上下文，保存工作现场，然后陷入到内核态继续工作。二者的唯一区别是系统调用是切换到同进程的内核态上下文，而软中断是则是切换到了另外一个内核进程ksoftirqd上。</p>
+<blockquote>
+<p>系统调用开销是200ns起步</p>
+<p>从实验数据来看，一次软中断CPU开销大约3.4us左右</p>
+<p>实验结果显示进程上下文切换平均耗时 3.5us，lmbench工具显示的进程上下文切换耗时从2.7us到5.48之间</p>
+<p>大约每次线程切换开销大约是3.8us左右。<strong>从上下文切换的耗时上来看，Linux线程（轻量级进程）其实和进程差别不太大</strong>。</p>
+</blockquote>
+<p>软中断和进程上下文切换比较起来，进程上下文切换是从用户进程A切换到了用户进程B。而软中断切换是从用户进程A切换到了内核线程ksoftirqd上。而ksoftirqd作为一个内核控制路径，其处理程序比一个用户进程要轻量，所以上下文切换开销相对比进程切换要少一些（实际数据基本差不多）。</p>
+<p>系统调用只是在进程内将用户态切换到内核态，然后再切回来，而上下文切换可是直接从进程A切换到了进程B。显然这个上下文切换需要完成的工作量更大。</p>
+<h3 id="软中断开销计算"><a href="#软中断开销计算" class="headerlink" title="软中断开销计算"></a><a href="https://mp.weixin.qq.com/s?__biz=MjM5Njg5NDgwNA==&amp;mid=2247483827&amp;idx=3&amp;sn=8b897c8d6d3038ea79bd156a0e88db10&amp;scene=21#wechat_redirect" target="_blank" rel="external">软中断开销计算</a></h3><ul>
+<li><strong>查看软中断总耗时</strong>， 首先用top命令可以看出每个核上软中断的开销占比，是在si列（1.2%）</li>
+<li><strong>查看软中断次数</strong>，再用vmstat命令可以看到软中断的次数（in列 56000）</li>
+<li><strong>计算每次软中断的耗时</strong>，该机器是16核的物理实机，故可以得出每个软中断需要的CPU时间是=12ms/(56000/16)次=3.428us。从实验数据来看，一次软中断CPU开销大约3.4us左右</li>
+</ul>
 <h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a href="https://www.cnblogs.com/kevingrace/p/8671964.html" target="_blank" rel="external">https://www.cnblogs.com/kevingrace/p/8671964.html</a></p>
 <p><a href="https://www.jianshu.com/p/ac3e7009a764" target="_blank" rel="external">https://www.jianshu.com/p/ac3e7009a764</a></p>
 <p>B 站哈工大操作系统视频地址：<a href="https://www.bilibili.com/video/BV1d4411v7u7?from=search&amp;seid=2361361014547524697" target="_blank" rel="external">https://www.bilibili.com/video/BV1d4411v7u7?from=search&amp;seid=2361361014547524697</a></p>
