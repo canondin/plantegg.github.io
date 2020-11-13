@@ -102,12 +102,14 @@
 <meta property="og:url" content="http://yoursite.com/2019/01/24/Linux Module/index.html">
 <meta property="og:site_name" content="plantegg">
 <meta property="og:description" content="Linux Module and make debugMakefile 中的 tab 键$sudo make Makefile:4: *** missing separator.  Stop. Makefile 中每个指令前面必须是tab(不能是4个空格）！ pwd$sudo make make -C /lib/modules/4.19.48-002.ali4000.test.alios7.x86">
+<meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/f76b841375bb5ed5c5a946614fe494e1.png">
+<meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/19e493900f7d1ae1937d27366129e8aa.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/c41363dae054baa6d7f79d03376c57cb.png">
-<meta property="og:updated_time" content="2020-05-04T11:50:13.076Z">
+<meta property="og:updated_time" content="2020-11-13T09:44:07.350Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Linux Module and make debug">
 <meta name="twitter:description" content="Linux Module and make debugMakefile 中的 tab 键$sudo make Makefile:4: *** missing separator.  Stop. Makefile 中每个指令前面必须是tab(不能是4个空格）！ pwd$sudo make make -C /lib/modules/4.19.48-002.ali4000.test.alios7.x86">
-<meta name="twitter:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/c41363dae054baa6d7f79d03376c57cb.png">
+<meta name="twitter:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/f76b841375bb5ed5c5a946614fe494e1.png">
 
 
 
@@ -418,6 +420,10 @@ $ cat variable.log
 </code></pre><h3 id="makefile调试的法宝3"><a href="#makefile调试的法宝3" class="headerlink" title="makefile调试的法宝3"></a>makefile调试的法宝3</h3><p>法宝2可以把makefile文件中每个变量的最终值清晰的展现出来，但是对于这些变量引用过程中的中间值却没有展示。此时，我们需要依赖法宝3来帮助我们。</p>
 <pre><code>$(warning $(var123))
 </code></pre><p>很多人可能都知道这个warning语句。我们可以在makefile文件中的变量引用阶段的任何两行之间，添加这个语句打印关键变量的引用过程。</p>
+<h2 id="make-时ld报找不到lib"><a href="#make-时ld报找不到lib" class="headerlink" title="make 时ld报找不到lib"></a>make 时ld报找不到lib</h2><p>make总是报找不到libc，但实际我执行 ld -lc –verbose 从debug信息看又能够正确找到libc，<a href="https://stackoverflow.com/questions/16710047/usr-bin-ld-cannot-find-lnameofthelibrary" target="_blank" rel="external">debug方法</a></p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/f76b841375bb5ed5c5a946614fe494e1.png" alt="image.png"></p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/19e493900f7d1ae1937d27366129e8aa.png" alt="image.png"></p>
+<p>实际原因是make的时候最后有一个参数 -static，这要求得装 <em>*</em>-static lib库，可以去掉</p>
 <h2 id="依赖错误"><a href="#依赖错误" class="headerlink" title="依赖错误"></a>依赖错误</h2><p>编译报错缺少的组件需要yum install一下(bison/flex)</p>
 <h2 id="hping3"><a href="#hping3" class="headerlink" title="hping3"></a>hping3</h2><p>构造半连接：</p>
 <pre><code>sudo hping3 -i u100 -S -p 3306 10.0.186.79
@@ -506,6 +512,7 @@ void test_stub1(void)
   asm (&quot;pop %rdi&quot;);
 }
 </code></pre><h2 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h2><p><a href="https://blog.sourcerer.io/writing-a-simple-linux-kernel-module-d9dc3762c234" target="_blank" rel="external">https://blog.sourcerer.io/writing-a-simple-linux-kernel-module-d9dc3762c234</a></p>
+<p><a href="https://stackoverflow.com/questions/16710047/usr-bin-ld-cannot-find-lnameofthelibrary" target="_blank" rel="external">https://stackoverflow.com/questions/16710047/usr-bin-ld-cannot-find-lnameofthelibrary</a></p>
 
       
     </div>
@@ -645,7 +652,7 @@ void test_stub1(void)
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">101</span>
+                <span class="site-state-item-count">102</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -709,7 +716,7 @@ void test_stub1(void)
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Linux-Module-and-make-debug"><span class="nav-number">1.</span> <span class="nav-text">Linux Module and make debug</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Makefile-中的-tab-键"><span class="nav-number">1.1.</span> <span class="nav-text">Makefile 中的 tab 键</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pwd"><span class="nav-number">1.2.</span> <span class="nav-text">pwd</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#makefile调试的法宝"><span class="nav-number">1.3.</span> <span class="nav-text">makefile调试的法宝</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#makefile调试的法宝1"><span class="nav-number">1.3.1.</span> <span class="nav-text">makefile调试的法宝1</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#makefile调试的法宝2"><span class="nav-number">1.3.2.</span> <span class="nav-text">makefile调试的法宝2</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#makefile调试的法宝3"><span class="nav-number">1.3.3.</span> <span class="nav-text">makefile调试的法宝3</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#依赖错误"><span class="nav-number">1.4.</span> <span class="nav-text">依赖错误</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#hping3"><span class="nav-number">1.5.</span> <span class="nav-text">hping3</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#tcp-sk-state"><span class="nav-number">1.6.</span> <span class="nav-text">tcp sk_state</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#kdump"><span class="nav-number">1.7.</span> <span class="nav-text">kdump</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#crash"><span class="nav-number">1.8.</span> <span class="nav-text">crash</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#内核函数替换"><span class="nav-number">1.9.</span> <span class="nav-text">内核函数替换</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文档"><span class="nav-number">1.10.</span> <span class="nav-text">参考文档</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Linux-Module-and-make-debug"><span class="nav-number">1.</span> <span class="nav-text">Linux Module and make debug</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Makefile-中的-tab-键"><span class="nav-number">1.1.</span> <span class="nav-text">Makefile 中的 tab 键</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pwd"><span class="nav-number">1.2.</span> <span class="nav-text">pwd</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#makefile调试的法宝"><span class="nav-number">1.3.</span> <span class="nav-text">makefile调试的法宝</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#makefile调试的法宝1"><span class="nav-number">1.3.1.</span> <span class="nav-text">makefile调试的法宝1</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#makefile调试的法宝2"><span class="nav-number">1.3.2.</span> <span class="nav-text">makefile调试的法宝2</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#makefile调试的法宝3"><span class="nav-number">1.3.3.</span> <span class="nav-text">makefile调试的法宝3</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#make-时ld报找不到lib"><span class="nav-number">1.4.</span> <span class="nav-text">make 时ld报找不到lib</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#依赖错误"><span class="nav-number">1.5.</span> <span class="nav-text">依赖错误</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#hping3"><span class="nav-number">1.6.</span> <span class="nav-text">hping3</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#tcp-sk-state"><span class="nav-number">1.7.</span> <span class="nav-text">tcp sk_state</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#kdump"><span class="nav-number">1.8.</span> <span class="nav-text">kdump</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#crash"><span class="nav-number">1.9.</span> <span class="nav-text">crash</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#内核函数替换"><span class="nav-number">1.10.</span> <span class="nav-text">内核函数替换</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文档"><span class="nav-number">1.11.</span> <span class="nav-text">参考文档</span></a></li></ol></li></ol></div>
             
 
           </div>

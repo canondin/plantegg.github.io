@@ -104,7 +104,7 @@
 <meta property="og:description" content="netstat – timer经常碰到一些断网环境下需要做快速切换，那么断网后需要多久tcp才能感知到这个断网，并断开连接触发上层的重连（一般会连向新的server） keepalivefrom: https://superuser.com/questions/240456/how-to-interpret-the-output-of-netstat-o-netstat-timers The ti">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/f1a219a2bd99690fd3ed391bf5ab65cb.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/88c5df7d5709e5c8b264ee0deacda0a2.png">
-<meta property="og:updated_time" content="2020-09-19T10:00:19.191Z">
+<meta property="og:updated_time" content="2020-11-13T09:44:07.370Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="netstat timer keepalive explain">
 <meta name="twitter:description" content="netstat – timer经常碰到一些断网环境下需要做快速切换，那么断网后需要多久tcp才能感知到这个断网，并断开连接触发上层的重连（一般会连向新的server） keepalivefrom: https://superuser.com/questions/240456/how-to-interpret-the-output-of-netstat-o-netstat-timers The ti">
@@ -400,7 +400,9 @@
 <p>keepalive 状态下的连接：</p>
 <p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/f1a219a2bd99690fd3ed391bf5ab65cb.png" alt="image.png"></p>
 <p>The 2nd field has THREE subfields:</p>
-<p>(6176.47/0/0) -&gt; (a/b/c)<br>a=timer value (a=keepalive timer, when 1st field=“keepalive”; a=retransmission timer, when 1st field=“on”)  b=number of retransmissions that have occurred<br>c=number of keepalive probes that have been sent</p>
+<p>(6176.47/0/0) -&gt; (a/b/c)<br>a=timer value (a=keepalive timer, when 1st field=“keepalive”; a=retransmission timer, when 1st field=“on”)  </p>
+<p>b=number of retransmissions that have occurred  </p>
+<p>c=number of keepalive probes that have been sent</p>
 <blockquote>
 <p>/proc/sys/net/ipv4/tcp_keepalive_time<br>当keepalive起用的时候，TCP发送keepalive消息的频度。缺省是2小时。</p>
 <p>/proc/sys/net/ipv4/tcp_keepalive_intvl<br>当探测没有确认时，重新发送探测的频度。缺省是75秒。</p>
@@ -575,7 +577,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">101</span>
+                <span class="site-state-item-count">102</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>

@@ -281,6 +281,176 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/02/24/Linux LVS配置/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/02/24/Linux LVS配置/" itemprop="url">Linux LVS 配置</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-02-24T17:30:03+08:00">
+                2018-02-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/02/24/Linux LVS配置/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2018/02/24/Linux LVS配置/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="Linux-LVS-配置"><a href="#Linux-LVS-配置" class="headerlink" title="Linux LVS 配置"></a>Linux LVS 配置</h1><h2 id="NAT"><a href="#NAT" class="headerlink" title="NAT"></a>NAT</h2><ul>
+<li><p>Enable IP forwarding. This can be done by adding the following to</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">net.ipv4.ip_forward = 1</div></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>then</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div></pre></td><td class="code"><pre><div class="line">ipvsadm -A -t 172.26.137.117:9376 -s rr //创建了一个rr lvs</div><div class="line">// -m 表示nat模式，不加的话默认是route模式</div><div class="line">ipvsadm -a -t 172.26.137.117:9376 -r 172.20.22.195:9376 -m //往lvs中添加一个RS</div><div class="line">ipvsadm -ln</div><div class="line">ipvsadm -a -t 172.26.137.117:9376 -r 172.20.22.196:9376 -m //往lvs中添加另外一个RS</div><div class="line">ipvsadm -ln</div><div class="line"></div><div class="line">//删除realserver</div><div class="line">ipvsadm -a -t 100.81.131.221:18507 -r 100.81.131.237:8507 -m</div><div class="line"></div><div class="line">//服务状态查看</div><div class="line">#ipvsadm -L -n --stats|--rate</div><div class="line">IP Virtual Server version 1.2.1 (size=4096)</div><div class="line">Prot LocalAddress:Port               Conns   InPkts  OutPkts  InBytes OutBytes</div><div class="line">  -&gt; RemoteAddress:Port</div><div class="line">TCP  11.197.140.20:18089                 5       48       48     2951     6938</div><div class="line">  -&gt; 11.197.140.20:28089                 3       33       33     1989     4938</div><div class="line">  -&gt; 11.197.141.110:28089                2       15       15      962     2000</div><div class="line"></div><div class="line">#清空统计数据</div><div class="line">#ipvsadm --zero</div><div class="line">#列出所有连接信息</div><div class="line">#/sbin/ipvsadm -L -n --connection</div><div class="line"></div><div class="line">#ipvsadm -L -n</div><div class="line">IP Virtual Server version 1.2.1 (size=4096)</div><div class="line">Prot LocalAddress:Port Scheduler Flags</div><div class="line">  -&gt; RemoteAddress:Port           Forward Weight ActiveConn InActConn</div><div class="line">TCP  11.197.140.20:18089 wlc</div><div class="line">  -&gt; 11.197.140.20:28089          Masq    1      0          0</div><div class="line">  -&gt; 11.197.141.110:28089         Masq    1      0          0</div></pre></td></tr></table></figure>
+<h2 id="ipvsadm常用参数"><a href="#ipvsadm常用参数" class="headerlink" title="ipvsadm常用参数"></a>ipvsadm常用参数</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div></pre></td><td class="code"><pre><div class="line">添加虚拟服务器</div><div class="line">    语法:ipvsadm -A [-t|u|f]  [vip_addr:port]  [-s:指定算法]</div><div class="line">    -A:添加</div><div class="line">    -t:TCP协议</div><div class="line">    -u:UDP协议</div><div class="line">    -f:防火墙标记</div><div class="line">    -D:删除虚拟服务器记录</div><div class="line">    -E:修改虚拟服务器记录</div><div class="line">    -C:清空所有记录</div><div class="line">    -L:查看</div><div class="line">添加后端RealServer</div><div class="line">    语法:ipvsadm -a [-t|u|f] [vip_addr:port] [-r ip_addr] [-g|i|m] [-w 指定权重]</div><div class="line">    -a:添加</div><div class="line">    -t:TCP协议</div><div class="line">    -u:UDP协议</div><div class="line">    -f:防火墙标记</div><div class="line">    -r:指定后端realserver的IP</div><div class="line">    -g:DR模式</div><div class="line">    -i:TUN模式</div><div class="line">    -m:NAT模式</div><div class="line">    -w:指定权重</div><div class="line">    -d:删除realserver记录</div><div class="line">    -e:修改realserver记录</div><div class="line">    -l:查看</div><div class="line">通用:</div><div class="line">    ipvsadm -ln:查看规则</div><div class="line">    service ipvsadm save:保存规则</div></pre></td></tr></table></figure>
+<h2 id="通过keepalived来检测RealServer的状态"><a href="#通过keepalived来检测RealServer的状态" class="headerlink" title="通过keepalived来检测RealServer的状态"></a>通过keepalived来检测RealServer的状态</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div></pre></td><td class="code"><pre><div class="line"># cat /etc/keepalived/keepalived.conf</div><div class="line">global_defs &#123;</div><div class="line">   notification_email &#123;</div><div class="line">   &#125;</div><div class="line">   router_id LVS_DEVEL</div><div class="line">   vrrp_skip_check_adv_addr</div><div class="line">   vrrp_strict</div><div class="line">   vrrp_garp_interval 0</div><div class="line">   vrrp_gna_interval 0</div><div class="line">&#125;</div><div class="line">#添加虚拟服务器</div><div class="line">#相当于 ipvsadm -A -t 172.26.137.117:9376 -s wrr </div><div class="line">virtual_server 172.26.137.117 9376 &#123;</div><div class="line">    delay_loop 3             #服务健康检查周期,单位是秒</div><div class="line">    lb_algo wrr                 #调度算法</div><div class="line">    lb_kind NAT                 #模式 </div><div class="line">#   persistence_timeout 50   #会话保持时间,单位是秒</div><div class="line">    protocol TCP             #TCP协议转发</div><div class="line"></div><div class="line">#添加后端realserver</div><div class="line">#相当于 ipvsadm -a -t 172.26.137.117:9376 -r 172.20.56.148:9376 -w 1</div><div class="line">    real_server 172.20.56.148 9376 &#123;</div><div class="line">        weight 1</div><div class="line">        TCP_CHECK &#123;               # 通过TcpCheck判断RealServer的健康状态</div><div class="line">            connect_timeout 2     # 连接超时时间</div><div class="line">            nb_get_retry 3        # 重连次数</div><div class="line">            delay_before_retry 1  # 重连时间间隔</div><div class="line">            connect_port 9376     # 检测端口</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">    </div><div class="line">    real_server 172.20.248.147 9376 &#123;</div><div class="line">        weight 1</div><div class="line">        HTTP_GET &#123;</div><div class="line">            url &#123; </div><div class="line">              path /</div><div class="line">	          status_code 200</div><div class="line">            &#125;</div><div class="line">            connect_timeout 3</div><div class="line">            nb_get_retry 3</div><div class="line">            delay_before_retry 3</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>修改keepalived配置后只需要执行reload即可生效</p>
+<blockquote>
+<p>systemctl reload keepalived</p>
+</blockquote>
+<h2 id="timeout"><a href="#timeout" class="headerlink" title="timeout"></a>timeout</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">[root@poc117 ~]# ipvsadm -L --timeout</div><div class="line">Timeout (tcp tcpfin udp): 900 120 300</div><div class="line">[root@poc117 ~]# ipvsadm --set 1 2 1</div><div class="line">[root@poc117 ~]# ipvsadm -L --timeout</div><div class="line">Timeout (tcp tcpfin udp): 1 2 1</div></pre></td></tr></table></figure>
+<h2 id="创建虚拟网卡"><a href="#创建虚拟网卡" class="headerlink" title="创建虚拟网卡"></a>创建虚拟网卡</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">To make this interface you&apos;d first need to make sure that you have the dummy kernel module loaded. You can do this like so:</div><div class="line"></div><div class="line">$ sudo lsmod | grep dummy</div><div class="line">$ sudo modprobe dummy</div><div class="line">$ sudo lsmod | grep dummy</div><div class="line">dummy                  12960  0 </div><div class="line">With the driver now loaded you can create what ever dummy network interfaces you like:</div><div class="line"></div><div class="line">$ sudo ip link add eth10 type dummy</div></pre></td></tr></table></figure>
+<h2 id="LVS-工作原理"><a href="#LVS-工作原理" class="headerlink" title="LVS 工作原理"></a>LVS 工作原理</h2><p>1.当客户端的请求到达负载均衡器的内核空间时，首先会到达PREROUTING链。 </p>
+<p>2.当内核发现请求数据包的目的地址是本机时，将数据包送往INPUT链。 </p>
+<p>3.LVS由用户空间的ipvsadm和内核空间的IPVS组成，ipvsadm用来定义规则，IPVS利用ipvsadm定义的规则工作，IPVS工作在INPUT链上,当数据包到达INPUT链时，首先会被IPVS检查，如果数据包里面的目的地址及端口没有在规则里面，那么这条数据包将被放行至用户空间。 </p>
+<p>4.如果数据包里面的目的地址及端口在规则里面，那么这条数据报文将被修改目的地址为事先定义好的后端服务器，并送往POSTROUTING链。 </p>
+<p>5.最后经由POSTROUTING链发往后端服务器。</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/08cb9d37f580b03f37fcace92e21d2e3.png" alt="image.png"></p>
+<h2 id="netfilter-原理"><a href="#netfilter-原理" class="headerlink" title="netfilter 原理"></a>netfilter 原理</h2><p>Netfilter 由多个表(table)组成，每个表又由多个链(chain)组成(此处可以脑补二维数组的矩阵了)，链是存放过滤规则的“容器”，里面可以存放一个或多个iptables命令设置的过滤规则。目前的表有4个：<code>raw table</code>, <code>mangle table</code>, <code>nat table</code>, <code>filter table</code>。Netfilter 默认的链有：<code>INPUT</code>, <code>OUTPUT</code>, <code>FORWARD</code>, <code>PREROUTING</code>, <code>POSTROUTING</code>，根据<code>表</code>的不同功能需求，不同的表下面会有不同的链，链与表的关系可用下图直观表示：</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/1039cdda7040f20582f36a6a560e4e2e.png" alt="image.png"></p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="http://www.ultramonkey.org/papers/lvs_tutorial/html/" target="_blank" rel="external">http://www.ultramonkey.org/papers/lvs_tutorial/html/</a></p>
+<p><a href="https://www.jianshu.com/p/d4222ce9b032" target="_blank" rel="external">https://www.jianshu.com/p/d4222ce9b032</a></p>
+<p><a href="https://www.cnblogs.com/zhangxingeng/p/10595058.html" target="_blank" rel="external">https://www.cnblogs.com/zhangxingeng/p/10595058.html</a></p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/01/23/10+倍性能提升全过程/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1686,7 +1856,9 @@ sudo tcptrack -r 5 -i eth0 host 10.0.48.1 //filter 语法和tcpdump一样
 <p>keepalive 状态下的连接：</p>
 <p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/f1a219a2bd99690fd3ed391bf5ab65cb.png" alt="image.png"></p>
 <p>The 2nd field has THREE subfields:</p>
-<p>(6176.47/0/0) -&gt; (a/b/c)<br>a=timer value (a=keepalive timer, when 1st field=“keepalive”; a=retransmission timer, when 1st field=“on”)  b=number of retransmissions that have occurred<br>c=number of keepalive probes that have been sent</p>
+<p>(6176.47/0/0) -&gt; (a/b/c)<br>a=timer value (a=keepalive timer, when 1st field=“keepalive”; a=retransmission timer, when 1st field=“on”)  </p>
+<p>b=number of retransmissions that have occurred  </p>
+<p>c=number of keepalive probes that have been sent</p>
 <blockquote>
 <p>/proc/sys/net/ipv4/tcp_keepalive_time<br>当keepalive起用的时候，TCP发送keepalive消息的频度。缺省是2小时。</p>
 <p>/proc/sys/net/ipv4/tcp_keepalive_intvl<br>当探测没有确认时，重新发送探测的频度。缺省是75秒。</p>
@@ -4366,232 +4538,6 @@ drwxr-xr-x  3 test  games 4.0K Nov 18 15:40 ansible-engine
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2016/03/23/ansible 常见问题/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2016/03/23/ansible 常见问题/" itemprop="url">ansible 常见问题</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2016-03-23T17:30:03+08:00">
-                2016-03-23
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Ansible/" itemprop="url" rel="index">
-                    <span itemprop="name">Ansible</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2016/03/23/ansible 常见问题/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2016/03/23/ansible 常见问题/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="ansible-常见问题"><a href="#ansible-常见问题" class="headerlink" title="ansible 常见问题"></a>ansible 常见问题</h1><table>
-<thead>
-<tr>
-<th>问题</th>
-<th>解决方案</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>性能　</td>
-<td>　ansible现在并发执行的任务好像还不够，执行批量传大文件的任务等的比较久 — 用 synchronize  并将 fork 默认的5改大</td>
-</tr>
-<tr>
-<td>sudoers</td>
-<td>尝试解决ansible不能执行的问题，搜索各种英文文档，有人说版本的原因，有人反馈是脚本错误，最终无解。 继续在本地进行测试，发现使用原始的ansible命令可以执行ls，但是sudo ls时会提示 sudo need tty 之类的报错。 定位这个错误是因为在/etc/sudoers文件中设置了  Defaults requiretty，修改为 #Defaults requiretty，重试发现问题解决。 手工修改所有机器的配置文件，问题解决。{“msg”: “ssh connection closed waiting for a privilege escalation password prompt”}—实际在部分机器上执行ansible命令时仍然有：sudo: no tty present and no askpass program specified  可以给ssh 增加-t/-tt参数来强制分配一个tty</td>
-</tr>
-<tr>
-<td>failed to transfer file to  xxx</td>
-<td>远端机器磁盘已经满,查看df -h，特别是/tmp</td>
-</tr>
-<tr>
-<td>requires a json module, none found</td>
-<td>问题已经通过nginx进行解决部署,安装ansible的时候，在目标机器上面安装 python-simplejson 通过如下命令：yum install python-simplejson -y</td>
-</tr>
-<tr>
-<td>openssh升级后无法登录报错</td>
-<td>sshrpm 升级后会修改/etc/pam.d/sshd 文件。需要升级前备份此文件最后还原即可登录。</td>
-</tr>
-<tr>
-<td>安装EagleEye出现的问题</td>
-<td>1.hadoop name -format 这个需要输入Y/N；2.ssh-key没搞定；3.我们原来可以for循环的地方，古谦脚本只能1条1条的加</td>
-</tr>
-<tr>
-<td>使用lineinfile方法时，内容不能包含”: “(冒号+空格)，这个与ansible底层的分隔符冲突；</td>
-<td>让用户在内容中不要包含”: “</td>
-</tr>
-<tr>
-<td>https 相关</td>
-<td>SSL validation is not available in your version of python. You can use validate_certs=no, however this is unsafe and not recommended. You can also install python-ssl from EPEL</td>
-</tr>
-<tr>
-<td>You need a C++ compiler for C++ support</td>
-<td>yum install -y gcc gcc-c++</td>
-</tr>
-<tr>
-<td>草谷问题  １：udp权限问题，有时候会出现权限认证失败；２：udp如何执行本地命令；　３：udp线上有什么方便的安装方法</td>
-<td>问题1:方法一 去掉sudo试试（报访问文件 /opt/aliUDP/logs/udp.log 失败，备份重新建一个udp.log 文件给于 777 权限）; 方法二 指定 –private-key=PRIVATE_KEY_FILE （先试试直接ssh登录某台目标机器行不行）  问题2：udp支持直接运行目标机器上的命令，用法：udp server  -i ~/ali/udp-roles/roles/udp-install/udp-hosts.ini  -m shell -a “ uptime ; df -lh “ -u admin</td>
-</tr>
-<tr>
-<td>彦林问题  同一个ip部署不同的工程时，定义的变量会冲突；例如ip1同时部署mysql和diamond，都定义project_name；这样上面的会生效，下面定义的会被冲掉</td>
-<td>Wiki：<a href="http://gitlab.alibaba-inc.com/middleware-udp/udp-doc/wikis/Different_Hosts_With_Different_Variables" target="_blank" rel="external">http://gitlab.alibaba-inc.com/middleware-udp/udp-doc/wikis/Different_Hosts_With_Different_Variables</a>  将变量分别定义在 ./roles/mysql/defaults/main.yml 和 ./roles/diamond/defaults/main.yml中 或者使用不同的变量名</td>
-</tr>
-<tr>
-<td>启善提供：执行udp-play-book 时会报找不到key的问题</td>
-<td>在udp机器上执行 ssh-keygen 来生成key，解决</td>
-</tr>
-<tr>
-<td>ssh 的时候需要手工 yes/no</td>
-<td>增加参数 -o StrictHostKeyChecking no 就不需要输入了</td>
-</tr>
-<tr>
-<td>防火墙问题，本地可以访问，远程不能</td>
-<td>通过抓包/telnet等方式来确认这个问题， 通过iptables stop 来临时关闭防火墙； 修改iptables 的配置永久关闭或者增加所有其它节点到白名单中</td>
-</tr>
-<tr>
-<td>沈询提供</td>
-<td>重要！ hostname -i 一定要是本机在局域网内的真实ip地址（不是127.0.0.1 ）。  要绑定etc/hosts 下面 把自己的hostname绑定到对应的真实ip上。</td>
-</tr>
-<tr>
-<td>在UDP PlayBook中如何定义不同的机器、不同的Role使用不同的变量</td>
-<td><a href="http://gitlab.alibaba-inc.com/middleware-udp/udp-doc/wikis/Different_Hosts_With_Different_Variables" target="_blank" rel="external">http://gitlab.alibaba-inc.com/middleware-udp/udp-doc/wikis/Different_Hosts_With_Different_Variables</a></td>
-</tr>
-<tr>
-<td>Dauth部署问题总结</td>
-<td><a href="http://gitlab.alibaba-inc.com/middleware-udp/udp-doc/wikis/Dauth-UDP-deployment-issues" target="_blank" rel="external">http://gitlab.alibaba-inc.com/middleware-udp/udp-doc/wikis/Dauth-UDP-deployment-issues</a></td>
-</tr>
-<tr>
-<td>Device or resource busy</td>
-<td>一般出现在Docker中修改/etc/hosts会有这个问题，ansible会rm它，实际它是-v进去的，通过脚本补丁绕过去</td>
-</tr>
-</tbody>
-</table>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
@@ -4641,7 +4587,7 @@ drwxr-xr-x  3 test  games 4.0K Nov 18 15:40 ansible-engine
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">101</span>
+                <span class="site-state-item-count">102</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>

@@ -119,7 +119,7 @@
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/9a90497373211d65186a2a256212e3bf.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/0d997ee52fd79d752d1af9636ac6c858.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/7ece6c553c78927c7886f70c09d7e15b.png">
-<meta property="og:updated_time" content="2020-11-05T08:55:59.077Z">
+<meta property="og:updated_time" content="2020-11-13T09:44:07.374Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="NIO和epoll">
 <meta name="twitter:description" content="NIO、EPOLL和协程从IO说起用户线程发起IO操作后（比如读），网络数据读取过程分两步：  用户线程等待内核将数据从网卡拷贝到内核空间 内核将数据从内核空间拷贝到用户空间  零拷贝零拷贝可以做到用户空间和内核空间共用同一块内存（Java中的DirectBuffer），这样少做一次拷贝。普通Buffer是在JVM堆上分配的内存，而DirectBuffer是堆外分配的（内核和JVM可以同时读写），">
@@ -629,7 +629,8 @@ serverSock.configureBlocking(true);
 <p><strong>MySQL Thread Pool之所有分成多个小的Thread Group Pool而不是一个大的Pool，是为了分解锁（每个group中都有队列，队列需要加锁。类似ConcurrentHashMap提高并发的原理），提高并发效率。</strong></p>
 <p>group中的队列是用来区分优先级的，事务中的语句会放到高优先队列（非事务语句和autocommit 都会在低优先队列）；等待太久的SQL也会挪到高优先队列，防止饿死。</p>
 <p>比如启用Thread Pool后，如果出现多个慢查询，容易导致拨测类请求超时，进而出现Server异常的判断（类似Nginx 边缘触发问题）；或者某个group满后导致慢查询和拨测失败之类的问题</p>
-<h2 id="协程"><a href="#协程" class="headerlink" title="协程"></a>协程</h2><h3 id="多进程和多线程优劣的比较"><a href="#多进程和多线程优劣的比较" class="headerlink" title="多进程和多线程优劣的比较"></a>多进程和多线程优劣的比较</h3><p>进程间内存难以共享，多线程可以共享内存；多进程内核管理成本高。</p>
+<h2 id="协程"><a href="#协程" class="headerlink" title="协程"></a><a href="https://blog.youxu.info/2014/12/04/coroutine/" target="_blank" rel="external">协程</a></h2><p>协程的全部精神就在于控制流的主动让出和恢复，工程实现得考虑如何让协程的让出与恢复高效。</p>
+<h3 id="多进程和多线程优劣的比较"><a href="#多进程和多线程优劣的比较" class="headerlink" title="多进程和多线程优劣的比较"></a>多进程和多线程优劣的比较</h3><p>进程间内存难以共享，多线程可以共享内存；多进程内核管理成本高。</p>
 <p>每个线程消耗内存过多， 比如，64 位的 Linux 为每个线程的栈分配了 8MB 的内存，还预分配了 64MB 的内存作为堆内存池；切换请求是内核通过切换线程实现的，什么时候会切换线程呢？不只时间片用尽，当调用阻塞方法时，内核为了让 CPU 充分工作，也会切换到其他线程执行。一次上下文切换的成本在几十纳秒到几微秒间，当线程繁忙且数量众多时，这些切换会消耗绝大部分的 CPU 运算能力。</p>
 <p>协程把内核态的切换工作交由用户态来完成</p>
 <h3 id="同步、异步、协程的比较"><a href="#同步、异步、协程的比较" class="headerlink" title="同步、异步、协程的比较"></a>同步、异步、协程的比较</h3><h4 id="同步调用"><a href="#同步调用" class="headerlink" title="同步调用"></a>同步调用</h4><p>切换请求是内核通过切换线程实现的，什么时候会切换线程呢？不只时间片用尽，当调用阻塞方法时，内核为了让 CPU 充分工作，也会切换到其他线程执行。一次上下文切换的成本在几十纳秒到几微秒间，当线程繁忙且数量众多时，这些切换会消耗绝大部分的 CPU 运算能力。</p>
@@ -817,7 +818,7 @@ serverSock.configureBlocking(true);
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">101</span>
+                <span class="site-state-item-count">102</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>

@@ -119,7 +119,7 @@
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/f16438b744a248d7671d5ac7317b0a98.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/cf58f10a523e1e4f0db443be3f54fc04.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d5446b656e8d91a9fb72200a7b97e723.png">
-<meta property="og:updated_time" content="2020-11-10T01:04:53.129Z">
+<meta property="og:updated_time" content="2020-11-13T09:44:07.358Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Linux 内存问题汇总">
 <meta name="twitter:description" content="Linux 内存问题汇总内存使用观察# free -m          total       used       free     shared    buffers     cached Mem:          7515       1115       6400          0        189        492 -/+ buffers/cache:        43">
@@ -580,6 +580,13 @@ test.x86_64.rpm
 <p>标准大页管理是预分配的方式，而透明大页管理则是动态分配的方式</p>
 <p>目前透明大页与传统HugePages联用会出现一些问题，导致性能问题和系统重启。Oracle 建议禁用透明大页（Transparent Huge Pages）</p>
 <p>hugetlbfs比THP要好，开thp的机器碎片化严重（不开THP会有更严重的碎片化问题），最后和没开THP一样 <a href="https://www.atatech.org/articles/152660" target="_blank" rel="external">https://www.atatech.org/articles/152660</a></p>
+<p>Linux 中的 HugePages 都被锁定在内存中，所以哪怕是在系统内存不足时，它们也不会被 Swap 到磁盘上，这也就能从根源上杜绝了重要内存被频繁换入和换出的可能。</p>
+<p>虽然 HugePages 的开启大都需要开发或者运维工程师的额外配置，但是在应用程序中启用 HugePages 却可以在以下几个方面降低内存页面的管理开销：</p>
+<ul>
+<li>更大的内存页能够减少内存中的页表层级，这不仅可以降低页表的内存占用，也能降低从虚拟内存到物理内存转换的性能损耗；</li>
+<li>更大的内存页意味着更高的缓存命中率，CPU 有更高的几率可以直接在 TLB（Translation lookaside buffer）中获取对应的物理地址；</li>
+<li>更大的内存页可以减少获取大内存的次数，使用 HugePages 每次可以获取 2MB 的内存，是 4KB 的默认页效率的 512 倍；</li>
+</ul>
 <h2 id="THP"><a href="#THP" class="headerlink" title="THP"></a>THP</h2><p>Linux kernel在2.6.38内核增加了Transparent Huge Pages (THP)特性 ，支持大内存页(2MB)分配，默认开启。当开启时可以降低fork子进程的速度，但fork之后，每个内存页从原来4KB变为2MB，会大幅增加重写期间父进程内存消耗。同时每次写命令引起的复制内存页单位放大了512倍，会拖慢写操作的执行时间，导致大量写操作慢查询。例如简单的incr命令也会出现在慢查询中。因此Redis日志中建议将此特性进行禁用。  </p>
 <p>THP 的目的是用一个页表项来映射更大的内存（大页），这样可以减少 Page Fault，因为需要的页数少了。当然，这也会提升 TLB（Translation Lookaside Buffer，由存储器管理单元用于改进虚拟地址到物理地址的转译速度） 命中率，因为需要的页表项也少了。如果进程要访问的数据都在这个大页中，那么这个大页就会很热，会被缓存在 Cache 中。而大页对应的页表项也会出现在 TLB 中，从上一讲的存储层次我们可以知道，这有助于性能提升。但是反过来，假设应用程序的数据局部性比较差，它在短时间内要访问的数据很随机地位于不同的大页上，那么大页的优势就会消失。</p>
 <p>THP 对redis、monglodb 这种cache类推荐关闭，对drds这种java应用最好打开</p>
@@ -587,6 +594,8 @@ test.x86_64.rpm
 <p>在透明大页功能打开时，造成系统性能下降的主要原因可能是 <code>khugepaged</code> 守护进程。该进程会在（它认为）系统空闲时启动，扫描系统中剩余的空闲内存，并将普通 4k 页转换为大页。该操作会在内存路径中加锁，而该守护进程可能会在错误的时间启动扫描和转换大页的操作，从而影响应用性能。</p>
 <p>此外，当缺页异常(page faults)增多时，透明大页会和普通 4k 页一样，产生同步内存压缩(direct compaction)操作，以节省内存。该操作是一个同步的内存整理操作，如果应用程序会短时间分配大量内存，内存压缩操作很可能会被触发，从而会对系统性能造成风险。<a href="https://yq.aliyun.com/articles/712830" target="_blank" rel="external">https://yq.aliyun.com/articles/712830</a></p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">#查看系统级别的 THP 使用情况，执行下列命令：</div><div class="line">cat /proc/meminfo  | grep AnonHugePages</div><div class="line">#类似地，查看进程级别的 THP 使用情况，执行下列命令：</div><div class="line">cat /proc/1730/smaps | grep AnonHugePages |grep -v &quot;0 kB&quot;</div><div class="line">#是否开启了hugepage</div><div class="line">$cat /sys/kernel/mm/transparent_hugepage/enabled</div><div class="line">always [madvise] never</div></pre></td></tr></table></figure>
+<p><code>/proc/sys/vm/nr_hugepages</code> 中存储的数据就是大页面的数量，虽然在默认情况下它的值都是 0，不过我们可以通过更改该文件的内容申请或者释放操作系统中的大页：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">$ echo 1 &gt; /proc/sys/vm/nr_hugepages</div><div class="line">$ cat /proc/meminfo | grep HugePages_</div><div class="line">HugePages_Total:       1</div><div class="line">HugePages_Free:        1</div><div class="line">...</div></pre></td></tr></table></figure>
 <h2 id="碎片化"><a href="#碎片化" class="headerlink" title="碎片化"></a>碎片化</h2><p>内存碎片严重的话会导致系统hang很久(回收、压缩内存）</p>
 <p>尽量让系统的free多一点(比例高一点）可以调整 vm.min_free_kbytes(128G 以内 2G，256G以内 4G/8G), 线上机器直接修改vm.min_free_kbytes<strong>会触发回收，导致系统hang住</strong> <a href="https://www.atatech.org/articles/163233" target="_blank" rel="external">https://www.atatech.org/articles/163233</a> <a href="https://www.atatech.org/articles/97130" target="_blank" rel="external">https://www.atatech.org/articles/97130</a></p>
 <p>每个zone都有自己的min low high,如下，但是单位是page, 计算案例：</p>
@@ -744,7 +753,7 @@ test.x86_64.rpm
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">101</span>
+                <span class="site-state-item-count">102</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
