@@ -281,6 +281,216 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/12/26/网络环路/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/12/26/网络环路/" itemprop="url">网络环路</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-26T16:30:03+08:00">
+                2018-12-26
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/network/" itemprop="url" rel="index">
+                    <span itemprop="name">network</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/12/26/网络环路/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2018/12/26/网络环路/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="网络环路"><a href="#网络环路" class="headerlink" title="网络环路"></a>网络环路</h1><pre><code>本文主要探讨网络环路的成因，危害以及预防
+</code></pre><h2 id="交换机之间多条网线导致环路"><a href="#交换机之间多条网线导致环路" class="headerlink" title="交换机之间多条网线导致环路"></a>交换机之间多条网线导致环路</h2><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/9acff2ad39b8700a0cc194483351ae69.png" alt="image.png"></p>
+<p>如图sw1/2/3 三个交换机形成一个环路，一个arp广播包从sw1出来到sw2,然后到sw3，再然后又从sw3回到sw1，形成一个环路，这个arp包会重复前面的传播过程进而导致这个包一直在三个交换机之间死循环，进而把三个交换机的CPU、带宽全部打满，整个网络瘫痪</p>
+<p>对这种网络环路网络工程师们非常忌惮，因为一旦形成非常不好排查，并且整个网络瘫痪，基本上是严防死守。同时交换机也提供了各种功能（算法、策略）来自动检测网络环路并阻断网络环路。</p>
+<p>比如上图中交换机能检测到虚线形成了环路，并自动把这个交换机口Down掉以阻止成环。</p>
+<h2 id="交换机对环路的阻断–STP-Spanning-TreeProtocol-协议"><a href="#交换机对环路的阻断–STP-Spanning-TreeProtocol-协议" class="headerlink" title="交换机对环路的阻断–STP(Spanning TreeProtocol)协议"></a>交换机对环路的阻断–STP(Spanning TreeProtocol)协议</h2><p>STP协议的基本思想十分简单。大家知道，自然界中生长的树是不会出现环路的，如果网络也能够像一棵树一样生长就不会出现环路。于是，STP协议中定义了根桥(RootBridge)、根端口(RootPort)、指定端口(DesignatedPort)、路径开销(PathCost)等概念，目的就在于通过构造一棵自然树的方法达到裁剪冗余环路的目的，同时实现链路备份和路径最优化。用于构造这棵树的算法称为生成树算法SPA(Spanning TreeAlgorithm)。（摘自：<a href="http://network.51cto.com/art/201307/404013.htm）" target="_blank" rel="external">http://network.51cto.com/art/201307/404013.htm）</a></p>
+<p>STP是通过BPDU的网络包来在交换机之间交换信息、判断是否成环</p>
+<h3 id="一个STP的Case"><a href="#一个STP的Case" class="headerlink" title="一个STP的Case"></a>一个STP的Case</h3><p>下图是抓到的STP网络包<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/3cfb19b45b85d171eab9e656b02123e9.png" alt="image.png"></p>
+<p>STP协议的后果就是带宽效率低，所以出现了PVST、PVST+、RSTP、MISTP、MSTP，这些协议可能不同厂家的交换机都不一样，互相之间也不一定兼容，所以是否生效要以实际测试为准</p>
+<h3 id="用tcpdump抓取stp包"><a href="#用tcpdump抓取stp包" class="headerlink" title="用tcpdump抓取stp包"></a>用tcpdump抓取stp包</h3><pre><code>$ sudo tcpdump -vvv -p -n -i eth1 stp
+tcpdump: listening on eth1, link-type EN10MB (Ethernet), capture size 65535 bytes
+
+15:44:10.772423 STP 802.1d, Config, Flags [none], bridge-id  8000.MAC.8687, length 43
+message-age 0.00s, max-age 20.00s, hello-time 2.00s, forwarding-delay 15.00s
+root-id 8000.MAC, root-pathcost 0
+15:44:12.768245 STP 802.1d, Config, Flags [none], bridge-id 8000.MAC8.8687, length 43
+message-age 0.00s, max-age 20.00s, hello-time 2.00s, forwarding-delay 15.00s
+root-id 8000.MAC, root-pathcost 0
+15:44:14.766513 STP 802.1d, Config, Flags [none], bridge-id 8000.MAC.8687, length 43
+message-age 0.00s, max-age 20.00s, hello-time 2.00s, forwarding-delay 15.00s
+root-id 8000.MAC, root-pathcost 0
+15:44:16.766478 STP 802.1d, Config, Flags [none], bridge-id 8000.MAC.8687, length 43
+message-age 0.00s, max-age 20.00s, hello-time 2.00s, forwarding-delay 15.00s
+root-id 8000.MAC, root-pathcost 0
+15:44:18.767851 STP 802.1d, Config, Flags [none], bridge-id 8000.MAC.8687, length 43
+message-age 0.00s, max-age 20.00s, hello-time 2.00s, forwarding-delay 15.00s
+root-id 8000.MAC, root-pathcost 0    
+</code></pre><h3 id="交换机上看到的STP"><a href="#交换机上看到的STP" class="headerlink" title="交换机上看到的STP"></a>交换机上看到的STP</h3><pre><code>C4948-D2-08-36U#show run int g1/31
+Building configuration...
+
+Current configuration : 482 bytes
+!
+interface GigabitEthernet1/31
+ description to D2-9-09/10U-GWR730-eth1
+ switchport access vlan 270
+ switchport mode access
+ switchport port-security maximum 50
+ switchport port-security
+ switchport port-security aging time 2
+ switchport port-security violation restrict
+ switchport port-security aging type inactivity
+ switchport port-security aging static
+ storm-control broadcast level 20.00
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ spanning-tree guard root
+end
+</code></pre><h2 id="SDN或者说OVS对网络环路的影响"><a href="#SDN或者说OVS对网络环路的影响" class="headerlink" title="SDN或者说OVS对网络环路的影响"></a>SDN或者说OVS对网络环路的影响</h2><p>前面讨论的都是硬件交换机之间的网络环路以及硬件交换机对这些环路的处理，那么在SDN和OVS的场景下有没有可能成环呢？ 成环后硬件交换机能不能检测到，或者软交换机自己能否检测到并阻止这些环路呢？</p>
+<h3 id="来看一个OVS场景下的成环Case"><a href="#来看一个OVS场景下的成环Case" class="headerlink" title="来看一个OVS场景下的成环Case"></a>来看一个OVS场景下的成环Case</h3><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/9fdfaf409f5963c1ecb661dc0f957c20.png" alt="image.png"></p>
+<p>上图中红色虚线部分组成了一个环路，是为了组成环路而人为构造的场景，同时发现OVS只支持STP算法，打开也没有用，因为OVS和硬件交换机之间没法通过BPDU来协商判断环路（物理交换机丢掉了硬件交换机的BPDU包）。</p>
+<p>也就是在硬件网络环境固定的情况下，我们可以在Linux环境下鼓捣出来一个网络环路，同时让Linux所在的物理二层网络瘫痪掉（好屌）</p>
+<h3 id="在这种网络环路下后果"><a href="#在这种网络环路下后果" class="headerlink" title="在这种网络环路下后果"></a>在这种网络环路下后果</h3><ul>
+<li>整个二层网络瘫痪，所有交换机CPU 100%，带宽100%</li>
+<li>连接在交换机上的所有服务器SYS CPU飙升到 30%左右（没有啥意义了，服务器没法跟外部做任何交流了）</li>
+</ul>
+<p>交换机的CPU状态：</p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/e2e1972d0bf77bf5d0442cb976c4fc27.png" alt="image.png"> </p>
+<p>成环后抓到的arp广播风暴网络包（实际我只发了一个arp包）：</p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/e4715913ef66fddcd0ca8ecd1e425d6f.png" alt="image.png"></p>
+<h2 id="其它网络环路"><a href="#其它网络环路" class="headerlink" title="其它网络环路"></a>其它网络环路</h2><ul>
+<li>直接把两个交换机用两根网线连接起来就是个环路</li>
+<li>拿一根网线两头连接在同一个交换机的两个网口上（短路） 2006年的一个Case： <a href="https://www.zhihu.com/question/49545070" target="_blank" rel="external">https://www.zhihu.com/question/49545070</a>，不过现在的交换机基本上都能识别这种短路</li>
+<li>两个交换机之间做bond失败，导致环路或者三角形（三角形的话会导致多个网口对应同一个mac地址，进而导致这个mac地址网络不通，三角形不会形成网络风暴）</li>
+</ul>
+<h2 id="参考资料："><a href="#参考资料：" class="headerlink" title="参考资料："></a>参考资料：</h2><p><a href="https://www.zhihu.com/question/49545070" target="_blank" rel="external">https://www.zhihu.com/question/49545070</a></p>
+<p><a href="http://network.51cto.com/art/201307/404013.htm" target="_blank" rel="external">http://network.51cto.com/art/201307/404013.htm</a></p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/11/26/一个没有遵守tcp规则导致的问题/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -4365,480 +4575,6 @@ ProxyCommand ssh -l root 2.2.2.2 exec /usr/bin/nc %h %p
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/02/25/Docker常见问题/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/02/25/Docker常见问题/" itemprop="url">Docker 常见问题</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-02-25T17:30:03+08:00">
-                2018-02-25
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/docker/" itemprop="url" rel="index">
-                    <span itemprop="name">docker</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2018/02/25/Docker常见问题/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2018/02/25/Docker常见问题/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="Docker-常见问题"><a href="#Docker-常见问题" class="headerlink" title="Docker 常见问题"></a>Docker 常见问题</h1><h2 id="启动"><a href="#启动" class="headerlink" title="启动"></a>启动</h2><p>docker daemon启动的时候如果报 socket错误，是因为daemon启动参数配置了： -H fd://  ，但是 docker.socket是disable状态，启动daemon依赖socket，但是systemctl又拉不起来docker.socket，因为被disable了，先  sudo systemctl enable docker.socket 就可以了。</p>
-<p>如果docker.socket service被mask后比disable更粗暴，mask后手工都不能拉起来了，但是disable后还可以手工拉起，然后再拉起docker service。 这是需要先 systemctl unmask </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$sudo systemctl restart docker.socket</div><div class="line">Failed to restart docker.socket: Unit docker.socket is masked.</div></pre></td></tr></table></figure>
-<p>另外 docker.socket 启动依赖环境的要有 docker group这个组，可以添加： groupadd docker</p>
-<h3 id="Docker-启动报错：-Error-starting-daemon：-Error-initializing-network-controller：-list-bridge-addresses-failed：-no-available-network"><a href="#Docker-启动报错：-Error-starting-daemon：-Error-initializing-network-controller：-list-bridge-addresses-failed：-no-available-network" class="headerlink" title="Docker 启动报错： Error starting daemon： Error initializing network controller： list bridge addresses failed： no available network"></a><a href="http://blog.joylau.cn/2019/04/08/Docker-Start-Error/" target="_blank" rel="external">Docker 启动报错： Error starting daemon： Error initializing network controller： list bridge addresses failed： no available network</a></h3><p>这是因为daemon启动的时候缺少docker0网桥，导致启动失败，手工添加：  </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">ip link add docker0 type bridge</div><div class="line">ip addr add dev docker0 172.30.0.0/16</div></pre></td></tr></table></figure>
-<p>启动成功后即使手工删除docker0，然后再次启动也会成功，这次会自动创建docker0 172.30.0.0/16 。</p>
-<p>参考：<a href="https://github.com/docker/for-linux/issues/123" target="_blank" rel="external">https://github.com/docker/for-linux/issues/123</a>  </p>
-<p>或者这样解决：<a href="https://stackoverflow.com/questions/39617387/docker-daemon-cant-initialize-network-controller" target="_blank" rel="external">https://stackoverflow.com/questions/39617387/docker-daemon-cant-initialize-network-controller</a></p>
-<p>This was related to the machine having several network cards (can also happen in machines with VPN)</p>
-<p>To me, the solution was to start manually docker like this:</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">/usr/bin/docker daemon --debug --bip=192.168.y.x/24</div></pre></td></tr></table></figure>
-<p>where the 192.168.y.x is the MAIN machine IP and /24 that ip netmask. Docker will use this network range for building the bridge and firewall riles. The –debug is not really needed, but might help if something else fails</p>
-<p>After starting once, you can kill the docker and start as usual. AFAIK, docker have created a cache config for that –bip and should work now without it. Of course, if you clean the docker cache, you may need to do this again. </p>
-<h3 id="alios下容器里面ping不通docker0"><a href="#alios下容器里面ping不通docker0" class="headerlink" title="alios下容器里面ping不通docker0"></a>alios下容器里面ping不通docker0</h3><p>alios上跑docker，然后启动容器，发现容器里面ping不通docker0, 手工重新brctl addbr docker0 , 然后把虚拟网卡加进去就可以了。这应该是系统哪里bug了. </p>
-<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/2ba8bc014d93ad4b6e77c889a024772f.png" alt="image.png"></p>
-<p>非常神奇的是不通的时候如果在宿主机上对docker0抓包就瞬间通了，停掉抓包就不通</p>
-<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/dbc4dac5a9a0289b58952375c5759b15.gif" alt="docker0-tcpdump.gif"></p>
-<p>猜测是 alios 的bug</p>
-<h2 id="systemctl-start-docker"><a href="#systemctl-start-docker" class="headerlink" title="systemctl start docker"></a>systemctl start docker</h2><p>Failed to start docker.service: Unit not found.</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line">UNIT LOAD PATH</div><div class="line">          Unit files are loaded from a set of paths determined during </div><div class="line">          compilation, described in the two tables below. Unit files found </div><div class="line">          in directories listed earlier override files with the same name </div><div class="line">          in directories lower in the list.</div><div class="line"></div><div class="line">           Table 1.  Load path when running in system mode (--system).</div><div class="line">           ┌────────────────────────┬─────────────────────────────┐</div><div class="line">           │Path                    │ Description                 │</div><div class="line">           ├────────────────────────┼─────────────────────────────┤</div><div class="line">           │/etc/systemd/system     │ Local configuration         │</div><div class="line">           ├────────────────────────┼─────────────────────────────┤</div><div class="line">           │/run/systemd/system     │ Runtime units               │</div><div class="line">           ├────────────────────────┼─────────────────────────────┤</div><div class="line">           │/usr/lib/systemd/system │ Units of installed packages │</div><div class="line">           └────────────────────────┴─────────────────────────────┘</div></pre></td></tr></table></figure>
-<p><a href="https://askubuntu.com/questions/1014480/how-do-i-add-bin-to-path-for-a-systemd-service" target="_blank" rel="external">systemd 设置path环境变量，可以设置</a>：</p>
-<blockquote>
-<p>[Service]<br>Type=notify<br>Environment=PATH=/opt/kube/bin:/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/usr/X11R6/bin:/opt/satools:/root/bin</p>
-</blockquote>
-<h2 id="容器没有systemctl"><a href="#容器没有systemctl" class="headerlink" title="容器没有systemctl"></a>容器没有systemctl</h2><p><strong>Failed to get D-Bus connection: Operation not permitted: systemd容器中默认无法启动，需要启动容器的时候</strong> </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">docker run -itd --privileged --name=ren drds_base:centos init //init 必须要</div></pre></td></tr></table></figure>
-<h2 id="busybox-Alpine-Scratch"><a href="#busybox-Alpine-Scratch" class="headerlink" title="busybox/Alpine/Scratch"></a>busybox/Alpine/Scratch</h2><p>busybox集成了常用的linux工具(nc/telnet/cat……），保持精细，方便一张软盘能装下。</p>
-<p>Alpine一个精简版的Linux 发行版，更小更安全，用的musl libc而不是glibc</p>
-<p>scratch一个空的框架，什么也没有</p>
-<h2 id="找不到shell"><a href="#找不到shell" class="headerlink" title="找不到shell"></a>找不到shell</h2><p>Dockerfile 中(<a href="https://www.ardanlabs.com/blog/2020/02/docker-images-part1-reducing-image-size.html)：" target="_blank" rel="external">https://www.ardanlabs.com/blog/2020/02/docker-images-part1-reducing-image-size.html)：</a></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">CMD ./hello OR RUN 等同于 /bin/sh -c &quot;./hello&quot;, 需要shell，</div><div class="line">改用：</div><div class="line">CMD [&quot;./hello&quot;] 等同于 ./hello 不需要shell</div></pre></td></tr></table></figure>
-<p>dockerfile中：CMD 可以是命令、也可以是参数，如果是参数， 把它传递给：ENTRYPOINT</p>
-<h2 id="容器调试-–-nsenter"><a href="#容器调试-–-nsenter" class="headerlink" title="容器调试 – nsenter"></a>容器调试 – nsenter</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">获取pid：docker inspect -f &#123;&#123;.State.Pid&#125;&#125; c8f874efea06</div><div class="line"></div><div class="line">进入namespace：nsenter --target 17277 --net --pid –mount</div></pre></td></tr></table></figure>
-<p>nsenter相当于在setns的示例程序之上做了一层封装，使我们无需指定命名空间的文件描述符，而是指定进程号即可</p>
-<h2 id="OS版本"><a href="#OS版本" class="headerlink" title="OS版本"></a>OS版本</h2><p><strong>搞Docker就得上el7， 6的性能太差了</strong> Docker 对 Linux 内核版本的最低要求是3.10，如果内核版本低于 3.10 会缺少一些运行 Docker 容器的功能。这些比较旧的内核，在一定条件下会导致数据丢失和频繁恐慌错误。</p>
-<h2 id="网络方案性能"><a href="#网络方案性能" class="headerlink" title="网络方案性能"></a>网络方案性能</h2><table>
-<thead>
-<tr>
-<th></th>
-<th><strong>OS</strong></th>
-<th><strong>Host</strong></th>
-<th><strong>Docker_Host</strong></th>
-<th><strong>Docker_NAT_IPTABLES</strong></th>
-<th><strong>Docker_NAT_PROXY</strong></th>
-<th><strong>Docker_BRIDGE_VLAN</strong></th>
-<th><strong>Docker_OVS_VLAN</strong></th>
-<th><strong>Docker_HAVS_VLAN</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>TPS</strong></td>
-<td>6U</td>
-<td>118727.5</td>
-<td>115962.5</td>
-<td>83281.08</td>
-<td>29104.33</td>
-<td>57327.15</td>
-<td>55606.37</td>
-<td>54686.88</td>
-</tr>
-<tr>
-<td><strong>TPS</strong></td>
-<td>7U</td>
-<td>117501.4</td>
-<td>110010.7</td>
-<td>101131.2</td>
-<td>34795.39</td>
-<td>108857.7</td>
-<td>107554.3</td>
-<td>105021</td>
-</tr>
-<tr>
-<td></td>
-<td>6U</td>
-<td>BASE</td>
-<td>-2.38%</td>
-<td>-42.56%</td>
-<td>-307.94%</td>
-<td>-107.11%</td>
-<td>-113.51%</td>
-<td>-117.10%</td>
-</tr>
-<tr>
-<td></td>
-<td>7U</td>
-<td>BASE</td>
-<td>-6.81%</td>
-<td>-16.19%</td>
-<td>-237.69%</td>
-<td>-7.94%</td>
-<td>-9.25%</td>
-<td>-11.88%</td>
-</tr>
-<tr>
-<td><strong>RT</strong></td>
-<td>6U(ms)</td>
-<td>0.330633</td>
-<td>0.362042</td>
-<td>0.505125</td>
-<td>1.423767</td>
-<td>0.799308</td>
-<td>0.763842</td>
-<td>0.840458</td>
-</tr>
-<tr>
-<td><strong>RT</strong></td>
-<td>7U(ms)</td>
-<td>0.3028</td>
-<td>0.321267</td>
-<td>0.346325</td>
-<td>1.183225</td>
-<td>0.325333</td>
-<td>0.335708</td>
-<td>0.33535</td>
-</tr>
-<tr>
-<td></td>
-<td>6U(us)</td>
-<td>BASE</td>
-<td>31.40833</td>
-<td>174.4917</td>
-<td>1093.133</td>
-<td>468.675</td>
-<td>433.2083</td>
-<td>509.825</td>
-</tr>
-<tr>
-<td></td>
-<td>7U(us)</td>
-<td>BASE</td>
-<td>18.46667</td>
-<td>43.525</td>
-<td>880.425</td>
-<td>22.53333</td>
-<td>32.90833</td>
-<td>32.55</td>
-</tr>
-</tbody>
-</table>
-<ul>
-<li>Host：是指没有隔离的情况下，D13物理机；</li>
-<li>Docker_Host：是指Docker采用Host网络模式;</li>
-<li>Docker_NAT_IPTABLES：是指Docker采用NAT网络模式，通过IPTABLES进行网络转发。</li>
-<li>Docker_NAT_PROXY：是指Docker采用NAT网络模式，通过docker-proxy进行网络转发。</li>
-<li>Docker_BRIDGE：是指Docker采用Bridge网络模式，并且配置静态IP和VLAN701，这里使用VLAN。</li>
-<li>Docker_OVS_VLAN：是指Docker采用VSwitch网络模式，通过OpenVSwitch进行网络通信，使用ACS VLAN Driver。</li>
-<li>Docker_HAVS_VLAN：是指Docker采用VSwitch网络模式，通过HAVS进行网络通信，使用VLAN。</li>
-</ul>
-<h3 id="通过测试，汇总测试结论如下"><a href="#通过测试，汇总测试结论如下" class="headerlink" title="通过测试，汇总测试结论如下"></a>通过测试，汇总测试结论如下</h3><ol>
-<li><p>Docker_Host网络模式在6U和7U环境下，性能比物理机方案上性能降低了2~6%左右，RT增加了18~30us左右。</p>
-</li>
-<li><p>Docker_NAT_IPTABLES网络模式在6U环境下，性能比物理机方案上性能降低了43%左右，RT增加了174us；在7U环境下，性能比物理机方案上性能降低了16%左右，RT增加了44us；此外，可以明显看出，7U环境比6U环境性能上优化了20%，RT上减少了130us左右。</p>
-</li>
-<li><p>Docker_NAT_PROXY网络模式在6U环境下，性能比物理机方案性能降低了300%，RT增加了1ms以上；在7U环境下，性能比物理机方案性能降低了237%，RT增加了880us以上；此外，可以明显看出，7U环境比6U环境性能上优化了20%，RT上减少了200us左右。</p>
-</li>
-<li><p>Docker_BRIDGE_VLAN网络模式在6U环境下，性能比物理机方案性能降低了107%，RT增加了469us；在7U环境下，性能比物理机方案性能降低了8%左右，RT增加了23us左右；此外，可以明显看出，7U环境比6U环境性能上优化了90%，RT上减少了446us。从诊断上来看，6U和7U的性能差异主要在VLAN的处理上的spin_lock，详细可以参考之前的测试验证。</p>
-</li>
-<li><p>Docker_OVS_VLAN网络模式在6U环境下，性能比物理机方案性能降低了114%，RT增加了433us；在7U环境下，性能比物理机方案性能降低了9%左右，RT增加了33us；此外，可以明显看出，7U环境比6U环境性能上优化了93%，RT上减少了400us。从诊断上来看，6U和7U的性能差异主要在VLAN的处理上的spin_lock。并且发现，OVS与Bridge网络模式性能上基本持平，无较大性能上的差异。</p>
-</li>
-<li><p>Docker_HAVS_VLAN网络模式在6U环境下，性能比物理机方案性能降低了117%，RT增加了510us；在7U环境下，性能比物理机方案性能降低了12%左右，RT增加了33us；此外，可以明显看出，7U环境比6U环境性能上优化了92%，RT上减少了477us。从诊断上来看，6U和7U的性能差异主要在VLAN的处理上的spin_lock。并且发现，HAVS与Bridge网络模式性能上基本持平，无较大性能上的差异；HAVS与OVS的性能上差异也较小，无较大性能上的差异。</p>
-</li>
-<li><p>SR-IOV网络模式由于存在OS、Docker、网卡等要求，非通用化方案，将作为进一步的优化方案进行探索。</p>
-</li>
-</ol>
-<h3 id="网络性能结果分析（rama等同方舟vlan网络方案）"><a href="#网络性能结果分析（rama等同方舟vlan网络方案）" class="headerlink" title="网络性能结果分析（rama等同方舟vlan网络方案）"></a>网络性能结果分析（rama等同方舟vlan网络方案）</h3><p>延迟数据汇总：</p>
-<table>
-<thead>
-<tr>
-<th></th>
-<th>host</th>
-<th>rama不开启mac nat</th>
-<th>rama开启mac nat</th>
-<th>calico-bgp</th>
-<th>flannel-vxlan</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>64</td>
-<td>0.041</td>
-<td>0.041</td>
-<td>0.041</td>
-<td>0.042</td>
-<td>0.041</td>
-</tr>
-<tr>
-<td>512</td>
-<td>0.041</td>
-<td>0.041</td>
-<td>0.043</td>
-<td>0.041</td>
-<td>0.043</td>
-</tr>
-<tr>
-<td>1024</td>
-<td>0.045</td>
-<td>0.045</td>
-<td>0.045</td>
-<td>0.046</td>
-<td>0.048</td>
-</tr>
-<tr>
-<td>2048</td>
-<td>0.073</td>
-<td>0.072</td>
-<td>0.072</td>
-<td>0.073</td>
-<td>0.073</td>
-</tr>
-<tr>
-<td>4096</td>
-<td>0.072</td>
-<td>0.070</td>
-<td>0.073</td>
-<td>0.071</td>
-<td>0.079</td>
-</tr>
-<tr>
-<td>16384</td>
-<td>0.148</td>
-<td>0.144</td>
-<td>0.149</td>
-<td>0.242</td>
-<td>0.200</td>
-</tr>
-<tr>
-<td>32678</td>
-<td>0.244</td>
-<td>0.335</td>
-<td>0.242</td>
-<td>0.320</td>
-<td>0.352</td>
-</tr>
-<tr>
-<td>64512</td>
-<td>0.300</td>
-<td>0.481</td>
-<td>0.419</td>
-<td>0.437</td>
-<td>0.541</td>
-</tr>
-</tbody>
-</table>
-<p><img src="https://cdn.nlark.com/yuque/0/2020/png/162611/1589164443676-cc7b2394-67e1-4550-b34d-d489c34ad026.png" alt="image.png"></p>
-<p>吞吐量数据汇总：</p>
-<table>
-<thead>
-<tr>
-<th></th>
-<th>host</th>
-<th>rama不开启mac nat</th>
-<th>rama开启mac nat</th>
-<th>calico-bgp</th>
-<th>flannel-vxlan</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>64</td>
-<td>386</td>
-<td>381</td>
-<td>381</td>
-<td>377</td>
-<td>359</td>
-</tr>
-<tr>
-<td>512</td>
-<td>2660</td>
-<td>2370</td>
-<td>2530</td>
-<td>2580</td>
-<td>1840</td>
-</tr>
-<tr>
-<td>1024</td>
-<td>5170</td>
-<td>4590</td>
-<td>4880</td>
-<td>4510</td>
-<td>2610</td>
-</tr>
-<tr>
-<td>2048</td>
-<td>7710</td>
-<td>7350</td>
-<td>7040</td>
-<td>7420</td>
-<td>3310</td>
-</tr>
-<tr>
-<td>4096</td>
-<td>9410</td>
-<td>8750</td>
-<td>8220</td>
-<td>8440</td>
-<td>3830</td>
-</tr>
-<tr>
-<td>16384</td>
-<td>9410</td>
-<td>8850</td>
-<td>8460</td>
-<td>8580</td>
-<td>5080</td>
-</tr>
-<tr>
-<td>32678</td>
-<td>9410</td>
-<td>8810</td>
-<td>8580</td>
-<td>8550</td>
-<td>4950</td>
-</tr>
-<tr>
-<td>65507</td>
-<td>9410</td>
-<td>8660</td>
-<td>8410</td>
-<td>8540</td>
-<td>4920</td>
-</tr>
-</tbody>
-</table>
-<p><img src="https://cdn.nlark.com/yuque/0/2020/png/162611/1589164443610-d5bb45a6-f688-4a6b-b697-8370387f4dd8.png" alt="image.png"></p>
-<p>从延迟上来看，rama与calico-bgp相差不大，从数据上略低于host性能，略高于flannel-vxlan；从吞吐量上看，区别会明显一些，当报文长度大于4096 KB 时，均观察到各网络插件的吞吐量达到最大值，从最大值上来看可以初步得出以下结论：</p>
-<p><strong>host &gt; rama不开启mac nat &gt;</strong> <strong>rama开启mac nat</strong> ≈ <strong>calico-bgp &gt;</strong> <strong>flannel-vxlan</strong></p>
-<p>rama不开启mac nat时性能最高，开启mac nat功能，性能与calico-bgp基本相同，并且性能大幅度高于flannel-vxlan；虽然rama开启mac nat之后的性能与每个节点上的pod数量直接相关，但由于测试 rama开启mac nat方案 的时候，取的是两个个节点上50个pod中预计性能最差的pod，基本可以反映一般情况</p>
-<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://www.ardanlabs.com/blog/2020/02/docker-images-part1-reducing-image-size.html" target="_blank" rel="external">https://www.ardanlabs.com/blog/2020/02/docker-images-part1-reducing-image-size.html</a></p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
@@ -4888,7 +4624,7 @@ ProxyCommand ssh -l root 2.2.2.2 exec /usr/bin/nc %h %p
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">102</span>
+                <span class="site-state-item-count">103</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -4910,7 +4646,7 @@ ProxyCommand ssh -l root 2.2.2.2 exec /usr/bin/nc %h %p
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">188</span>
+                <span class="site-state-item-count">191</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>
