@@ -984,7 +984,7 @@
     <link href="http://yoursite.com/2020/06/05/MySQL%E7%BA%BF%E7%A8%8B%E6%B1%A0%E5%AF%BC%E8%87%B4%E7%9A%84%E5%BB%B6%E6%97%B6%E5%8D%A1%E9%A1%BF%E6%8E%92%E6%9F%A5/"/>
     <id>http://yoursite.com/2020/06/05/MySQL线程池导致的延时卡顿排查/</id>
     <published>2020-06-05T09:30:03.000Z</published>
-    <updated>2020-10-14T10:16:37.821Z</updated>
+    <updated>2020-11-16T03:14:22.159Z</updated>
     
     <content type="html"><![CDATA[<h1 id="MySQL-线程池导致的延时卡顿排查"><a href="#MySQL-线程池导致的延时卡顿排查" class="headerlink" title="MySQL 线程池导致的延时卡顿排查"></a>MySQL 线程池导致的延时卡顿排查</h1><h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><p>简单小表的主键点查SQL，单条执行很快，但是放在业务端，有时快有时慢，取了一条慢sql，在MySQL侧查看，执行时间很短。</p>
 <p>通过监控有显示逻辑慢SQL和物理SQL ，取一slow.log里显示有12秒执行时间的SQL，但是这次12秒的执行在MySQL上记录下来的执行时间都不到1ms。</p>
@@ -1023,6 +1023,10 @@
 <h3 id="thread-pool-size过小的案例"><a href="#thread-pool-size过小的案例" class="headerlink" title="thread_pool_size过小的案例"></a>thread_pool_size过小的案例</h3><p>之前thread_pool_size是1，调整到16后可以明显看到MySQL的RT从原来的12ms下降到了3ms不到，整个QPS大概有8%左右的提升。这是因为pool size为1的话所有sql都在一个队列里面，多个worker thread加锁等待比较严重，导致rt延迟增加。</p>
 <p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/114b5b71468b33128e76129bbc7fb8f4.png" alt="image.png"></p>
 <p>这个问题发现是因为压力一上来的时候要创建大量新的连接，这些连结创建后会去验证连接的有效性，也就是给MySQL发一个ping指令，一般都很快，所以这个验证过程设置的是1秒超时，但是实际看到大量超时异常堆栈，从而发现MySQL内部响应有问题。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这个问题的本质在于 MySQL线程池开启后，因为会将多个连接分配在一个池子中共享这个池子中的几个线程。导致一个池子中的线程特别慢的时候会影响这个池子中所有的查询都会卡顿。即使别的池子很空闲也不会将任务调度过去。</p>
+<p>MySQL线程池设计成多个池子（Group）的原因是为了将任务队列拆成多个，这样每个池子中的线程只是内部竞争锁，跟其他池子不冲突，当然这个设计带来的问题就是多个池子中的任务不能均衡了。</p>
+<p>类似地这个问题也会出现在Nginx的多worker中，一旦一个连接分发到了某个worker，就会一直在这个worker上处理，一旦这个worker上有一些慢操作，会导致这个worker上的所有操作都受到影响，特别是会影响一些探活任务的误判。</p>
+<p>Nginx的worker这么设计也是为了将单worker绑定到固定的cpu，然后避免多核之间的上下文切换。</p>
 <p>一包在手，万事无忧</p>
 <h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a href="https://www.atatech.org/articles/36343" target="_blank" rel="external">https://www.atatech.org/articles/36343</a></p>
 <p><a href="http://mysql.taobao.org/monthly/2016/02/09/" target="_blank" rel="external">http://mysql.taobao.org/monthly/2016/02/09/</a></p>
