@@ -77,7 +77,7 @@
 <link href="/css/main.css?v=5.1.1" rel="stylesheet" type="text/css" />
 
 
-  <meta name="keywords" content="Linux,network,MySQL,Performance,ThreadPool," />
+  <meta name="keywords" content="Linux,network,MySQL,ThreadPool,nginx,卡顿," />
 
 
 
@@ -96,10 +96,10 @@
 
 
 <meta name="description" content="MySQL 线程池导致的延时卡顿排查问题描述简单小表的主键点查SQL，单条执行很快，但是放在业务端，有时快有时慢，取了一条慢sql，在MySQL侧查看，执行时间很短。 通过监控有显示逻辑慢SQL和物理SQL ，取一slow.log里显示有12秒执行时间的SQL，但是这次12秒的执行在MySQL上记录下来的执行时间都不到1ms。 所在节点的tsar监控没有异常，Tomcat manager监控上没有">
-<meta name="keywords" content="Linux,network,MySQL,Performance,ThreadPool">
+<meta name="keywords" content="Linux,network,MySQL,ThreadPool,nginx,卡顿">
 <meta property="og:type" content="article">
 <meta property="og:title" content="MySQL线程池导致的延时卡顿排查">
-<meta property="og:url" content="http://yoursite.com/2020/06/05/MySQL线程池导致的延时卡顿排查/index.html">
+<meta property="og:url" content="http://yoursite.com/2020/11/17/MySQL线程池导致的延时卡顿排查/index.html">
 <meta property="og:site_name" content="plantegg">
 <meta property="og:description" content="MySQL 线程池导致的延时卡顿排查问题描述简单小表的主键点查SQL，单条执行很快，但是放在业务端，有时快有时慢，取了一条慢sql，在MySQL侧查看，执行时间很短。 通过监控有显示逻辑慢SQL和物理SQL ，取一slow.log里显示有12秒执行时间的SQL，但是这次12秒的执行在MySQL上记录下来的执行时间都不到1ms。 所在节点的tsar监控没有异常，Tomcat manager监控上没有">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b8ed95b7081ee80eb23465ee0e9acc74.png">
@@ -109,8 +109,10 @@
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/01531d138b9bc8dafda76b7c8bbb5bc9.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/92069e7521368e4d2519b3b861cc7faa.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/6fbe1c10f07dd1c26eba0c0e804fa9a8.png">
+<meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/52dbeb1c1058e6dbff0a790b4b4ba477.png">
+<meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/8987545cc311fdd3ae232aee8c3f855a.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/114b5b71468b33128e76129bbc7fb8f4.png">
-<meta property="og:updated_time" content="2020-11-16T03:14:22.159Z">
+<meta property="og:updated_time" content="2020-11-17T01:20:21.069Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="MySQL线程池导致的延时卡顿排查">
 <meta name="twitter:description" content="MySQL 线程池导致的延时卡顿排查问题描述简单小表的主键点查SQL，单条执行很快，但是放在业务端，有时快有时慢，取了一条慢sql，在MySQL侧查看，执行时间很短。 通过监控有显示逻辑慢SQL和物理SQL ，取一slow.log里显示有12秒执行时间的SQL，但是这次12秒的执行在MySQL上记录下来的执行时间都不到1ms。 所在节点的tsar监控没有异常，Tomcat manager监控上没有">
@@ -142,7 +144,7 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/2020/06/05/MySQL线程池导致的延时卡顿排查/"/>
+  <link rel="canonical" href="http://yoursite.com/2020/11/17/MySQL线程池导致的延时卡顿排查/"/>
 
 
 
@@ -290,7 +292,7 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/06/05/MySQL线程池导致的延时卡顿排查/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/11/17/MySQL线程池导致的延时卡顿排查/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="weibo @plantegg">
@@ -319,8 +321,8 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-06-05T17:30:03+08:00">
-                2020-06-05
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-11-17T07:30:03+08:00">
+                2020-11-17
               </time>
             
 
@@ -360,9 +362,9 @@
                 <span class="post-meta-item-icon">
                   <i class="fa fa-comment-o"></i>
                 </span>
-                <a href="/2020/06/05/MySQL线程池导致的延时卡顿排查/#comments" itemprop="discussionUrl">
+                <a href="/2020/11/17/MySQL线程池导致的延时卡顿排查/#comments" itemprop="discussionUrl">
                   <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2020/06/05/MySQL线程池导致的延时卡顿排查/" itemprop="commentCount"></span>
+                        data-disqus-identifier="2020/11/17/MySQL线程池导致的延时卡顿排查/" itemprop="commentCount"></span>
                 </a>
               </span>
             
@@ -426,11 +428,20 @@
 <p><strong>MySQL Thread Pool之所有分成多个小的Thread Group Pool而不是一个大的Pool，是为了分解锁（每个group中都有队列，队列需要加锁。类似ConcurrentHashMap提高并发的原理），提高并发效率。</strong></p>
 <p>group中的队列是用来区分优先级的，事务中的语句会放到高优先队列（非事务语句和autocommit 都会在低优先队列）；等待太久的SQL也会挪到高优先队列，防止饿死。</p>
 <p>比如启用Thread Pool后，如果出现多个慢查询，容易导致拨测类请求超时，进而出现Server异常的判断（类似Nginx 边缘触发问题）；或者某个group满后导致慢查询和拨测失败之类的问题</p>
-<h3 id="thread-pool-size过小的案例"><a href="#thread-pool-size过小的案例" class="headerlink" title="thread_pool_size过小的案例"></a>thread_pool_size过小的案例</h3><p>之前thread_pool_size是1，调整到16后可以明显看到MySQL的RT从原来的12ms下降到了3ms不到，整个QPS大概有8%左右的提升。这是因为pool size为1的话所有sql都在一个队列里面，多个worker thread加锁等待比较严重，导致rt延迟增加。</p>
+<h3 id="thread-pool-size过小的案例"><a href="#thread-pool-size过小的案例" class="headerlink" title="thread_pool_size过小的案例"></a>thread_pool_size过小的案例</h3><p>应用出现大量1秒超时报错：</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/52dbeb1c1058e6dbff0a790b4b4ba477.png" alt="image.png"></p>
+<p>进分析代码，这个报错是是数据库连接池在创建到MySQL的连接后会发送一个ping来验证下连接是否有效，有效后才给应用使用。说明连接创建成功，但是MySQL处理指令缓慢。</p>
+<p>继续分析MySQL的参数：</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/8987545cc311fdd3ae232aee8c3f855a.png" alt="image.png"></p>
+<p>可以看到thread_pool_size是1，太小了，将所有MySQL线程都放到一个buffer里面来抢锁，锁冲突的概率太高。调整到16后可以明显看到MySQL的RT从原来的12ms下降到了3ms不到，整个QPS大概有8%左右的提升。这是因为pool size为1的话所有sql都在一个队列里面，多个worker thread加锁等待比较严重，导致rt延迟增加。</p>
 <p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/114b5b71468b33128e76129bbc7fb8f4.png" alt="image.png"></p>
-<p>这个问题发现是因为压力一上来的时候要创建大量新的连接，这些连结创建后会去验证连接的有效性，也就是给MySQL发一个ping指令，一般都很快，所以这个验证过程设置的是1秒超时，但是实际看到大量超时异常堆栈，从而发现MySQL内部响应有问题。</p>
+<p>这个问题发现是因为压力一上来的时候要创建大量新的连接，这些连结创建后会去验证连接的有效性，也就是给MySQL发一个ping指令，一般都很快，这个ping验证过程设置的是1秒超时，但是实际看到大量超时异常堆栈，从而发现MySQL内部响应有问题。</p>
+<blockquote>
+<p><a href="https://dev.mysql.com/doc/connector-j/8.0/en/connector-j-usagenotes-j2ee-concepts-connection-pooling.html#idm47306928802368" target="_blank" rel="external">Ping</a> use the JDBC method <a href="http://docs.oracle.com/javase/7/docs/api/java/sql/Connection.html#isValid(int" target="_blank" rel="external">Connection.isValid(int timeoutInSecs)</a>). Digging into the MySQL Connector/J source, the actual implementation uses com.mysql.jdbc.ConnectionImpl.pingInternal() to send a simple ping packet to the DB and returns true as long as a valid response is returned.</p>
+</blockquote>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这个问题的本质在于 MySQL线程池开启后，因为会将多个连接分配在一个池子中共享这个池子中的几个线程。导致一个池子中的线程特别慢的时候会影响这个池子中所有的查询都会卡顿。即使别的池子很空闲也不会将任务调度过去。</p>
 <p>MySQL线程池设计成多个池子（Group）的原因是为了将任务队列拆成多个，这样每个池子中的线程只是内部竞争锁，跟其他池子不冲突，当然这个设计带来的问题就是多个池子中的任务不能均衡了。</p>
+<p>同时从案例我们也可以清楚地看到这个池子太小会造成锁冲突严重的卡顿，池子太大（每个池子中的线程数量就少）容易造成等线程的卡顿。</p>
 <p>类似地这个问题也会出现在Nginx的多worker中，一旦一个连接分发到了某个worker，就会一直在这个worker上处理，一旦这个worker上有一些慢操作，会导致这个worker上的所有操作都受到影响，特别是会影响一些探活任务的误判。</p>
 <p>Nginx的worker这么设计也是为了将单worker绑定到固定的cpu，然后避免多核之间的上下文切换。</p>
 <p>一包在手，万事无忧</p>
@@ -472,9 +483,11 @@
           
             <a href="/tags/MySQL/" rel="tag"># MySQL</a>
           
-            <a href="/tags/Performance/" rel="tag"># Performance</a>
-          
             <a href="/tags/ThreadPool/" rel="tag"># ThreadPool</a>
+          
+            <a href="/tags/nginx/" rel="tag"># nginx</a>
+          
+            <a href="/tags/卡顿/" rel="tag"># 卡顿</a>
           
         </div>
       
@@ -487,8 +500,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2020/05/31/Perf IPC以及CPU利用率/" rel="next" title="Perf IPC以及CPU利用率">
-                <i class="fa fa-chevron-left"></i> Perf IPC以及CPU利用率
+              <a href="/2020/11/15/Linux内存--HugePage/" rel="next" title="Linux内存--HugePage">
+                <i class="fa fa-chevron-left"></i> Linux内存--HugePage
               </a>
             
           </div>
@@ -497,8 +510,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/2020/06/24/TCPRT 案例/" rel="prev" title="TCPRT 案例">
-                TCPRT 案例 <i class="fa fa-chevron-right"></i>
+              <a href="/2117/06/07/文章索引index/" rel="prev" title="文章索引">
+                文章索引 <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -600,7 +613,7 @@
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">196</span>
+                <span class="site-state-item-count">197</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>
@@ -815,8 +828,8 @@
     
       <script type="text/javascript">
         var disqus_config = function () {
-          this.page.url = 'http://yoursite.com/2020/06/05/MySQL线程池导致的延时卡顿排查/';
-          this.page.identifier = '2020/06/05/MySQL线程池导致的延时卡顿排查/';
+          this.page.url = 'http://yoursite.com/2020/11/17/MySQL线程池导致的延时卡顿排查/';
+          this.page.identifier = '2020/11/17/MySQL线程池导致的延时卡顿排查/';
           this.page.title = 'MySQL线程池导致的延时卡顿排查';
         };
         var d = document, s = d.createElement('script');

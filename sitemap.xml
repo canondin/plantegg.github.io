@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>http://yoursite.com/2020/11/17/MySQL%E7%BA%BF%E7%A8%8B%E6%B1%A0%E5%AF%BC%E8%87%B4%E7%9A%84%E5%BB%B6%E6%97%B6%E5%8D%A1%E9%A1%BF%E6%8E%92%E6%9F%A5/</loc>
+    
+    <lastmod>2020-11-17T01:20:21.069Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://yoursite.com/2020/11/15/Linux%E5%86%85%E5%AD%98--%E9%9B%B6%E6%8B%B7%E8%B4%9D/</loc>
     
     <lastmod>2020-11-16T08:09:33.735Z</lastmod>
@@ -47,13 +54,6 @@
     <loc>http://yoursite.com/2019/07/31/NIO%E5%92%8CEpoll/</loc>
     
     <lastmod>2020-11-16T03:14:22.163Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>http://yoursite.com/2020/06/05/MySQL%E7%BA%BF%E7%A8%8B%E6%B1%A0%E5%AF%BC%E8%87%B4%E7%9A%84%E5%BB%B6%E6%97%B6%E5%8D%A1%E9%A1%BF%E6%8E%92%E6%9F%A5/</loc>
-    
-    <lastmod>2020-11-16T03:14:22.159Z</lastmod>
     
   </url>
   
