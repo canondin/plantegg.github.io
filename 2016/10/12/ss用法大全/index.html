@@ -102,7 +102,7 @@
 <meta property="og:url" content="http://yoursite.com/2016/10/12/ss用法大全/index.html">
 <meta property="og:site_name" content="plantegg">
 <meta property="og:description" content="就是要你懂网络监控–ss用法大全ss是Socket Statistics的缩写。 netstat命令大家肯定已经很熟悉了，但是在2001年的时候netstat 1.42版本之后就没更新了，之后取代的工具是ss命令，是iproute2 package的一员。 # rpm -ql iproute | grep ss /usr/sbin/ss netstat的替代工具是nstat，当然netstat的大">
-<meta property="og:updated_time" content="2020-05-25T07:49:49.023Z">
+<meta property="og:updated_time" content="2020-11-19T02:49:30.833Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="就是要你懂网络监控--ss用法大全">
 <meta name="twitter:description" content="就是要你懂网络监控–ss用法大全ss是Socket Statistics的缩写。 netstat命令大家肯定已经很熟悉了，但是在2001年的时候netstat 1.42版本之后就没更新了，之后取代的工具是ss命令，是iproute2 package的一员。 # rpm -ql iproute | grep ss /usr/sbin/ss netstat的替代工具是nstat，当然netstat的大">
@@ -522,11 +522,10 @@ LISTEN     0      128           *:tr-rsrb-p2                  *:*
  0     44 10.0.186.70:42298       10.0.186.73:3306        ESTB &gt;#   SO_REUSEADDR=0,SO_REUSEPORT=0,SO_KEEPALIVE=1,SO_RCVTIMEO=31536000000ms,SO_SNDTIMEO=31536000000ms,TCP_NODELAY=1,TCP_DEFER_ACCEPT=0
  0     44 10.0.186.70:42296       10.0.186.73:3306        ESTB &gt;#   SO_REUSEADDR=0,SO_REUSEPORT=0,SO_KEEPALIVE=1,SO_RCVTIMEO=31536000000ms,SO_SNDTIMEO=31536000000ms,TCP_NODELAY=1,TCP_DEFER_ACCEPT=0
  0     44 10.0.186.70:42322       10.0.186.73:3306        ESTB &gt;#   SO_REUSEADDR=0,SO_REUSEPORT=0,SO_KEEPALIVE=1,SO_RCVTIMEO=31536000000ms,SO_SNDTIMEO=31536000000ms,TCP_NODELAY=1,TCP_DEFER_ACCEPT=0
-</code></pre><p>Diag列的说明</p>
-<pre><code>Indicator        Meaning
-  &gt;|             The sender window (i.e. the window advertised by the remote endpoint) is 0. No data can be sent to the peer.
-  |&lt;             The receiver window (i.e. the window advertised by the local endpoint) is 0. No data can be received from the peer.
-  &gt;#             There are unacknowledged packets and the last ACK was received more than one second ago. This may be an indication that there are network problems or that the peer crashed.
+</code></pre><p>Diag列的说明<br>    Indicator        Meaning</p>
+<pre><code>&gt;|             The sender window (i.e. the window advertised by the remote endpoint) is 0. No data can be sent to the peer.
+|&lt;             The receiver window (i.e. the window advertised by the local endpoint) is 0. No data can be received from the peer.
+&gt;#             There are unacknowledged packets and the last ACK was received more than one second ago. This may be an indication that there are network problems or that the peer crashed.
 </code></pre><h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a href="https://www.cyberciti.biz/tips/linux-investigate-sockets-network-connections.html" target="_blank" rel="external">https://www.cyberciti.biz/tips/linux-investigate-sockets-network-connections.html</a></p>
 <p><a href="http://perthcharles.github.io/2015/11/10/wiki-netstat-proc/" target="_blank" rel="external">http://perthcharles.github.io/2015/11/10/wiki-netstat-proc/</a></p>
 <p>源代码：<a href="https://github.com/sivasankariit/iproute2/blob/master/misc/ss.c" target="_blank" rel="external">https://github.com/sivasankariit/iproute2/blob/master/misc/ss.c</a></p>
@@ -671,7 +670,7 @@ LISTEN     0      128           *:tr-rsrb-p2                  *:*
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">107</span>
+                <span class="site-state-item-count">109</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -682,7 +681,7 @@ LISTEN     0      128           *:tr-rsrb-p2                  *:*
             
             <div class="site-state-item site-state-categories">
               <a href="/categories/index.html">
-                <span class="site-state-item-count">19</span>
+                <span class="site-state-item-count">21</span>
                 <span class="site-state-item-name">分类</span>
               </a>
             </div>

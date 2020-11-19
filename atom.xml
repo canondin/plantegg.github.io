@@ -54,6 +54,89 @@
   </entry>
   
   <entry>
+    <title>活久见，TCP连接互串了</title>
+    <link href="http://yoursite.com/2020/11/18/TCP%E8%BF%9E%E6%8E%A5%E4%B8%BA%E5%95%A5%E4%BA%92%E4%B8%B2%E4%BA%86/"/>
+    <id>http://yoursite.com/2020/11/18/TCP连接为啥互串了/</id>
+    <published>2020-11-18T09:30:03.000Z</published>
+    <updated>2020-11-19T02:49:30.841Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="活久见，TCP连接互串了"><a href="#活久见，TCP连接互串了" class="headerlink" title="活久见，TCP连接互串了"></a>活久见，TCP连接互串了</h1><h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>应用每过一段时间总是会抛出几个连接异常的错误，需要查明原因。</p>
+<p>排查后发现是TCP连接互串了，这个案例实在是很珍惜，所以记录一下。</p>
+<h2 id="抓包"><a href="#抓包" class="headerlink" title="抓包"></a>抓包</h2><p>业务结构： 应用-&gt;MySQL(10.112.61.163)</p>
+<p>在 应用 机器上抓包这个异常连接如下（3269为MySQL服务端口）：</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/fd02c2855142de5974fe695c76d21e61.png" alt="image.png"></p>
+<p>粗一看没啥奇怪的，就是应用发查询给3269，但是一直没收到3269的ack，所以一直重传。这里唯一的解释就是网络不通。最后MySQL的3269还回复了一个rst，这个rst的id是42889，引起了我的好奇，跟前面的16439不连贯，正常应该是16440才对。（请记住上图中的绿框中的数字）</p>
+<p>于是我过滤了一下所有端口61902上的所有包：</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/511a87311762ec0b9db1d89ae487ff04.png" alt="image.png"></p>
+<p>可以看到绿框中的查询从61902端口发给3269后，很奇怪居然收到了一个来自别的IP+3306端口的reset，这个包对这个连接来说自然是不认识（这个连接只接受3269的回包），就扔掉了。但是也没收到3269的ack，所以只能不停地重传，然后每次都收到3306的reset，seq、id都能和上图的绿框对应上。</p>
+<p>明明他们应该是两个连接：</p>
+<blockquote>
+<p> 61902-&gt;10.141.16.0:3306</p>
+<p> 61902-&gt;10.112.61.163:3269</p>
+</blockquote>
+<p>他们虽然用的本地ip端口（61902）是一样的， 但是根据四元组不一样，还是不同的TCP连接，所以应该是不会互相干扰的。但是实际看起来<strong>seq、id都重复了</strong>，不会有这么巧，非常像是TCP互串了，一辈子也难碰到过这种情况。</p>
+<h2 id="分析原因"><a href="#分析原因" class="headerlink" title="分析原因"></a>分析原因</h2><p>10.141.16.0 这个ip看起来像是lvs的ip，查了一下系统，果然是lvs，然后这个lvs 后面的rs就是10.112.61.163</p>
+<p>那么这个连结构就是10.141.16.0:3306：</p>
+<blockquote>
+<p>应用 -&gt; lvs(10.141.16.0:3306)-&gt; 10.112.61.163:3269  跟应用直接连MySQL是一回事了</p>
+</blockquote>
+<h3 id="先打个岔，分析下这里的LVS的原理"><a href="#先打个岔，分析下这里的LVS的原理" class="headerlink" title="先打个岔，分析下这里的LVS的原理"></a><a href="https://plantegg.github.io/2019/06/20/就是要你懂负载均衡--lvs和转发模式/" target="_blank" rel="external">先打个岔，分析下这里的LVS的原理</a></h3><p>这里使用的是 full NAT模型(full NetWork Address Translation-全部网络地址转换)</p>
+<p>基本流程（类似NAT）：</p>
+<ol>
+<li>client发出请求（sip 200.200.200.2 dip 200.200.200.1）</li>
+<li>请求包到达lvs，lvs修改请求包为<strong>（sip 200.200.200.1， dip rip）</strong> 注意这里sip/dip都被修改了</li>
+<li>请求包到达rs， rs回复（sip rip，dip 200.200.200.1）</li>
+<li>这个回复包的目的IP是VIP(不像NAT中是 cip)，所以LVS和RS不在一个vlan通过IP路由也能到达lvs</li>
+<li>lvs修改sip为vip， dip为cip，修改后的回复包（sip 200.200.200.1，dip 200.200.200.2）发给client</li>
+</ol>
+<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/94d55b926b5bb1573c4cab8353428712.png" alt="image.png"></p>
+<p><strong>注意上图中绿色的进包和红色的出包他们的地址变化</strong></p>
+<p>本来这个模型下都是正常的，但是为了Real Server能拿到client ip，也就是Real Server记录来源ip的时候希望记录的是client ip而不是LVS ip。这个时候LVS会将client ip放在tcp的options里面，然后在RealServer机器的内核里面将options中的client ip取出替换掉 lvs ip。所以Real Server上感知到的对端ip就是client ip。</p>
+<p>回包的时候RealServer上的内核模块同样将目标地址从client ip改成lvs ip，同时将client ip放入options中。</p>
+<h2 id="回到问题"><a href="#回到问题" class="headerlink" title="回到问题"></a>回到问题</h2><p>看完理论，再来分析这两个连接的行为</p>
+<p>fulnat模式下连接经过lvs到达mysql后，mysql上看到的连接信息是，cip+port，也就是在MySQL上的连接</p>
+<p><strong>lvs-ip:61902 -&gt; 10.112.61.163:3269  被修改成了 client-ip:61902 -&gt; 10.112.61.163:3269</strong> </p>
+<p>那么跟不走LVS的连接：</p>
+<p><strong>client-ip:61902 -&gt;  10.112.61.163:3269 (直连) 完全重复了。</strong></p>
+<p>这个时候应用端看到的还是两个连接：</p>
+<blockquote>
+<p>client-ip:61902 -&gt; 10.141.16.0:3306 （走LVS） </p>
+<p>client-ip:61902 -&gt;  10.112.61.163:3269 (直连) </p>
+</blockquote>
+<p>总结下，也就是这个连接经过LVS转换后在服务端（MYSQL）跟直连MySQL的连接四元组完全重复了，也就是MySQL会认为这两个连接就是同一个连接，所以必然出问题了。</p>
+<h2 id="问题出现的条件"><a href="#问题出现的条件" class="headerlink" title="问题出现的条件"></a>问题出现的条件</h2><ul>
+<li>fulnat模式的LVS（MySQL上会将LVS ip还原成client ip）</li>
+<li>client端正好重用一个相同的本地端口分别和MySQL以及LVS建立了两个连接</li>
+</ul>
+<p>这个时候这两个连接在MySQL端就会变成一个，然后两个连接的内容互串，必然导致rst</p>
+<p>这个问题还挺有意思的，推荐另外一个好玩的连接：<a href="https://plantegg.github.io/2020/07/01/如何创建一个自己连自己的TCP连接/" target="_blank" rel="external">如何创建一个自己连自己的TCP连接</a></p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://plantegg.github.io/2019/06/20/就是要你懂负载均衡--lvs和转发模式/" target="_blank" rel="external">就是要你懂负载均衡–lvs和转发模式</a></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;活久见，TCP连接互串了&quot;&gt;&lt;a href=&quot;#活久见，TCP连接互串了&quot; class=&quot;headerlink&quot; title=&quot;活久见，TCP连接互串了&quot;&gt;&lt;/a&gt;活久见，TCP连接互串了&lt;/h1&gt;&lt;h2 id=&quot;背景&quot;&gt;&lt;a href=&quot;#背景&quot; class=&quot;
+    
+    </summary>
+    
+      <category term="Linux" scheme="http://yoursite.com/categories/Linux/"/>
+    
+      <category term="TCP" scheme="http://yoursite.com/categories/Linux/TCP/"/>
+    
+      <category term="network" scheme="http://yoursite.com/categories/Linux/TCP/network/"/>
+    
+    
+      <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
+    
+      <category term="network" scheme="http://yoursite.com/tags/network/"/>
+    
+      <category term="TCP" scheme="http://yoursite.com/tags/TCP/"/>
+    
+      <category term="reset" scheme="http://yoursite.com/tags/reset/"/>
+    
+  </entry>
+  
+  <entry>
     <title>MySQL线程池导致的延时卡顿排查</title>
     <link href="http://yoursite.com/2020/11/17/MySQL%E7%BA%BF%E7%A8%8B%E6%B1%A0%E5%AF%BC%E8%87%B4%E7%9A%84%E5%BB%B6%E6%97%B6%E5%8D%A1%E9%A1%BF%E6%8E%92%E6%9F%A5/"/>
     <id>http://yoursite.com/2020/11/17/MySQL线程池导致的延时卡顿排查/</id>
@@ -1945,56 +2028,6 @@ LISTEN    0     511              *:8085           *:*
       <category term="san" scheme="http://yoursite.com/tags/san/"/>
     
       <category term="光纤" scheme="http://yoursite.com/tags/%E5%85%89%E7%BA%A4/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>如何制作本地yum repository</title>
-    <link href="http://yoursite.com/2020/01/24/%E5%A6%82%E4%BD%95%E5%88%B6%E4%BD%9C%E6%9C%AC%E5%9C%B0yum%20repository/"/>
-    <id>http://yoursite.com/2020/01/24/如何制作本地yum repository/</id>
-    <published>2020-01-24T09:30:03.000Z</published>
-    <updated>2020-11-02T01:28:26.255Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="如何制作本地yum-repository"><a href="#如何制作本地yum-repository" class="headerlink" title="如何制作本地yum repository"></a>如何制作本地yum repository</h1><p>某些情况下在没有外网的环境需要安装一些软件，但是软件依赖比较多，那么可以提前将所有依赖下载到本地，然后将他们制作成一个yum repo，安装的时候就会自动将依赖包都安装好。</p>
-<h2 id="收集所有rpm包"><a href="#收集所有rpm包" class="headerlink" title="收集所有rpm包"></a>收集所有rpm包</h2><p>创建一个文件夹，比如 Yum，将收集到的所有rpm包放在里面，比如安装ansible和docker需要的依赖文件：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">-rwxr-xr-x 1 root root  73K 7月  12 14:22 audit-libs-python-2.8.4-4.el7.x86_64.rpm</div><div class="line">-rwxr-xr-x 1 root root 295K 7月  12 14:22 checkpolicy-2.5-8.el7.x86_64.rpm</div><div class="line">-rwxr-xr-x 1 root root  23M 7月  12 14:22 containerd.io-1.2.2-3.el7.x86_64.rpm</div><div class="line">-rwxr-xr-x 1 root root  26K 7月  12 14:22 container-selinux-2.9-4.el7.noarch.rpm</div><div class="line">-rwxr-xr-x 1 root root  37K 7月  12 14:22 container-selinux-2.74-1.el7.noarch.rpm</div><div class="line">-rwxr-xr-x 1 root root  14M 7月  12 14:22 docker-ce-cli-18.09.0-3.el7.x86_64.rpm</div><div class="line">-rwxr-xr-x 1 root root  29K 7月  12 14:22 docker-ce-selinux-17.03.2.ce-1.el7.centos.noarch.rpm</div><div class="line">-r-xr-xr-x 1 root root  22K 7月  12 14:23 sshpass-1.06-2.el7.x86_64.rpm</div><div class="line">-r-xr-xr-x 1 root root  22K 7月  12 14:23 sshpass-1.06-1.el7.x86_64.rpm</div><div class="line">-r-xr-xr-x 1 root root 154K 7月  12 14:23 PyYAML-3.10-11.el7.x86_64.rpm</div><div class="line">-r-xr-xr-x 1 root root  29K 7月  12 14:23 python-six-1.9.0-2.el7.noarch.rpm</div><div class="line">-r-xr-xr-x 1 root root 397K 7月  12 14:23 python-setuptools-0.9.8-7.el7.noarch.rpm</div></pre></td></tr></table></figure>
-<p>收集方法：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">//先安装yum工具</div><div class="line">yum install yum-utils -y</div><div class="line">//将 ansible 依赖包都下载下来</div><div class="line">repoquery -R --resolve --recursive ansible | xargs -r yumdownloader --destdir=/tmp/ansible</div><div class="line">//将ansible rpm自己下载回来</div><div class="line">yumdownloader --destdir=/tmp/ansible --resolve ansible</div><div class="line">//验证一下依赖关系是完整的</div><div class="line">//repotrack ansible</div></pre></td></tr></table></figure>
-<h2 id="创建仓库索引"><a href="#创建仓库索引" class="headerlink" title="创建仓库索引"></a>创建仓库索引</h2><p>需要安装工具 createrepo：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"># createrepo ./yum/</div><div class="line">Spawning worker 0 with 6 pkgs</div><div class="line">Spawning worker 1 with 6 pkgs</div><div class="line">Spawning worker 23 with 5 pkgs</div><div class="line">Workers Finished</div><div class="line">Saving Primary metadata</div><div class="line">Saving file lists metadata</div><div class="line">Saving other metadata</div><div class="line">Generating sqlite DBs</div><div class="line">Sqlite DBs complete</div></pre></td></tr></table></figure>
-<p>会在yum文件夹下生成一个索引文件夹 repodata</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">drwxr-xr-x 2 root root 4.0K 7月  12 14:25 repodata</div><div class="line">[root@az1-drds-79 yum]# ls repodata/</div><div class="line">5e15c62fec1fe43c6025ecf4d370d632f4b3f607500016e045ad94b70f87bac3-filelists.xml.gz</div><div class="line">7a314396d6e90532c5c534567f9bd34eee94c3f8945fc2191b225b2861ace2b6-other.xml.gz</div><div class="line">ce9dce19f6b426b8856747b01d51ceaa2e744b6bbd5fbc68733aa3195f724590-primary.xml.gz</div><div class="line">ee33b7d79e32fe6ad813af92a778a0ec8e5cc2dfdc9b16d0be8cff6a13e80d99-filelists.sqlite.bz2</div><div class="line">f7e8177e7207a4ff94bade329a0f6b572a72e21da106dd9144f8b1cdf0489cab-primary.sqlite.bz2</div><div class="line">ff52e1f1859790a7b573d2708b02404eb8b29aa4b0c337bda83af75b305bfb36-other.sqlite.bz2</div><div class="line">repomd.xml</div></pre></td></tr></table></figure>
-<h2 id="生成iso镜像文件"><a href="#生成iso镜像文件" class="headerlink" title="生成iso镜像文件"></a>生成iso镜像文件</h2><p>非必要步骤，如果需要带到客户环境可以先生成iso，不过不够灵活。</p>
-<p>也可以不用生成iso，直接在drds.repo中指定 createrepo 的目录也可以，记得要先执行 yum clean all和yum update </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">#mkisofs -r -o docker_ansible.iso ./yum/</div><div class="line">I: -input-charset not specified, using utf-8 (detected in locale settings)</div><div class="line">Using PYTHO000.RPM;1 for  /python-httplib2-0.7.7-3.el7.noarch.rpm (python-httplib2-0.9.1-3.el7.noarch.rpm)</div><div class="line">Using MARIA006.RPM;1 for  /mariadb-5.5.56-2.el7.x86_64.rpm (mariadb-libs-5.5.56-2.el7.x86_64.rpm)</div><div class="line">Using LIBTO001.RPM;1 for  /libtomcrypt-1.17-25.el7.x86_64.rpm (libtomcrypt-1.17-26.el7.x86_64.rpm)</div><div class="line">  6.11% done, estimate finish Sun Jul 12 14:26:47 2020</div><div class="line"> 97.60% done, estimate finish Sun Jul 12 14:26:48 2020</div><div class="line">Total translation table size: 0</div><div class="line">Total rockridge attributes bytes: 14838</div><div class="line">Total directory bytes: 2048</div><div class="line">Path table size(bytes): 26</div><div class="line">Max brk space used 21000</div><div class="line">81981 extents written (160 MB)</div></pre></td></tr></table></figure>
-<h2 id="将-生成的-iso挂载到目标机器上"><a href="#将-生成的-iso挂载到目标机器上" class="headerlink" title="将 生成的 iso挂载到目标机器上"></a>将 生成的 iso挂载到目标机器上</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"># mkdir /mnt/iso</div><div class="line"># mount ./docker_ansible.iso /mnt/iso</div><div class="line">mount: /dev/loop0 is write-protected, mounting read-only</div></pre></td></tr></table></figure>
-<h2 id="配置本地-yum-源"><a href="#配置本地-yum-源" class="headerlink" title="配置本地 yum 源"></a>配置本地 yum 源</h2><p>yum repository不是必须要求iso挂载，直接指向rpm文件夹（必须要有 createrepo 建立索引了）也可以</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"># cat /etc/yum.repos.d/drds.repo </div><div class="line">[drds]</div><div class="line">name=drds Extra Packages for Enterprise Linux 7 - $basearch</div><div class="line">enabled=1</div><div class="line">failovermethod=priority</div><div class="line">baseurl=file:///mnt/repo #baseurl=http://192.168.1.91:8000/ 本地内网</div><div class="line">priority=1  #添加priority=1，数字越小优先级越高，也可以修改网络源的priority的值</div><div class="line">gpgcheck=0</div><div class="line">#gpgkey=file:///mnt/cdrom/RPM-GPG-KEY-CentOS-5    #注：这个你cd /mnt/cdrom/可以看到这个key，这里仅仅是个例子， 因为gpgcheck是0 ，所以gpgkey不需要了</div></pre></td></tr></table></figure>
-<p>到此就可以在没有网络环境的机器上直接：yum install ansible docker -y 了 </p>
-<h2 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h2><p>测试的话可以指定repo 源： yum install ansible –enablerepo=drds （drds 优先级最高）</p>
-<p>本地会cache一些rpm的版本信息，可以执行 yum clean all 得到一个干净的测试环境</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">yum clean all</div><div class="line">yum list</div><div class="line">yum deplist ansible</div></pre></td></tr></table></figure>
-<h2 id="yum-源问题处理"><a href="#yum-源问题处理" class="headerlink" title="yum 源问题处理"></a>yum 源问题处理</h2><p><a href="https://access.redhat.com/solutions/641093" target="_blank" rel="external">Yum commands error “pycurl.so: undefined symbol”</a></p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;如何制作本地yum-repository&quot;&gt;&lt;a href=&quot;#如何制作本地yum-repository&quot; class=&quot;headerlink&quot; title=&quot;如何制作本地yum repository&quot;&gt;&lt;/a&gt;如何制作本地yum repository&lt;/h1&gt;&lt;
-    
-    </summary>
-    
-      <category term="Linux" scheme="http://yoursite.com/categories/Linux/"/>
-    
-    
-      <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
-    
-      <category term="yum" scheme="http://yoursite.com/tags/yum/"/>
-    
-      <category term="iso" scheme="http://yoursite.com/tags/iso/"/>
-    
-      <category term="createrepo" scheme="http://yoursite.com/tags/createrepo/"/>
-    
-      <category term="yum-utils" scheme="http://yoursite.com/tags/yum-utils/"/>
     
   </entry>
   
