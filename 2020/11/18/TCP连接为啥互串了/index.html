@@ -105,7 +105,7 @@
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/fd02c2855142de5974fe695c76d21e61.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/511a87311762ec0b9db1d89ae487ff04.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/94d55b926b5bb1573c4cab8353428712.png">
-<meta property="og:updated_time" content="2020-11-19T02:49:30.841Z">
+<meta property="og:updated_time" content="2020-11-19T03:38:49.860Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="活久见，TCP连接互串了">
 <meta name="twitter:description" content="活久见，TCP连接互串了背景应用每过一段时间总是会抛出几个连接异常的错误，需要查明原因。 排查后发现是TCP连接互串了，这个案例实在是很珍惜，所以记录一下。 抓包业务结构： 应用-&amp;gt;MySQL(10.112.61.163) 在 应用 机器上抓包这个异常连接如下（3269为MySQL服务端口）：  粗一看没啥奇怪的，就是应用发查询给3269，但是一直没收到3269的ack，所以一直重传。这里唯">
@@ -447,6 +447,11 @@
 <p><strong>lvs-ip:61902 -&gt; 10.112.61.163:3269  被修改成了 client-ip:61902 -&gt; 10.112.61.163:3269</strong> </p>
 <p>那么跟不走LVS的连接：</p>
 <p><strong>client-ip:61902 -&gt;  10.112.61.163:3269 (直连) 完全重复了。</strong></p>
+<p>MySQL端看到的两个连接四元组一模一样了：</p>
+<blockquote>
+<p>10.112.61.163:3269 -&gt; client-ip:61902 (走LVS，本来应该是lvs ip的，但是被替换成了client ip) </p>
+<p>10.112.61.163:3269 -&gt; client-ip:61902 (直连) </p>
+</blockquote>
 <p>这个时候应用端看到的还是两个连接：</p>
 <blockquote>
 <p>client-ip:61902 -&gt; 10.141.16.0:3306 （走LVS） </p>

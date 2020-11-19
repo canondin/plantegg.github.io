@@ -594,6 +594,11 @@
 <p><strong>lvs-ip:61902 -&gt; 10.112.61.163:3269  被修改成了 client-ip:61902 -&gt; 10.112.61.163:3269</strong> </p>
 <p>那么跟不走LVS的连接：</p>
 <p><strong>client-ip:61902 -&gt;  10.112.61.163:3269 (直连) 完全重复了。</strong></p>
+<p>MySQL端看到的两个连接四元组一模一样了：</p>
+<blockquote>
+<p>10.112.61.163:3269 -&gt; client-ip:61902 (走LVS，本来应该是lvs ip的，但是被替换成了client ip) </p>
+<p>10.112.61.163:3269 -&gt; client-ip:61902 (直连) </p>
+</blockquote>
 <p>这个时候应用端看到的还是两个连接：</p>
 <blockquote>
 <p>client-ip:61902 -&gt; 10.141.16.0:3306 （走LVS） </p>

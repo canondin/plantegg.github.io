@@ -58,7 +58,7 @@
     <link href="http://yoursite.com/2020/11/18/TCP%E8%BF%9E%E6%8E%A5%E4%B8%BA%E5%95%A5%E4%BA%92%E4%B8%B2%E4%BA%86/"/>
     <id>http://yoursite.com/2020/11/18/TCP连接为啥互串了/</id>
     <published>2020-11-18T09:30:03.000Z</published>
-    <updated>2020-11-19T02:49:30.841Z</updated>
+    <updated>2020-11-19T03:38:49.860Z</updated>
     
     <content type="html"><![CDATA[<h1 id="活久见，TCP连接互串了"><a href="#活久见，TCP连接互串了" class="headerlink" title="活久见，TCP连接互串了"></a>活久见，TCP连接互串了</h1><h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>应用每过一段时间总是会抛出几个连接异常的错误，需要查明原因。</p>
 <p>排查后发现是TCP连接互串了，这个案例实在是很珍惜，所以记录一下。</p>
@@ -98,6 +98,11 @@
 <p><strong>lvs-ip:61902 -&gt; 10.112.61.163:3269  被修改成了 client-ip:61902 -&gt; 10.112.61.163:3269</strong> </p>
 <p>那么跟不走LVS的连接：</p>
 <p><strong>client-ip:61902 -&gt;  10.112.61.163:3269 (直连) 完全重复了。</strong></p>
+<p>MySQL端看到的两个连接四元组一模一样了：</p>
+<blockquote>
+<p>10.112.61.163:3269 -&gt; client-ip:61902 (走LVS，本来应该是lvs ip的，但是被替换成了client ip) </p>
+<p>10.112.61.163:3269 -&gt; client-ip:61902 (直连) </p>
+</blockquote>
 <p>这个时候应用端看到的还是两个连接：</p>
 <blockquote>
 <p>client-ip:61902 -&gt; 10.141.16.0:3306 （走LVS） </p>
