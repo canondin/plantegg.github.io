@@ -105,7 +105,7 @@
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/fd02c2855142de5974fe695c76d21e61.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/511a87311762ec0b9db1d89ae487ff04.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/94d55b926b5bb1573c4cab8353428712.png">
-<meta property="og:updated_time" content="2020-11-19T03:38:49.860Z">
+<meta property="og:updated_time" content="2020-11-20T08:01:56.637Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="活久见，TCP连接互串了">
 <meta name="twitter:description" content="活久见，TCP连接互串了背景应用每过一段时间总是会抛出几个连接异常的错误，需要查明原因。 排查后发现是TCP连接互串了，这个案例实在是很珍惜，所以记录一下。 抓包业务结构： 应用-&amp;gt;MySQL(10.112.61.163) 在 应用 机器上抓包这个异常连接如下（3269为MySQL服务端口）：  粗一看没啥奇怪的，就是应用发查询给3269，但是一直没收到3269的ack，所以一直重传。这里唯">
@@ -458,6 +458,10 @@
 <p>client-ip:61902 -&gt;  10.112.61.163:3269 (直连) </p>
 </blockquote>
 <p>总结下，也就是这个连接经过LVS转换后在服务端（MYSQL）跟直连MySQL的连接四元组完全重复了，也就是MySQL会认为这两个连接就是同一个连接，所以必然出问题了。</p>
+<p>实际两个连接建立的情况：</p>
+<blockquote>
+<p> 和mysqlserver的61902是04:22建起来的，和lvs的61902端口 是42:10建起来的，和lvs的61902建起来之后马上就出问题了</p>
+</blockquote>
 <h2 id="问题出现的条件"><a href="#问题出现的条件" class="headerlink" title="问题出现的条件"></a>问题出现的条件</h2><ul>
 <li>fulnat模式的LVS（MySQL上会将LVS ip还原成client ip）</li>
 <li>client端正好重用一个相同的本地端口分别和MySQL以及LVS建立了两个连接</li>
