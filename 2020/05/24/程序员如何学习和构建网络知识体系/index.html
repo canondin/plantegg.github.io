@@ -102,7 +102,7 @@
 <meta property="og:url" content="http://yoursite.com/2020/05/24/程序员如何学习和构建网络知识体系/index.html">
 <meta property="og:site_name" content="plantegg">
 <meta property="og:description" content="程序员如何学习和构建网络知识体系大家学习网络知识的过程中经常发现当时看懂了，很快又忘了，最典型的比如TCP三次握手、为什么要握手，大家基本都看过，但是种感觉还差那么一点点。都要看是因为面试官总要问，所以不能不知道啊。 我们来看一个典型的面试问题：  问：为什么TCP是可靠的？答：因为TCP有连接（或者回答因为TCP有握手） 追问：为什么有连接就可靠了？（面试的人估计心里在骂，你这不是傻逼么，有连接">
-<meta property="og:updated_time" content="2020-11-20T08:01:56.665Z">
+<meta property="og:updated_time" content="2020-11-23T07:42:40.761Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="程序员如何学习和构建网络知识体系">
 <meta name="twitter:description" content="程序员如何学习和构建网络知识体系大家学习网络知识的过程中经常发现当时看懂了，很快又忘了，最典型的比如TCP三次握手、为什么要握手，大家基本都看过，但是种感觉还差那么一点点。都要看是因为面试官总要问，所以不能不知道啊。 我们来看一个典型的面试问题：  问：为什么TCP是可靠的？答：因为TCP有连接（或者回答因为TCP有握手） 追问：为什么有连接就可靠了？（面试的人估计心里在骂，你这不是傻逼么，有连接">
@@ -398,10 +398,10 @@
 <p>物理上没有一个连接的东西在这里，udp也类似会占用端口、ip，但是大家都没说过udp的连接。而本质上我们说tcp的握手是指tcp是协商和维护一些状态信息的，这个状态信息就包含seq、ack、窗口/buffer，tcp握手就是协商出来这些初始值。这些状态才是我们平时所说的tcp连接的本质。</p>
 </blockquote>
 <p>这说明大部分程序员对问题的本质的理解上出了问题，或者教科书描述的过于教条不够接地气所以看完书本质没get到。</p>
-<p>再想想 费曼学习方法 中对本质的理解的重要性。</p>
-<h2 id="再来看一个案例"><a href="#再来看一个案例" class="headerlink" title="再来看一个案例"></a>再来看一个案例</h2><p>我第一次看<a href="https://tools.ietf.org/html/rfc1180" target="_blank" rel="external">RFC1180</a>的时候是震惊的，觉得讲述的太好了，2000字就把一本教科书的知识阐述的无比清晰、透彻。但是我实际发现很快就忘了，而且对大部分程序员基本都是这样</p>
+<p>想想 <code>费曼学习方法</code> 中对<strong>事物本质</strong>的理解的重要性。</p>
+<h2 id="再来看一个案例"><a href="#再来看一个案例" class="headerlink" title="再来看一个案例"></a>再来看一个案例</h2><p>我第一次看<a href="https://tools.ietf.org/html/rfc1180" target="_blank" rel="external">RFC1180</a>的时候是震惊的，觉得讲述的太好了，2000字就把一本教科书的知识阐述的无比清晰、透彻。但是实际上我发现很快就忘了，而且大部分程序员基本都是这样</p>
 <blockquote>
-<p>写的确实很好，清晰简洁，图文并茂，结构逻辑合理，但是对于90%的程序员没有什么卵用，当时看的时候很爽、也觉得自己理解了、学会了，实际上看完几周后就忘得差不多了。问题出在这种RFC偏理论多一点看起来完全没有体感无法感同身受，所以即使似乎当时看懂了，但是忘得也快，需要一篇结合实践的文章来帮助理解</p>
+<p>写的确实很好，清晰简洁，图文并茂，结构逻辑合理，但是对于95%的程序员没有什么用，当时看的时候很爽、也觉得自己理解了、学会了，实际上看完几周后就忘得差不多了。问题出在这种RFC偏理论多一点看起来完全没有体感无法感同身受，所以即使似乎当时看懂了，但是忘得也快，需要一篇结合实践的文章来帮助理解</p>
 </blockquote>
 <p>在这个问题上，让我深刻地理解到：</p>
 <blockquote>
@@ -573,7 +573,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">109</span>
+                <span class="site-state-item-count">110</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>

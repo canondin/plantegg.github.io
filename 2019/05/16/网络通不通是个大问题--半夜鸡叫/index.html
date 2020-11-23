@@ -106,7 +106,7 @@
 <meta property="og:image" content="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1557909749498-452acc94-f04b-48bf-803f-f1acb21dd4b2.png">
 <meta property="og:image" content="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1557910281403-59a60a80-5edf-472d-827c-b2c8d6db903f.png">
 <meta property="og:image" content="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1557910737844-1ee231f0-1ddd-4dee-ac07-3b23f9659878.png">
-<meta property="og:updated_time" content="2020-09-19T10:00:19.267Z">
+<meta property="og:updated_time" content="2020-11-23T07:42:48.277Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="网络通不通是个大问题–半夜鸡叫">
 <meta name="twitter:description" content="网络通不通是个大问题–半夜鸡叫半夜鸡叫凌晨啊，还有同学在为网络为什么不通的问题奋斗着：   问题描述大概如下： slb后面配了一台realserver(就叫172吧), 在172上通过curl http://127.0.0.1:80/ 是正常的(说明服务自身是正常的)如果从开发同学的笔记本直接curl slb-ip 就卡住了，进一步发现如果从北京的办公网curl slb-ip就行，但是从杭州的cu">
@@ -393,7 +393,7 @@
 <p>问题描述大概如下：</p>
 <p>slb后面配了一台realserver(就叫172吧), 在172上通过curl <a href="http://127.0.0.1:80/" target="_blank" rel="external">http://127.0.0.1:80/</a> 是正常的(说明服务自身是正常的)<br>如果从开发同学的笔记本直接curl slb-ip 就卡住了，进一步发现如果从北京的办公网curl slb-ip就行，但是从杭州的curl slb-ip就不行。</p>
 <p>从杭州curl的时候在172上抓包如下：<br><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1557909749498-452acc94-f04b-48bf-803f-f1acb21dd4b2.png" alt="undefined"> </p>
-<p>明显可以看到tcp握手包正确到达了172，但是172一直没有回复。</p>
+<p>明显可以看到tcp握手包正确到达了172，但是172一直没有回复。也就是如果是杭州访问服务的话，服务端收到握手请求后直接扔掉没有任何回复（回想下哪些场景会扔包）</p>
 <h2 id="问题排查"><a href="#问题排查" class="headerlink" title="问题排查"></a>问题排查</h2><h3 id="先排除了iptables的问题"><a href="#先排除了iptables的问题" class="headerlink" title="先排除了iptables的问题"></a>先排除了iptables的问题</h3><pre><code>略过
 </code></pre><h3 id="route-的嫌疑"><a href="#route-的嫌疑" class="headerlink" title="route 的嫌疑"></a>route 的嫌疑</h3><p>因为北京可以杭州不行，明显是某些IP可以，于是检查route 表，解决问题的<a href="https://www.atatech.org/articles/80573" target="_blank" rel="external">必杀技(基础知识)都在这里</a></p>
 <p>发现杭州的ip和北京的ip确实命中了不同的路由规则，简单说就是172绑在eth0上，机器还有另外一块网卡eth1. 而回复杭州ip的时候要走eth1. 至于为什么没有从eth1回复等会再说</p>
@@ -404,12 +404,15 @@
 <h3 id="为什么5U的机器可以"><a href="#为什么5U的机器可以" class="headerlink" title="为什么5U的机器可以"></a>为什么5U的机器可以</h3><p>开发同学接着反馈，出问题的172是7U2的系统，但是还有一些5U7的机器完全正常，5U7的机器上也是两块网卡，route规则也是一样的。</p>
 <p>这确实诡异，看着像是7U的内核行为跟5U不一致，咨询了内核同学，让检查一下 rp_filter 参数。果然看到7U2的系统默认 rp_filter 开着，而5U7是关着的，于是反复开关这个参数稳定重现了问题    </p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sysctl -w net.ipv4.conf.eth0.rp_filter=0</div></pre></td></tr></table></figure>
-<h3 id="rp-filter-原理"><a href="#rp-filter-原理" class="headerlink" title="rp_filter 原理"></a>rp_filter 原理</h3><pre><code>rp_filter参数用于控制系统是否开启对数据包源地址的校验, 收到包后根据source ip到route表中检查是否否和最佳路由，否的话扔掉这个包【可以防止DDoS，攻击等】
-    0：不开启源地址校验。
-    1：开启严格的反向路径校验。对每个进来的数据包，校验其反向路径是否是最佳路径。如果反向路径不是最佳路径，则直接丢弃该数据包。
-    2：开启松散的反向路径校验。对每个进来的数据包，校验其源地址是否可达，即反向路径是否能通（通过任意网口），如果反向路径不通，则直接丢弃该数据包。
-</code></pre><p>那么对于这种丢包，可以打开日志：/proc/sys/net/ipv4/conf/eth0/log_martians 来监控到：</p>
+<h3 id="rp-filter-原理"><a href="#rp-filter-原理" class="headerlink" title="rp_filter 原理"></a>rp_filter 原理</h3><p>rp_filter参数用于控制系统是否开启对数据包源地址的校验, 收到包后根据source ip到route表中检查是否否和最佳路由，否的话扔掉这个包【可以防止DDoS，攻击等】</p>
+<blockquote>
+<p>​    0：不开启源地址校验。<br>​    1：开启严格的反向路径校验。对每个进来的数据包，校验其反向路径是否是最佳路径。如果反向路径不是最佳路径，则直接丢弃该数据包。<br>​    2：开启松散的反向路径校验。对每个进来的数据包，校验其源地址是否可达，即反向路径是否能通（通过任意网口），如果反向路径不通，则直接丢弃该数据包。</p>
+</blockquote>
+<p>那么对于这种丢包，可以打开日志：/proc/sys/net/ipv4/conf/eth0/log_martians 来监控到：</p>
 <p><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1557910737844-1ee231f0-1ddd-4dee-ac07-3b23f9659878.png" alt="undefined"> </p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>本质原因就是服务器开启了 rp_filter 为1，严格校验进出包是否走同一块网卡，而如果请求从杭州机房发过来的话，回复包的路由走的是另外一块网卡，触发了内核的rp_filter扔包逻辑。</p>
+<p>改server的路由可以让杭州的包也走同一块网卡，就不扔掉了。当然将 rp_filter 改成0 关掉这个校验逻辑也可以完全避免这个扔包。</p>
+<p>从问题的解决思路来说，基本都可以认定是握手的时候服务器扔包了。只有知道 rp_filter 参数的内核老司机可以直接得出是这里的原因。如果对于一个新手的话还是得掌握如何推理分析得到原因。</p>
 
       
     </div>
@@ -555,7 +558,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">109</span>
+                <span class="site-state-item-count">110</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -619,7 +622,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#网络通不通是个大问题–半夜鸡叫"><span class="nav-number">1.</span> <span class="nav-text">网络通不通是个大问题–半夜鸡叫</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#半夜鸡叫"><span class="nav-number">1.1.</span> <span class="nav-text">半夜鸡叫</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#问题排查"><span class="nav-number">1.2.</span> <span class="nav-text">问题排查</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#先排除了iptables的问题"><span class="nav-number">1.2.1.</span> <span class="nav-text">先排除了iptables的问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#route-的嫌疑"><span class="nav-number">1.2.2.</span> <span class="nav-text">route 的嫌疑</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#解决办法"><span class="nav-number">1.2.3.</span> <span class="nav-text">解决办法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么5U的机器可以"><span class="nav-number">1.2.4.</span> <span class="nav-text">为什么5U的机器可以</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#rp-filter-原理"><span class="nav-number">1.2.5.</span> <span class="nav-text">rp_filter 原理</span></a></li></ol></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#网络通不通是个大问题–半夜鸡叫"><span class="nav-number">1.</span> <span class="nav-text">网络通不通是个大问题–半夜鸡叫</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#半夜鸡叫"><span class="nav-number">1.1.</span> <span class="nav-text">半夜鸡叫</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#问题排查"><span class="nav-number">1.2.</span> <span class="nav-text">问题排查</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#先排除了iptables的问题"><span class="nav-number">1.2.1.</span> <span class="nav-text">先排除了iptables的问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#route-的嫌疑"><span class="nav-number">1.2.2.</span> <span class="nav-text">route 的嫌疑</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#解决办法"><span class="nav-number">1.2.3.</span> <span class="nav-text">解决办法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#为什么5U的机器可以"><span class="nav-number">1.2.4.</span> <span class="nav-text">为什么5U的机器可以</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#rp-filter-原理"><span class="nav-number">1.2.5.</span> <span class="nav-text">rp_filter 原理</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">1.3.</span> <span class="nav-text">总结</span></a></li></ol></li></ol></div>
             
 
           </div>

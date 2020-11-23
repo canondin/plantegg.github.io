@@ -105,7 +105,7 @@
 <meta property="og:image" content="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/5478d28fb7aaba3adeb4260bc15c0c65.png">
 <meta property="og:image" content="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/48fb8755f8e96b8df58c6c537650b81b.png">
 <meta property="og:image" content="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/04283745fd082003e5f77e78a55e0d67.png">
-<meta property="og:updated_time" content="2020-11-05T08:55:59.069Z">
+<meta property="og:updated_time" content="2020-11-23T07:42:48.273Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="网络丢包">
 <meta name="twitter:description" content="网络丢包查看网卡是否丢包，一般是ring buffer太小ethtool -S eth0 | grep rx_ | grep errors 当驱动处理速度跟不上网卡收包速度时，驱动来不及分配缓冲区，NIC接收到的数据包无法及时写到sk_buffer(由网卡驱动直接在内核中分配的内存，并存放数据包，供内核软中断的时候读取)，就会产生堆积，当NIC内部缓冲区写满后，就会丢弃部分数据，引起丢包。这部分丢">
@@ -390,7 +390,8 @@
         <h1 id="网络丢包"><a href="#网络丢包" class="headerlink" title="网络丢包"></a>网络丢包</h1><h2 id="查看网卡是否丢包，一般是ring-buffer太小"><a href="#查看网卡是否丢包，一般是ring-buffer太小" class="headerlink" title="查看网卡是否丢包，一般是ring buffer太小"></a>查看网卡是否丢包，一般是ring buffer太小</h2><pre><code>ethtool -S eth0 | grep rx_ | grep errors
 </code></pre><p>当驱动处理速度跟不上网卡收包速度时，驱动来不及分配缓冲区，NIC接收到的数据包无法及时写到sk_buffer(由网卡驱动直接在内核中分配的内存，并存放数据包，供内核软中断的时候读取)，就会产生堆积，当NIC内部缓冲区写满后，就会丢弃部分数据，引起丢包。这部分丢包为rx_fifo_errors，在 /proc/net/dev中体现为fifo字段增长，在ifconfig中体现为overruns指标增长。</p>
 <h2 id="查看ring-buffer的大小设置"><a href="#查看ring-buffer的大小设置" class="headerlink" title="查看ring buffer的大小设置"></a>查看ring buffer的大小设置</h2><pre><code>ethtool ‐g eth0  
-</code></pre><h2 id="Socket-buffer太小导致的丢包（一般不多见）"><a href="#Socket-buffer太小导致的丢包（一般不多见）" class="headerlink" title="Socket buffer太小导致的丢包（一般不多见）"></a>Socket buffer太小导致的丢包（一般不多见）</h2><p>内核收到包后，会给对应的socket，每个socket会有 sk_rmem_alloc/sk_wmem_alloc/sk_omem_alloc、sk_rcvbuf(bytes)来存放包<br>When sk_rmem_alloc &gt;<br>sk_rcvbuf the TCP stack will call a routine which “collapses” the receive queue</p>
+</code></pre><h2 id="Socket-buffer太小导致的丢包（一般不多见）"><a href="#Socket-buffer太小导致的丢包（一般不多见）" class="headerlink" title="Socket buffer太小导致的丢包（一般不多见）"></a>Socket buffer太小导致的丢包（一般不多见）</h2><p>内核收到包后，会给对应的socket，每个socket会有 sk_rmem_alloc/sk_wmem_alloc/sk_omem_alloc、sk_rcvbuf(bytes)来存放包</p>
+<p>When sk_rmem_alloc &gt;<br>sk_rcvbuf the TCP stack will call a routine which “collapses” the receive queue</p>
 <p>查看collapses:</p>
 <pre><code>netstat -sn | egrep &quot;prune|collap&quot;; sleep 30; netstat -sn | egrep &quot;prune|collap&quot;
 17671 packets pruned from receive queue because of socket buffer overrun
@@ -401,7 +402,9 @@
 <h2 id="net-core-netdev-max-backlog"><a href="#net-core-netdev-max-backlog" class="headerlink" title="net.core.netdev_max_backlog"></a>net.core.netdev_max_backlog</h2><p>enqueue_to_backlog函数中，会对CPU的softnet_data 实例中的接收队列（input_pkt_queue）进行判断，如果队列中的数据长度超过netdev_max_backlog ，那么数据包将直接丢弃，这就产生了丢包。</p>
 <p>参数net.core.netdev_max_backlog指定的，默认大小是 1000。</p>
 <p>netdev_max_backlog 接收包队列（网卡收到还没有进行协议的处理队列），每个cpu core一个队列,如果/proc/net/softnet_stat第二列增加就表示这个队列溢出了，需要改大。 </p>
+<blockquote>
 <p>/proc/net/softnet_stat：（第一列和第三列的关系？）<br>The 1st column is the number of frames received by the interrupt handler. （第一列是中断处理程序接收的帧数）<br>The 2nd column is the number of frames dropped due to netdev_max_backlog being exceeded. netdev_max_backlog<br>The 3rd column is the number of times ksoftirqd ran out of netdev_budget or CPU time when there was still work to be done   net.core.netdev_budget</p>
+</blockquote>
 <h2 id="rp-filter"><a href="#rp-filter" class="headerlink" title="rp_filter"></a>rp_filter</h2><p><a href="https://www.yuque.com/plantegg/weyi1s/uc7a5g" target="_blank" rel="external">https://www.yuque.com/plantegg/weyi1s/uc7a5g</a></p>
 <h2 id="关于ifconfig的种种解释"><a href="#关于ifconfig的种种解释" class="headerlink" title="关于ifconfig的种种解释"></a>关于ifconfig的种种解释</h2><ul>
 <li>RX errors: 表示总的收包的错误数量，这包括 too-long-frames 错误，Ring Buffer 溢出错误，crc 校验错误，帧同步错误，fifo overruns 以及 missed pkg 等等。</li>
@@ -447,10 +450,20 @@
 0xffffffff8107d254 : local_bh_enable_ip+0x94/0xa0 [kernel]
 0xffffffff81634f4b : _raw_spin_unlock_bh+0x1b/0x40 [kernel]
 0xffffffff8150d968 : release_sock+0x118/0x170 [kernel]
-</code></pre><h2 id="iptables和tcpdump"><a href="#iptables和tcpdump" class="headerlink" title="iptables和tcpdump"></a>iptables和tcpdump</h2><blockquote>
+</code></pre><h2 id="如果客户端建立连接的时候抛异常，可能的原因（握手失败，建不上连接）："><a href="#如果客户端建立连接的时候抛异常，可能的原因（握手失败，建不上连接）：" class="headerlink" title="如果客户端建立连接的时候抛异常，可能的原因（握手失败，建不上连接）："></a>如果客户端建立连接的时候抛异常，可能的原因（握手失败，建不上连接）：</h2><ul>
+<li>网络不通，诊断：ping ip</li>
+<li>端口不通,  诊断：telnet ip port</li>
+<li>rp_filter 命中(rp_filter=1, 多网卡环境）， 诊断:  netstat -s | grep -i filter ;</li>
+<li>snat/dnat的时候宿主机port冲突，内核会扔掉 syn包。 troubleshooting: sudo conntrack -S | grep  insert_failed //有不为0的</li>
+<li>全连接队列满的情况，诊断： netstat -s | egrep “listen|LISTEN”  </li>
+<li>syn flood攻击, 诊断：同上</li>
+<li>若远端服务器的内核参数 net.ipv4.tcp_tw_recycle 和 net.ipv4.tcp_timestamps 的值都为 1，则远端服务器会检查每一个报文中的时间戳（Timestamp），若 Timestamp 不是递增的关系，不会响应这个报文。配置 NAT 后，远端服务器看到来自不同的客户端的源 IP 相同，但 NAT 前每一台客户端的时间可能会有偏差，报文中的 Timestamp 就不是递增的情况。nat后的连接，开启timestamp。因为快速回收time_wait的需要，会校验时间该ip上次tcp通讯的timestamp大于本次tcp(nat后的不同机器经过nat后ip一样，保证不了timestamp递增），诊断：是否有nat和是否开启了timestamps</li>
+<li>NAT 哈希表满导致 ECS 实例丢包 nf_conntrack full</li>
+</ul>
+<h2 id="iptables和tcpdump"><a href="#iptables和tcpdump" class="headerlink" title="iptables和tcpdump"></a>iptables和tcpdump</h2><blockquote>
 <p>sudo iptables -A INPUT -p tcp –destination-port 8089 -j DROP</p>
 </blockquote>
-<p>tcpdump 在如上iptables之前，也就是即使被DROP还是能tcpdump到8089的packet</p>
+<p>tcpdump 是直接从网卡驱动拿包，也就是包还没进入内核tcpdump就拿到了，而iptables是工作在内核层，也就是即使被DROP还是能tcpdump到8089的packet。</p>
 <h2 id="参考资料："><a href="#参考资料：" class="headerlink" title="参考资料："></a>参考资料：</h2><p><a href="https://mp.weixin.qq.com/s?__biz=MjM5NjQ5MTI5OA==&amp;mid=2651747704&amp;idx=3&amp;sn=cd76ad912729a125fd56710cb42792ba&amp;chksm=bd12ac358a6525235f51e3937d99ea113ed45542c51bc58bb9588fa1198f34d95b7d13ae1ae2&amp;mpshare=1&amp;scene=1&amp;srcid=07047U4tN9Y3m97WQUJSLENt#rd" target="_blank" rel="external">https://mp.weixin.qq.com/s?__biz=MjM5NjQ5MTI5OA==&amp;mid=2651747704&amp;idx=3&amp;sn=cd76ad912729a125fd56710cb42792ba&amp;chksm=bd12ac358a6525235f51e3937d99ea113ed45542c51bc58bb9588fa1198f34d95b7d13ae1ae2&amp;mpshare=1&amp;scene=1&amp;srcid=07047U4tN9Y3m97WQUJSLENt#rd</a></p>
 <p><a href="http://blog.hyfather.com/blog/2013/03/04/ifconfig/" target="_blank" rel="external">http://blog.hyfather.com/blog/2013/03/04/ifconfig/</a></p>
 
@@ -592,7 +605,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">109</span>
+                <span class="site-state-item-count">110</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -656,7 +669,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#网络丢包"><span class="nav-number">1.</span> <span class="nav-text">网络丢包</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#查看网卡是否丢包，一般是ring-buffer太小"><span class="nav-number">1.1.</span> <span class="nav-text">查看网卡是否丢包，一般是ring buffer太小</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#查看ring-buffer的大小设置"><span class="nav-number">1.2.</span> <span class="nav-text">查看ring buffer的大小设置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Socket-buffer太小导致的丢包（一般不多见）"><span class="nav-number">1.3.</span> <span class="nav-text">Socket buffer太小导致的丢包（一般不多见）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#net-core-netdev-budget"><span class="nav-number">1.4.</span> <span class="nav-text">net.core.netdev_budget</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#net-core-netdev-max-backlog"><span class="nav-number">1.5.</span> <span class="nav-text">net.core.netdev_max_backlog</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#rp-filter"><span class="nav-number">1.6.</span> <span class="nav-text">rp_filter</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#关于ifconfig的种种解释"><span class="nav-number">1.7.</span> <span class="nav-text">关于ifconfig的种种解释</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#核心流程"><span class="nav-number">1.8.</span> <span class="nav-text">核心流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#通过Dropwatch来查看丢包点"><span class="nav-number">1.9.</span> <span class="nav-text">通过Dropwatch来查看丢包点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#iptables和tcpdump"><span class="nav-number">1.10.</span> <span class="nav-text">iptables和tcpdump</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料："><span class="nav-number">1.11.</span> <span class="nav-text">参考资料：</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#网络丢包"><span class="nav-number">1.</span> <span class="nav-text">网络丢包</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#查看网卡是否丢包，一般是ring-buffer太小"><span class="nav-number">1.1.</span> <span class="nav-text">查看网卡是否丢包，一般是ring buffer太小</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#查看ring-buffer的大小设置"><span class="nav-number">1.2.</span> <span class="nav-text">查看ring buffer的大小设置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Socket-buffer太小导致的丢包（一般不多见）"><span class="nav-number">1.3.</span> <span class="nav-text">Socket buffer太小导致的丢包（一般不多见）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#net-core-netdev-budget"><span class="nav-number">1.4.</span> <span class="nav-text">net.core.netdev_budget</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#net-core-netdev-max-backlog"><span class="nav-number">1.5.</span> <span class="nav-text">net.core.netdev_max_backlog</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#rp-filter"><span class="nav-number">1.6.</span> <span class="nav-text">rp_filter</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#关于ifconfig的种种解释"><span class="nav-number">1.7.</span> <span class="nav-text">关于ifconfig的种种解释</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#核心流程"><span class="nav-number">1.8.</span> <span class="nav-text">核心流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#通过Dropwatch来查看丢包点"><span class="nav-number">1.9.</span> <span class="nav-text">通过Dropwatch来查看丢包点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#如果客户端建立连接的时候抛异常，可能的原因（握手失败，建不上连接）："><span class="nav-number">1.10.</span> <span class="nav-text">如果客户端建立连接的时候抛异常，可能的原因（握手失败，建不上连接）：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#iptables和tcpdump"><span class="nav-number">1.11.</span> <span class="nav-text">iptables和tcpdump</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料："><span class="nav-number">1.12.</span> <span class="nav-text">参考资料：</span></a></li></ol></li></ol></div>
             
 
           </div>

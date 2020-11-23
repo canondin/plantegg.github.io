@@ -54,11 +54,71 @@
   </entry>
   
   <entry>
+    <title>一次春节大促性能压测不达标的瓶颈推演</title>
+    <link href="http://yoursite.com/2020/11/24/%E4%B8%80%E6%AC%A1%E6%98%A5%E8%8A%82%E5%A4%A7%E4%BF%83%E6%80%A7%E8%83%BD%E5%8E%8B%E6%B5%8B%E4%B8%8D%E8%BE%BE%E6%A0%87%E7%9A%84%E7%93%B6%E9%A2%88%E6%8E%A8%E6%BC%94/"/>
+    <id>http://yoursite.com/2020/11/24/一次春节大促性能压测不达标的瓶颈推演/</id>
+    <published>2020-11-24T09:30:03.000Z</published>
+    <updated>2020-11-23T07:42:48.261Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="一次春节大促性能压测不达标的瓶颈推演"><a href="#一次春节大促性能压测不达标的瓶颈推演" class="headerlink" title="一次春节大促性能压测不达标的瓶颈推演"></a>一次春节大促性能压测不达标的瓶颈推演</h1><h2 id="场景描述"><a href="#场景描述" class="headerlink" title="场景描述"></a>场景描述</h2><p>联通通过PTS来压选号业务(HTTP服务在9108端口上），一个HTTP请求对应一次select seq-id 和 一次insert</p>
+<p>PTS端看到RT900ms+，QPS大概5万（期望20万）， DRDS rt 5ms，QPS 10万+</p>
+<h3 id="链路："><a href="#链路：" class="headerlink" title="链路："></a>链路：</h3><p>pts发起压力 -&gt; 5个eip -&gt; slb -&gt; app(300个机器运行tomcat在9108端口上） -&gt; slb -&gt; drds集群 -&gt; RDS集群</p>
+<p>性能不达标，怀疑DRDS或者RDS性能不行，作为数据库需要自证清白，所以从RDS和DRDS开始分析问题在哪里。</p>
+<p>略过一系列在DRDS、RDS上分析数据和监控图表都证明DRDS和RDS没问题。</p>
+<p>在明确给出证据DRDS和RDS都没问题后还是要解决问题，所以只能进一步帮助前面的app来分析为什么性能不达标。</p>
+<h2 id="在其中一个app应用上抓包（00-18秒到1-04秒），到DRDS的一个连接分析："><a href="#在其中一个app应用上抓包（00-18秒到1-04秒），到DRDS的一个连接分析：" class="headerlink" title="在其中一个app应用上抓包（00:18秒到1:04秒），到DRDS的一个连接分析："></a>在其中一个app应用上抓包（00:18秒到1:04秒），到DRDS的一个连接分析：</h2><p><img src="https://cdn.nlark.com/yuque/0/2020/png/162611/1583666243940-33194ae5-6ac6-4c5a-b705-5ba39d0f5ec2.png" alt="image.png"></p>
+<p>DRDS每个HTTP请求的响应时间都控制在15ms(一个前端HTTP请求对应一个select seq-id，一个 select readonly, 一个insert， 这个响应时间符合预期）。一个连接每秒才收到20 tps（因为压力不够，压力加大的话这个单连接tps还可以增加）， 20*3000 = 6万 ， 跟压测看到基本一致</p>
+<p>300个app，每个app 10个连接到DRDS</p>
+<p>如果300个app上的并发压力不够的话就没法将3000个连接跑满，所以看到的QPS是5万。</p>
+<p><strong>从300个app可以计算得到这个集群能支持的tps： 300*10（10个连接）* 1000/15(每秒钟每个连接能处理的请求数）=20万个tps （关键分析能力）</strong></p>
+<h2 id="9108的HTTP服务端口上的抓包分析"><a href="#9108的HTTP服务端口上的抓包分析" class="headerlink" title="9108的HTTP服务端口上的抓包分析"></a>9108的HTTP服务端口上的抓包分析</h2><p><img src="https://cdn.nlark.com/yuque/0/2020/png/162611/1583666243956-b7f72e99-4df6-4513-8dca-d32a7a2e88d7.png" alt="image.png">9108服务的每个HTTP response差不多都是15ms（<strong>这个响应时间基本符合预期</strong>），一个HTTP连接上在45秒的抓包时间范围只收到23个HTTP Request。</p>
+<p>统计9108端口在45秒总共收到的HTTP请求数量是6745（如下图），也就是每个app每秒钟收到的请求是150个，300<em>150=4.5万（理论值，300个app可能压力分布不一样？），<em>*从这里看app收到的压力还不够</em></em></p>
+<p><img src="https://cdn.nlark.com/yuque/0/2020/png/162611/1583666243985-1fa26f2f-f872-4b99-acad-efb7709f1651.png" alt="image.png"></p>
+<p>因为app监控确实（后来发现是不会看），所以从抓包分析http响应时间也基本得到15ms的rt关键结论</p>
+<h2 id="从http应用容器上的netstat统计来看，也是压力端回复太慢"><a href="#从http应用容器上的netstat统计来看，也是压力端回复太慢" class="headerlink" title="从http应用容器上的netstat统计来看，也是压力端回复太慢"></a>从http应用容器上的netstat统计来看，也是压力端回复太慢</h2><p><img src="https://cdn.nlark.com/yuque/0/2020/png/162611/1583666244043-f068fe47-3e93-4c55-9f5c-9f4caa7a05e4.png" alt="image.png"></p>
+<p>send-q表示回复从9108发走了，没收到对方的ack</p>
+<h2 id="ARMS监控分析9108端口上的RT"><a href="#ARMS监控分析9108端口上的RT" class="headerlink" title="ARMS监控分析9108端口上的RT"></a>ARMS监控分析9108端口上的RT</h2><p>后来PTS的同学说ARMS可以捞到监控数据，如下是对rt时间降序排</p>
+<p><img src="https://cdn.nlark.com/yuque/0/2020/png/162611/1583666244045-f191e9c6-d9f4-4447-9d9c-4c8843c0e631.png" alt="image.png"></p>
+<p>中的rt平均时间，可以看到http的rt确实14.4ms，表现非常平稳，从这个监控也发现实际app是330个而不是用户自己描述的300个，这也就是为什么实际是tps是5万，但是按300个去算的话tps是4.5万</p>
+<p><img src="https://cdn.nlark.com/yuque/0/2020/png/162611/1583666244057-647e6bc2-d13b-4e84-a962-21e4ed921987.png" alt="image.png"></p>
+<p>5分钟时间，QPS是5万+，HTTP的平均rt是15ms， HTTP的最大rt才79ms，和前面抓包分析一致。</p>
+<h2 id="从后端分析的总结"><a href="#从后端分析的总结" class="headerlink" title="从后端分析的总结"></a>从后端分析的总结</h2><p><strong>从9108端口响应时间15ms来看是符合预期的，为什么PTS看到的RT是900ms+，所以压力还没有打到APP上（也就是9108端口）</strong></p>
+<h2 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h2><p>最后发现是 eip 带宽不足，只有200M，调整到1G后 tps 也翻了5倍到了25万。</p>
+<p>pts -&gt; 5个eip(总带宽200M) -&gt; slb -&gt; app(330个HTTP容器） -&gt; slb -&gt; drds -&gt; RDS</p>
+<p>这个案例有意思的地方是可以通过抓包就能分析出集群能扛的QPS20万（实际只有5万），那么可以把这个分析原则在每个角色上挨个分析一下，来看瓶颈出在了哪个环节。</p>
+<p>应用端看到的rt是900ms，从后段开始往前面应用端来撸，看看每个环节的rt数据。</p>
+<h2 id="教训"><a href="#教训" class="headerlink" title="教训"></a>教训</h2><ul>
+<li>搞清楚 请求 从发起端到DB的链路路径，比如 pts -&gt; 5个eip(总带宽200M) -&gt; slb -&gt;  app(330个HTTP容器） -&gt; slb -&gt; drds -&gt; RDS </li>
+<li>压不上去得从发压力端开始往后端撸，撸每个产品的rt，每个产品给出自己的rt来自证清白</li>
+<li>应用有arms的话学会看arms对平均rt和QPS的统计，不要纠结个别请求的rt抖动，看平均rt</li>
+</ul>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;一次春节大促性能压测不达标的瓶颈推演&quot;&gt;&lt;a href=&quot;#一次春节大促性能压测不达标的瓶颈推演&quot; class=&quot;headerlink&quot; title=&quot;一次春节大促性能压测不达标的瓶颈推演&quot;&gt;&lt;/a&gt;一次春节大促性能压测不达标的瓶颈推演&lt;/h1&gt;&lt;h2 id=&quot;场
+    
+    </summary>
+    
+      <category term="Performance" scheme="http://yoursite.com/categories/Performance/"/>
+    
+    
+      <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
+    
+      <category term="network" scheme="http://yoursite.com/tags/network/"/>
+    
+      <category term="Performance" scheme="http://yoursite.com/tags/Performance/"/>
+    
+      <category term="TCP" scheme="http://yoursite.com/tags/TCP/"/>
+    
+  </entry>
+  
+  <entry>
     <title>活久见，TCP连接互串了</title>
     <link href="http://yoursite.com/2020/11/18/TCP%E8%BF%9E%E6%8E%A5%E4%B8%BA%E5%95%A5%E4%BA%92%E4%B8%B2%E4%BA%86/"/>
     <id>http://yoursite.com/2020/11/18/TCP连接为啥互串了/</id>
     <published>2020-11-18T09:30:03.000Z</published>
-    <updated>2020-11-20T08:01:56.637Z</updated>
+    <updated>2020-11-23T07:42:48.249Z</updated>
     
     <content type="html"><![CDATA[<h1 id="活久见，TCP连接互串了"><a href="#活久见，TCP连接互串了" class="headerlink" title="活久见，TCP连接互串了"></a>活久见，TCP连接互串了</h1><h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>应用每过一段时间总是会抛出几个连接异常的错误，需要查明原因。</p>
 <p>排查后发现是TCP连接互串了，这个案例实在是很珍惜，所以记录一下。</p>
@@ -80,6 +140,8 @@
 <blockquote>
 <p>应用 -&gt; lvs(10.141.16.0:3306)-&gt; 10.112.61.163:3269  跟应用直接连MySQL是一回事了</p>
 </blockquote>
+<p>所以这里的疑问就变成了：<strong>10.141.16.0 这个IP的3306端口为啥能知道 10.112.61.163:3269端口的seq和id，也许是TCP连接串了</strong></p>
+<p>接着往下排查</p>
 <h3 id="先打个岔，分析下这里的LVS的原理"><a href="#先打个岔，分析下这里的LVS的原理" class="headerlink" title="先打个岔，分析下这里的LVS的原理"></a><a href="https://plantegg.github.io/2019/06/20/就是要你懂负载均衡--lvs和转发模式/" target="_blank" rel="external">先打个岔，分析下这里的LVS的原理</a></h3><p>这里使用的是 full NAT模型(full NetWork Address Translation-全部网络地址转换)</p>
 <p>基本流程（类似NAT）：</p>
 <ol>
@@ -114,11 +176,11 @@
 <p> 和mysqlserver的61902是04:22建起来的，和lvs的61902端口 是42:10建起来的，和lvs的61902建起来之后马上就出问题了</p>
 </blockquote>
 <h2 id="问题出现的条件"><a href="#问题出现的条件" class="headerlink" title="问题出现的条件"></a>问题出现的条件</h2><ul>
-<li>fulnat模式的LVS（MySQL上会将LVS ip还原成client ip）</li>
-<li>client端正好重用一个相同的本地端口分别和MySQL以及LVS建立了两个连接</li>
+<li>fulnat模式的LVS，RS上装有slb_toa内核模块（RS上会将LVS ip还原成client ip）</li>
+<li>client端正好重用一个相同的本地端口分别和RS以及LVS建立了两个连接</li>
 </ul>
 <p>这个时候这两个连接在MySQL端就会变成一个，然后两个连接的内容互串，必然导致rst</p>
-<p>这个问题还挺有意思的，推荐另外一个好玩的连接：<a href="https://plantegg.github.io/2020/07/01/如何创建一个自己连自己的TCP连接/" target="_blank" rel="external">如何创建一个自己连自己的TCP连接</a></p>
+<p>这个问题还挺有意思的，估计没几个程序员一辈子能碰上一次。推荐另外一个好玩的连接：<a href="https://plantegg.github.io/2020/07/01/如何创建一个自己连自己的TCP连接/" target="_blank" rel="external">如何创建一个自己连自己的TCP连接</a></p>
 <h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://plantegg.github.io/2019/06/20/就是要你懂负载均衡--lvs和转发模式/" target="_blank" rel="external">就是要你懂负载均衡–lvs和转发模式</a></p>
 ]]></content>
     
@@ -150,7 +212,7 @@
     <link href="http://yoursite.com/2020/11/17/MySQL%E7%BA%BF%E7%A8%8B%E6%B1%A0%E5%AF%BC%E8%87%B4%E7%9A%84%E5%BB%B6%E6%97%B6%E5%8D%A1%E9%A1%BF%E6%8E%92%E6%9F%A5/"/>
     <id>http://yoursite.com/2020/11/17/MySQL线程池导致的延时卡顿排查/</id>
     <published>2020-11-16T23:30:03.000Z</published>
-    <updated>2020-11-20T08:01:56.625Z</updated>
+    <updated>2020-11-23T07:42:48.241Z</updated>
     
     <content type="html"><![CDATA[<h1 id="MySQL-线程池导致的延时卡顿排查"><a href="#MySQL-线程池导致的延时卡顿排查" class="headerlink" title="MySQL 线程池导致的延时卡顿排查"></a>MySQL 线程池导致的延时卡顿排查</h1><h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><p>简单小表的主键点查SQL，单条执行很快，但是放在业务端，有时快有时慢，取了一条慢sql，在MySQL侧查看，执行时间很短。</p>
 <p>通过监控有显示逻辑慢SQL和物理SQL ，取一slow.log里显示有12秒执行时间的SQL，但是这次12秒的执行在MySQL上记录下来的执行时间都不到1ms。</p>
@@ -194,7 +256,7 @@
 <p>可以看到thread_pool_size是1，太小了，将所有MySQL线程都放到一个buffer里面来抢锁，锁冲突的概率太高。调整到16后可以明显看到MySQL的RT从原来的12ms下降到了3ms不到，整个QPS大概有8%左右的提升。这是因为pool size为1的话所有sql都在一个队列里面，多个worker thread加锁等待比较严重，导致rt延迟增加。</p>
 <p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/114b5b71468b33128e76129bbc7fb8f4.png" alt="image.png"></p>
 <p>这个问题发现是因为压力一上来的时候要创建大量新的连接，这些连结创建后会去验证连接的有效性，也就是给MySQL发一个ping指令，一般都很快，这个ping验证过程设置的是1秒超时，但是实际看到大量超时异常堆栈，从而发现MySQL内部响应有问题。</p>
-<h3 id="ping相关知识"><a href="#ping相关知识" class="headerlink" title="ping相关知识"></a>ping相关知识</h3><blockquote>
+<h3 id="MySQL-ping和MySQL协议相关知识"><a href="#MySQL-ping和MySQL协议相关知识" class="headerlink" title="MySQL ping和MySQL协议相关知识"></a>MySQL ping和MySQL协议相关知识</h3><blockquote>
 <p><a href="https://dev.mysql.com/doc/connector-j/8.0/en/connector-j-usagenotes-j2ee-concepts-connection-pooling.html#idm47306928802368" target="_blank" rel="external">Ping</a> use the JDBC method <a href="http://docs.oracle.com/javase/7/docs/api/java/sql/Connection.html#isValid(int" target="_blank" rel="external">Connection.isValid(int timeoutInSecs)</a>). Digging into the MySQL Connector/J source, the actual implementation uses com.mysql.jdbc.ConnectionImpl.pingInternal() to send a simple ping packet to the DB and returns true as long as a valid response is returned.</p>
 </blockquote>
 <p>MySQL ping protocol是发送了一个 <code>0e</code> 的byte标识给Server，整个包加上2byte的Packet Length（内容为：1），2byte的Packet Number（内容为：0），总长度为5 byte</p>
@@ -1033,7 +1095,7 @@
     <link href="http://yoursite.com/2020/09/16/RT%E9%83%BD%E5%8E%BB%E5%93%AA%E4%BA%86/"/>
     <id>http://yoursite.com/2020/09/16/RT都去哪了/</id>
     <published>2020-09-16T09:30:03.000Z</published>
-    <updated>2020-09-19T10:00:19.215Z</updated>
+    <updated>2020-11-23T07:42:40.705Z</updated>
     
     <content type="html"><![CDATA[<h2 id="delay-ack拉高实际rt的case"><a href="#delay-ack拉高实际rt的case" class="headerlink" title="delay ack拉高实际rt的case"></a>delay ack拉高实际rt的case</h2><h2 id="案例描述"><a href="#案例描述" class="headerlink" title="案例描述"></a>案例描述</h2><blockquote>
 <p>开发人员发现client到server的rtt是2.5ms，每个请求1ms server就能处理完毕，但是监控发现的rt不是3.5（1+2.5），而是6ms，想知道这个6ms怎么来的？</p>
@@ -1616,7 +1678,7 @@ LEVEL4_CACHE_LINESIZE              0
     <link href="http://yoursite.com/2020/05/24/%E7%A8%8B%E5%BA%8F%E5%91%98%E5%A6%82%E4%BD%95%E5%AD%A6%E4%B9%A0%E5%92%8C%E6%9E%84%E5%BB%BA%E7%BD%91%E7%BB%9C%E7%9F%A5%E8%AF%86%E4%BD%93%E7%B3%BB/"/>
     <id>http://yoursite.com/2020/05/24/程序员如何学习和构建网络知识体系/</id>
     <published>2020-05-24T09:30:03.000Z</published>
-    <updated>2020-11-20T08:01:56.665Z</updated>
+    <updated>2020-11-23T07:42:40.761Z</updated>
     
     <content type="html"><![CDATA[<h1 id="程序员如何学习和构建网络知识体系"><a href="#程序员如何学习和构建网络知识体系" class="headerlink" title="程序员如何学习和构建网络知识体系"></a>程序员如何学习和构建网络知识体系</h1><p>大家学习网络知识的过程中经常发现当时看懂了，很快又忘了，最典型的比如TCP三次握手、为什么要握手，大家基本都看过，但是种感觉还差那么一点点。都要看是因为面试官总要问，所以不能不知道啊。</p>
 <p>我们来看一个典型的面试问题：</p>
@@ -1633,10 +1695,10 @@ LEVEL4_CACHE_LINESIZE              0
 <p>物理上没有一个连接的东西在这里，udp也类似会占用端口、ip，但是大家都没说过udp的连接。而本质上我们说tcp的握手是指tcp是协商和维护一些状态信息的，这个状态信息就包含seq、ack、窗口/buffer，tcp握手就是协商出来这些初始值。这些状态才是我们平时所说的tcp连接的本质。</p>
 </blockquote>
 <p>这说明大部分程序员对问题的本质的理解上出了问题，或者教科书描述的过于教条不够接地气所以看完书本质没get到。</p>
-<p>再想想 费曼学习方法 中对本质的理解的重要性。</p>
-<h2 id="再来看一个案例"><a href="#再来看一个案例" class="headerlink" title="再来看一个案例"></a>再来看一个案例</h2><p>我第一次看<a href="https://tools.ietf.org/html/rfc1180" target="_blank" rel="external">RFC1180</a>的时候是震惊的，觉得讲述的太好了，2000字就把一本教科书的知识阐述的无比清晰、透彻。但是我实际发现很快就忘了，而且对大部分程序员基本都是这样</p>
+<p>想想 <code>费曼学习方法</code> 中对<strong>事物本质</strong>的理解的重要性。</p>
+<h2 id="再来看一个案例"><a href="#再来看一个案例" class="headerlink" title="再来看一个案例"></a>再来看一个案例</h2><p>我第一次看<a href="https://tools.ietf.org/html/rfc1180" target="_blank" rel="external">RFC1180</a>的时候是震惊的，觉得讲述的太好了，2000字就把一本教科书的知识阐述的无比清晰、透彻。但是实际上我发现很快就忘了，而且大部分程序员基本都是这样</p>
 <blockquote>
-<p>写的确实很好，清晰简洁，图文并茂，结构逻辑合理，但是对于90%的程序员没有什么卵用，当时看的时候很爽、也觉得自己理解了、学会了，实际上看完几周后就忘得差不多了。问题出在这种RFC偏理论多一点看起来完全没有体感无法感同身受，所以即使似乎当时看懂了，但是忘得也快，需要一篇结合实践的文章来帮助理解</p>
+<p>写的确实很好，清晰简洁，图文并茂，结构逻辑合理，但是对于95%的程序员没有什么用，当时看的时候很爽、也觉得自己理解了、学会了，实际上看完几周后就忘得差不多了。问题出在这种RFC偏理论多一点看起来完全没有体感无法感同身受，所以即使似乎当时看懂了，但是忘得也快，需要一篇结合实践的文章来帮助理解</p>
 </blockquote>
 <p>在这个问题上，让我深刻地理解到：</p>
 <blockquote>
@@ -1904,144 +1966,6 @@ LISTEN    0     511              *:8085           *:*
       <category term="TCP" scheme="http://yoursite.com/tags/TCP/"/>
     
       <category term="参数" scheme="http://yoursite.com/tags/%E5%8F%82%E6%95%B0/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>ssd/san/sas  磁盘 光纤性能比较</title>
-    <link href="http://yoursite.com/2020/01/25/ssd%20san%E5%92%8Csas%20%E7%A3%81%E7%9B%98%E6%80%A7%E8%83%BD%E6%AF%94%E8%BE%83/"/>
-    <id>http://yoursite.com/2020/01/25/ssd san和sas 磁盘性能比较/</id>
-    <published>2020-01-25T09:30:03.000Z</published>
-    <updated>2020-08-24T02:47:43.744Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="ssd-san-sas-磁盘-光纤性能比较"><a href="#ssd-san-sas-磁盘-光纤性能比较" class="headerlink" title="ssd/san/sas 磁盘 光纤性能比较"></a>ssd/san/sas 磁盘 光纤性能比较</h1><p>正好有机会用到一个san存储设备，跑了一把性能数据，记录一下</p>
-<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d57a004c846e193126ca01398e394319.png" alt="image.png"></p>
-<p>所使用的测试命令：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">fio -ioengine=libaio -bs=4k -direct=1 -thread -rw=randwrite -size=1000G -filename=/data/fio.test -name=&quot;EBS 4K randwrite test&quot; -iodepth=64 -runtime=60</div></pre></td></tr></table></figure>
-<p>ssd（Solid State Drive）和san的比较是在同一台物理机上，所以排除了其他因素的干扰。</p>
-<p>简要的结论：</p>
-<ul>
-<li><p>本地ssd性能最好、sas机械盘(RAID10)性能最差</p>
-</li>
-<li><p>san存储走特定的光纤网络，不是走tcp的san（至少从网卡看不到san的流量），性能居中</p>
-</li>
-<li><p>从rt来看 ssd:san:sas 大概是 1:3:15</p>
-</li>
-<li><p>san比本地sas机械盘性能要好，这也许取决于san的网络传输性能和san存储中的设备（比如用的ssd而不是机械盘）</p>
-</li>
-</ul>
-<h2 id="NVMe-SSD-和-HDD的性能比较"><a href="#NVMe-SSD-和-HDD的性能比较" class="headerlink" title="NVMe SSD 和 HDD的性能比较"></a>NVMe SSD 和 HDD的性能比较</h2><p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d64a0f78ebf471ac69d447ecb46d90f1.png" alt="image.png"></p>
-<p>表中性能差异比上面测试还要大，SSD 的随机 IO 延迟比传统硬盘快百倍以上，一般在微妙级别；IO 带宽也高很多倍，可以达到每秒几个 GB；随机 IOPS 更是快了上千倍，可以达到几十万。</p>
-<p><strong>HDD只有一个磁头，并发没有意义，但是SSD支持高并发写入读取。SSD没有磁头、不需要旋转，所以随机读取和顺序读取基本没有差别。</strong></p>
-<h2 id="SSD-的性能特性和机制"><a href="#SSD-的性能特性和机制" class="headerlink" title="SSD 的性能特性和机制"></a>SSD 的性能特性和机制</h2><p>SSD 的内部工作方式和 HDD 大相径庭，我们先了解几个概念。</p>
-<p><strong>单元（Cell）、页面（Page）、块（Block）</strong>。当今的主流 SSD 是基于 NAND 的，它将数字位存储在单元中。每个 SSD 单元可以存储一位或多位。对单元的每次擦除都会降低单元的寿命，所以单元只能承受一定数量的擦除。单元存储的位数越多，制造成本就越少，SSD 的容量也就越大，但是耐久性（擦除次数）也会降低。</p>
-<p>一个页面包括很多单元，典型的页面大小是 4KB，页面也是要读写的最小存储单元。SSD 上没有“重写”操作，不像 HDD 可以直接对任何字节重写覆盖。一个页面一旦写入内容后就不能进行部分重写，必须和其它相邻页面一起被整体擦除重置。</p>
-<p>多个页面组合成块。一个块的典型大小为 512KB 或 1MB，也就是大约 128 或 256 页。<strong>块是擦除的基本单位，每次擦除都是整个块内的所有页面都被重置。</strong></p>
-<p><strong>擦除速度相对很慢，通常为几毫秒</strong>。所以对同步的 IO，发出 IO 的应用程序可能会因为块的擦除，而经历很大的写入延迟。为了尽量地减少这样的场景，保持空闲块的阈值对于快速的写响应是很有必要的。SSD 的垃圾回收（GC）的目的就在于此。GC 可以回收用过的块，这样可以确保以后的页写入可以快速分配到一个全新的页。</p>
-<h3 id="写入放大（Write-Amplification-or-WA"><a href="#写入放大（Write-Amplification-or-WA" class="headerlink" title="写入放大（Write Amplification, or WA)"></a>写入放大（Write Amplification, or WA)</h3><p>这是 SSD 相对于 HDD 的一个缺点，即实际写入 SSD 的物理数据量，有可能是应用层写入数据量的多倍。一方面，页级别的写入需要移动已有的数据来腾空页面。另一方面，GC 的操作也会移动用户数据来进行块级别的擦除。所以对 SSD 真正的写操作的数据可能比实际写的数据量大，这就是写入放大。一块 SSD 只能进行有限的擦除次数，也称为编程 / 擦除（P/E）周期，所以写入放大效用会缩短 SSD 的寿命。</p>
-<h3 id="耗损平衡-Wear-Leveling"><a href="#耗损平衡-Wear-Leveling" class="headerlink" title="耗损平衡 (Wear Leveling)"></a>耗损平衡 (Wear Leveling)</h3><p>对每一个块而言，一旦达到最大数量，该块就会死亡。对于 SLC 块，P/E 周期的典型数目是十万次；对于 MLC 块，P/E 周期的数目是一万；而对于 TLC 块，则可能是几千。为了确保 SSD 的容量和性能，我们需要在擦除次数上保持平衡，SSD 控制器具有这种“耗损平衡”机制可以实现这一目标。在损耗平衡期间，数据在各个块之间移动，以实现均衡的损耗，这种机制也会对前面讲的写入放大推波助澜。</p>
-<h2 id="光纤和网线的性能差异"><a href="#光纤和网线的性能差异" class="headerlink" title="光纤和网线的性能差异"></a>光纤和网线的性能差异</h2><p>以下都是在4.19内核的UOS，光纤交换机为锐捷，服务器是华为鲲鹏920</p>
-<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/553e1c5fff2dd04a668434f0da4f9d90.png" alt="image.png"></p>
-<p>光纤稳定性好很多，平均rt是网线的三分之一，最大值则是网线的十分之一. 光纤的带宽大约是网线的1.5倍</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div></pre></td><td class="code"><pre><div class="line">[aliyun@uos15 11:00 /home/aliyun]  一下88都是光口、89都是电口。</div><div class="line">$ping -c 10 10.88.88.16 //光纤</div><div class="line">PING 10.88.88.16 (10.88.88.16) 56(84) bytes of data.</div><div class="line">64 bytes from 10.88.88.16: icmp_seq=1 ttl=64 time=0.058 ms</div><div class="line">64 bytes from 10.88.88.16: icmp_seq=2 ttl=64 time=0.049 ms</div><div class="line">64 bytes from 10.88.88.16: icmp_seq=3 ttl=64 time=0.053 ms</div><div class="line">64 bytes from 10.88.88.16: icmp_seq=4 ttl=64 time=0.040 ms</div><div class="line">64 bytes from 10.88.88.16: icmp_seq=5 ttl=64 time=0.053 ms</div><div class="line">64 bytes from 10.88.88.16: icmp_seq=6 ttl=64 time=0.043 ms</div><div class="line">64 bytes from 10.88.88.16: icmp_seq=7 ttl=64 time=0.038 ms</div><div class="line">64 bytes from 10.88.88.16: icmp_seq=8 ttl=64 time=0.050 ms</div><div class="line">64 bytes from 10.88.88.16: icmp_seq=9 ttl=64 time=0.043 ms</div><div class="line">64 bytes from 10.88.88.16: icmp_seq=10 ttl=64 time=0.064 ms</div><div class="line"></div><div class="line">--- 10.88.88.16 ping statistics ---</div><div class="line">10 packets transmitted, 10 received, 0% packet loss, time 159ms</div><div class="line">rtt min/avg/max/mdev = 0.038/0.049/0.064/0.008 ms</div><div class="line"></div><div class="line">[aliyun@uos15 11:01 /home/aliyun]</div><div class="line">$ping -c 10 10.88.89.16 //电口</div><div class="line">PING 10.88.89.16 (10.88.89.16) 56(84) bytes of data.</div><div class="line">64 bytes from 10.88.89.16: icmp_seq=1 ttl=64 time=0.087 ms</div><div class="line">64 bytes from 10.88.89.16: icmp_seq=2 ttl=64 time=0.053 ms</div><div class="line">64 bytes from 10.88.89.16: icmp_seq=3 ttl=64 time=0.095 ms</div><div class="line">64 bytes from 10.88.89.16: icmp_seq=4 ttl=64 time=0.391 ms</div><div class="line">64 bytes from 10.88.89.16: icmp_seq=5 ttl=64 time=0.051 ms</div><div class="line">64 bytes from 10.88.89.16: icmp_seq=6 ttl=64 time=0.343 ms</div><div class="line">64 bytes from 10.88.89.16: icmp_seq=7 ttl=64 time=0.045 ms</div><div class="line">64 bytes from 10.88.89.16: icmp_seq=8 ttl=64 time=0.341 ms</div><div class="line">64 bytes from 10.88.89.16: icmp_seq=9 ttl=64 time=0.054 ms</div><div class="line">64 bytes from 10.88.89.16: icmp_seq=10 ttl=64 time=0.066 ms</div><div class="line"></div><div class="line">--- 10.88.89.16 ping statistics ---</div><div class="line">10 packets transmitted, 10 received, 0% packet loss, time 149ms</div><div class="line">rtt min/avg/max/mdev = 0.045/0.152/0.391/0.136 ms</div><div class="line"></div><div class="line">[aliyun@uos15 11:02 /u01]</div><div class="line">$scp uos.tar aliyun@10.88.89.16:/tmp/</div><div class="line">uos.tar                                  100% 3743MB 111.8MB/s   00:33    </div><div class="line"></div><div class="line">[aliyun@uos15 11:03 /u01]</div><div class="line">$scp uos.tar aliyun@10.88.88.16:/tmp/</div><div class="line">uos.tar                                   100% 3743MB 178.7MB/s   00:20    </div><div class="line"></div><div class="line">[aliyun@uos15 11:07 /u01]</div><div class="line">$sudo ping -f 10.88.89.16</div><div class="line">PING 10.88.89.16 (10.88.89.16) 56(84) bytes of data.</div><div class="line">--- 10.88.89.16 ping statistics ---</div><div class="line">284504 packets transmitted, 284504 received, 0% packet loss, time 702ms</div><div class="line">rtt min/avg/max/mdev = 0.019/0.040/1.014/0.013 ms, ipg/ewma 0.048/0.042 ms</div><div class="line"></div><div class="line">[aliyun@uos15 11:07 /u01]</div><div class="line">$sudo ping -f 10.88.88.16</div><div class="line">PING 10.88.88.16 (10.88.88.16) 56(84) bytes of data.</div><div class="line">--- 10.88.88.16 ping statistics ---</div><div class="line">299748 packets transmitted, 299748 received, 0% packet loss, time 242ms</div><div class="line">rtt min/avg/max/mdev = 0.012/0.016/0.406/0.006 ms, pipe 2, ipg/ewma 0.034/0.014 ms</div></pre></td></tr></table></figure>
-<p>光纤接口：</p>
-<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b67715de1b8e143f6fc17ba574bcf0c4.png" alt="image.png" style="zoom:60%;"></p>
-<h2 id="Cache、内存、磁盘、网络的延迟比较"><a href="#Cache、内存、磁盘、网络的延迟比较" class="headerlink" title="Cache、内存、磁盘、网络的延迟比较"></a>Cache、内存、磁盘、网络的延迟比较</h2><p><a href="http://cizixs.com/2017/01/03/how-slow-is-disk-and-network" target="_blank" rel="external">假设主频2.6G的CPU，每个指令只需要 0.38ns</a> </p>
-<p>每次内存寻址需要 100ns </p>
-<p>一次 CPU 上下文切换（系统调用）需要大约 1500ns，也就是 1.5us（这个数字参考了<a href="http://blog.tsunanet.net/2010/11/how-long-does-it-take-to-make-context.html" target="_blank" rel="external">这篇文章</a>，采用的是单核 CPU 线程平均时间）</p>
-<p>SSD 随机读取耗时为 150us</p>
-<p>从内存中读取 1MB 的连续数据，耗时大约为 250us</p>
-<p>同一个数据中心网络上跑一个来回需要 0.5ms</p>
-<p>从 SSD 读取 1MB 的顺序数据，大约需要 1ms （是内存速度的四分之一）</p>
-<p>磁盘寻址时间为 10ms</p>
-<p>从磁盘读取 1MB 连续数据需要 20ms</p>
-<p>如果 CPU 访问 L1 缓存需要 1 秒，那么访问主存需要 3 分钟、从 SSD 中随机读取数据需要 3.4 天、磁盘寻道需要 2 个月，网络传输可能需要 1 年多的时间。</p>
-<p><strong>2012 年延迟数字对比表：</strong></p>
-<table>
-<thead>
-<tr>
-<th>Work</th>
-<th>Latency</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>L1 cache reference</td>
-<td>0.5 ns</td>
-</tr>
-<tr>
-<td>Branch mispredict</td>
-<td>5 ns</td>
-</tr>
-<tr>
-<td>L2 cache reference</td>
-<td>7 ns</td>
-</tr>
-<tr>
-<td>Mutex lock/unlock</td>
-<td>25 ns</td>
-</tr>
-<tr>
-<td>Main memory reference</td>
-<td>100 ns</td>
-</tr>
-<tr>
-<td>Compress 1K bytes with Zippy</td>
-<td>3,000 ns</td>
-</tr>
-<tr>
-<td>Send 1K bytes over 1 Gbps network</td>
-<td>10,000 ns</td>
-</tr>
-<tr>
-<td>Read 4K randomly from SSD*</td>
-<td>150,000 ns</td>
-</tr>
-<tr>
-<td>Read 1 MB sequentially from memory</td>
-<td>250,000 ns</td>
-</tr>
-<tr>
-<td>Round trip within same datacenter</td>
-<td>500,000 ns</td>
-</tr>
-<tr>
-<td>Read 1 MB sequentially from SSD*</td>
-<td>1,000,000 ns</td>
-</tr>
-<tr>
-<td>Disk seek</td>
-<td>10,000,000 ns</td>
-</tr>
-<tr>
-<td>Read 1 MB sequentially from disk</td>
-<td>20,000,000 ns</td>
-</tr>
-<tr>
-<td>Send packet CA-&gt;Netherlands-&gt;CA</td>
-<td>150,000,000 ns</td>
-</tr>
-</tbody>
-</table>
-<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="http://cizixs.com/2017/01/03/how-slow-is-disk-and-network" target="_blank" rel="external">http://cizixs.com/2017/01/03/how-slow-is-disk-and-network</a></p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;ssd-san-sas-磁盘-光纤性能比较&quot;&gt;&lt;a href=&quot;#ssd-san-sas-磁盘-光纤性能比较&quot; class=&quot;headerlink&quot; title=&quot;ssd/san/sas 磁盘 光纤性能比较&quot;&gt;&lt;/a&gt;ssd/san/sas 磁盘 光纤性能比较&lt;/
-    
-    </summary>
-    
-      <category term="performance" scheme="http://yoursite.com/categories/performance/"/>
-    
-    
-      <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
-    
-      <category term="磁盘性能" scheme="http://yoursite.com/tags/%E7%A3%81%E7%9B%98%E6%80%A7%E8%83%BD/"/>
-    
-      <category term="san" scheme="http://yoursite.com/tags/san/"/>
-    
-      <category term="光纤" scheme="http://yoursite.com/tags/%E5%85%89%E7%BA%A4/"/>
     
   </entry>
   

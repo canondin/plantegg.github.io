@@ -281,6 +281,276 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/01/24/Linux Module/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/01/24/Linux Module/" itemprop="url">Linux Module and make debug</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-24T17:30:03+08:00">
+                2019-01-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/01/24/Linux Module/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2019/01/24/Linux Module/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="Linux-Module-and-make-debug"><a href="#Linux-Module-and-make-debug" class="headerlink" title="Linux Module and make debug"></a>Linux Module and make debug</h1><h2 id="Makefile-中的-tab-键"><a href="#Makefile-中的-tab-键" class="headerlink" title="Makefile 中的 tab 键"></a>Makefile 中的 tab 键</h2><pre><code>$sudo make
+Makefile:4: *** missing separator.  Stop.
+</code></pre><p>Makefile 中每个指令前面必须是tab(不能是4个空格）！</p>
+<h2 id="pwd"><a href="#pwd" class="headerlink" title="pwd"></a>pwd</h2><pre><code>$sudo make
+make -C /lib/modules/4.19.48-002.ali4000.test.alios7.x86_64/build M= modules
+make[1]: Entering directory `/usr/src/kernels/4.19.48-002.ali4000.test.alios7.x86_64&apos;
+make[2]: *** No rule to make target `arch/x86/entry/syscalls/syscall_32.tbl&apos;, needed by `arch/x86/include/generated/asm/syscalls_32.h&apos;.  Stop.
+make[1]: *** [archheaders] Error 2
+make[1]: Leaving directory `/usr/src/kernels/4.19.48-002.ali4000.test.alios7.x86_64&apos;
+make: *** [all] Error 2
+</code></pre><p>Makefile中的：<br>    make -C /lib/modules/$(shell uname -r)/build M=$(pwd) modules</p>
+<p>$(pwd) 需要修改成：$(shell pwd)</p>
+<h2 id="makefile调试的法宝"><a href="#makefile调试的法宝" class="headerlink" title="makefile调试的法宝"></a>makefile调试的法宝</h2><h3 id="makefile调试的法宝1"><a href="#makefile调试的法宝1" class="headerlink" title="makefile调试的法宝1"></a>makefile调试的法宝1</h3><pre><code>$ make --debug=a,m SHELL=&quot;bash -x&quot; &gt; make.log  2&gt;&amp;1                # 可以获取make过程最完整debug信息
+$ make --debug=v,m SHELL=&quot;bash -x&quot; &gt; make.log  2&gt;&amp;1                # 一个相对精简版，推荐使用这个命令
+$ make --debug=v  &gt; make.log  2&gt;&amp;1                                 # 再精简一点的版本
+$ make --debug=b  &gt; make.log  2&gt;&amp;1                                 # 最精简的版本
+</code></pre><h3 id="makefile调试的法宝2"><a href="#makefile调试的法宝2" class="headerlink" title="makefile调试的法宝2"></a>makefile调试的法宝2</h3><p>上面的法宝1更多的还是在整体工程的makefile结构、makefile读取和makefile内部的rule之间的关系方面有很好的帮助作用。但是对于makefile中rule部分之前的变量部分的引用过程则表现的不是很充分。在这里，我们有另外一个法宝，可以把变量部分的引用过程给出一个比较好的调试信息。具体命令如下。</p>
+<pre><code>$ make -p 2&gt;&amp;1 | grep -A 1 &apos;^# makefile&apos; | grep -v &apos;^--&apos; | awk &apos;/# makefile/&amp;&amp;/line/{getline n;print $0,&quot;;&quot;,n}&apos; | LC_COLLATE=C sort -k 4 -k 6n &gt; variable.log
+$ cat variable.log
+# makefile (from `Makefile&apos;, line 1) ; aa := 11
+# makefile (from `Makefile&apos;, line 3) ; cc := 11
+# makefile (from `Makefile&apos;, line 4) ; bb := 9999
+# makefile (from `cfg_makefile&apos;, line 1) ; MAKEFILE_LIST :=  Makefile cfg_makefile
+# makefile (from `cfg_makefile&apos;, line 1) ; xx := 4444
+# makefile (from `cfg_makefile&apos;, line 2) ; yy := 4444
+# makefile (from `cfg_makefile&apos;, line 3) ; zz := 4444
+# makefile (from `sub_makefile&apos;, line 1) ; MAKEFILE_LIST :=  sub_makefile
+# makefile (from `sub_makefile&apos;, line 1) ; aaaa := 222222
+# makefile (from `sub_makefile&apos;, line 2) ; bbbb := 222222
+# makefile (from `sub_makefile&apos;, line 3) ; cccc := 222222
+</code></pre><h3 id="makefile调试的法宝3"><a href="#makefile调试的法宝3" class="headerlink" title="makefile调试的法宝3"></a>makefile调试的法宝3</h3><p>法宝2可以把makefile文件中每个变量的最终值清晰的展现出来，但是对于这些变量引用过程中的中间值却没有展示。此时，我们需要依赖法宝3来帮助我们。</p>
+<pre><code>$(warning $(var123))
+</code></pre><p>很多人可能都知道这个warning语句。我们可以在makefile文件中的变量引用阶段的任何两行之间，添加这个语句打印关键变量的引用过程。</p>
+<h2 id="make-时ld报找不到lib"><a href="#make-时ld报找不到lib" class="headerlink" title="make 时ld报找不到lib"></a>make 时ld报找不到lib</h2><p>make总是报找不到libc，但实际我执行 ld -lc –verbose 从debug信息看又能够正确找到libc，<a href="https://stackoverflow.com/questions/16710047/usr-bin-ld-cannot-find-lnameofthelibrary" target="_blank" rel="external">debug方法</a></p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/f76b841375bb5ed5c5a946614fe494e1.png" alt="image.png"></p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/19e493900f7d1ae1937d27366129e8aa.png" alt="image.png"></p>
+<p>实际原因是make的时候最后有一个参数 -static，这要求得装 <em>*</em>-static lib库，可以去掉 -static</p>
+<h2 id="依赖错误"><a href="#依赖错误" class="headerlink" title="依赖错误"></a>依赖错误</h2><p>编译报错缺少的组件需要yum install一下(bison/flex)</p>
+<h2 id="hping3"><a href="#hping3" class="headerlink" title="hping3"></a>hping3</h2><p>构造半连接：</p>
+<pre><code>sudo hping3 -i u100 -S -p 3306 10.0.186.79
+</code></pre><h2 id="tcp-sk-state"><a href="#tcp-sk-state" class="headerlink" title="tcp sk_state"></a>tcp sk_state</h2><pre><code>enum {
+    TCP_ESTABLISHED = 1,
+    TCP_SYN_SENT,
+    TCP_SYN_RECV,
+    TCP_FIN_WAIT1,
+    TCP_FIN_WAIT2,
+    TCP_TIME_WAIT,
+    TCP_CLOSE,
+    TCP_CLOSE_WAIT,
+    TCP_LAST_ACK,
+    TCP_LISTEN,
+    TCP_CLOSING,    /* Now a valid state */
+
+    TCP_MAX_STATES  /* Leave at the end! */
+};
+</code></pre><h2 id="kdump"><a href="#kdump" class="headerlink" title="kdump"></a>kdump</h2><p>启动kdump(kexec-tools), 系统崩溃的时候dump 内核(/var/crash)</p>
+<pre><code>sudo systemctl start kdump
+</code></pre><h2 id="crash"><a href="#crash" class="headerlink" title="crash"></a>crash</h2><pre><code>sudo yum install crash -y
+//手动触发crash
+#echo 1 &gt; /proc/sys/kernel/sysrq
+#echo c &gt; /proc/sysrq-trigger
+//系统crash，然后重启，重启后分析：
+sudo crash /usr/lib/debug/lib/modules/4.19.57-15.1.al7.x86_64/vmlinux /var/crash/127.0.0.1-2020-04-02-14\:40\:45/vmcore
+</code></pre><h2 id="内核函数替换"><a href="#内核函数替换" class="headerlink" title="内核函数替换"></a>内核函数替换</h2><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/c41363dae054baa6d7f79d03376c57cb.png" alt="image.png"></p>
+<pre><code>static int __init hotfix_init(void)
+{
+  unsigned char e8_call[POKE_LENGTH];
+  s32 offset, i;
+
+  addr = (void *)kallsyms_lookup_name(&quot;tcp_reset&quot;);
+  if (!addr) {
+    printk(&quot;一切还没有准备好！请先加载tcp_reset模块。\n&quot;);
+    return -1;
+  }
+
+  _text_poke_smp = (void *)kallsyms_lookup_name(&quot;text_poke&quot;);
+  _text_mutex = (void *)kallsyms_lookup_name(&quot;text_mutex&quot;);
+
+  stub = (void *)test_stub1;
+
+  offset = (s32)((long)stub - (long)addr - FTRACE_SIZE);
+
+  e8_call[0] = 0xe8;
+  (*(s32 *)(&amp;e8_call[1])) = offset;
+  for (i = 5; i &lt; POKE_LENGTH; i++) {
+    e8_call[i] = 0x90;
+  }
+  get_online_cpus();
+  mutex_lock(_text_mutex);
+  _text_poke_smp(&amp;addr[POKE_OFFSET], e8_call, POKE_LENGTH);
+  mutex_unlock(_text_mutex);
+  put_online_cpus();
+
+  return 0;
+}
+
+void test_stub1(void)
+{
+  struct sock *sk = NULL;
+  unsigned long sk_addr = 0;
+  char buf[MAX_BUF_SIZE];
+  int size=0;
+  asm (&quot;push %rdi&quot;);
+
+  asm ( &quot;mov %%rdi, %0;&quot; :&quot;=m&quot;(sk_addr) : :);
+  sk = (struct sock *)sk_addr;
+
+  printk(&quot;aaaaaaaa yes :%d  dest:%X  source:%X\n&quot;,
+      sk-&gt;sk_state,
+      sk-&gt;sk_rcv_saddr,
+      sk-&gt;sk_daddr);
+/*
+  size = snprintf(buf, MAX_BUF_SIZE-1, &quot;rst %lu %d %pI4:%u-&gt;%pI4:%u \n&quot;,
+                     get_seconds(),
+                     sk-&gt;sk_state,
+                     &amp;(inet_sk(sk)-&gt;inet_saddr),
+                     ntohs(inet_sk(sk)-&gt;inet_sport),
+                     ntohs(inet_sk(sk)-&gt;inet_dport),
+                     &amp;(inet_sk(sk)-&gt;inet_daddr));
+*/
+//  tcp_rt_log_output(buf,size,1);
+
+  asm (&quot;pop %rdi&quot;);
+}
+</code></pre><h2 id="参考文档"><a href="#参考文档" class="headerlink" title="参考文档"></a>参考文档</h2><p><a href="https://blog.sourcerer.io/writing-a-simple-linux-kernel-module-d9dc3762c234" target="_blank" rel="external">https://blog.sourcerer.io/writing-a-simple-linux-kernel-module-d9dc3762c234</a></p>
+<p><a href="https://stackoverflow.com/questions/16710047/usr-bin-ld-cannot-find-lnameofthelibrary" target="_blank" rel="external">https://stackoverflow.com/questions/16710047/usr-bin-ld-cannot-find-lnameofthelibrary</a></p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/01/13/中间件的自己的DNS服务在alios7上域名解析失败/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1391,7 +1661,8 @@ IPv4 路由表
             <h1 id="网络丢包"><a href="#网络丢包" class="headerlink" title="网络丢包"></a>网络丢包</h1><h2 id="查看网卡是否丢包，一般是ring-buffer太小"><a href="#查看网卡是否丢包，一般是ring-buffer太小" class="headerlink" title="查看网卡是否丢包，一般是ring buffer太小"></a>查看网卡是否丢包，一般是ring buffer太小</h2><pre><code>ethtool -S eth0 | grep rx_ | grep errors
 </code></pre><p>当驱动处理速度跟不上网卡收包速度时，驱动来不及分配缓冲区，NIC接收到的数据包无法及时写到sk_buffer(由网卡驱动直接在内核中分配的内存，并存放数据包，供内核软中断的时候读取)，就会产生堆积，当NIC内部缓冲区写满后，就会丢弃部分数据，引起丢包。这部分丢包为rx_fifo_errors，在 /proc/net/dev中体现为fifo字段增长，在ifconfig中体现为overruns指标增长。</p>
 <h2 id="查看ring-buffer的大小设置"><a href="#查看ring-buffer的大小设置" class="headerlink" title="查看ring buffer的大小设置"></a>查看ring buffer的大小设置</h2><pre><code>ethtool ‐g eth0  
-</code></pre><h2 id="Socket-buffer太小导致的丢包（一般不多见）"><a href="#Socket-buffer太小导致的丢包（一般不多见）" class="headerlink" title="Socket buffer太小导致的丢包（一般不多见）"></a>Socket buffer太小导致的丢包（一般不多见）</h2><p>内核收到包后，会给对应的socket，每个socket会有 sk_rmem_alloc/sk_wmem_alloc/sk_omem_alloc、sk_rcvbuf(bytes)来存放包<br>When sk_rmem_alloc &gt;<br>sk_rcvbuf the TCP stack will call a routine which “collapses” the receive queue</p>
+</code></pre><h2 id="Socket-buffer太小导致的丢包（一般不多见）"><a href="#Socket-buffer太小导致的丢包（一般不多见）" class="headerlink" title="Socket buffer太小导致的丢包（一般不多见）"></a>Socket buffer太小导致的丢包（一般不多见）</h2><p>内核收到包后，会给对应的socket，每个socket会有 sk_rmem_alloc/sk_wmem_alloc/sk_omem_alloc、sk_rcvbuf(bytes)来存放包</p>
+<p>When sk_rmem_alloc &gt;<br>sk_rcvbuf the TCP stack will call a routine which “collapses” the receive queue</p>
 <p>查看collapses:</p>
 <pre><code>netstat -sn | egrep &quot;prune|collap&quot;; sleep 30; netstat -sn | egrep &quot;prune|collap&quot;
 17671 packets pruned from receive queue because of socket buffer overrun
@@ -1402,7 +1673,9 @@ IPv4 路由表
 <h2 id="net-core-netdev-max-backlog"><a href="#net-core-netdev-max-backlog" class="headerlink" title="net.core.netdev_max_backlog"></a>net.core.netdev_max_backlog</h2><p>enqueue_to_backlog函数中，会对CPU的softnet_data 实例中的接收队列（input_pkt_queue）进行判断，如果队列中的数据长度超过netdev_max_backlog ，那么数据包将直接丢弃，这就产生了丢包。</p>
 <p>参数net.core.netdev_max_backlog指定的，默认大小是 1000。</p>
 <p>netdev_max_backlog 接收包队列（网卡收到还没有进行协议的处理队列），每个cpu core一个队列,如果/proc/net/softnet_stat第二列增加就表示这个队列溢出了，需要改大。 </p>
+<blockquote>
 <p>/proc/net/softnet_stat：（第一列和第三列的关系？）<br>The 1st column is the number of frames received by the interrupt handler. （第一列是中断处理程序接收的帧数）<br>The 2nd column is the number of frames dropped due to netdev_max_backlog being exceeded. netdev_max_backlog<br>The 3rd column is the number of times ksoftirqd ran out of netdev_budget or CPU time when there was still work to be done   net.core.netdev_budget</p>
+</blockquote>
 <h2 id="rp-filter"><a href="#rp-filter" class="headerlink" title="rp_filter"></a>rp_filter</h2><p><a href="https://www.yuque.com/plantegg/weyi1s/uc7a5g" target="_blank" rel="external">https://www.yuque.com/plantegg/weyi1s/uc7a5g</a></p>
 <h2 id="关于ifconfig的种种解释"><a href="#关于ifconfig的种种解释" class="headerlink" title="关于ifconfig的种种解释"></a>关于ifconfig的种种解释</h2><ul>
 <li>RX errors: 表示总的收包的错误数量，这包括 too-long-frames 错误，Ring Buffer 溢出错误，crc 校验错误，帧同步错误，fifo overruns 以及 missed pkg 等等。</li>
@@ -1448,10 +1721,20 @@ IPv4 路由表
 0xffffffff8107d254 : local_bh_enable_ip+0x94/0xa0 [kernel]
 0xffffffff81634f4b : _raw_spin_unlock_bh+0x1b/0x40 [kernel]
 0xffffffff8150d968 : release_sock+0x118/0x170 [kernel]
-</code></pre><h2 id="iptables和tcpdump"><a href="#iptables和tcpdump" class="headerlink" title="iptables和tcpdump"></a>iptables和tcpdump</h2><blockquote>
+</code></pre><h2 id="如果客户端建立连接的时候抛异常，可能的原因（握手失败，建不上连接）："><a href="#如果客户端建立连接的时候抛异常，可能的原因（握手失败，建不上连接）：" class="headerlink" title="如果客户端建立连接的时候抛异常，可能的原因（握手失败，建不上连接）："></a>如果客户端建立连接的时候抛异常，可能的原因（握手失败，建不上连接）：</h2><ul>
+<li>网络不通，诊断：ping ip</li>
+<li>端口不通,  诊断：telnet ip port</li>
+<li>rp_filter 命中(rp_filter=1, 多网卡环境）， 诊断:  netstat -s | grep -i filter ;</li>
+<li>snat/dnat的时候宿主机port冲突，内核会扔掉 syn包。 troubleshooting: sudo conntrack -S | grep  insert_failed //有不为0的</li>
+<li>全连接队列满的情况，诊断： netstat -s | egrep “listen|LISTEN”  </li>
+<li>syn flood攻击, 诊断：同上</li>
+<li>若远端服务器的内核参数 net.ipv4.tcp_tw_recycle 和 net.ipv4.tcp_timestamps 的值都为 1，则远端服务器会检查每一个报文中的时间戳（Timestamp），若 Timestamp 不是递增的关系，不会响应这个报文。配置 NAT 后，远端服务器看到来自不同的客户端的源 IP 相同，但 NAT 前每一台客户端的时间可能会有偏差，报文中的 Timestamp 就不是递增的情况。nat后的连接，开启timestamp。因为快速回收time_wait的需要，会校验时间该ip上次tcp通讯的timestamp大于本次tcp(nat后的不同机器经过nat后ip一样，保证不了timestamp递增），诊断：是否有nat和是否开启了timestamps</li>
+<li>NAT 哈希表满导致 ECS 实例丢包 nf_conntrack full</li>
+</ul>
+<h2 id="iptables和tcpdump"><a href="#iptables和tcpdump" class="headerlink" title="iptables和tcpdump"></a>iptables和tcpdump</h2><blockquote>
 <p>sudo iptables -A INPUT -p tcp –destination-port 8089 -j DROP</p>
 </blockquote>
-<p>tcpdump 在如上iptables之前，也就是即使被DROP还是能tcpdump到8089的packet</p>
+<p>tcpdump 是直接从网卡驱动拿包，也就是包还没进入内核tcpdump就拿到了，而iptables是工作在内核层，也就是即使被DROP还是能tcpdump到8089的packet。</p>
 <h2 id="参考资料："><a href="#参考资料：" class="headerlink" title="参考资料："></a>参考资料：</h2><p><a href="https://mp.weixin.qq.com/s?__biz=MjM5NjQ5MTI5OA==&amp;mid=2651747704&amp;idx=3&amp;sn=cd76ad912729a125fd56710cb42792ba&amp;chksm=bd12ac358a6525235f51e3937d99ea113ed45542c51bc58bb9588fa1198f34d95b7d13ae1ae2&amp;mpshare=1&amp;scene=1&amp;srcid=07047U4tN9Y3m97WQUJSLENt#rd" target="_blank" rel="external">https://mp.weixin.qq.com/s?__biz=MjM5NjQ5MTI5OA==&amp;mid=2651747704&amp;idx=3&amp;sn=cd76ad912729a125fd56710cb42792ba&amp;chksm=bd12ac358a6525235f51e3937d99ea113ed45542c51bc58bb9588fa1198f34d95b7d13ae1ae2&amp;mpshare=1&amp;scene=1&amp;srcid=07047U4tN9Y3m97WQUJSLENt#rd</a></p>
 <p><a href="http://blog.hyfather.com/blog/2013/03/04/ifconfig/" target="_blank" rel="external">http://blog.hyfather.com/blog/2013/03/04/ifconfig/</a></p>
 
@@ -4304,194 +4587,6 @@ net.ipv4.route.min_pmtu = 552
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/04/26/如何定位上亿次调用才出现一次的Bug/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2018/04/26/如何定位上亿次调用才出现一次的Bug/" itemprop="url">如何定位上亿次调用才出现一次的Bug</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-04-26T16:30:03+08:00">
-                2018-04-26
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/troubleshooting/" itemprop="url" rel="index">
-                    <span itemprop="name">troubleshooting</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2018/04/26/如何定位上亿次调用才出现一次的Bug/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2018/04/26/如何定位上亿次调用才出现一次的Bug/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="如何定位上亿次调用才出现一次的Bug"><a href="#如何定位上亿次调用才出现一次的Bug" class="headerlink" title="如何定位上亿次调用才出现一次的Bug"></a>如何定位上亿次调用才出现一次的Bug</h1><h2 id="引文"><a href="#引文" class="headerlink" title="引文"></a>引文</h2><p>对于那种出现概率非常低，很难重现的bug有时候总是感觉有力使不上，比如<a href="https://zhuanlan.zhihu.com/p/21348220?f3fb8ead20=e041f967b1b416071a11f7702126d7a0&amp;from=singlemessage&amp;isappinstalled=0" target="_blank" rel="external">这个问题</a></p>
-<p>正好最近也碰到一个极低概率下的异常，我介入前一大帮人花了几个月，OS、ECS、网络等等各个环节都被怀疑一遍但是又都没有实锤，所以把过程记录下。</p>
-<h2 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h2><p>客户会调用我们的一个服务，正常都是client request -&gt; server response 如此反复直到client主动完成，然后断开tcp连接。但是就是在这个过程中，有极低的概率client 端抛出连接非正常断开的异常堆栈，由于这个业务比较特殊，客户无法接受这种异常，所以要求一定要解决这个问题。</p>
-<p>重现麻烦，只能在客户环境，让客户把他们的测试跑起来才能一天重现1-2次，每次跟客户沟通成本很高。出现问题的精确时间点不好确定</p>
-<h3 id="tcpdump-抓包所看到的问题表现"><a href="#tcpdump-抓包所看到的问题表现" class="headerlink" title="tcpdump 抓包所看到的问题表现"></a>tcpdump 抓包所看到的问题表现</h3><p>在client 和 server上一直进行tcpdump 抓包，然后压力测试不停地跑，一旦client抛了连接异常，根据时间点、端口信息在两边的抓包中分析当时的tcp会话</p>
-<p>比如，通过tcpdump分析到的会话是这样的：<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/ed9b5b2d81bdc58b9cf41217763939e5.png" alt="screenshot.png"></p>
-<p>如上图所示，正常都是client发送request，server返回response，但是出问题的时候（截图红框）server收到了client的request，也回复了ack给client说收到请求了，但是很快server又回复了一个fin包（server主动发起四次挥手断开连接），这是不正常的。</p>
-<p>到这里可以有一个明确的结论：<strong>出问题都是因为server主动发起连接断开的fin包，即使刚收到client的request请求还没有返回response</strong></p>
-<h3 id="开发增加debug日志"><a href="#开发增加debug日志" class="headerlink" title="开发增加debug日志"></a>开发增加debug日志</h3><p>在server端的应用中可能会调用 socket.close 的地方都增加了日志，但是实际发生异常的时候没有任何日志输出，所以到此开发认为应用代码没有问题（毕竟没有证据–实际不能排除）</p>
-<h3 id="怀疑ECS网络抖动（是个好背锅侠，什么锅都可以背）"><a href="#怀疑ECS网络抖动（是个好背锅侠，什么锅都可以背）" class="headerlink" title="怀疑ECS网络抖动（是个好背锅侠，什么锅都可以背）"></a>怀疑ECS网络抖动（是个好背锅侠，什么锅都可以背）</h3><p>申请单独的物理机资源给客户，保证没有其它应用来争抢网络和其它资源，前三天一次异常也没有发生（在ECS上一天发生1-2次），非常高兴以为找到问题了。结果第四天异常再次出现，更换物理机也只是好像偶然性地降低了发生频率而已。</p>
-<h3 id="去底层挖掘tcp协议，到底什么条件下会出现主动断开连接"><a href="#去底层挖掘tcp协议，到底什么条件下会出现主动断开连接" class="headerlink" title="去底层挖掘tcp协议，到底什么条件下会出现主动断开连接"></a>去底层挖掘tcp协议，到底什么条件下会出现主动断开连接</h3><p>实际也没有什么进展</p>
-<h3 id="用strace、pstack去监控-socket-close-这个事件"><a href="#用strace、pstack去监控-socket-close-这个事件" class="headerlink" title="用strace、pstack去监控 socket.close 这个事件"></a>用strace、pstack去监控 socket.close 这个事件</h3><p>但实际可能在上亿次正常的 socket.close (查询全部结束，client主动请求断开连接）才会出现一次不正常的 socket.close .量太大，还没发在这么多事件中区分那个是不正常的close</p>
-<h3 id="应用被-OOM-kill"><a href="#应用被-OOM-kill" class="headerlink" title="应用被 OOM kill"></a>应用被 OOM kill</h3><p>调查过程中为了更快地重现异常，将客户端连接都改成长连接，这样应用不再去调 socket.close ，除非超时、异常之类的，这样一旦出现不正常的 socket.close 就更容易定位了。</p>
-<p>实际跑了一段时间后，发现确实 tcpdump 能抓到很多 server在接收到request还没有返回response的时候主动发送 fin包来断开连接的情况，跟前面的症状是一模一样的。但是最终发现这个时候应用被杀掉了，只是说明应用被杀的情况下 server会主动去掉 socket.close关闭连接，但这只是充分条件，而不是必要条件。实际生产线上也没有被 OOM kill过。</p>
-<h3 id="给力的开发同学"><a href="#给力的开发同学" class="headerlink" title="给力的开发同学"></a>给力的开发同学</h3><p>分析了这个异常后，开发简化了整个测试，实现client上跑一行PHP代码反复调用就能够让这个bug触发，这一下把整个测试重现bug的过程简化了，终于不再需要客户配合了，让问题的定位效率快了一个数量级。</p>
-<p>为了快速地定位到异常的具体连接，实现脚本来自动分析tcpdump结果找到异常close的连接</p>
-<p>快速在tcpdump包中找到出问题的那个stream（这个命令行要求tshark的版本为1.12及以上，默认的阿里服务器上的版本都太低，解析不了_ws.col.Info列）：</p>
-<pre><code>tshark -r capture.pcap135 -T fields -e frame.number -e frame.time_epoch -e ip.addr -e tcp.port  -e tcp.stream   -e _ws.col.Info | egrep &quot;FIN|Request Quit&quot; | awk &apos;{ print $5, $6 $7 }&apos; | sort -k1n | awk &apos;{ print $1 }&apos; | uniq -c | grep -v &quot;^      3&quot; | less
-</code></pre><p>在这一系列的工具作用下，稳定跑上一天，异常能发生3、4次，产生的日志和网络包有几百G。</p>
-<p>出现问题的后，通过上面的脚本分析连接异常断开的client ip+port和时间，同时拿这三个信息到下面的异常堆栈中搜索匹配找到调用 socket.close()的堆栈。</p>
-<h3 id="上Btrace-监听所有-socket-close-事件"><a href="#上Btrace-监听所有-socket-close-事件" class="headerlink" title="上Btrace 监听所有 socket.close 事件"></a>上Btrace 监听所有 socket.close 事件</h3><pre><code>    @OnMethod(clazz=&quot;+java.net.Socket&quot;, method=&quot;close&quot;)
-    public static void onSocketClose(@Self Object me) {
-      println(&quot;\n==== java.net.Socket#close ====&quot;);
-      BTraceUtils.println(BTraceUtils.timestamp() );
-      BTraceUtils.println(BTraceUtils.Time.millis() );
-      println(concat(&quot;Socket closing:&quot;, str(me)));
-      println(concat(&quot;thread: &quot;, str(currentThread())));
-      printFields(me);
-      jstack();
-}
-</code></pre><p>终于在出现异常的时候btrace抓到了异常的堆栈，在之前代码review看来不可能的逻辑里server主动关闭了连接</p>
-<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/02bcccd66af82c929c4eee8c88875733.png" alt="screenshot.png"></p>
-<p>图左是应用代码，图右是关闭连接的堆栈，有了这个堆栈就可以去修复问题了</p>
-<p>实际上这里可能有几个问题：</p>
-<ol>
-<li>buffer.position 是不可能为0的；</li>
-<li>即使buffer.position 等于0 也不应该直接 socket.close, 可能发送error信息给客户端更好；</li>
-</ol>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
-<li>最终原因是因为NIO过程中buffer有极低的概率被两个socket重用，从而导致出现正在使用的buffer被另外一个socket拿过去并且设置了buffer.position为0，进而导致前一个socket认为数据异常赶紧close了。</li>
-<li>开发简化问题的重现步骤非常关键，同时对异常进行分类分析，加快了定位效率</li>
-<li>能够通过tcpdump去抓包定位到具体问题大概所在点这是比较关键的一步，同时通过btrace再去监控出问题的调用堆栈从而找到具体代码行。</li>
-<li>过程看似简单，实际牵扯了一大波工程师进来，经过几个月才最终定位到出问题的代码行，确实不容易</li>
-</ul>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
@@ -4541,7 +4636,7 @@ net.ipv4.route.min_pmtu = 552
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">109</span>
+                <span class="site-state-item-count">110</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
