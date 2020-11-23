@@ -102,14 +102,14 @@
 <meta property="og:url" content="http://yoursite.com/2020/11/18/TCP连接为啥互串了/index.html">
 <meta property="og:site_name" content="plantegg">
 <meta property="og:description" content="活久见，TCP连接互串了背景应用每过一段时间总是会抛出几个连接异常的错误，需要查明原因。 排查后发现是TCP连接互串了，这个案例实在是很珍惜，所以记录一下。 抓包业务结构： 应用-&amp;gt;MySQL(10.112.61.163) 在 应用 机器上抓包这个异常连接如下（3269为MySQL服务端口）：  粗一看没啥奇怪的，就是应用发查询给3269，但是一直没收到3269的ack，所以一直重传。这里唯">
-<meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/fd02c2855142de5974fe695c76d21e61.png">
-<meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/511a87311762ec0b9db1d89ae487ff04.png">
+<meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/dd657fee9d961a786c05e8d3cccbc297.png">
+<meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/8ca7da8ccec0041dd5d3f66f94d1f574.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/94d55b926b5bb1573c4cab8353428712.png">
-<meta property="og:updated_time" content="2020-11-23T07:42:48.249Z">
+<meta property="og:updated_time" content="2020-11-23T11:19:11.151Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="活久见，TCP连接互串了">
 <meta name="twitter:description" content="活久见，TCP连接互串了背景应用每过一段时间总是会抛出几个连接异常的错误，需要查明原因。 排查后发现是TCP连接互串了，这个案例实在是很珍惜，所以记录一下。 抓包业务结构： 应用-&amp;gt;MySQL(10.112.61.163) 在 应用 机器上抓包这个异常连接如下（3269为MySQL服务端口）：  粗一看没啥奇怪的，就是应用发查询给3269，但是一直没收到3269的ack，所以一直重传。这里唯">
-<meta name="twitter:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/fd02c2855142de5974fe695c76d21e61.png">
+<meta name="twitter:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/dd657fee9d961a786c05e8d3cccbc297.png">
 
 
 
@@ -413,17 +413,17 @@
 <p>排查后发现是TCP连接互串了，这个案例实在是很珍惜，所以记录一下。</p>
 <h2 id="抓包"><a href="#抓包" class="headerlink" title="抓包"></a>抓包</h2><p>业务结构： 应用-&gt;MySQL(10.112.61.163)</p>
 <p>在 应用 机器上抓包这个异常连接如下（3269为MySQL服务端口）：</p>
-<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/fd02c2855142de5974fe695c76d21e61.png" alt="image.png"></p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/dd657fee9d961a786c05e8d3cccbc297.png" alt="image.png"></p>
 <p>粗一看没啥奇怪的，就是应用发查询给3269，但是一直没收到3269的ack，所以一直重传。这里唯一的解释就是网络不通。最后MySQL的3269还回复了一个rst，这个rst的id是42889，引起了我的好奇，跟前面的16439不连贯，正常应该是16440才对。（请记住上图中的绿框中的数字）</p>
-<p>于是我过滤了一下所有端口61902上的所有包：</p>
-<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/511a87311762ec0b9db1d89ae487ff04.png" alt="image.png"></p>
+<p>于是我过滤了一下端口61902上的所有包：</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/8ca7da8ccec0041dd5d3f66f94d1f574.png" alt="image.png"></p>
 <p>可以看到绿框中的查询从61902端口发给3269后，很奇怪居然收到了一个来自别的IP+3306端口的reset，这个包对这个连接来说自然是不认识（这个连接只接受3269的回包），就扔掉了。但是也没收到3269的ack，所以只能不停地重传，然后每次都收到3306的reset，seq、id都能和上图的绿框对应上。</p>
 <p>明明他们应该是两个连接：</p>
 <blockquote>
 <p> 61902-&gt;10.141.16.0:3306</p>
 <p> 61902-&gt;10.112.61.163:3269</p>
 </blockquote>
-<p>他们虽然用的本地ip端口（61902）是一样的， 但是根据四元组不一样，还是不同的TCP连接，所以应该是不会互相干扰的。但是实际看起来<strong>seq、id都重复了</strong>，不会有这么巧，非常像是TCP互串了，一辈子也难碰到过这种情况。</p>
+<p>他们虽然用的本地ip端口（61902）是一样的， 但是根据四元组不一样，还是不同的TCP连接，所以应该是不会互相干扰的。但是实际看起来<strong>seq、id都重复了</strong>，不会有这么巧，非常像是TCP互串了。</p>
 <h2 id="分析原因"><a href="#分析原因" class="headerlink" title="分析原因"></a>分析原因</h2><p>10.141.16.0 这个ip看起来像是lvs的ip，查了一下系统，果然是lvs，然后这个lvs 后面的rs就是10.112.61.163</p>
 <p>那么这个连结构就是10.141.16.0:3306：</p>
 <blockquote>
@@ -446,7 +446,7 @@
 <p>回包的时候RealServer上的内核模块同样将目标地址从client ip改成lvs ip，同时将client ip放入options中。</p>
 <h2 id="回到问题"><a href="#回到问题" class="headerlink" title="回到问题"></a>回到问题</h2><p>看完理论，再来分析这两个连接的行为</p>
 <p>fulnat模式下连接经过lvs到达mysql后，mysql上看到的连接信息是，cip+port，也就是在MySQL上的连接</p>
-<p><strong>lvs-ip:61902 -&gt; 10.112.61.163:3269  被修改成了 client-ip:61902 -&gt; 10.112.61.163:3269</strong> </p>
+<p><strong>lvs-ip:61902</strong> -&gt; 10.112.61.163:3269  被修改成了 <strong>client-ip:61902 </strong>-&gt; 10.112.61.163:3269</p>
 <p>那么跟不走LVS的连接：</p>
 <p><strong>client-ip:61902 -&gt;  10.112.61.163:3269 (直连) 完全重复了。</strong></p>
 <p>MySQL端看到的两个连接四元组一模一样了：</p>

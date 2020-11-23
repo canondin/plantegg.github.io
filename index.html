@@ -540,21 +540,21 @@
 <p>性能不达标，怀疑DRDS或者RDS性能不行，作为数据库需要自证清白，所以从RDS和DRDS开始分析问题在哪里。</p>
 <p>略过一系列在DRDS、RDS上分析数据和监控图表都证明DRDS和RDS没问题。</p>
 <p>在明确给出证据DRDS和RDS都没问题后还是要解决问题，所以只能进一步帮助前面的app来分析为什么性能不达标。</p>
-<h2 id="在其中一个app应用上抓包（00-18秒到1-04秒），到DRDS的一个连接分析："><a href="#在其中一个app应用上抓包（00-18秒到1-04秒），到DRDS的一个连接分析：" class="headerlink" title="在其中一个app应用上抓包（00:18秒到1:04秒），到DRDS的一个连接分析："></a>在其中一个app应用上抓包（00:18秒到1:04秒），到DRDS的一个连接分析：</h2><p><img src="https://cdn.nlark.com/yuque/0/2020/png/162611/1583666243940-33194ae5-6ac6-4c5a-b705-5ba39d0f5ec2.png" alt="image.png"></p>
+<h2 id="在其中一个app应用上抓包（00-18秒到1-04秒），到DRDS的一个连接分析："><a href="#在其中一个app应用上抓包（00-18秒到1-04秒），到DRDS的一个连接分析：" class="headerlink" title="在其中一个app应用上抓包（00:18秒到1:04秒），到DRDS的一个连接分析："></a>在其中一个app应用上抓包（00:18秒到1:04秒），到DRDS的一个连接分析：</h2><p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/80374e55936bc36bbd243f79fcdb5f8d.png" alt="image.png"></p>
 <p>DRDS每个HTTP请求的响应时间都控制在15ms(一个前端HTTP请求对应一个select seq-id，一个 select readonly, 一个insert， 这个响应时间符合预期）。一个连接每秒才收到20 tps（因为压力不够，压力加大的话这个单连接tps还可以增加）， 20*3000 = 6万 ， 跟压测看到基本一致</p>
 <p>300个app，每个app 10个连接到DRDS</p>
 <p>如果300个app上的并发压力不够的话就没法将3000个连接跑满，所以看到的QPS是5万。</p>
 <p><strong>从300个app可以计算得到这个集群能支持的tps： 300*10（10个连接）* 1000/15(每秒钟每个连接能处理的请求数）=20万个tps （关键分析能力）</strong></p>
-<h2 id="9108的HTTP服务端口上的抓包分析"><a href="#9108的HTTP服务端口上的抓包分析" class="headerlink" title="9108的HTTP服务端口上的抓包分析"></a>9108的HTTP服务端口上的抓包分析</h2><p><img src="https://cdn.nlark.com/yuque/0/2020/png/162611/1583666243956-b7f72e99-4df6-4513-8dca-d32a7a2e88d7.png" alt="image.png">9108服务的每个HTTP response差不多都是15ms（<strong>这个响应时间基本符合预期</strong>），一个HTTP连接上在45秒的抓包时间范围只收到23个HTTP Request。</p>
+<h2 id="9108的HTTP服务端口上的抓包分析"><a href="#9108的HTTP服务端口上的抓包分析" class="headerlink" title="9108的HTTP服务端口上的抓包分析"></a>9108的HTTP服务端口上的抓包分析</h2><p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/e239a12a1c3612263736256c8efc06e4.png" alt="image.png">9108服务的每个HTTP response差不多都是15ms（<strong>这个响应时间基本符合预期</strong>），一个HTTP连接上在45秒的抓包时间范围只收到23个HTTP Request。</p>
 <p>统计9108端口在45秒总共收到的HTTP请求数量是6745（如下图），也就是每个app每秒钟收到的请求是150个，300<em>150=4.5万（理论值，300个app可能压力分布不一样？），<em>*从这里看app收到的压力还不够</em></em></p>
-<p><img src="https://cdn.nlark.com/yuque/0/2020/png/162611/1583666243985-1fa26f2f-f872-4b99-acad-efb7709f1651.png" alt="image.png"></p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/6a289d1bba1e875d215032b6fdc7b084.png" alt="image.png"></p>
 <p>因为app监控确实（后来发现是不会看），所以从抓包分析http响应时间也基本得到15ms的rt关键结论</p>
-<h2 id="从http应用容器上的netstat统计来看，也是压力端回复太慢"><a href="#从http应用容器上的netstat统计来看，也是压力端回复太慢" class="headerlink" title="从http应用容器上的netstat统计来看，也是压力端回复太慢"></a>从http应用容器上的netstat统计来看，也是压力端回复太慢</h2><p><img src="https://cdn.nlark.com/yuque/0/2020/png/162611/1583666244043-f068fe47-3e93-4c55-9f5c-9f4caa7a05e4.png" alt="image.png"></p>
+<h2 id="从http应用容器上的netstat统计来看，也是压力端回复太慢"><a href="#从http应用容器上的netstat统计来看，也是压力端回复太慢" class="headerlink" title="从http应用容器上的netstat统计来看，也是压力端回复太慢"></a>从http应用容器上的netstat统计来看，也是压力端回复太慢</h2><p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/938ce314d19b47cba99e2a09c753f606.png" alt="image.png"></p>
 <p>send-q表示回复从9108发走了，没收到对方的ack</p>
 <h2 id="ARMS监控分析9108端口上的RT"><a href="#ARMS监控分析9108端口上的RT" class="headerlink" title="ARMS监控分析9108端口上的RT"></a>ARMS监控分析9108端口上的RT</h2><p>后来PTS的同学说ARMS可以捞到监控数据，如下是对rt时间降序排</p>
-<p><img src="https://cdn.nlark.com/yuque/0/2020/png/162611/1583666244045-f191e9c6-d9f4-4447-9d9c-4c8843c0e631.png" alt="image.png"></p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/a479bad250c03aee41d58850afab9c14.png" alt="image.png"></p>
 <p>中的rt平均时间，可以看到http的rt确实14.4ms，表现非常平稳，从这个监控也发现实际app是330个而不是用户自己描述的300个，这也就是为什么实际是tps是5万，但是按300个去算的话tps是4.5万</p>
-<p><img src="https://cdn.nlark.com/yuque/0/2020/png/162611/1583666244057-647e6bc2-d13b-4e84-a962-21e4ed921987.png" alt="image.png"></p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/2f3b76be63d331510eb6f2cecd91747f.png" alt="image.png"></p>
 <p>5分钟时间，QPS是5万+，HTTP的平均rt是15ms， HTTP的最大rt才79ms，和前面抓包分析一致。</p>
 <h2 id="从后端分析的总结"><a href="#从后端分析的总结" class="headerlink" title="从后端分析的总结"></a>从后端分析的总结</h2><p><strong>从9108端口响应时间15ms来看是符合预期的，为什么PTS看到的RT是900ms+，所以压力还没有打到APP上（也就是9108端口）</strong></p>
 <h2 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h2><p>最后发现是 eip 带宽不足，只有200M，调整到1G后 tps 也翻了5倍到了25万。</p>
@@ -736,17 +736,17 @@
 <p>排查后发现是TCP连接互串了，这个案例实在是很珍惜，所以记录一下。</p>
 <h2 id="抓包"><a href="#抓包" class="headerlink" title="抓包"></a>抓包</h2><p>业务结构： 应用-&gt;MySQL(10.112.61.163)</p>
 <p>在 应用 机器上抓包这个异常连接如下（3269为MySQL服务端口）：</p>
-<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/fd02c2855142de5974fe695c76d21e61.png" alt="image.png"></p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/dd657fee9d961a786c05e8d3cccbc297.png" alt="image.png"></p>
 <p>粗一看没啥奇怪的，就是应用发查询给3269，但是一直没收到3269的ack，所以一直重传。这里唯一的解释就是网络不通。最后MySQL的3269还回复了一个rst，这个rst的id是42889，引起了我的好奇，跟前面的16439不连贯，正常应该是16440才对。（请记住上图中的绿框中的数字）</p>
-<p>于是我过滤了一下所有端口61902上的所有包：</p>
-<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/511a87311762ec0b9db1d89ae487ff04.png" alt="image.png"></p>
+<p>于是我过滤了一下端口61902上的所有包：</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/8ca7da8ccec0041dd5d3f66f94d1f574.png" alt="image.png"></p>
 <p>可以看到绿框中的查询从61902端口发给3269后，很奇怪居然收到了一个来自别的IP+3306端口的reset，这个包对这个连接来说自然是不认识（这个连接只接受3269的回包），就扔掉了。但是也没收到3269的ack，所以只能不停地重传，然后每次都收到3306的reset，seq、id都能和上图的绿框对应上。</p>
 <p>明明他们应该是两个连接：</p>
 <blockquote>
 <p> 61902-&gt;10.141.16.0:3306</p>
 <p> 61902-&gt;10.112.61.163:3269</p>
 </blockquote>
-<p>他们虽然用的本地ip端口（61902）是一样的， 但是根据四元组不一样，还是不同的TCP连接，所以应该是不会互相干扰的。但是实际看起来<strong>seq、id都重复了</strong>，不会有这么巧，非常像是TCP互串了，一辈子也难碰到过这种情况。</p>
+<p>他们虽然用的本地ip端口（61902）是一样的， 但是根据四元组不一样，还是不同的TCP连接，所以应该是不会互相干扰的。但是实际看起来<strong>seq、id都重复了</strong>，不会有这么巧，非常像是TCP互串了。</p>
 <h2 id="分析原因"><a href="#分析原因" class="headerlink" title="分析原因"></a>分析原因</h2><p>10.141.16.0 这个ip看起来像是lvs的ip，查了一下系统，果然是lvs，然后这个lvs 后面的rs就是10.112.61.163</p>
 <p>那么这个连结构就是10.141.16.0:3306：</p>
 <blockquote>
@@ -769,7 +769,7 @@
 <p>回包的时候RealServer上的内核模块同样将目标地址从client ip改成lvs ip，同时将client ip放入options中。</p>
 <h2 id="回到问题"><a href="#回到问题" class="headerlink" title="回到问题"></a>回到问题</h2><p>看完理论，再来分析这两个连接的行为</p>
 <p>fulnat模式下连接经过lvs到达mysql后，mysql上看到的连接信息是，cip+port，也就是在MySQL上的连接</p>
-<p><strong>lvs-ip:61902 -&gt; 10.112.61.163:3269  被修改成了 client-ip:61902 -&gt; 10.112.61.163:3269</strong> </p>
+<p><strong>lvs-ip:61902</strong> -&gt; 10.112.61.163:3269  被修改成了 <strong>client-ip:61902 </strong>-&gt; 10.112.61.163:3269</p>
 <p>那么跟不走LVS的连接：</p>
 <p><strong>client-ip:61902 -&gt;  10.112.61.163:3269 (直连) 完全重复了。</strong></p>
 <p>MySQL端看到的两个连接四元组一模一样了：</p>
