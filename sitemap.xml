@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>http://yoursite.com/about/index.html</loc>
+    
+    <lastmod>2020-11-26T02:44:40.220Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://yoursite.com/2018/08/26/%E5%85%B3%E4%BA%8ETCP%E8%BF%9E%E6%8E%A5%E7%9A%84KeepAlive%E5%92%8Creset/</loc>
     
     <lastmod>2020-11-26T02:30:51.631Z</lastmod>
@@ -236,13 +243,6 @@
     <loc>http://yoursite.com/2020/01/15/Linux%20%E5%86%85%E5%AD%98%E9%97%AE%E9%A2%98%E6%B1%87%E6%80%BB/</loc>
     
     <lastmod>2020-11-13T09:44:07.358Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>http://yoursite.com/about/index.html</loc>
-    
-    <lastmod>2020-11-10T01:04:38.860Z</lastmod>
     
   </url>
   
