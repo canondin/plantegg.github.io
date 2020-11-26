@@ -104,7 +104,7 @@
 <meta property="og:description" content="举三反一–从理论知识到实际问题的推导 怎么样才能获取举三反一的秘籍， 普通人为什么要案例来深化对理论知识的理解。  什么是工程效率，什么是知识效率有些人纯看理论就能掌握好一门技能，还能举三反一，这是知识效率，这种人非常少； 大多数普通人都是看点知识然后结合实践来强化理解理论，要经过反反复复才能比较好地掌握一个知识，这就是工程效率，讲究技巧、工具来达到目的。 对于费曼（参考费曼学习法）这样的聪明人就">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b3d075782450b0c8d2615c5d2b75d923.png">
 <meta property="og:image" content="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/2703fc07dfc4dd5b6e1bb4c2ce620e59.png">
-<meta property="og:updated_time" content="2020-11-05T08:55:59.073Z">
+<meta property="og:updated_time" content="2020-11-26T02:30:51.623Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="举三反一--从理论知识到实际问题的推导">
 <meta name="twitter:description" content="举三反一–从理论知识到实际问题的推导 怎么样才能获取举三反一的秘籍， 普通人为什么要案例来深化对理论知识的理解。  什么是工程效率，什么是知识效率有些人纯看理论就能掌握好一门技能，还能举三反一，这是知识效率，这种人非常少； 大多数普通人都是看点知识然后结合实践来强化理解理论，要经过反反复复才能比较好地掌握一个知识，这就是工程效率，讲究技巧、工具来达到目的。 对于费曼（参考费曼学习法）这样的聪明人就">
@@ -175,7 +175,7 @@
 
     <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
       <div class="header-inner"><div class="site-brand-wrapper">
-  <div class="site-meta ">
+  <div class="site-meta custom-logo">
     
 
     <div class="custom-logo-site-title">
@@ -413,8 +413,8 @@
 <p>得检查server 应用为什么没有accept。</p>
 <p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/2703fc07dfc4dd5b6e1bb4c2ce620e59.png" alt="image.png"></p>
 <h3 id="更简单的推理"><a href="#更简单的推理" class="headerlink" title="更简单的推理"></a>更简单的推理</h3><p>如果没有任何实战经验，只看上面的状态图的学霸应该是这样推理的：</p>
-<p>​    看到server上有大量的CLOSE_WAIT说明client主动断开了连接，server的OS收到client 发的fin，并回复了ack，这个过程不需要应用感知，进而连接从ESTABLISHED进入CLOSE_WAIT，此时在等待server上的应用调用close连关闭连接（处理完所有收发数据后才会调close()） —- 结论：server上的应用一直卡着没有调close().</p>
-<p>​    同时这里很奇怪的现象： 服务端出现大量CLOSE_WAIT 个数正好 等于somaxconn，进而可以猜测是不是连接建立后很快accept队列满了（应用也没有accept() ), 导致 大量CLOSE_WAIT 个数正好 等于somaxconn —- 结论： server 上的应用不但没有调close(), 连close() 前面必须调用 accept() 都一直卡着没调 （这个结论需要有accept()队列的理论知识)</p>
+<p>看到server上有大量的CLOSE_WAIT说明client主动断开了连接，server的OS收到client 发的fin，并回复了ack，这个过程不需要应用感知，进而连接从ESTABLISHED进入CLOSE_WAIT，此时在等待server上的应用调用close连关闭连接（处理完所有收发数据后才会调close()） —- 结论：server上的应用一直卡着没有调close().</p>
+<p>同时这里很奇怪的现象： 服务端出现大量CLOSE_WAIT 个数正好 等于somaxconn，进而可以猜测是不是连接建立后很快accept队列满了（应用也没有accept() ), 导致 大量CLOSE_WAIT 个数正好 等于somaxconn —- 结论： server 上的应用不但没有调close(), 连close() 前面必须调用 accept() 都一直卡着没调 （这个结论需要有accept()队列的理论知识)</p>
 <p><strong>从上面两个结论可以清楚地看到 server的应用卡住了</strong></p>
 <h3 id="实际结论："><a href="#实际结论：" class="headerlink" title="实际结论："></a>实际结论：</h3><blockquote>
 <p>这个case的最终原因是因为<strong>OS的open files设置的是1024,达到了上限</strong>，进而导致server不能accept，但这个时候的tcp连接状态已经是ESTABLISHED了（这个状态变换是取决于内核收发包，跟应用是否accept()无关）。</p>
@@ -433,7 +433,7 @@
 <h2 id="一些疑问"><a href="#一些疑问" class="headerlink" title="一些疑问"></a>一些疑问</h2><ul>
 <li>连接都没有被accept(), client端就能发送数据了？</li>
 </ul>
-<p>答：是的。因为这些动作都是由内核完成的，内核收到数据后会先将数据放在内核的tcp buffer中，然后os回复ack。</p>
+<p>答：是的。因为这些动作都是由内核完成的，内核收到数据后会先将数据放在内核的tcp buffer中，然后os回复ack。另外三次握手之后client端是没法直到server端是否accept()了的。</p>
 <ul>
 <li>CLOSE_WAIT与accept queue有关系吗？</li>
 </ul>
@@ -453,7 +453,7 @@
 <ul>
 <li>如果server的os参数 open files到了上限（就是os没法打开新的文件句柄了）会导致这个accept queue中的连接一直没法被accept对吗？</li>
 </ul>
-<p>答：是</p>
+<p>答：对</p>
 
       
     </div>

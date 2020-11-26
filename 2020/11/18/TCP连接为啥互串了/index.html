@@ -105,7 +105,7 @@
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/dd657fee9d961a786c05e8d3cccbc297.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/8ca7da8ccec0041dd5d3f66f94d1f574.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/94d55b926b5bb1573c4cab8353428712.png">
-<meta property="og:updated_time" content="2020-11-25T07:49:45.953Z">
+<meta property="og:updated_time" content="2020-11-26T02:30:51.611Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="活久见，TCP连接互串了">
 <meta name="twitter:description" content="活久见，TCP连接互串了背景应用每过一段时间总是会抛出几个连接异常的错误，需要查明原因。 排查后发现是TCP连接互串了，这个案例实在是很珍惜，所以记录一下。 抓包业务结构： 应用-&amp;gt;MySQL(10.112.61.163) 在 应用 机器上抓包这个异常连接如下（3269为MySQL服务端口）：  粗一看没啥奇怪的，就是应用发查询给3269，但是一直没收到3269的ack，所以一直重传。这里唯">
@@ -176,7 +176,7 @@
 
     <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
       <div class="header-inner"><div class="site-brand-wrapper">
-  <div class="site-meta ">
+  <div class="site-meta custom-logo">
     
 
     <div class="custom-logo-site-title">
@@ -470,7 +470,7 @@
 </ul>
 <p>这个时候这两个连接在MySQL端就会变成一个，然后两个连接的内容互串，必然导致rst</p>
 <p>这个问题还挺有意思的，估计没几个程序员一辈子能碰上一次。推荐另外一个好玩的连接：<a href="https://plantegg.github.io/2020/07/01/如何创建一个自己连自己的TCP连接/" target="_blank" rel="external">如何创建一个自己连自己的TCP连接</a></p>
-<h2 id="ip-local-port-range"><a href="#ip-local-port-range" class="headerlink" title="ip_local_port_range"></a>ip_local_port_range</h2><p>在内存、文件句柄足够的话可以创建的连接是没有限制的，那么/proc/sys/net/ipv4/ip_local_port_range指定的端口范围到底是什么意思呢？</p>
+<h2 id="一台机器上最多能创建多少个TCP连接-ip-local-port-range"><a href="#一台机器上最多能创建多少个TCP连接-ip-local-port-range" class="headerlink" title="一台机器上最多能创建多少个TCP连接 ip_local_port_range"></a>一台机器上最多能创建多少个TCP连接 ip_local_port_range</h2><p>在内存、文件句柄足够的话可以创建的连接是没有限制的，那么/proc/sys/net/ipv4/ip_local_port_range指定的端口范围到底是什么意思呢？</p>
 <p>一个TCP连接只要保证四元组(src-ip src-port dest-ip dest-port)唯一就可以了，而不是要求src port唯一.</p>
 <p>一台机器能创建的TCP连接是没有限制的，而ip_local_port_range是指没有bind的时候OS随机分配端口的范围，但是分配到的端口要同时满足五元组唯一，这样 ip_local_port_range 限制的是连同一个目标（dest-ip和dest-port一样）的port的数量（请忽略本地多网卡的情况，因为dest-ip为以后route只会选用一个本地ip）。</p>
 <p>但是如果程序调用的是bind函数(bind(ip,port=0))这个时候是让系统绑定到某个网卡和自动分配的端口，此时系统没有办法确定接下来这个socket是要去connect还是listen. 如果是listen的话，那么肯定是不能出现端口冲突的，如果是connect的话，只要满足4元组唯一即可。在这种情况下，系统只能尽可能满足更强的要求，就是先要求端口不能冲突，即使之后去connect的时候4元组是唯一的。</p>
@@ -679,7 +679,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#活久见，TCP连接互串了"><span class="nav-number">1.</span> <span class="nav-text">活久见，TCP连接互串了</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">1.1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#抓包"><span class="nav-number">1.2.</span> <span class="nav-text">抓包</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#分析原因"><span class="nav-number">1.3.</span> <span class="nav-text">分析原因</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#先打个岔，分析下这里的LVS的原理"><span class="nav-number">1.3.1.</span> <span class="nav-text">先打个岔，分析下这里的LVS的原理</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#回到问题"><span class="nav-number">1.4.</span> <span class="nav-text">回到问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#问题出现的条件"><span class="nav-number">1.5.</span> <span class="nav-text">问题出现的条件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ip-local-port-range"><span class="nav-number">1.6.</span> <span class="nav-text">ip_local_port_range</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">1.7.</span> <span class="nav-text">参考资料</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#活久见，TCP连接互串了"><span class="nav-number">1.</span> <span class="nav-text">活久见，TCP连接互串了</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">1.1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#抓包"><span class="nav-number">1.2.</span> <span class="nav-text">抓包</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#分析原因"><span class="nav-number">1.3.</span> <span class="nav-text">分析原因</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#先打个岔，分析下这里的LVS的原理"><span class="nav-number">1.3.1.</span> <span class="nav-text">先打个岔，分析下这里的LVS的原理</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#回到问题"><span class="nav-number">1.4.</span> <span class="nav-text">回到问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#问题出现的条件"><span class="nav-number">1.5.</span> <span class="nav-text">问题出现的条件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#一台机器上最多能创建多少个TCP连接-ip-local-port-range"><span class="nav-number">1.6.</span> <span class="nav-text">一台机器上最多能创建多少个TCP连接 ip_local_port_range</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">1.7.</span> <span class="nav-text">参考资料</span></a></li></ol></li></ol></div>
             
 
           </div>
