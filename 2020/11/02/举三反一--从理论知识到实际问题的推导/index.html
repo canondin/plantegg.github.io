@@ -104,7 +104,7 @@
 <meta property="og:description" content="举三反一–从理论知识到实际问题的推导 怎么样才能获取举三反一的秘籍， 普通人为什么要案例来深化对理论知识的理解。  什么是工程效率，什么是知识效率有些人纯看理论就能掌握好一门技能，还能举三反一，这是知识效率，这种人非常少； 大多数普通人都是看点知识然后结合实践来强化理解理论，要经过反反复复才能比较好地掌握一个知识，这就是工程效率，讲究技巧、工具来达到目的。 对于费曼（参考费曼学习法）这样的聪明人就">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b3d075782450b0c8d2615c5d2b75d923.png">
 <meta property="og:image" content="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/2703fc07dfc4dd5b6e1bb4c2ce620e59.png">
-<meta property="og:updated_time" content="2020-11-26T02:30:51.623Z">
+<meta property="og:updated_time" content="2020-11-30T01:15:33.406Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="举三反一--从理论知识到实际问题的推导">
 <meta name="twitter:description" content="举三反一–从理论知识到实际问题的推导 怎么样才能获取举三反一的秘籍， 普通人为什么要案例来深化对理论知识的理解。  什么是工程效率，什么是知识效率有些人纯看理论就能掌握好一门技能，还能举三反一，这是知识效率，这种人非常少； 大多数普通人都是看点知识然后结合实践来强化理解理论，要经过反反复复才能比较好地掌握一个知识，这就是工程效率，讲究技巧、工具来达到目的。 对于费曼（参考费曼学习法）这样的聪明人就">
@@ -437,7 +437,7 @@
 <ul>
 <li>CLOSE_WAIT与accept queue有关系吗？</li>
 </ul>
-<p>答：没有关系。只是本案例中因为open files不够了，影响了应用accept(), 导致accept queue满了，同时因为即使应用不accept，client也能发送数据和发 fin断连接，这些响应都是os来负责，跟上层应用没关系。CLOSE_WAIT只跟应用不调 close() 有关系。 </p>
+<p>答：没有关系。只是本案例中因为open files不够了，影响了应用accept(), 导致accept queue满了，同时因为即使应用不accept（三次握手后，server端是否accept client端无法感知），client也能发送数据和发 fin断连接，这些响应都是os来负责，跟上层应用没关系。CLOSE_WAIT只跟应用不调 close() 有关系。 </p>
 <ul>
 <li>CLOSE_WAIT与accept queue为什么刚好一致并且联动了？</li>
 </ul>
@@ -591,7 +591,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">110</span>
+                <span class="site-state-item-count">111</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -613,7 +613,7 @@
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">197</span>
+                <span class="site-state-item-count">199</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>

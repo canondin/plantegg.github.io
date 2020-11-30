@@ -104,7 +104,8 @@
 <meta property="og:description" content="netstat – timer经常碰到一些断网环境下需要做快速切换，那么断网后需要多久tcp才能感知到这个断网，并断开连接触发上层的重连（一般会连向新的server） keepalivefrom: https://superuser.com/questions/240456/how-to-interpret-the-output-of-netstat-o-netstat-timers The ti">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/f1a219a2bd99690fd3ed391bf5ab65cb.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/88c5df7d5709e5c8b264ee0deacda0a2.png">
-<meta property="og:updated_time" content="2020-11-13T09:44:07.370Z">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2019/png/162611/1571230725657-b2b7ea40-06bc-41fb-a374-daa8de1f857d.png">
+<meta property="og:updated_time" content="2020-11-30T01:42:25.354Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="netstat timer keepalive explain">
 <meta name="twitter:description" content="netstat – timer经常碰到一些断网环境下需要做快速切换，那么断网后需要多久tcp才能感知到这个断网，并断开连接触发上层的重连（一般会连向新的server） keepalivefrom: https://superuser.com/questions/240456/how-to-interpret-the-output-of-netstat-o-netstat-timers The ti">
@@ -418,15 +419,20 @@
 <p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/88c5df7d5709e5c8b264ee0deacda0a2.png" alt="image.png"></p>
 <p>前两个 syn_sent 状态明显是 9031端口不work了，握手不上。</p>
 <p>最后 established 状态的连接, 是22端口给53795发了136字节的数据但是没有收到ack，所以在倒计时准备重传中。</p>
+<blockquote>
 <p><strong>net.ipv4.tcp_retries1 = 3</strong></p>
+</blockquote>
 <p>放弃回应一个TCP <strong>连接请求前</strong>﹐需要进行多少次重试。RFC 规定最低的数值是3﹐这也是默认值﹐根据RTO的值大约在3秒 - 8分钟之间。(注意:这个值同时还决定进入的syn连接)</p>
 <p><strong>(第二种解释：它表示的是TCP传输失败时不检测路由表的最大的重试次数，当超过了这个值，我们就需要检测路由表了)</strong></p>
 <p>从kernel代码可以看到，一旦重传超过阈值tcp_retries1，主要的动作就是更新路由缓存。<br>用以避免由于路由选路变化带来的问题。<strong>这个时候tcp连接没有关闭</strong></p>
-<p><strong>net.ipv4.tcp_retries2 = 15</strong></p>
+<blockquote>
+<p> <strong>net.ipv4.tcp_retries2 = 15</strong></p>
+</blockquote>
 <p><strong>在丢弃激活(已建立通讯状况)</strong>的TCP连接之前﹐需要进行多少次重试。默认值为15，根据RTO的值来决定，相当于13-30分钟(RFC1122规定，必须大于100秒).(这个值根据目前的网络设置,可以适当地改小,我的网络内修改为了5)</p>
 <p><strong>(第二种解释：表示重试最大次数，只不过这个值一般要比上面的值大。和上面那个不同的是，当重试次数超过这个值，我们就必须关闭连接了)</strong></p>
 <p>from：Documentation/networking/ip-sysctl.txt</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line">tcp_retries1 - INTEGER</div><div class="line">    This value influences the time, after which TCP decides, that</div><div class="line">    something is wrong due to unacknowledged RTO retransmissions,</div><div class="line">    and reports this suspicion to the network layer.</div><div class="line">    See tcp_retries2 for more details.</div><div class="line"></div><div class="line">    RFC 1122 recommends at least 3 retransmissions, which is the</div><div class="line">    default.</div><div class="line"></div><div class="line">tcp_retries2 - INTEGER</div><div class="line">    This value influences the timeout of an alive TCP connection,</div><div class="line">    when RTO retransmissions remain unacknowledged.</div><div class="line">    Given a value of N, a hypothetical TCP connection following</div><div class="line">    exponential backoff with an initial RTO of TCP_RTO_MIN would</div><div class="line">    retransmit N times before killing the connection at the (N+1)th RTO.</div><div class="line"></div><div class="line">    The default value of 15 yields a hypothetical timeout of 924.6</div><div class="line">    seconds and is a lower bound for the effective timeout.</div><div class="line">    TCP will effectively time out at the first RTO which exceeds the</div><div class="line">    hypothetical timeout.</div><div class="line"></div><div class="line">    RFC 1122 recommends at least 100 seconds for the timeout,</div><div class="line">    which corresponds to a value of at least 8.</div></pre></td></tr></table></figure>
+<p><img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1571230725657-b2b7ea40-06bc-41fb-a374-daa8de1f857d.png" alt="img"></p>
 <h3 id="retries限制的重传次数吗"><a href="#retries限制的重传次数吗" class="headerlink" title="retries限制的重传次数吗"></a>retries限制的重传次数吗</h3><p>咋一看文档，很容易想到retries的数字就是限定的重传的次数，甚至源码中对于retries常量注释中都写着”This is how many retries it does…”</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">#define TCP_RETR1       3   /*</div><div class="line">                             * This is how many retries it does before it</div><div class="line">                             * tries to figure out if the gateway is</div><div class="line">                             * down. Minimal RFC value is 3; it corresponds</div><div class="line">                             * to ~3sec-8min depending on RTO.</div><div class="line">                             */</div><div class="line"></div><div class="line">#define TCP_RETR2       15  /*</div><div class="line">                             * This should take at least</div><div class="line">                             * 90 minutes to time out.</div><div class="line">                             * RFC1122 says that the limit is 100 sec.</div><div class="line">                             * 15 is ~13-30min depending on RTO.</div><div class="line">                             */</div></pre></td></tr></table></figure>
 <p>那就就来看看retransmits_timed_out的具体实现，看看到底是不是限制的重传次数</p>
@@ -577,7 +583,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">110</span>
+                <span class="site-state-item-count">111</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -599,7 +605,7 @@
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">197</span>
+                <span class="site-state-item-count">199</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>
