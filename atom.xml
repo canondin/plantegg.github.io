@@ -58,7 +58,7 @@
     <link href="http://yoursite.com/2020/11/30/%E4%B8%80%E5%8F%B0%E6%9C%BA%E5%99%A8%E4%B8%8A%E6%9C%80%E5%A4%9A%E8%83%BD%E5%88%9B%E5%BB%BA%E5%A4%9A%E5%B0%91%E4%B8%AATCP%E8%BF%9E%E6%8E%A5/"/>
     <id>http://yoursite.com/2020/11/30/一台机器上最多能创建多少个TCP连接/</id>
     <published>2020-11-30T02:30:03.000Z</published>
-    <updated>2020-11-30T01:42:25.370Z</updated>
+    <updated>2020-12-02T13:52:20.735Z</updated>
     
     <content type="html"><![CDATA[<h1 id="到底一台服务器上最多能创建多少个TCP连接"><a href="#到底一台服务器上最多能创建多少个TCP连接" class="headerlink" title="到底一台服务器上最多能创建多少个TCP连接"></a>到底一台服务器上最多能创建多少个TCP连接</h1><blockquote>
 <p>经常听到有同学说一台机器最多能创建65535个TCP连接，这其实是错误的理解。估计得有90%以上的程序员会是这个错误理解，这个错误理解是怎么产生的呢？</p>
@@ -69,10 +69,10 @@
 <h2 id="到底一台机器上最多能创建多少个TCP连接"><a href="#到底一台机器上最多能创建多少个TCP连接" class="headerlink" title="到底一台机器上最多能创建多少个TCP连接"></a>到底一台机器上最多能创建多少个TCP连接</h2><p><strong>结论</strong>：在内存、文件句柄足够的话可以创建的连接是没有限制的（每个TCP连接至少要消耗一个文件句柄）。</p>
 <p>那么/proc/sys/net/ipv4/ip_local_port_range指定的端口范围到底是什么意思呢？</p>
 <p>核心规则：<strong>一个TCP连接只要保证四元组(src-ip src-port dest-ip dest-port)唯一就可以了，而不是要求src port唯一</strong></p>
-<p>后面所讲都是由这个规则引申开来，所以在心里反复默念：<strong>四元组唯一</strong> 五个大字，所有问题都能解决</p>
-<p>比如：</p>
+<p>后面所讲都是遵循这个规则的，所以在心里反复默念：<strong>四元组唯一</strong> 五个大字，就能分析出来到底能创建多少TCP连接了。</p>
+<p>比如如下这个TCP连接实际状态：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"># netstat -ant |grep 18089</div><div class="line">tcp        0      0 192.168.1.79:18089      192.168.1.79:22         ESTABLISHED</div><div class="line">tcp        0      0 192.168.1.79:18089      192.168.1.79:18080      ESTABLISHED</div><div class="line">tcp        0      0 192.168.0.79:18089      192.168.0.79:22         TIME_WAIT </div><div class="line">tcp        0      0 192.168.1.79:22         192.168.1.79:18089      ESTABLISHED</div><div class="line">tcp        0      0 192.168.1.79:18080      192.168.1.79:18089      ESTABLISHED</div></pre></td></tr></table></figure>
-<p>从前三行可以清楚地看到18089被用了三次，第一第二行src-ip、dest-ip也是重复的，但是dest port不一样，第三行的src-port还是18089，但是src-ip变了。</p>
+<p>从前三行可以清楚地看到18089被用了三次，第一第二行src-ip、dest-ip也是重复的，但是dest port不一样，第三行的src-port还是18089，但是src-ip变了。他们的四元组均不相同。</p>
 <p>所以一台机器能创建的TCP连接是没有限制的，而ip_local_port_range是指没有bind的时候OS随机分配端口的范围，但是分配到的端口要同时满足五元组唯一，这样 ip_local_port_range 限制的是连同一个目标（dest-ip和dest-port一样）的port的数量（请忽略本地多网卡的情况，因为dest-ip为以后route只会选用一个本地ip）。</p>
 <p><strong>那么为什么大家有这样的误解呢？</strong></p>
 <ul>
@@ -228,7 +228,7 @@
     <link href="http://yoursite.com/2020/11/18/TCP%E8%BF%9E%E6%8E%A5%E4%B8%BA%E5%95%A5%E4%BA%92%E4%B8%B2%E4%BA%86/"/>
     <id>http://yoursite.com/2020/11/18/TCP连接为啥互串了/</id>
     <published>2020-11-18T09:30:03.000Z</published>
-    <updated>2020-11-27T09:13:06.380Z</updated>
+    <updated>2020-12-02T13:52:20.731Z</updated>
     
     <content type="html"><![CDATA[<h1 id="活久见，TCP连接互串了"><a href="#活久见，TCP连接互串了" class="headerlink" title="活久见，TCP连接互串了"></a>活久见，TCP连接互串了</h1><h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>应用每过一段时间总是会抛出几个连接异常的错误，需要查明原因。</p>
 <p>排查后发现是TCP连接互串了，这个案例实在是很珍惜，所以记录一下。</p>
@@ -316,6 +316,8 @@
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">$cat /proc/sys/net/ipv4/ip_local_port_range</div><div class="line">1025    1034</div><div class="line"></div><div class="line">$./client</div><div class="line">local port: 1033</div><div class="line">local port: 1025</div><div class="line">local port: 1027</div><div class="line">local port: 1029</div><div class="line">local port: 1031</div><div class="line">local port: 1033</div><div class="line">local port: 1025</div><div class="line">local port: 1027</div><div class="line">local port: 1029</div><div class="line">local port: 1031</div><div class="line">local port: 1033</div><div class="line">local port: 1025</div><div class="line">local port: 1027</div><div class="line">local port: 1029</div><div class="line">local port: 1031</div></pre></td></tr></table></figure>
 <h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://plantegg.github.io/2019/06/20/就是要你懂负载均衡--lvs和转发模式/" target="_blank" rel="external">就是要你懂负载均衡–lvs和转发模式</a></p>
 <p><a href="https://idea.popcount.org/2014-04-03-bind-before-connect/" target="_blank" rel="external">https://idea.popcount.org/2014-04-03-bind-before-connect/</a></p>
+<p><a href="https://github.com/kubernetes/kubernetes/issues/81775" target="_blank" rel="external">no route to host</a></p>
+<p><a href="https://zhuanlan.zhihu.com/p/127099484" target="_blank" rel="external">另一种形式的tcp连接互串，新连接重用了time_wait的port，导致命中lvs内核表中的维护的旧连接发给了老的realserver</a></p>
 ]]></content>
     
     <summary type="html">
@@ -609,7 +611,7 @@
     <link href="http://yoursite.com/2020/11/15/Linux%E5%86%85%E5%AD%98--%E7%A2%8E%E7%89%87/"/>
     <id>http://yoursite.com/2020/11/15/Linux内存--碎片/</id>
     <published>2020-11-15T08:30:03.000Z</published>
-    <updated>2020-11-16T08:09:33.727Z</updated>
+    <updated>2020-12-02T13:52:20.719Z</updated>
     
     <content type="html"><![CDATA[<h1 id="Linux内存–碎片"><a href="#Linux内存–碎片" class="headerlink" title="Linux内存–碎片"></a>Linux内存–碎片</h1><h2 id="proc-buddyinfo"><a href="#proc-buddyinfo" class="headerlink" title="/proc/buddyinfo"></a>/proc/buddyinfo</h2><p>/proc/buddyinfo记录了内存的详细碎片情况。</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">#cat /proc/buddyinfo </div><div class="line">Node 0, zone      DMA      1      1      1      0      2      1      1      0      1      1      3 </div><div class="line">Node 0, zone    DMA32      2      5      3      6      2      0      4      4      2      2    404 </div><div class="line">Node 0, zone   Normal 243430 643847 357451  32531   9508   6159   3917   2960  17172   2633  22854</div></pre></td></tr></table></figure>
@@ -668,7 +670,16 @@
 <li>对于 CentOS 7.6 等支持 BPF 的 kernel 也可以运行我们研发的 <a href="https://github.com/iovisor/bcc/blob/master/tools/drsnoop_example.txt" target="_blank" rel="external">drsnoop</a>，<a href="https://github.com/iovisor/bcc/blob/master/tools/compactsnoop_example.txt" target="_blank" rel="external">compactsnoop</a> 工具对延迟进行定量分析，使用方法和解读方式请参考对应文档；</li>
 <li>(Opt) 使用 ftrace 抓取 mm_page_alloc_extfrag 事件，观察因内存碎片从备用迁移类型“盗取”页面的信息。</li>
 </ol>
-<p>​    </p>
+<h2 id="一个阿里云ECS-性能衰退的案例"><a href="#一个阿里云ECS-性能衰退的案例" class="headerlink" title="一个阿里云ECS 性能衰退的案例"></a>一个阿里云ECS 性能衰退的案例</h2><p>同样压力流量下，其中一个节点CPU非常高，通过top看起来是所有操作都很慢，像是CPU被降频了一样，但是直接跑CPU Prime性能又没有问题</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/8bbb5c886dc06196546daec46712ff71.png" alt="image.png"></p>
+<p>原因：ECS所在的宿主机内存碎片比较严重，导致分配到的内存主要是4K Page，在大页场景下会慢很多</p>
+<p>通过 <strong>openssl speed aes-256-ige 能稳定重现</strong> 在大块的加密上慢很多</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/8e15e91d4dcc61bbd329e7283c7c7500.png" alt="image.png"></p>
+<p>小块上性能一致，这也就是为什么算Prime性能没问题。导致慢只涉及到大块内存分配的场景，这里需要映射到宿主机，但是碎片多分配慢导致了问题。</p>
+<p>如果reboot ECS的话实际只是就地重启ECS，仍然使用的reboot前分配好的宿主机内存，不会解决问题。重启ECS中的进程也不会解决问题，只有将ECS迁移到别的物理机（也就是通过控制台重启，会重新选择物理机）才有可能解决这个问题。</p>
+<p>或者购买新的ECS机型（比如第6代之后ECS）能避免这个问题。</p>
+<p>ECS内部没法查看到这个碎片，只能在宿主机上通过命令查看大页情况：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div></pre></td><td class="code"><pre><div class="line">第二台有问题NC</div><div class="line">$cat /proc/buddyinfo</div><div class="line">Node 0, zone      DMA      1      1      0      0      2      1      1      0      1      1      3</div><div class="line">Node 0, zone    DMA32     23     23     17     15     13      9      8      8      4      3    367</div><div class="line">Node 0, zone   Normal 295291 298652 286048 266597 218191 156837  93156  45930  25856      0      0</div><div class="line"></div><div class="line">最新建的vm，大页不多</div><div class="line">$sudo cat /proc/9550/smaps |grep AnonHuge |awk &apos;&#123;sum+=$2&#125;END&#123;print sum&#125;&apos;</div><div class="line">210944</div><div class="line">------------------------</div><div class="line">第一台正常ECS所在的NC</div><div class="line">$cat /proc/buddyinfo</div><div class="line">Node 0, zone      DMA      1      1      0      0      2      1      1      0      1      1      3</div><div class="line">Node 0, zone    DMA32      7      5      5      9      8      4      6     10      5      5    366</div><div class="line">Node 0, zone   Normal 203242 217888 184465 176280 148612 102122  55787  26642  24824      0      0</div><div class="line"></div><div class="line">早期的vm，大页充足</div><div class="line">$sudo cat /proc/87369/smaps |grep AnonHuge |awk &apos;&#123;sum+=$2&#125;END&#123;print sum&#125;&apos;</div><div class="line">8275968</div><div class="line"></div><div class="line">近期的vm，大页不够</div><div class="line">$sudo cat /proc/22081/smaps |grep AnonHuge |awk &apos;&#123;sum+=$2&#125;END&#123;print sum&#125;&apos;</div><div class="line">251904</div><div class="line"></div><div class="line">$sudo cat /proc/44073/smaps |grep AnonHuge |awk &apos;&#123;sum+=$2&#125;END&#123;print sum&#125;&apos;</div><div class="line">10240</div></pre></td></tr></table></figure>
 <h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://www.atatech.org/articles/66885" target="_blank" rel="external">https://www.atatech.org/articles/66885</a></p>
 <p><a href="https://cloud.tencent.com/developer/article/1087455" target="_blank" rel="external">https://cloud.tencent.com/developer/article/1087455</a></p>
 <p><a href="https://www.cnblogs.com/xiaolincoding/p/13719610.html" target="_blank" rel="external">https://www.cnblogs.com/xiaolincoding/p/13719610.html</a></p>
@@ -971,7 +982,7 @@
     <link href="http://yoursite.com/2020/09/22/kubernetes%20service%20%E5%92%8C%20kube-proxy%E8%AF%A6%E8%A7%A3/"/>
     <id>http://yoursite.com/2020/09/22/kubernetes service 和 kube-proxy详解/</id>
     <published>2020-09-22T09:30:03.000Z</published>
-    <updated>2020-10-13T06:12:01.050Z</updated>
+    <updated>2020-12-02T13:52:20.703Z</updated>
     
     <content type="html"><![CDATA[<h1 id="kubernetes-service-和-kube-proxy详解"><a href="#kubernetes-service-和-kube-proxy详解" class="headerlink" title="kubernetes service 和 kube-proxy详解"></a>kubernetes service 和 kube-proxy详解</h1><blockquote>
 <p>service 是Kubernetes里面非常重要的一个功能，用以解决负载均衡、弹性伸缩、升级灰度等等 </p>
@@ -1205,6 +1216,7 @@
 <p><a href="http://arthurchiao.art/blog/cilium-life-of-a-packet-pod-to-service-zh/" target="_blank" rel="external">http://arthurchiao.art/blog/cilium-life-of-a-packet-pod-to-service-zh/</a>  Life of a Packet in Cilium：实地探索 Pod-to-Service 转发路径及 BPF 处理逻辑</p>
 <p><a href="http://arthurchiao.art/blog/understanding-ebpf-datapath-in-cilium-zh/" target="_blank" rel="external">http://arthurchiao.art/blog/understanding-ebpf-datapath-in-cilium-zh/</a>  深入理解 Cilium 的 eBPF 收发包路径（datapath）（KubeCon, 2019）</p>
 <p><a href="https://jiayu0x.com/2014/12/02/iptables-essential-summary/" target="_blank" rel="external">https://jiayu0x.com/2014/12/02/iptables-essential-summary/</a></p>
+<p><a href="https://k8s.imroc.io/" target="_blank" rel="external">imroc 电子书</a></p>
 ]]></content>
     
     <summary type="html">

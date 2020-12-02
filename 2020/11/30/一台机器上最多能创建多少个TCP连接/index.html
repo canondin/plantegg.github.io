@@ -102,7 +102,7 @@
 <meta property="og:url" content="http://yoursite.com/2020/11/30/一台机器上最多能创建多少个TCP连接/index.html">
 <meta property="og:site_name" content="plantegg">
 <meta property="og:description" content="到底一台服务器上最多能创建多少个TCP连接 经常听到有同学说一台机器最多能创建65535个TCP连接，这其实是错误的理解。估计得有90%以上的程序员会是这个错误理解，这个错误理解是怎么产生的呢？  port range我们都知道linux下本地随机端口范围由参数控制 12# cat /proc/sys/net/ipv4/ip_local_port_range 10000	65535 所以也经常看到">
-<meta property="og:updated_time" content="2020-11-30T01:42:25.370Z">
+<meta property="og:updated_time" content="2020-12-02T13:52:20.735Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="到底一台服务器上最多能创建多少个TCP连接">
 <meta name="twitter:description" content="到底一台服务器上最多能创建多少个TCP连接 经常听到有同学说一台机器最多能创建65535个TCP连接，这其实是错误的理解。估计得有90%以上的程序员会是这个错误理解，这个错误理解是怎么产生的呢？  port range我们都知道linux下本地随机端口范围由参数控制 12# cat /proc/sys/net/ipv4/ip_local_port_range 10000	65535 所以也经常看到">
@@ -392,10 +392,10 @@
 <h2 id="到底一台机器上最多能创建多少个TCP连接"><a href="#到底一台机器上最多能创建多少个TCP连接" class="headerlink" title="到底一台机器上最多能创建多少个TCP连接"></a>到底一台机器上最多能创建多少个TCP连接</h2><p><strong>结论</strong>：在内存、文件句柄足够的话可以创建的连接是没有限制的（每个TCP连接至少要消耗一个文件句柄）。</p>
 <p>那么/proc/sys/net/ipv4/ip_local_port_range指定的端口范围到底是什么意思呢？</p>
 <p>核心规则：<strong>一个TCP连接只要保证四元组(src-ip src-port dest-ip dest-port)唯一就可以了，而不是要求src port唯一</strong></p>
-<p>后面所讲都是由这个规则引申开来，所以在心里反复默念：<strong>四元组唯一</strong> 五个大字，所有问题都能解决</p>
-<p>比如：</p>
+<p>后面所讲都是遵循这个规则的，所以在心里反复默念：<strong>四元组唯一</strong> 五个大字，就能分析出来到底能创建多少TCP连接了。</p>
+<p>比如如下这个TCP连接实际状态：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"># netstat -ant |grep 18089</div><div class="line">tcp        0      0 192.168.1.79:18089      192.168.1.79:22         ESTABLISHED</div><div class="line">tcp        0      0 192.168.1.79:18089      192.168.1.79:18080      ESTABLISHED</div><div class="line">tcp        0      0 192.168.0.79:18089      192.168.0.79:22         TIME_WAIT </div><div class="line">tcp        0      0 192.168.1.79:22         192.168.1.79:18089      ESTABLISHED</div><div class="line">tcp        0      0 192.168.1.79:18080      192.168.1.79:18089      ESTABLISHED</div></pre></td></tr></table></figure>
-<p>从前三行可以清楚地看到18089被用了三次，第一第二行src-ip、dest-ip也是重复的，但是dest port不一样，第三行的src-port还是18089，但是src-ip变了。</p>
+<p>从前三行可以清楚地看到18089被用了三次，第一第二行src-ip、dest-ip也是重复的，但是dest port不一样，第三行的src-port还是18089，但是src-ip变了。他们的四元组均不相同。</p>
 <p>所以一台机器能创建的TCP连接是没有限制的，而ip_local_port_range是指没有bind的时候OS随机分配端口的范围，但是分配到的端口要同时满足五元组唯一，这样 ip_local_port_range 限制的是连同一个目标（dest-ip和dest-port一样）的port的数量（请忽略本地多网卡的情况，因为dest-ip为以后route只会选用一个本地ip）。</p>
 <p><strong>那么为什么大家有这样的误解呢？</strong></p>
 <ul>
