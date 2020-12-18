@@ -107,7 +107,7 @@
 <meta property="og:image" content="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/27d266ab8fd492f009fb7047d9337518.png">
 <meta property="og:image" content="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/25ab3e2385e08e8e23eeb1309d949839.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/19c681e7393bda67ab0a4d8f62f1a853.png">
-<meta property="og:updated_time" content="2020-11-16T03:14:22.175Z">
+<meta property="og:updated_time" content="2020-12-18T08:17:34.897Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="如何徒手撕Bug">
 <meta name="twitter:description" content="如何徒手撕Bug经常碰到bug，如果有源代码，或者源代码比较简单一般通过bug现象结合读源代码，基本能比较快解决掉。但是有些时候源代码过于复杂，比如linux kernel，比如 docker，复杂的另一方面是没法比较清晰地去理清源代码的结构。 所以不到万不得已不要碰复杂的源代码 问题docker daemon重启，上面有几十个容器，重启后daemon基本上卡死不动了。 docker ps/exe">
@@ -430,6 +430,16 @@ nameserver 10.0.0.3
 <p>之后当 <strong>tracee 运行到系统调用函数时就会被内核暂停</strong>；对 tracer 来说，就像 tracee 收到了 <code>SIGTRAP</code> 信号而停下来一样。接下来 tracer 就可以查看这次系统调 用的参数，打印相关的信息。</p>
 <p>然后，<strong>恢复 tracee 执行</strong>：再次调用 <code>ptrace</code>，带 <code>PTRACE_SYSCALL</code> 和 tracee 进程 ID。 tracee 会继续运行，进入到系统调用；在退出系统调用之前，再次被内核暂停。</p>
 <p>以上“暂停-采集-恢复执行”过程不断重复，tracer 就可以获取每次系统调用的信息，打印 出参数、返回值、时间等等。</p>
+<h3 id="strace-常用用法"><a href="#strace-常用用法" class="headerlink" title="strace 常用用法"></a>strace 常用用法</h3><p>1) sudo strace -tt -e poll,select,connect,recvfrom,sendto nc www.baidu.com 80 //网络连接不上，卡在哪里</p>
+<p>2) 如何确认一个程序为什么卡住和停止在什么地方?</p>
+<p>有些时候，某个进程看似不在做什么事情，也许它被停止在某个地方。</p>
+<p>$ strace -p 22067 Process 22067 attached - interrupt to quit flock(3, LOCK_EX</p>
+<p>这里我们看到，该进程在处理一个独占锁(LOCK_EX),且它的文件描述符为3,so 这是一个什么文件呢?</p>
+<p>$ readlink /proc/22067/fd/3 /tmp/foobar.lock</p>
+<p>aha, 原来是 /tmp/foobar.lock。可是为什么程序会被停止在这里呢?</p>
+<p>$ lsof | grep /tmp/foobar.lock command   21856       price    3uW     REG 253,88       0 34443743 /tmp/foobar.lock command   22067       price    3u      REG 253,88       0 34443743 /tmp/foobar.lock</p>
+<p>原来是进程 21856 hold住了锁。此时，真相大白 21856 和 22067 读到了相同的锁。</p>
+<p> strace -cp  // strace  可以按操作汇总时间</p>
 <h2 id="我的分析"><a href="#我的分析" class="headerlink" title="我的分析"></a>我的分析</h2><p>docker启动的时候要修改每个容器的dns（iptables规则），如果这个时候又收到了dns查询，但是查询的时候dns还没配置好，所以只能等待dns默认超时，等到超时完了再往后执行修改dns动作然后释放iptables锁。这里会发生恶性循环，导致dns修改时占用iptables的时间非常长，进而看着像把物理机iptables锁死，同时docker daemon不响应任何请求。</p>
 <p>这应该是docker daemon实现上的小bug，也就是改iptables这里没加锁，如果修改dns的时候同时收到了dns查询，要是让查询等锁的话就不至于出现这种恶性循环</p>
 <h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>其实这个问题还是挺容易出现的，daemon重启，上面有很多容器，容器里面的任务启动的时候都要做dns解析，这个时候daemon还在修改dns，冲进来很多dns查询的话会导致修改进程变慢</p>
@@ -640,7 +650,7 @@ nameserver 10.0.0.3
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#如何徒手撕Bug"><span class="nav-number">1.</span> <span class="nav-text">如何徒手撕Bug</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#问题"><span class="nav-number">1.1.</span> <span class="nav-text">问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#跟踪具体拿到锁的进程"><span class="nav-number">1.2.</span> <span class="nav-text">跟踪具体拿到锁的进程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#strace某个等锁的进程，拿到锁后非常快"><span class="nav-number">1.3.</span> <span class="nav-text">strace某个等锁的进程，拿到锁后非常快</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#strace工作原理"><span class="nav-number">1.4.</span> <span class="nav-text">strace工作原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#我的分析"><span class="nav-number">1.5.</span> <span class="nav-text">我的分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">1.6.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">1.7.</span> <span class="nav-text">参考资料</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#如何徒手撕Bug"><span class="nav-number">1.</span> <span class="nav-text">如何徒手撕Bug</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#问题"><span class="nav-number">1.1.</span> <span class="nav-text">问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#跟踪具体拿到锁的进程"><span class="nav-number">1.2.</span> <span class="nav-text">跟踪具体拿到锁的进程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#strace某个等锁的进程，拿到锁后非常快"><span class="nav-number">1.3.</span> <span class="nav-text">strace某个等锁的进程，拿到锁后非常快</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#strace工作原理"><span class="nav-number">1.4.</span> <span class="nav-text">strace工作原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#strace-常用用法"><span class="nav-number">1.4.1.</span> <span class="nav-text">strace 常用用法</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#我的分析"><span class="nav-number">1.5.</span> <span class="nav-text">我的分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">1.6.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">1.7.</span> <span class="nav-text">参考资料</span></a></li></ol></li></ol></div>
             
 
           </div>

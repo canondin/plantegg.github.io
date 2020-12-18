@@ -95,13 +95,13 @@
 
 
 
-<meta name="description" content="Linux内存–PageCachePage Cache 是在应用程序读写文件的过程中产生的 pagecache 的产生和释放 标准 I/O 是写的 (write(2)) 用户缓冲区 (Userpace Page 对应的内存)，然后再将用户缓冲区里的数据拷贝到内核缓冲区 (Pagecache Page 对应的内存)；如果是读的 (read(2)) 话则是先从内核缓冲区拷贝到用户缓冲区，再从用户缓冲区">
+<meta name="description" content="Linux内存–PageCachePage Cache 是在应用程序读写文件的过程中产生的 手动回收系统Cache、Buffer，这个文件可以设置的值分别为1、2、3。它们所表示的含义为： echo 1 &amp;gt; /proc/sys/vm/drop_caches:表示清除pagecache。 echo 2 &amp;gt; /proc/sys/vm/drop_caches:表示清除回收slab分配器中的对">
 <meta name="keywords" content="Linux,free,Memory,PageCache">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux内存--PageCache">
 <meta property="og:url" content="http://yoursite.com/2020/11/15/Linux内存--pagecache/index.html">
 <meta property="og:site_name" content="plantegg">
-<meta property="og:description" content="Linux内存–PageCachePage Cache 是在应用程序读写文件的过程中产生的 pagecache 的产生和释放 标准 I/O 是写的 (write(2)) 用户缓冲区 (Userpace Page 对应的内存)，然后再将用户缓冲区里的数据拷贝到内核缓冲区 (Pagecache Page 对应的内存)；如果是读的 (read(2)) 话则是先从内核缓冲区拷贝到用户缓冲区，再从用户缓冲区">
+<meta property="og:description" content="Linux内存–PageCachePage Cache 是在应用程序读写文件的过程中产生的 手动回收系统Cache、Buffer，这个文件可以设置的值分别为1、2、3。它们所表示的含义为： echo 1 &amp;gt; /proc/sys/vm/drop_caches:表示清除pagecache。 echo 2 &amp;gt; /proc/sys/vm/drop_caches:表示清除回收slab分配器中的对">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/51bf36aa14dc01e7ad309c1bb9d252e9.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d62ea00662f8342b7df3aab6b28e4cbb.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/0a5cdeb75b7dee2068254cd4b7fe254d.png">
@@ -113,10 +113,10 @@
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/f16438b744a248d7671d5ac7317b0a98.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/cf58f10a523e1e4f0db443be3f54fc04.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d5446b656e8d91a9fb72200a7b97e723.png">
-<meta property="og:updated_time" content="2020-11-16T08:09:33.723Z">
+<meta property="og:updated_time" content="2020-12-18T08:17:34.841Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Linux内存--PageCache">
-<meta name="twitter:description" content="Linux内存–PageCachePage Cache 是在应用程序读写文件的过程中产生的 pagecache 的产生和释放 标准 I/O 是写的 (write(2)) 用户缓冲区 (Userpace Page 对应的内存)，然后再将用户缓冲区里的数据拷贝到内核缓冲区 (Pagecache Page 对应的内存)；如果是读的 (read(2)) 话则是先从内核缓冲区拷贝到用户缓冲区，再从用户缓冲区">
+<meta name="twitter:description" content="Linux内存–PageCachePage Cache 是在应用程序读写文件的过程中产生的 手动回收系统Cache、Buffer，这个文件可以设置的值分别为1、2、3。它们所表示的含义为： echo 1 &amp;gt; /proc/sys/vm/drop_caches:表示清除pagecache。 echo 2 &amp;gt; /proc/sys/vm/drop_caches:表示清除回收slab分配器中的对">
 <meta name="twitter:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/51bf36aa14dc01e7ad309c1bb9d252e9.png">
 
 
@@ -396,6 +396,10 @@
 
       
         <h1 id="Linux内存–PageCache"><a href="#Linux内存–PageCache" class="headerlink" title="Linux内存–PageCache"></a>Linux内存–PageCache</h1><p>Page Cache 是在应用程序读写文件的过程中产生的</p>
+<p>手动回收系统Cache、Buffer，这个文件可以设置的值分别为1、2、3。它们所表示的含义为：</p>
+<p><strong>echo 1 &gt; /proc/sys/vm/drop_caches</strong>:表示清除pagecache。</p>
+<p><strong>echo 2 &gt; /proc/sys/vm/drop_caches</strong>:表示清除回收slab分配器中的对象（包括目录项缓存和inode缓存）。slab分配器是内核中管理内存的一种机制，其中很多缓存数据实现都是用的pagecache。</p>
+<p><strong>echo 3 &gt; /proc/sys/vm/drop_caches</strong>:表示清除pagecache和slab分配器中的缓存对象。</p>
 <h2 id="pagecache-的产生和释放"><a href="#pagecache-的产生和释放" class="headerlink" title="pagecache 的产生和释放"></a>pagecache 的产生和释放</h2><ul>
 <li>标准 I/O 是写的 (write(2)) 用户缓冲区 (Userpace Page 对应的内存)，<strong>然后再将用户缓冲区里的数据拷贝到内核缓冲区 (Pagecache Page 对应的内存)</strong>；如果是读的 (read(2)) 话则是先从内核缓冲区拷贝到用户缓冲区，再从用户缓冲区读数据，也就是 buffer 和文件内容不存在任何映射关系。</li>
 <li>对于存储映射 I/O（Memory-Mapped I/O） 而言，则是直接将 Pagecache Page 给映射到用户地址空间，用户直接读写 Pagecache Page 中内容，效率相对标准IO更高一些</li>

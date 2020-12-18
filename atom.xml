@@ -228,7 +228,7 @@
     <link href="http://yoursite.com/2020/11/18/TCP%E8%BF%9E%E6%8E%A5%E4%B8%BA%E5%95%A5%E4%BA%92%E4%B8%B2%E4%BA%86/"/>
     <id>http://yoursite.com/2020/11/18/TCP连接为啥互串了/</id>
     <published>2020-11-18T09:30:03.000Z</published>
-    <updated>2020-12-02T13:52:20.731Z</updated>
+    <updated>2020-12-18T08:17:34.869Z</updated>
     
     <content type="html"><![CDATA[<h1 id="活久见，TCP连接互串了"><a href="#活久见，TCP连接互串了" class="headerlink" title="活久见，TCP连接互串了"></a>活久见，TCP连接互串了</h1><h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>应用每过一段时间总是会抛出几个连接异常的错误，需要查明原因。</p>
 <p>排查后发现是TCP连接互串了，这个案例实在是很珍惜，所以记录一下。</p>
@@ -514,9 +514,13 @@
     <link href="http://yoursite.com/2020/11/15/Linux%E5%86%85%E5%AD%98--pagecache/"/>
     <id>http://yoursite.com/2020/11/15/Linux内存--pagecache/</id>
     <published>2020-11-15T08:30:03.000Z</published>
-    <updated>2020-11-16T08:09:33.723Z</updated>
+    <updated>2020-12-18T08:17:34.841Z</updated>
     
     <content type="html"><![CDATA[<h1 id="Linux内存–PageCache"><a href="#Linux内存–PageCache" class="headerlink" title="Linux内存–PageCache"></a>Linux内存–PageCache</h1><p>Page Cache 是在应用程序读写文件的过程中产生的</p>
+<p>手动回收系统Cache、Buffer，这个文件可以设置的值分别为1、2、3。它们所表示的含义为：</p>
+<p><strong>echo 1 &gt; /proc/sys/vm/drop_caches</strong>:表示清除pagecache。</p>
+<p><strong>echo 2 &gt; /proc/sys/vm/drop_caches</strong>:表示清除回收slab分配器中的对象（包括目录项缓存和inode缓存）。slab分配器是内核中管理内存的一种机制，其中很多缓存数据实现都是用的pagecache。</p>
+<p><strong>echo 3 &gt; /proc/sys/vm/drop_caches</strong>:表示清除pagecache和slab分配器中的缓存对象。</p>
 <h2 id="pagecache-的产生和释放"><a href="#pagecache-的产生和释放" class="headerlink" title="pagecache 的产生和释放"></a>pagecache 的产生和释放</h2><ul>
 <li>标准 I/O 是写的 (write(2)) 用户缓冲区 (Userpace Page 对应的内存)，<strong>然后再将用户缓冲区里的数据拷贝到内核缓冲区 (Pagecache Page 对应的内存)</strong>；如果是读的 (read(2)) 话则是先从内核缓冲区拷贝到用户缓冲区，再从用户缓冲区读数据，也就是 buffer 和文件内容不存在任何映射关系。</li>
 <li>对于存储映射 I/O（Memory-Mapped I/O） 而言，则是直接将 Pagecache Page 给映射到用户地址空间，用户直接读写 Pagecache Page 中内容，效率相对标准IO更高一些</li>
@@ -709,9 +713,9 @@
     <link href="http://yoursite.com/2020/11/15/Linux%E5%86%85%E5%AD%98--%E9%9B%B6%E6%8B%B7%E8%B4%9D/"/>
     <id>http://yoursite.com/2020/11/15/Linux内存--零拷贝/</id>
     <published>2020-11-15T08:30:03.000Z</published>
-    <updated>2020-11-16T08:09:33.735Z</updated>
+    <updated>2020-12-18T08:17:34.849Z</updated>
     
-    <content type="html"><![CDATA[<h1 id="Linux内存–零拷贝"><a href="#Linux内存–零拷贝" class="headerlink" title="Linux内存–零拷贝"></a>Linux内存–零拷贝</h1><h2 id="零拷贝"><a href="#零拷贝" class="headerlink" title="零拷贝"></a>零拷贝</h2><p>零拷贝可以做到用户空间和内核空间共用同一块内存（Java中的DirectBuffer），这样少做一次拷贝。普通Buffer是在JVM堆上分配的内存，而DirectBuffer是堆外分配的（内核和JVM可以同时读写），这样不需要再多一次内核到用户Buffer的拷贝</p>
+    <content type="html"><![CDATA[<h1 id="Linux内存–零拷贝"><a href="#Linux内存–零拷贝" class="headerlink" title="Linux内存–零拷贝"></a>Linux内存–零拷贝</h1><h2 id="零拷贝"><a href="#零拷贝" class="headerlink" title="零拷贝"></a>零拷贝</h2><p>零拷贝可以做到用户空间和内核空间共用同一块内存（Java中的DirectBuffer），这样少做一次拷贝。普通Buffer是在JVM堆上分配的内存，而DirectBuffer是堆外分配的（内核和JVM可以同时读写），这样不需要再多一次内核到用户Buffer的拷贝 </p>
 <p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/83e2dfbd25d703c58877b2faf71c4944.jpg" alt=""></p>
 <p>比如通过网络下载文件，普通拷贝的流程会复制4次并有4次上下文切换，上下文切换是因为读写慢导致了IO的阻塞，进而线程被内核挂起，所以发生了上下文切换。在极端情况下如果read/write没有导致阻塞是不会发生上下文切换的：</p>
 <p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/b2d0ffb366ef78faca4b7924c2a66cc1.png" alt="image.png"></p>
@@ -888,7 +892,7 @@
     <link href="http://yoursite.com/2020/11/02/%E4%B8%BE%E4%B8%89%E5%8F%8D%E4%B8%80--%E4%BB%8E%E7%90%86%E8%AE%BA%E7%9F%A5%E8%AF%86%E5%88%B0%E5%AE%9E%E9%99%85%E9%97%AE%E9%A2%98%E7%9A%84%E6%8E%A8%E5%AF%BC/"/>
     <id>http://yoursite.com/2020/11/02/举三反一--从理论知识到实际问题的推导/</id>
     <published>2020-11-02T02:30:03.000Z</published>
-    <updated>2020-11-30T01:15:33.406Z</updated>
+    <updated>2020-12-18T08:17:34.877Z</updated>
     
     <content type="html"><![CDATA[<h1 id="举三反一–从理论知识到实际问题的推导"><a href="#举三反一–从理论知识到实际问题的推导" class="headerlink" title="举三反一–从理论知识到实际问题的推导"></a>举三反一–从理论知识到实际问题的推导</h1><blockquote>
 <p>怎么样才能获取举三反一的秘籍， 普通人为什么要案例来深化对理论知识的理解。</p>
@@ -910,12 +914,13 @@
 <p>服务端出现大量CLOSE_WAIT 个数正好 等于somaxconn（调整somaxconn后 CLOSE_WAIT 也会跟着变成一样的值）</p>
 </blockquote>
 <p>根据这个描述先不要往下看，自己推理分析下可能的原因。</p>
-<p>我的推理如下，老司机的思路靠经验缺省了一些理论推理，缺省还是对理论理解不够， 这个分析抓住了 大量CLOSE_WAIT 个数正好 等于somaxconn（调整somaxconn后 CLOSE_WAIT 也会跟着变成一样的值）但是没有抓住 CLOSE_WAIT 背后的核心原因：</p>
+<p>我的推理如下：</p>
 <p>从这里看起来，client跟server成功建立了somaxconn个连接（somaxconn小于backlog，所以accept queue只有这么大），但是应用没有accept这个连接，导致这些连接一直在accept queue中。但是这些连接的状态已经是ESTABLISHED了，也就是client可以发送数据了，数据发送到server后OS ack了，并放在os的tcp buffer中，应用一直没有accept也就没法读取数据。client于是发送fin（可能是超时、也可能是简单发送数据任务完成了得结束连接），这时Server上这个连接变成了CLOSE_WAIT .</p>
 <p>也就是从开始到结束这些连接都在accept queue中，没有被应用accept，很快他们又因为client 发送 fin 包变成了CLOSE_WAIT ，所以始终看到的是服务端出现大量CLOSE_WAIT 并且个数正好等于somaxconn（调整somaxconn后 CLOSE_WAIT 也会跟着变成一样的值）。</p>
 <p>如下图所示，在连接进入accept queue后状态就是ESTABLISED了，也就是可以正常收发数据和fin了。client是感知不到server是否accept()了，只是发了数据后server的os代为保存在OS的TCP buffer中，因为应用没来取自然在CLOSE_WAIT 后应用也没有close()，所以一直维持CLOSE_WAIT 。</p>
 <p>得检查server 应用为什么没有accept。</p>
 <p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/2703fc07dfc4dd5b6e1bb4c2ce620e59.png" alt="image.png"></p>
+<p>如上是老司机的思路靠经验缺省了一些理论推理，缺省还是对理论理解不够， 这个分析抓住了 大量CLOSE_WAIT 个数正好 等于somaxconn（调整somaxconn后 CLOSE_WAIT 也会跟着变成一样的值）但是没有抓住 CLOSE_WAIT 背后的核心原因</p>
 <h3 id="更简单的推理"><a href="#更简单的推理" class="headerlink" title="更简单的推理"></a>更简单的推理</h3><p>如果没有任何实战经验，只看上面的状态图的学霸应该是这样推理的：</p>
 <p>看到server上有大量的CLOSE_WAIT说明client主动断开了连接，server的OS收到client 发的fin，并回复了ack，这个过程不需要应用感知，进而连接从ESTABLISHED进入CLOSE_WAIT，此时在等待server上的应用调用close连关闭连接（处理完所有收发数据后才会调close()） —- 结论：server上的应用一直卡着没有调close().</p>
 <p>同时这里很奇怪的现象： 服务端出现大量CLOSE_WAIT 个数正好 等于somaxconn，进而可以猜测是不是连接建立后很快accept队列满了（应用也没有accept() ), 导致 大量CLOSE_WAIT 个数正好 等于somaxconn —- 结论： server 上的应用不但没有调close(), 连close() 前面必须调用 accept() 都一直卡着没调 （这个结论需要有accept()队列的理论知识)</p>
