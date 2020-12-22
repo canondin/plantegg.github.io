@@ -281,142 +281,6 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/06/02/就是要你懂TCP--wireshark-dup-ack-issue/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/06/02/就是要你懂TCP--wireshark-dup-ack-issue/" itemprop="url">wireshark-dup-ack-issue and keepalive</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-06-02T17:30:03+08:00">
-                2017-06-02
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2017/06/02/就是要你懂TCP--wireshark-dup-ack-issue/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2017/06/02/就是要你懂TCP--wireshark-dup-ack-issue/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="wireshark-dup-ack-issue-and-keepalive"><a href="#wireshark-dup-ack-issue-and-keepalive" class="headerlink" title="wireshark-dup-ack-issue and keepalive"></a>wireshark-dup-ack-issue and keepalive</h1><h2 id="问题："><a href="#问题：" class="headerlink" title="问题："></a>问题：</h2><p>在wireshark中看到一个tcp会话中的两台机器突然一直互相发dup ack包，但是没有触发重传。每次重复ack都是间隔精确的20秒</p>
-<h2 id="如下截图："><a href="#如下截图：" class="headerlink" title="如下截图："></a>如下截图：</h2><p><img src="http://i.imgur.com/bm3W68Q.png" alt=""></p>
-<p>client都一直在回复收到2号包（ack=2）了，可是server跟傻了一样居然还发seq=1的包（按理，应该发比2大的包啊）</p>
-<h2 id="系统配置："><a href="#系统配置：" class="headerlink" title="系统配置："></a>系统配置：</h2><pre><code>net.ipv4.tcp_keepalive_time = 20
-net.ipv4.tcp_keepalive_probes = 5
-net.ipv4.tcp_keepalive_intvl = 3
-</code></pre><h2 id="原因："><a href="#原因：" class="headerlink" title="原因："></a>原因：</h2><p>抓包不全的话wireshark有缺陷，把keepalive包识别成了dup ack包，看内容这种dup ack和keepalive似乎是一样的，flags都是0x010。keep alive的定义的是后退一格(seq少1）。</p>
-<p>2、4、6、8……号包，都有一个“tcp acked unseen segment”。这个一般表示它ack的这个包，没有被抓到。Wirshark如何作出此判断呢？前面一个包是seq=1, len=0，所以正常情况下是ack = seq + len = 1，然而Wireshark看到的确是ack = 2, 它只能判断有一个seq =1, len = 1的包没有抓到。<br>dup ack也是类似道理，这些包完全符合dup ack的定义，因为“ack = ” 某个数连续多次出现了。</p>
-<p>这一切都是因为keep alive的特殊性导致的。打开66号包的tcp层（见后面的截图），可以看到它的 next sequence number = 12583，表示正常情况下server发出的下一个包应该是seq = 12583。可是在下一个包，也就是68号包中，却是seq = 12582。keep alive的定义的确是这样，即后退一格。<br>Wireshark只有在抓到数据包（66号包）和keep alive包的情况下才有可能正确识别，前面的抓包中恰好在keep alive之前丢失了数据包，所以Wireshark就蒙了。</p>
-<h2 id="构造重现"><a href="#构造重现" class="headerlink" title="构造重现"></a>构造重现</h2><p>如果用“frame.number &gt;= 68” 过滤这个包，然后File–&gt;export specified packets保存成一个新文件，再打开那个新文件，就会发现Wireshark又蒙了。本来能够正常识别的keep alive包又被错看成dup ack了，所以一旦碰到这种情况不要慌要稳</p>
-<p>下面是知识点啦</p>
-<h2 id="正常的keep-alive-Case："><a href="#正常的keep-alive-Case：" class="headerlink" title="正常的keep-alive Case："></a>正常的keep-alive Case：</h2><p><img src="http://i.imgur.com/DsTWFZr.png" alt=""></p>
-<p>keep-alive 通过发一个比实际seq小1的包，比如server都已经 ack 12583了，client故意发一个seq 12582来标识这是一个keep-Alive包</p>
-<h2 id="Duplication-ack是指："><a href="#Duplication-ack是指：" class="headerlink" title="Duplication ack是指："></a>Duplication ack是指：</h2><p>server收到了3和8号包，但是没有收到中间的4/5/6/7，那么server就会ack 3，如果client还是继续发8/9号包，那么server会继续发dup ack 3#1 ; dup ack 3#2 来向客户端说明只收到了3号包，不要着急发后面的大包，把4/5/6/7给我发过来</p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/06/02/就是要你懂TCP--连接和握手/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1346,6 +1210,7 @@ net.ipv4.tcp_keepalive_intvl = 3
 <h2 id="ss-查看Buffer窗口"><a href="#ss-查看Buffer窗口" class="headerlink" title="ss 查看Buffer窗口"></a><a href="https://access.redhat.com/discussions/3624151" target="_blank" rel="external">ss 查看Buffer窗口</a></h2><p>ss参数说明<a href="https://man7.org/linux/man-pages/man8/ss.8.html" target="_blank" rel="external">权威参考</a></p>
 <p>–memory/-m ： 展示buffer窗口的大小</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">#ss -m | xargs -L 1 | grep &quot;tcp EST&quot; | awk &apos;&#123; if($3&gt;0 || $4&gt;0) print $0 &#125;&apos;</div><div class="line">tcp ESTAB 0 31 10.97.137.1:7764 10.97.137.2:41019 skmem:(r0,rb7160692,t0,tb87040,f1792,w2304,o0,bl0)</div><div class="line">tcp ESTAB 0 193 ::ffff:10.97.137.1:sdo-tls ::ffff:10.97.137.2:55545 skmem:(r0,rb369280,t0,tb87040,f1792,w2304,o0,bl0)</div><div class="line">tcp ESTAB 0 65 ::ffff:10.97.137.1:splitlock ::ffff:10.97.137.2:47796 skmem:(r0,rb369280,t0,tb87040,f1792,w2304,o0,bl0)</div><div class="line">tcp ESTAB 0 80 ::ffff:10.97.137.1:informer ::ffff:10.97.137.3:49279 skmem:(r0,rb369280,t0,tb87040,f1792,w2304,o0,bl0)</div><div class="line">tcp ESTAB 0 11 ::ffff:10.97.137.1:acp-policy ::ffff:10.97.137.2:41607 skmem:(r0,rb369280,t0,tb87040,f1792,w2304,o0,bl0)</div><div class="line"></div><div class="line">#ss -m -n | xargs -L 1 | grep &quot;tcp EST&quot; | grep &quot;t[1-9]&quot;</div><div class="line">tcp ESTAB 0 281 10.97.169.173:32866 10.97.170.220:3306 skmem:(r0,rb4619516,t2304,tb87552,f1792,w2304,o0,bl0)</div></pre></td></tr></table></figure>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/4a09503e6c6e84c25e026248a1b3ebb6.png" alt="image.png"></p>
 <p>如上图，tb指可分配的发送buffer大小，不够还可以动态调整（应用没有写死的话），w已经预分配好了的size，t[the memory used for sending packet (which has been sent<br>                     to layer 3)] , 似乎 w总是等于大于t？</p>
 <p>The entire print format of <code>ss -m</code> is given in the source:</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">printf(&quot; skmem:(r%u,rb%u,t%u,tb%u,f%u,w%u,o%u&quot;,</div><div class="line">         skmeminfo[SK_MEMINFO_RMEM_ALLOC],</div><div class="line">         skmeminfo[SK_MEMINFO_RCVBUF],</div><div class="line">         skmeminfo[SK_MEMINFO_WMEM_ALLOC],</div><div class="line">         skmeminfo[SK_MEMINFO_SNDBUF],</div><div class="line">         skmeminfo[SK_MEMINFO_FWD_ALLOC],</div><div class="line">         skmeminfo[SK_MEMINFO_WMEM_QUEUED],</div><div class="line">         skmeminfo[SK_MEMINFO_OPTMEM]);</div><div class="line"></div><div class="line">  if (RTA_PAYLOAD(tb[attrtype]) &gt;=</div><div class="line">          (SK_MEMINFO_BACKLOG + 1) * sizeof(__u32))</div><div class="line">          printf(&quot;,bl%u&quot;, skmeminfo[SK_MEMINFO_BACKLOG]);</div><div class="line"></div><div class="line">  if (RTA_PAYLOAD(tb[attrtype]) &gt;=</div><div class="line">          (SK_MEMINFO_DROPS + 1) * sizeof(__u32))</div><div class="line">          printf(&quot;,d%u&quot;, skmeminfo[SK_MEMINFO_DROPS]);</div><div class="line"></div><div class="line">  printf(&quot;)&quot;);</div></pre></td></tr></table></figure>
@@ -2597,7 +2462,7 @@ ok =&gt; 10.125.12.174 =&gt; {
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">111</span>
+                <span class="site-state-item-count">110</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
