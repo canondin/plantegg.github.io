@@ -102,45 +102,45 @@
 <meta property="og:url" content="http://yoursite.com/2019/09/28/就是要你懂TCP--性能和发送接收Buffer的关系/index.html">
 <meta property="og:site_name" content="plantegg">
 <meta property="og:description" content="前言本文希望解析清楚，当我们在代码中写下 socket.setSendBufferSize 和 sysctl 看到的rmem/wmem系统参数以及最终我们在TCP常常谈到的接收发送窗口的关系，以及他们怎样影响TCP传输的性能，同时如何通过图形来展示哪里是传输瓶颈。 拥塞窗口相关文章比较多，他们跟带宽紧密相关，所以大家比较好判断，反而是接收、发送窗口一旦出现瓶颈，就没这么好判断了。 先明确一下：文章">
-<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d188530df31712e8341f5687a960743a.png">
-<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e177d59ecb886daef5905ed80a84dfd2.png">
-<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/7ae26e844629258de173a05d5ad595f9.png">
-<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d385a7dad76ec4031dfb6c096bca434b.png">
-<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ff025f076a4a2bc2b1b13d11f32a97d3.png">
-<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/3d9e77f8c9b0cab1484c870d2c0d2473.png">
-<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/3dcfd469fe1e2f7e1d938a5289b83826.png">
-<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/4af4765c045e9eed2e36d9760d4a2aba.png">
-<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/1984258c0300921799476777f5f0a38a.png">
-<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/5ec50ecf25444e96d81fab975b5a79e6.png">
-<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/05d6357ed53c1c16f0dd0454251916ef.png">
-<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/67f280a1cf499ae388fc44d6418869a7.png">
-<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/15b7d6852e44fc179d60d76f322695c7.png">
-<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/0f3050cd98db40a352410a11a521e8b2.png">
-<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/0db5c3684a9314907f9158ac15b6ac71.png">
-<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/55cf9875d24d76a077c442327d54fa34.png">
-<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/da48878ce0c01bcdedb1e6d6a6cc6d1c.png">
-<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/49e2635a7c4025d44b915a1f17dd272a.png">
-<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/2e493d8dc32bb63f2126375de6675351.png">
-<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d7d3af2c03653e6cf8ae2befa0022832.png">
-<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d0e12e8bad8764385549f9b391c62ab0.png">
-<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d0e12e8bad8764385549f9b391c62ab0.png">
-<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/259767fb17f7dbffe7f77ab059c47dbd.png">
-<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/466fba92829f6a922ccd2d57a7e3fdac.png">
-<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/93e254c5154ce2e065bec9fb34f3db2b.png">
-<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/0a8c68a58da6f169573b57cde0ffba93.png">
-<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/822737a4ed6ffe6b920d4b225a1be5bf.png">
-<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/004886698ddbaa1cbc8342a9cd667c76.png">
-<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/70155e021390cb1ee07091c306c375f4.png">
-<meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/a08a204ec7ad4bba7867dacea1668322.png">
+<meta property="og:image" content="http://yoursite.com/images/d188530df31712e8341f5687a960743a.png">
+<meta property="og:image" content="http://yoursite.com/images/e177d59ecb886daef5905ed80a84dfd2.png">
+<meta property="og:image" content="http://yoursite.com/images/7ae26e844629258de173a05d5ad595f9.png">
+<meta property="og:image" content="http://yoursite.com/images/d385a7dad76ec4031dfb6c096bca434b.png">
+<meta property="og:image" content="http://yoursite.com/images/ff025f076a4a2bc2b1b13d11f32a97d3.png">
+<meta property="og:image" content="http://yoursite.com/images/3d9e77f8c9b0cab1484c870d2c0d2473.png">
+<meta property="og:image" content="http://yoursite.com/images/3dcfd469fe1e2f7e1d938a5289b83826.png">
+<meta property="og:image" content="http://yoursite.com/images/4af4765c045e9eed2e36d9760d4a2aba.png">
+<meta property="og:image" content="http://yoursite.com/images/1984258c0300921799476777f5f0a38a.png">
+<meta property="og:image" content="http://yoursite.com/images/5ec50ecf25444e96d81fab975b5a79e6.png">
+<meta property="og:image" content="http://yoursite.com/images/05d6357ed53c1c16f0dd0454251916ef.png">
+<meta property="og:image" content="http://yoursite.com/images/67f280a1cf499ae388fc44d6418869a7.png">
+<meta property="og:image" content="http://yoursite.com/images/15b7d6852e44fc179d60d76f322695c7.png">
+<meta property="og:image" content="http://yoursite.com/images/0f3050cd98db40a352410a11a521e8b2.png">
+<meta property="og:image" content="http://yoursite.com/images/0db5c3684a9314907f9158ac15b6ac71.png">
+<meta property="og:image" content="http://yoursite.com/images/55cf9875d24d76a077c442327d54fa34.png">
+<meta property="og:image" content="http://yoursite.com/images/da48878ce0c01bcdedb1e6d6a6cc6d1c.png">
+<meta property="og:image" content="http://yoursite.com/images/49e2635a7c4025d44b915a1f17dd272a.png">
+<meta property="og:image" content="http://yoursite.com/images/2e493d8dc32bb63f2126375de6675351.png">
+<meta property="og:image" content="http://yoursite.com/images/d7d3af2c03653e6cf8ae2befa0022832.png">
+<meta property="og:image" content="http://yoursite.com/images/d0e12e8bad8764385549f9b391c62ab0.png">
+<meta property="og:image" content="http://yoursite.com/images/d0e12e8bad8764385549f9b391c62ab0.png">
+<meta property="og:image" content="http://yoursite.com/images/259767fb17f7dbffe7f77ab059c47dbd.png">
+<meta property="og:image" content="http://yoursite.com/images/466fba92829f6a922ccd2d57a7e3fdac.png">
+<meta property="og:image" content="http://yoursite.com/images/93e254c5154ce2e065bec9fb34f3db2b.png">
+<meta property="og:image" content="http://yoursite.com/images/0a8c68a58da6f169573b57cde0ffba93.png">
+<meta property="og:image" content="http://yoursite.com/images/822737a4ed6ffe6b920d4b225a1be5bf.png">
+<meta property="og:image" content="http://yoursite.com/images/004886698ddbaa1cbc8342a9cd667c76.png">
+<meta property="og:image" content="http://yoursite.com/images/70155e021390cb1ee07091c306c375f4.png">
+<meta property="og:image" content="http://yoursite.com/images/a08a204ec7ad4bba7867dacea1668322.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d56f87a19a10b0ac9a3b7009641247a0.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d5e2e358dd1a24e104f54815c84875c9.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/48eae3dcd7c78a68b0afd5c66f783f23.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/ea04e40acda986675bf0ad0ea7b9b8ff.png">
-<meta property="og:updated_time" content="2020-12-22T05:07:07.769Z">
+<meta property="og:updated_time" content="2020-12-23T10:21:08.002Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="TCP性能和发送接收窗口、Buffer的关系">
 <meta name="twitter:description" content="前言本文希望解析清楚，当我们在代码中写下 socket.setSendBufferSize 和 sysctl 看到的rmem/wmem系统参数以及最终我们在TCP常常谈到的接收发送窗口的关系，以及他们怎样影响TCP传输的性能，同时如何通过图形来展示哪里是传输瓶颈。 拥塞窗口相关文章比较多，他们跟带宽紧密相关，所以大家比较好判断，反而是接收、发送窗口一旦出现瓶颈，就没这么好判断了。 先明确一下：文章">
-<meta name="twitter:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d188530df31712e8341f5687a960743a.png">
+<meta name="twitter:image" content="http://yoursite.com/images/d188530df31712e8341f5687a960743a.png">
 
 
 
@@ -429,20 +429,20 @@
 <p>所以这里问题的原因基本上是我们的服务在这种网络条件下有性能问题，需要找出为什么。</p>
 </blockquote>
 <h2 id="抓包分析-tcpdump-wireshark"><a href="#抓包分析-tcpdump-wireshark" class="headerlink" title="抓包分析 tcpdump+wireshark"></a>抓包分析 tcpdump+wireshark</h2><p>抓包分析这22M的数据传输，如下图（wireshark 时序图），横轴是时间，纵轴是sequence number：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d188530df31712e8341f5687a960743a.png" alt="image.png"></p>
+<p><img src="/images/d188530df31712e8341f5687a960743a.png" alt="image.png"></p>
 <p>粗一看没啥问题，因为时间太长掩盖了问题。把这个图形放大，只看中间50ms内的传输情况（横轴是时间，纵轴是sequence number，一个点代表一个包）</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/e177d59ecb886daef5905ed80a84dfd2.png" alt="image.png" style="zoom: 80%;"></p>
+<p><img src="/images/e177d59ecb886daef5905ed80a84dfd2.png" alt="image.png" style="zoom: 80%;"></p>
 <p>换个角度，看看窗口尺寸图形：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/7ae26e844629258de173a05d5ad595f9.png" alt="image.png"></p>
+<p><img src="/images/7ae26e844629258de173a05d5ad595f9.png" alt="image.png"></p>
 <p>从bytes in flight也大致能算出来总的传输速度 16K*1000/20=800Kb/秒</p>
 <p>我们的应用代码中会默认设置 socketSendBuffer 为16K:</p>
 <blockquote>
 <p>socket.setSendBufferSize(16*1024) //16K send buffer</p>
 </blockquote>
 <p>来看一下tcp包发送流程：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d385a7dad76ec4031dfb6c096bca434b.png" alt="image.png"></p>
+<p><img src="/images/d385a7dad76ec4031dfb6c096bca434b.png" alt="image.png"></p>
 <p>（图片<a href="https://www.atatech.org/articles/9032" target="_blank" rel="external">来自</a>）</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ff025f076a4a2bc2b1b13d11f32a97d3.png" alt="image.png"></p>
+<p><img src="/images/ff025f076a4a2bc2b1b13d11f32a97d3.png" alt="image.png"></p>
 <p>如果sendbuffer不够就会卡在上图中的第一步 sk_stream_wait_memory, 通过systemtap脚本可以验证：</p>
 <pre><code> #!/usr/bin/stap
     # Simple probe to detect when a process is waiting for more socket send
@@ -469,7 +469,7 @@ probe kernel.function(&quot;sk_stream_wait_memory&quot;).return
 }
 </code></pre><h2 id="原理解析"><a href="#原理解析" class="headerlink" title="原理解析"></a>原理解析</h2><p>如果tcp发送buffer也就是SO_SNDBUF只有16K的话，这些包很快都发出去了，但是这16K的buffer不能立即释放出来填新的内容进去，因为tcp要保证可靠，万一中间丢包了呢。只有等到这16K中的某些包ack了，才会填充一些新包进来然后继续发出去。由于这里rt基本是20ms，也就是16K发送完毕后，等了20ms才收到一些ack，这20ms应用、内核什么都不能做，所以就是如前面第二个图中的大概20ms的等待平台。这块请参考<a href="https://www.atatech.org/articles/79660" target="_blank" rel="external">这篇文章</a></p>
 <p>比如下图，wmem大小是8，发出1-8后，buffer不能释放，等到收到ack1-4后，释放1-4，buffer也就是释放了一半，这一半可以填充新的发送数据进来了。 上面的问题在于ack花了很久，导致buffer一直不能释放。</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/3d9e77f8c9b0cab1484c870d2c0d2473.png" alt="image.png"></p>
+<p><img src="/images/3d9e77f8c9b0cab1484c870d2c0d2473.png" alt="image.png"></p>
 <p><strong>sendbuffer相当于发送仓库的大小，仓库的货物都发走后，不能立即腾出来发新的货物，而是要等对方确认收到了(ack)才能腾出来发新的货物。 传输速度取决于发送仓库（sendbuffer）、接收仓库（recvbuffer）、路宽（带宽）的大小，如果发送仓库（sendbuffer）足够大了之后接下来的瓶颈就会是高速公路了（带宽、拥塞窗口）。而实际上这个案例中带宽够、接收仓库也够，但是发送仓库太小了，导致发送过程断断续续，所以非常慢。</strong></p>
 <p>如果是UDP，就没有可靠的概念，有数据统统发出去，根本不关心对方是否收到，也就不需要ack和这个发送buffer了。</p>
 <h2 id="几个发送buffer相关的内核参数"><a href="#几个发送buffer相关的内核参数" class="headerlink" title="几个发送buffer相关的内核参数"></a>几个发送buffer相关的内核参数</h2><pre><code>$sudo sysctl -a | egrep &quot;rmem|wmem|tcp_mem|adv_win|moderate&quot;
@@ -493,7 +493,7 @@ vm.lowmem_reserve_ratio = 256   256     32
 </blockquote>
 <h2 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h2><p>调整 socketSendBuffer 到256K，查询时间从25秒下降到了4秒多，但是比理论带宽所需要的时间略高</p>
 <p>继续查看系统 net.core.wmem_max 参数默认最大是130K，所以即使我们代码中设置256K实际使用的也是130K，继续调大这个系统参数后整个网络传输时间大概2秒(跟100M带宽匹配了，scp传输22M数据也要2秒），整体查询时间2.8秒。测试用的mysql client短连接，如果代码中的是长连接的话会块300-400ms（消掉了握手和慢启动阶段），这基本上是理论上最快速度了</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/3dcfd469fe1e2f7e1d938a5289b83826.png" alt="image.png"></p>
+<p><img src="/images/3dcfd469fe1e2f7e1d938a5289b83826.png" alt="image.png"></p>
 <p>如果调用setsockopt()设置了socket选项SO_SNDBUF，将关闭发送端缓冲的自动调节机制，tcp_wmem将被忽略，SO_SNDBUF的最大值由net.core.wmem_max限制。</p>
 <h2 id="BDP-带宽时延积"><a href="#BDP-带宽时延积" class="headerlink" title="BDP 带宽时延积"></a>BDP 带宽时延积</h2><p>BDP=rtt*(带宽/8)</p>
 <p>这个 buffer 调到1M测试没有帮助，从理论计算BDP（带宽时延积） 0.02秒<em>(100MB/8)=250Kb  所以 **</em>SO_SNDBUF为256Kb的时候基本能跑满带宽了，再大也没有什么实际意义了** 。也就是前面所说的仓库足够后瓶颈在带宽上了。</p>
@@ -507,28 +507,28 @@ sudo tc qdisc add dev eth0 root tbf rate 500kbit latency 50ms burst 15kb
 <p>有一个batch insert语句，整个一次要插入5532条记录，所有记录大小总共是376K，也就是这个sql语句本身是376K。</p>
 </blockquote>
 <h2 id="SO-RCVBUF很小的时候并且rtt很大对性能的影响"><a href="#SO-RCVBUF很小的时候并且rtt很大对性能的影响" class="headerlink" title="SO_RCVBUF很小的时候并且rtt很大对性能的影响"></a>SO_RCVBUF很小的时候并且rtt很大对性能的影响</h2><p>如果rtt是40ms，总共需要5-6秒钟：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/4af4765c045e9eed2e36d9760d4a2aba.png" alt="image.png"></p>
+<p><img src="/images/4af4765c045e9eed2e36d9760d4a2aba.png" alt="image.png"></p>
 <p>基本可以看到server一旦空出来点窗口，client马上就发送数据，由于这点窗口太小，rtt是40ms，也就是一个rtt才能传3456字节的数据，整个带宽才用到80-90K，完全没跑满。</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/1984258c0300921799476777f5f0a38a.png" alt="image.png"></p>
+<p><img src="/images/1984258c0300921799476777f5f0a38a.png" alt="image.png"></p>
 <p>比较明显间隔 40ms 一个等待台阶，台阶之间两个包大概3K数据，总的传输效率如下：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/5ec50ecf25444e96d81fab975b5a79e6.png" alt="image.png"></p>
+<p><img src="/images/5ec50ecf25444e96d81fab975b5a79e6.png" alt="image.png"></p>
 <p><strong>斜线越陡表示速度越快，从上图看整体SQL上传花了5.5秒，执行0.5秒。</strong></p>
 <p>此时对应的窗口尺寸：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/05d6357ed53c1c16f0dd0454251916ef.png" alt="image.png"></p>
+<p><img src="/images/05d6357ed53c1c16f0dd0454251916ef.png" alt="image.png"></p>
 <p>窗口由最开始28K(20个1448）很快降到了不到4K的样子，然后基本游走在即将满的边缘，虽然读取慢，幸好rtt也大，导致最终也没有满。（这个是3.1的Linux，应用SO_RCVBUF设置的是8K，用一半来做接收窗口）</p>
 <h2 id="SO-RCVBUF很小的时候并且rtt很小时对性能的影响"><a href="#SO-RCVBUF很小的时候并且rtt很小时对性能的影响" class="headerlink" title="SO_RCVBUF很小的时候并且rtt很小时对性能的影响"></a>SO_RCVBUF很小的时候并且rtt很小时对性能的影响</h2><p>如果同样的语句在 rtt 是0.1ms的话</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/67f280a1cf499ae388fc44d6418869a7.png" alt="image.png"></p>
+<p><img src="/images/67f280a1cf499ae388fc44d6418869a7.png" alt="image.png"></p>
 <p>虽然明显看到接收窗口经常跑满，但是因为rtt很小，一旦窗口空出来很快就通知到对方了，所以整个过小的接收窗口也没怎么影响到整体性能</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/15b7d6852e44fc179d60d76f322695c7.png" alt="image.png"></p>
+<p><img src="/images/15b7d6852e44fc179d60d76f322695c7.png" alt="image.png"></p>
 <p>如上图11.4秒整个SQL开始，到11.41秒SQL上传完毕，11.89秒执行完毕（执行花了0.5秒），上传只花了0.01秒</p>
 <p>接收窗口情况：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/0f3050cd98db40a352410a11a521e8b2.png" alt="image.png"></p>
+<p><img src="/images/0f3050cd98db40a352410a11a521e8b2.png" alt="image.png"></p>
 <p>如图，接收窗口由最开始的28K降下来，然后一直在5880和满了之间跳动</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/0db5c3684a9314907f9158ac15b6ac71.png" alt="image.png"></p>
+<p><img src="/images/0db5c3684a9314907f9158ac15b6ac71.png" alt="image.png"></p>
 <p>从这里可以得出结论，接收窗口的大小对性能的影响，rtt越大影响越明显，当然这里还需要应用程序配合，如果应用程序一直不读走数据即使接收窗口再大也会堆满的。</p>
-<h2 id="SO-RCVBUF和tcp-window-full的坏case"><a href="#SO-RCVBUF和tcp-window-full的坏case" class="headerlink" title="SO_RCVBUF和tcp window full的坏case"></a>SO_RCVBUF和tcp window full的坏case</h2><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/55cf9875d24d76a077c442327d54fa34.png" alt="image.png"></p>
+<h2 id="SO-RCVBUF和tcp-window-full的坏case"><a href="#SO-RCVBUF和tcp-window-full的坏case" class="headerlink" title="SO_RCVBUF和tcp window full的坏case"></a>SO_RCVBUF和tcp window full的坏case</h2><p><img src="/images/55cf9875d24d76a077c442327d54fa34.png" alt="image.png"></p>
 <p>上图中红色平台部分，停顿了大概6秒钟没有发任何有内容的数据包，这6秒钟具体在做什么如下图所示，可以看到这个时候接收方的TCP Window Full，同时也能看到接收方（3306端口）的TCP Window Size是8192（8K），发送方（27545端口）是20480.</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/da48878ce0c01bcdedb1e6d6a6cc6d1c.png" alt="image.png"></p>
+<p><img src="/images/da48878ce0c01bcdedb1e6d6a6cc6d1c.png" alt="image.png"></p>
 <p>这个状况跟前面描述的recv buffer太小不一样，8K是很小，但是因为rtt也很小，所以server总是能很快就ack收到了，接收窗口也一直不容易达到full状态，但是一旦接收窗口达到了full状态，居然需要惊人的6秒钟才能恢复，这等待的时间有点太长了。这里应该是应用读取数据太慢导致了耗时6秒才恢复，所以最终这个请求执行会非常非常慢（时间主要耗在了上传SQL而不是执行SQL）.</p>
 <p>实际原因不知道，从读取TCP数据的逻辑来看这里没有明显的block，可能的原因：</p>
 <ul>
@@ -542,9 +542,9 @@ sudo tc qdisc add dev eth0 root tbf rate 500kbit latency 50ms burst 15kb
 <li>应用代码卡顿、GC等等</li>
 <li>应用代码逻辑上在做其它事情（比如Server将SQL分片到多个DB上，Server先读取第一个分片，如果第一个分片数据很大很大，处理也慢，那么即使第二个分片数据都返回到了TCP 的recv buffer，应用也没去读取其它分片的结果集，直到第一个分片读取完毕。如果SQL带排序，那么Server会轮询读取多个分片，造成这种卡顿的概率小了很多）</li>
 </ul>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/49e2635a7c4025d44b915a1f17dd272a.png" alt="image.png"></p>
+<p><img src="/images/49e2635a7c4025d44b915a1f17dd272a.png" alt="image.png"></p>
 <p>上图这个流因为应用层不读取TCP数据，导致TCP接收Buffer满，进而接收窗口为0，server端不能再发送数据而卡住，但是ZeroWindow的探测包，client都有正常回复，所以1903秒之后接收方窗口不为0后（window update）传输恢复。</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/2e493d8dc32bb63f2126375de6675351.png" alt="image.png"></p>
+<p><img src="/images/2e493d8dc32bb63f2126375de6675351.png" alt="image.png"></p>
 <p>这个截图和前一个类似，是在Server上(3003端口)抓到的包，不同的是接收窗口为0后，server端多次探测（Server上抓包能看到），但是client端没有回复 ZeroWindow（也有可能是回复了，但是中间环节把ack包丢了,或者这个探测包client没收到），造成server端认为client死了、不可达之类，进而反复重传，重传超过15次之后，server端认为这个连接死了，粗暴单方面断开（没有reset和fin,因为没必要，server认为网络连通性出了问题）。</p>
 <p>等到1800秒后，client的接收窗口恢复了，发个window update给server，这个时候server认为这个连接已经断开了，只能回复reset</p>
 <p>网络不通，重传超过一定的时间（tcp_retries2)然后断开这个连接是正常的，这里的问题是：</p>
@@ -618,12 +618,12 @@ So a process asks for 256 KiB buffer with setsockopt(SO_RCVBUF) then it will get
 }
 </code></pre><p>接收窗口有最大接收窗口和当前可用接收窗口。</p>
 <p>一般来说一次中断基本都会将 buffer 中的包都取走。</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d7d3af2c03653e6cf8ae2befa0022832.png" alt="image.png"></p>
+<p><img src="/images/d7d3af2c03653e6cf8ae2befa0022832.png" alt="image.png"></p>
 <p>绿线是最大接收窗口动态调整的过程，最开始是1460*10，握手完毕后略微调整到1472*10（可利用body增加了12），随着数据的传输开始跳涨</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d0e12e8bad8764385549f9b391c62ab0.png" alt="image.png"></p>
+<p><img src="/images/d0e12e8bad8764385549f9b391c62ab0.png" alt="image.png"></p>
 <p>上图是四个batch insert语句，可以看到绿色接收窗口随着数据的传输越来越大，图中蓝色竖直部分基本表示SQL上传，两个蓝色竖直条的间隔代表这个insert在服务器上真正的执行时间。这图非常陡峭，表示上传没有任何瓶颈.</p>
 <h3 id="设置-SO-RCVBUF-后通过wireshark观察到的接收窗口基本"><a href="#设置-SO-RCVBUF-后通过wireshark观察到的接收窗口基本" class="headerlink" title="设置 SO_RCVBUF 后通过wireshark观察到的接收窗口基本"></a>设置 SO_RCVBUF 后通过wireshark观察到的接收窗口基本</h3><p>下图是设置了 SO_RCVBUF 为8192的实际情况：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d0e12e8bad8764385549f9b391c62ab0.png" alt="image.png"></p>
+<p><img src="/images/d0e12e8bad8764385549f9b391c62ab0.png" alt="image.png"></p>
 <p>从最开始的14720，执行第一个create table语句后降到14330，到真正执行batch insert就降到了8192*1.5. 然后一直保持在这个值</p>
 <h3 id="If-you-set-a-“receive-buffer-size”-on-a-TCP-socket-what-does-it-actually-mean"><a href="#If-you-set-a-“receive-buffer-size”-on-a-TCP-socket-what-does-it-actually-mean" class="headerlink" title="If you set a “receive buffer size” on a TCP socket, what does it actually mean?"></a>If you set a “receive buffer size” on a TCP socket, what does it actually mean?</h3><p><a href="https://blog.cloudflare.com/the-story-of-one-latency-spike/" target="_blank" rel="external">The naive answer would go something along the lines of: the TCP receive buffer setting indicates the maximum number of bytes a </a><a href="https://blog.cloudflare.com/the-story-of-one-latency-spike/" target="_blank" rel="external"><code>read()</code></a><a href="https://blog.cloudflare.com/the-story-of-one-latency-spike/" target="_blank" rel="external"> syscall could retrieve without blocking.</a></p>
 <p>Note that if the buffer size is set with <code>setsockopt()</code>, the value returned with <code>getsockopt()</code> is always <em>double</em> the size requested to allow for overhead. This is described in <code>man 7 socket</code>.</p>
@@ -631,26 +631,26 @@ So a process asks for 256 KiB buffer with setsockopt(SO_RCVBUF) then it will get
 <p>案例描述：从中国访问美国的服务器下载图片，只能跑到220K，远远没有达到带宽能力，其中中美之间的网络延时时150ms，这个150ms已经不能再优化了。业务结构是：</p>
 <p>client ——150ms—–&gt;&gt;&gt;LVS—1ms–&gt;&gt;&gt;美国的统一接入server—–1ms—–&gt;&gt;&gt;nginx</p>
 <p>通过下载一个4M的文件大概需要20秒，分别在client和nginx上抓包来分析这个问题（统一接入server没权限上去）</p>
-<h3 id="Nginx上抓包"><a href="#Nginx上抓包" class="headerlink" title="Nginx上抓包"></a>Nginx上抓包</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/259767fb17f7dbffe7f77ab059c47dbd.png" alt="image.png"></p>
+<h3 id="Nginx上抓包"><a href="#Nginx上抓包" class="headerlink" title="Nginx上抓包"></a>Nginx上抓包</h3><p><img src="/images/259767fb17f7dbffe7f77ab059c47dbd.png" alt="image.png"></p>
 <p>从这里可以看到Nginx大概在60ms内就将4M的数据都发完了</p>
-<h3 id="client上抓包"><a href="#client上抓包" class="headerlink" title="client上抓包"></a>client上抓包</h3><p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/466fba92829f6a922ccd2d57a7e3fdac.png" alt="image.png"></p>
+<h3 id="client上抓包"><a href="#client上抓包" class="headerlink" title="client上抓包"></a>client上抓包</h3><p><img src="/images/466fba92829f6a922ccd2d57a7e3fdac.png" alt="image.png"></p>
 <p>从这个图上可以清楚看到大概每传输大概30K数据就有一个150ms的等待平台，这个150ms基本是client到美国的rt。</p>
 <p>从我们前面的阐述可以清楚了解到因为rt比较高，统一接入server每发送30K数据后要等150ms才能收到client的ack，然后继续发送，猜是因为上面设置的发送buffer大概是30K。</p>
 <p>检查统一接入server的配置，可以看到接入server的配置里面果然有个32K buffer设置</p>
 <h3 id="将buffer改大"><a href="#将buffer改大" class="headerlink" title="将buffer改大"></a>将buffer改大</h3><p>速度可以到420K，但是还没有跑满带宽：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/93e254c5154ce2e065bec9fb34f3db2b.png" alt="image.png"></p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/0a8c68a58da6f169573b57cde0ffba93.png" alt="image.png"></p>
+<p><img src="/images/93e254c5154ce2e065bec9fb34f3db2b.png" alt="image.png"></p>
+<p><img src="/images/0a8c68a58da6f169573b57cde0ffba93.png" alt="image.png"></p>
 <p>接着看一下client上的抓包</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/822737a4ed6ffe6b920d4b225a1be5bf.png" alt="image.png"></p>
+<p><img src="/images/822737a4ed6ffe6b920d4b225a1be5bf.png" alt="image.png"></p>
 <p>可以清楚看到 client的接收窗口是64K， 64K*1000/150=426K 这个64K很明显是16位的最大值，应该是TCP握手有一方不支持window scaling factor</p>
 <p>那么继续分析一下握手包，syn：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/004886698ddbaa1cbc8342a9cd667c76.png" alt="image.png"></p>
+<p><img src="/images/004886698ddbaa1cbc8342a9cd667c76.png" alt="image.png"></p>
 <p>说明client是支持的，再看 syn+ack：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/70155e021390cb1ee07091c306c375f4.png" alt="image.png"></p>
+<p><img src="/images/70155e021390cb1ee07091c306c375f4.png" alt="image.png"></p>
 <p>可以看到服务端不支持，那就最大只能用到64K。需要修改服务端代理程序，这主要是LVS或者代理的锅。</p>
 <p>如果内网之间rt很小这个锅不会爆发，一旦网络慢一点就把问题恶化了</p>
 <p>比如这是这个应用的开发人员的反馈：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/a08a204ec7ad4bba7867dacea1668322.png" alt="image.png"></p>
+<p><img src="/images/a08a204ec7ad4bba7867dacea1668322.png" alt="image.png"></p>
 <p>长肥网络就像是很长很宽的高速公路，上面可以同时跑很多车，而如果发车能力不够，就容易跑不满高速公路。<br>在rt很短的时候可以理解为高速公路很短，所以即使发车慢也还好，因为车很快就到了，到了后就又能发新车了。rt很长的话就要求更大的仓库了。</p>
 <p>整个这个问题，我最初拿到的问题描述结构是这样的：</p>
 <p>client ——150ms—–&gt;&gt;&gt;nginx</p>
