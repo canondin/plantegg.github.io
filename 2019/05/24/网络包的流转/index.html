@@ -109,13 +109,15 @@
 <meta property="og:image" content="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1557292508719-5b5a2507-a638-4035-a47a-a8599e69f879.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/0126bbb59ac317337ca963ef83817159.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/51f13ecb5002f628fbe1900ab8b820aa.png">
+<meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d0fb11d926f5f67357d98b69c23d86ae.png">
+<meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/61fd62cdf0dc0270ce108a4d43a14c85.png">
 <meta property="og:image" content="http://img3.tbcdn.cn/L1/461/1/73d01c4c8164ae8642ff09d5d3fe0548d4162874">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/aaf4ff8bbcc26e9e5efe48c984abe508.png">
 <meta property="og:image" content="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1557291324544-ca69d448-08e4-46c4-9c49-8cf516fc3eaa.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/955fc732d8620561a9ebce992b0129b1.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d42ccdb0b8f6270d8b559145c0b89c86.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/a067b484c593aa3a4b6a525d1f93506e.png">
-<meta property="og:updated_time" content="2020-10-14T10:16:37.925Z">
+<meta property="og:updated_time" content="2020-12-27T09:28:51.185Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Linux Network Stack">
 <meta name="twitter:description" content="Linux Network Stack一个网络包进到网卡后续如何流转，中间有哪些关键参数，有什么工具能帮忙可以看到各个环节的一些指征，怎么调整他们 接收流程 网络包进到网卡，网卡驱动校验MAC，看是否扔掉，取决是否是混杂 promiscuous mode 网卡在启动时会申请一个接收ring buffer，其条目都会指向一个skb的内存。 DMA完成数据报文从网卡硬件到内存到拷贝 网卡发送一个中断通">
@@ -521,8 +523,13 @@ cat /proc/interrupts
 </ul>
 <h4 id="overruns"><a href="#overruns" class="headerlink" title="overruns"></a>overruns</h4><p>当驱动处理速度跟不上网卡收包速度时，驱动来不及分配缓冲区，NIC接收到的数据包无法及时写到sk_buffer，就会产生堆积，当NIC内部缓冲区写满后，就会丢弃部分数据，引起丢包。这部分丢包为rx_fifo_errors，在 /proc/net/dev中体现为fifo字段增长，在ifconfig中体现为overruns指标增长。</p>
 <h3 id="监控指标-proc-net-softnet-stat"><a href="#监控指标-proc-net-softnet-stat" class="headerlink" title="监控指标 /proc/net/softnet_stat"></a>监控指标 /proc/net/softnet_stat</h3><h4 id="net-core-netdev-budget"><a href="#net-core-netdev-budget" class="headerlink" title="net.core.netdev_budget"></a>net.core.netdev_budget</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sysctl net.core.netdev_budget //默认300， The default value of the budget is 300. This will cause the SoftIRQ process to drain 300 messages from the NIC before getting off the CPU</div></pre></td></tr></table></figure>
-<p>如果 /proc/net/softnet_stat <strong>第三列</strong>一直在增加的话需要，表示SoftIRQ 获取的CPU时间太短，来不及处理足够多的网络包，那么需要增大这个值</p>
+<p>如果 /proc/net/softnet_stat <strong>第三列</strong>一直在增加的话需要，表示SoftIRQ 获取的CPU时间太短，来不及处理足够多的网络包，那么需要增大这个值，<strong>当这个值太大的话有可能导致包到了内核但是应用（userspace）抢不到时间片来读取这些packet。</strong></p>
 <p>增大和查看 net.core.netdev_budget<br>        sysctl -a | grep net.core.netdev_budget<br>        sysctl -w net.core.netdev_budget=400 //临时性增大</p>
+<p>每处理一个包软中断、上下文切换代价太大，需要改进性能</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d0fb11d926f5f67357d98b69c23d86ae.png" alt="image.png"></p>
+<p><a href="https://github.blog/2019-11-21-debugging-network-stalls-on-kubernetes/" target="_blank" rel="external">来源</a> This is much faster, but brings up another problem. What happens if we have so many packets to process that we spend all our time processing packets from the NIC, but we never have time to let the userspace processes actually drain those queues (read from TCP connections, etc.)? Eventually the queues would fill up, and we’d start dropping packets. To try and make this fair, the kernel limits the amount of packets processed in a given softirq context to a certain budget. Once this budget is exceeded, it wakes up a separate thread called <code>ksoftirqd</code> (you’ll see one of these in <code>ps</code> for each core) which processes these softirqs outside of the normal syscall/interrupt path. This thread is scheduled using the standard process scheduler, which already tries to be fair.</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/61fd62cdf0dc0270ce108a4d43a14c85.png" alt="image.png"></p>
+<p>一旦出现slow syscall（如上图黄色部分慢）就会导致packet处理被延迟</p>
 <h4 id="netdev-max-backlog"><a href="#netdev-max-backlog" class="headerlink" title="netdev_max_backlog"></a>netdev_max_backlog</h4><p>The netdev_max_backlog is a queue within the Linux kernel where traffic is stored after reception from the NIC, but before processing by the protocol stacks (IP, TCP, etc). There is one backlog queue per CPU core. </p>
 <p>如果 /proc/net/softnet_stat 第二列一直在增加的话表示netdev backlog queue overflows. 需要增大 netdev_max_backlog</p>
 <p>增大和查看 netdev_max_backlog：</p>
@@ -729,7 +736,7 @@ sysctl -w net.core.netdev_max_backlog=1024 //临时性增大
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">111</span>
+                <span class="site-state-item-count">112</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -751,7 +758,7 @@ sysctl -w net.core.netdev_max_backlog=1024 //临时性增大
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">199</span>
+                <span class="site-state-item-count">203</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>

@@ -281,6 +281,203 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/24/程序员如何学习和构建网络知识体系/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2020/05/24/程序员如何学习和构建网络知识体系/" itemprop="url">程序员如何学习和构建网络知识体系</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-05-24T17:30:03+08:00">
+                2020-05-24
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/network/" itemprop="url" rel="index">
+                    <span itemprop="name">network</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2020/05/24/程序员如何学习和构建网络知识体系/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2020/05/24/程序员如何学习和构建网络知识体系/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="程序员如何学习和构建网络知识体系"><a href="#程序员如何学习和构建网络知识体系" class="headerlink" title="程序员如何学习和构建网络知识体系"></a>程序员如何学习和构建网络知识体系</h1><p>大家学习网络知识的过程中经常发现当时看懂了，很快又忘了，最典型的比如TCP三次握手、为什么要握手，大家基本都看过，但是种感觉还差那么一点点。都要看是因为面试官总要问，所以不能不知道啊。</p>
+<p>我们来看一个典型的面试问题：</p>
+<blockquote>
+<p>问：为什么TCP是可靠的？<br>答：因为TCP有连接（或者回答因为TCP有握手）</p>
+<p>追问：为什么有连接就可靠了？（面试的人估计心里在骂，你这不是傻逼么，有连接就可靠啊）</p>
+<p>追问：这个TCP连接的本质是什么？网络上给你保留了一个带宽所以能可靠？<br>答：……懵了（或者因为TCP有ack，所以可靠）</p>
+<p>追问：握手的本质是什么？为什么握手就可靠了<br>答：因为握手需要ack<br>追问：那这个ack也只是保证握手可靠，握手是怎么保证后面可靠的？握手本质做了什么事情？</p>
+<p>追问：有了ack可靠后还会带来什么问题（比如发一个包ack一下，肯定是可考虑，但是效率不行，面试官想知道的是这里TCP怎么传输的，从而引出各个buffer、拥塞窗口的概念）</p>
+</blockquote>
+<p>基本上我发现99%的程序员会回答TCP相对UDP是可靠的，70%以上的程序员会告诉你可靠是因为有ack（其他的会告诉你可靠是因为握手或者有连接）</p>
+<p>我的理解：</p>
+<blockquote>
+<p>物理上没有一个连接的东西在这里，udp也类似会占用端口、ip，但是大家都没说过udp的连接。而本质上我们说tcp的握手是指tcp是协商和维护一些状态信息的，这个状态信息就包含seq、ack、窗口/buffer，tcp握手就是协商出来这些初始值。这些状态才是我们平时所说的tcp连接的本质。</p>
+</blockquote>
+<p>这说明大部分程序员对问题的本质的理解上出了问题，或者教科书描述的过于教条不够接地气所以看完书本质没get到。</p>
+<p>想想 <code>费曼学习方法</code> 中对<strong>事物本质</strong>的理解的重要性。</p>
+<h2 id="再来看一个案例"><a href="#再来看一个案例" class="headerlink" title="再来看一个案例"></a>再来看一个案例</h2><p>我第一次看<a href="https://tools.ietf.org/html/rfc1180" target="_blank" rel="external">RFC1180</a>的时候是震惊的，觉得讲述的太好了，2000字就把一本教科书的知识阐述的无比清晰、透彻。但是实际上我发现很快就忘了，而且大部分程序员基本都是这样</p>
+<blockquote>
+<p>写的确实很好，清晰简洁，图文并茂，结构逻辑合理，但是对于95%的程序员没有什么用，当时看的时候很爽、也觉得自己理解了、学会了，实际上看完几周后就忘得差不多了。问题出在这种RFC偏理论多一点看起来完全没有体感无法感同身受，所以即使似乎当时看懂了，但是忘得也快，需要一篇结合实践的文章来帮助理解</p>
+</blockquote>
+<p>在这个问题上，让我深刻地理解到：</p>
+<blockquote>
+<p>一流的人看RFC就够了，差一些的人看《TCP/IP卷1》，再差些的人要看一个个案例带出来的具体知识的书籍了，比如<a href="https://book.douban.com/subject/26268767/" target="_blank" rel="external">《wireshark抓包艺术》</a>，人和人的学习能力有差别必须要承认。</p>
+</blockquote>
+<p>也就是我们要认识到每个个人的<a href="https://mp.weixin.qq.com/s/JlXWLpQSyj3Z_KMyUmzBPA" target="_blank" rel="external">学习能力的差异</a>，我超级认同这篇文章中的一个评论</p>
+<blockquote>
+<p>看完深有感触，尤其是后面的知识效率和工程效率型的区别。以前总是很中二的觉得自己看一遍就理解记住了，结果一次次失败又怀疑自己的智商是不是有问题，其实就是把自己当作知识效率型来用了。一个不太恰当的形容就是，有颗公主心却没公主命！</p>
+</blockquote>
+<p>嗯，大部分时候我们都觉得自己看一遍就理解了记住了能实用解决问题了，实际上了是马上忘了，停下来想想自己是不是这样的？在网络的相关知识上大部分看RFC、TCP卷1等东西是很难实际理解的，还是要靠实践来建立对知识的具体的理解，而网络相关的东西基本离大家有点远（大家不回去读tcp、ip源码，纯粹是靠对书本的理解），所以很难建立具体的概念，所以这里有个必杀技就是学会抓包和用wireshark看包，同时针对实际碰到的文题来抓包、看包分析。</p>
+<p>比如我的这篇《<a href="https://mp.weixin.qq.com/s/x-ScSwEm3uQ2SFv-nAzNaA" target="_blank" rel="external">从计算机知识到落地能力，你欠缺了什么？</a>》就对上述问题最好的阐述，程序员最常碰到的网络问题就是为啥为啥不通？</p>
+<p>这是最好建立对网络知识具体理解和实践的机会，你把《<a href="https://mp.weixin.qq.com/s/x-ScSwEm3uQ2SFv-nAzNaA" target="_blank" rel="external">从计算机知识到落地能力，你欠缺了什么？</a>》实践完再去看<a href="https://tools.ietf.org/html/rfc1180" target="_blank" rel="external">RFC1180</a> 就明白了。</p>
+<h2 id="不要追求知识的广度"><a href="#不要追求知识的广度" class="headerlink" title="不要追求知识的广度"></a>不要追求知识的广度</h2><p>学习网络知识过程中，不建议每个知识点都去看，因为很快会忘记，我的方法是只看经常碰到的问题点，碰到一个点把他学透理解明白。</p>
+<p>比如我曾经碰到过 <a href="https://plantegg.github.io/2019/01/09/就是要你懂ping--nslookup-OK-but-ping-fail/" target="_blank" rel="external">nslookup OK but ping fail–看看老司机是如何解决问题的，解决问题的方法肯定比知识点重要多了，同时透过一个问题怎么样通篇来理解一大块知识，让这块原理真正在你的只是提示中扎根下来</a> , 这个问题Google上很多人在搜索，说明很普遍，但是没找到有资料能把这个问题说清楚，所以借着这个机会就把 Linux下的 NSS（name service switch）的原理搞懂了。要不然碰到问题老司机告诉你改下 /etc/hosts 或者  /etc/nsswitch 或者 /etc/resolv.conf 之类的问题就能解决，但是你一直不知道这三个文件怎么起作用的，也就是你碰到过这种问题也解决过但是下次碰到类似的问题你不一定能解决。</p>
+<p>当然对我来说为了解决这个问题最后写了4篇跟域名解析相关的文章，从windows到linux，涉及到vpn、glibc、docker等各种场景，我把他叫做场景驱动。</p>
+<p>关于<a href="https://mp.weixin.qq.com/s/JlXWLpQSyj3Z_KMyUmzBPA" target="_blank" rel="external">场景驱动学习的方法可以看这篇总结</a></p>
+<h2 id="TCP是最复杂的，不要追求点点都到"><a href="#TCP是最复杂的，不要追求点点都到" class="headerlink" title="TCP是最复杂的，不要追求点点都到"></a>TCP是最复杂的，不要追求点点都到</h2><p>比如拥塞算法基本大家不会用到，了解下就行。还有拥塞窗口、慢启动，这个实际中碰到的概率不高，面试要问你基本上是属于炫技类型。实际碰到更多的是传输效率（<a href="https://mp.weixin.qq.com/s/fKWJrDNSAZjLsyobolIQKw" target="_blank" rel="external">对BDP、Buffer、各种窗口、rt的理解和运用</a>），还有为什么连不通、<a href="https://mp.weixin.qq.com/s/yH3PzGEFopbpA-jw4MythQ" target="_blank" rel="external">连接建立不起来</a>、为什么收到包不回复、为什么要reset、为什么丢包了之类的问题。</p>
+<p>关于为什么连不通，我碰到了<a href="https://plantegg.github.io/2019/05/16/%E7%BD%91%E7%BB%9C%E9%80%9A%E4%B8%8D%E9%80%9A%E6%98%AF%E4%B8%AA%E5%A4%A7%E9%97%AE%E9%A2%98--%E5%8D%8A%E5%A4%9C%E9%B8%A1%E5%8F%AB/" target="_blank" rel="external">这个问题</a>，随后在这个问题的基础上进行了总结，得到客户端建立连接的时候抛异常，可能的原因（握手失败，建不上连接）：</p>
+<ul>
+<li>网络不通，诊断：ping ip</li>
+<li>端口不通,  诊断：telnet ip port</li>
+<li>rp_filter 命中(rp_filter=1, 多网卡环境）， 诊断:  netstat -s | grep -i filter ;</li>
+<li>snat/dnat的时候宿主机port冲突，内核会扔掉 syn包。诊断: sudo conntrack -S | grep  insert_failed //有不为0的</li>
+<li>全连接队列满的情况，诊断： netstat -s | egrep “listen|LISTEN” </li>
+<li>syn flood攻击, 诊断：同上</li>
+<li>若远端服务器的内核参数 net.ipv4.tcp_tw_recycle 和 net.ipv4.tcp_timestamps 的值都为 1，则远端服务器会检查每一个报文中的时间戳（Timestamp），若 Timestamp 不是递增的关系，不会响应这个报文。配置 NAT 后，远端服务器看到来自不同的客户端的源 IP 相同，但 NAT 前每一台客户端的时间可能会有偏差，报文中的 Timestamp 就不是递增的情况。nat后的连接，开启timestamp。因为快速回收time_wait的需要，会校验时间该ip上次tcp通讯的timestamp大于本次tcp(nat后的不同机器经过nat后ip一样，保证不了timestamp递增），诊断：是否有nat和是否开启了timestamps</li>
+<li>NAT 哈希表满导致 ECS 实例丢包 nf_conntrack full， 诊断: dmesg |grep conntrack</li>
+</ul>
+<h2 id="总结一下"><a href="#总结一下" class="headerlink" title="总结一下"></a>总结一下</h2><ul>
+<li>一定要会用tcpdump和wireshark（纯工具，没有任何门槛）</li>
+<li>多实践（因为网络知识离我们有点远、有点抽象）,用好各种工具，工具能帮我们看到、摸到</li>
+<li>不要追求知识面的广度，深抠几个具体的知识点然后让这些点建立体系</li>
+<li>不要为那些基本用不到的偏门知识花太多精力，天天用的都学不过来对吧。</li>
+</ul>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/04/07/就是要你懂TCP--半连接队列和全连接队列--阿里技术公众号版本/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -5028,295 +5225,6 @@ Nov  4 18:06:57 vb kernel: [    6.768061] sd 4:0:0:0: [sdc] Attached SCSI disk
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/31/epoll和惊群/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/10/31/epoll和惊群/" itemprop="url">epoll和惊群</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-10-31T12:30:03+08:00">
-                2019-10-31
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2019/10/31/epoll和惊群/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2019/10/31/epoll和惊群/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="epoll和惊群"><a href="#epoll和惊群" class="headerlink" title="epoll和惊群"></a>epoll和惊群</h1><p>本文尝试追踪不同的内核版本增加的方案来看内核是如何来尝试解决惊群问题的。以及像 SO_REUSEPORT 和EPOLLEXCLUSIVE又带来了什么小问题。</p>
-<h2 id="先上总结"><a href="#先上总结" class="headerlink" title="先上总结"></a>先上总结</h2><p>非IO复用的惊群在2.6内核就通过增加WQ_FLAG_EXCLUSIVE在内核中就行排他解决惊群了；epoll的惊群在3.10内核加了SO_REUSEPORT来解决惊群，但同时带来了不同的worker有的饥饿有的排队假死一样；4.5的内核增加EPOLLEXCLUSIVE在内核中直接将worker放在一个大queue，同时感知worker状态来派发任务更好滴解决了惊群，但是因为LIFO的机制导致在压力不大的情况下，任务主要派发给少数几个worker（能接受，压力大就会正常了）。</p>
-<h2 id="什么是惊群"><a href="#什么是惊群" class="headerlink" title="什么是惊群"></a>什么是惊群</h2><p>惊群效应也有人叫做雷鸣群体效应，惊群就是多进程（多线程）在同时阻塞等待同一个事件的时候（休眠状态），如果等待的这个事件发生，那么他就会唤醒等待的所有进程（或者线程），但是最终却只可能有一个进程（线程）获得这个事件的“控制权”，对该事件进行处理，而其他进程（线程）获取“控制权”失败，只能重新进入休眠状态，这种现象和性能浪费就叫做惊群。</p>
-<p>惊群的本质在于多个线程处理同一个事件。</p>
-<p>为了更好的理解何为惊群，举一个很简单的例子，当你往一群鸽子中间扔一粒谷子，所有的鸽子都被惊动前来抢夺这粒食物，但是最终只有一只鸽子抢到食物。这里鸽子表示进程（线程），那粒谷子就是等待处理的事件。</p>
-<h2 id="无IO复用时Accept"><a href="#无IO复用时Accept" class="headerlink" title="无IO复用时Accept"></a>无IO复用时Accept</h2><blockquote>
-<p>无IO复用的accept 不会有惊群，epoll_wait 才会。accept一定是只需要一个进程处理消息，内核可以解决。但是select、epoll就不一定了，所以内核只能唤醒所有的。</p>
-</blockquote>
-<p>在linux2.6版本以后，linux内核已经解决了accept()函数的“惊群”现象，大概的处理方式就是，当内核接收到一个客户连接后，只会唤醒等待队列上的第一个进程（线程）,所以如果服务器采用accept阻塞调用方式，在2.6的linux系统中已经没有“惊群效应”了。</p>
-<pre><code> /* nr_exclusive的值默认设为1 */
- #define wake_up_interruptible_sync_poll(x, m)              \
-    __wake_up_sync_key((x), TASK_INTERRUPTIBLE, 1, (void *) (m))
-
-tcp_v4_rcv
-tcp_v4_do_rcv
-tcp_child_process
-sock_def_readable
-wake_up_interruptible_sync_poll
-__wake_up_common
- /* 从头遍历监听socket的等待队列，唤醒等待进程，有EXCLUSIVE标识时只唤醒一个进程 */
-list_for_each_entry_safe(curr, next, &amp;q-&gt;task_list, task_list)
-    /* func最终调用try_to_wake_up，设置进程状态为TASK_RUNNING，并把进程插入CPU运行队列，来唤醒睡眠的进程 */
-    if (curr-&gt;func(curr, mode, wake_flags, key) &amp;&amp; (flags &amp; WQ_FLAG_EXCLUSIVE)  &amp;&amp;
-       !--nr_exclusive)
-       break; 
-</code></pre><p>sock中定义了几个I/O事件，当协议栈遇到这些事件时，会调用它们的处理函数。当监听socket收到新的连接时，会触发有数据可读事件，调用sock_def_readable，唤醒socket等待队列中的进程。进程被唤醒后，会执行accept的后续操作，最终返回新连接的描述符。</p>
-<p>这个socket等待队列是一个FIFO，所以最终是均衡的，也不需要惊群，有tcp connection ready的话直接让等待队列中第一个的线程出队就好了。</p>
-<p>2.6内核层面添加了一个WQ_FLAG_EXCLUSIVE标记，告诉内核进行排他性的唤醒，即唤醒一个进程后即退出唤醒的过程(适合accept，但是不适合 epoll–因为epoll除了有accept，还有其它IO事件）</p>
-<p>所以这就是大家经常看到的accept不存在惊群问题，内核10年前就解决了这个问题的场景，实际指的是非epoll下的accept 惊群。</p>
-<h2 id="epoll的Accept"><a href="#epoll的Accept" class="headerlink" title="epoll的Accept"></a>epoll的Accept</h2><p>epoll监听句柄，后续可能是accept，也有可能是其它网络IO事件，这些IO事件不一定只能由一个进程处理（很少见需要多个进程处理的），所以内核层面没直接解决epoll的惊群，交由上层应用来根据IO事件如何处理。</p>
-<pre><code>//主进程中：
-ngx_init_cycle
-ngx_open_listening_sockets
-    socket
-    bind
-    listen
-    epoll_create
-    epoll_ctl
-
-//子进程中：
-ngx_event_process_init
-ngx_prcocess_events_and_timers
-ngx_epoll_process_events
-    epoll_wait
-    rev-&gt;handler(rev) // 对于listening socket，handler是ngx_event_accept
-</code></pre><p>和标准的accept不同，使用epoll时，是在epoll_wait()返回后，发现监听socket有可读事件，才调用accept()。由于epoll_wait()是LIFO，导致多个子进程在accept新连接时，也变成了LIFO。</p>
-<pre><code>epoll_wait
-ep_poll
-    /* 创建等待任务，把等待任务加入到epfd等待队列的头部，而不是尾部 */
-    init_waitqueue_entry(&amp;wait, current) 
-    __add_wait_queue_exclusive(&amp;ep-&gt;wq, &amp;wait)
-    ...
-    __remove_wait-queue(&amp;ep-&gt;wq, &amp;wait) /* 最终从epfd等待队列中删除 */
-</code></pre><p>回调触发逻辑：</p>
-<pre><code>tcp_v4_rcv
-tcp_v4_do_rcv
-tcp_child_process
-sock_def_readable /* sock I/O 有数据可读事件 */
-wake_up_interruptible_sync_poll
-__wake_up_common
-    /* curr-&gt;func是等待任务的回调函数，在ep_insert初始化等待任务时，设置为ep_poll_callback */
-    if (curr-&gt;func(curr, mode, wake_flags, key) &amp;&amp; (flags &amp; WQ_FLAG_EXCLUSIVE)  &amp;&amp;
-        !--nr_exclusive)
-        break;
-</code></pre><p>那么这种情况下内核如何来解决惊群呢？ </p>
-<h3 id="SO-REUSEPORT"><a href="#SO-REUSEPORT" class="headerlink" title="SO_REUSEPORT"></a>SO_REUSEPORT</h3><p>在3.10的内核中通过引入SO_REUSEPORT解决了这个epoll accept惊群的问题。</p>
-<p>linux man文档中一段文字描述其作用：</p>
-<blockquote>
-<p>The new socket option allows multiple sockets on the same host to bind to the same port, and is intended to improve the performance of multithreaded network server applications running on top of multicore systems.</p>
-</blockquote>
-<p>SO_REUSEPORT支持多个进程或者线程绑定到同一端口，提高服务器程序的性能，解决的问题：</p>
-<ul>
-<li>允许多个套接字 bind()/listen() 同一个TCP/UDP端口</li>
-<li>每一个线程拥有自己的服务器套接字</li>
-<li>在服务器套接字上没有了锁的竞争</li>
-<li>内核层面实现负载均衡</li>
-<li>安全层面，监听同一个端口的套接字只能位于同一个用户下面</li>
-</ul>
-<p>其核心的实现主要有三点：</p>
-<ul>
-<li>扩展 socket option，增加 SO_REUSEPORT 选项，用来设置 reuseport。</li>
-<li>修改 bind 系统调用实现，以便支持可以绑定到相同的 IP 和端口</li>
-<li>修改处理新建连接的实现，查找 listener 的时候，能够支持在监听相同 IP 和端口的多个 sock 之间均衡选择。</li>
-</ul>
-<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/64ae30f3d1937d913f2a440d5ae3c920.png" alt="image.png"></p>
-<ul>
-<li>Nginx的accept_mutex通过抢锁来控制是否将监听套接字加入到epoll 中。监听套接字只在一个子进程的 epoll 中，当新的连接来到时，其他子进程当然不会惊醒了。通过 accept_mutex加锁性能要比reuseport差</li>
-<li>Linux内核解决了epoll_wait 惊群的问题，Nginx 1.9.1利用Linux3.10 的reuseport也能解决惊群、提升性能。</li>
-<li>内核的reuseport中相当于所有listen同一个端口的进程是一个组合，内核收包时不管查找到哪个socket，都能映射到他们所属的 reuseport 数组，再通过五元组哈希选择一个socket，这样只有这个socket队列里有数据，所以即便所有的进程都添加了epoll事件，也只有一个进程会被唤醒。</li>
-</ul>
-<h4 id="SO-REUSEPORT-带来的小问题"><a href="#SO-REUSEPORT-带来的小问题" class="headerlink" title="SO_REUSEPORT 带来的小问题"></a>SO_REUSEPORT 带来的小问题</h4><p>SO_REUSEPORT打开后，再有请求进来不再是各个进程一起去抢，而是内核通过五元组Hash来分配，所以不再会惊群了。但是可能会导致撑死或者饿死的问题，比如一个cpu一直在做一件耗时的任务（比如压缩），但是内核通过hash分配过来的时候是不知道的（抢锁就不会发生这种情况，你没空就不会去抢），以Nginx为例</p>
-<p><a href="https://www.atatech.org/articles/89653" target="_blank" rel="external">因为Nginx是ET模式，epoll要一直将事件处理完毕才能进入epoll_wait（才能响应新的请求）。带来了新的问题：如果有一个慢请求（比如gzip压缩文件需要2分钟），那么处理这个慢请求的进程在reuseport模式下还是会被内核分派到，但是这个时候他如同hang死了，新分配进来的请求无法处理。如果不是reuseport模式，他在处理慢请求就根本腾不出来时间去在惊群中抢到锁。</a></p>
-<p>如果不开启SO_REUSEPORT模式，那么即使有一个进程在处理慢请求，那么他就不会去抢accept锁，也就没有accept新连接，这样就不应影响新连接的处理。</p>
-<p><strong>单worker同时是会处理多个连接上的所有请求</strong>，accept_mutex 只是控制连接创建的时候哪个worker来accept，避免建连接惊群。连接建立好后这个连接的所有请求就一直会在这个worker上（当然还有其它连接的请求也在这个worker上）。SO_REUSEPORT只是不让worker去抢accept了，改成内核无差别轮询派发。如果这个时候某个连接一直是很耗CPU的请求（比如gzip），会导致这个worker比价卡顿，如果这个gzip能切走也还是可以照顾到别的连接的请求的。</p>
-<p>开了reuse_port 之后每个worker 都单独有个syn 队列，能按照nginx worker 数成倍提升抗synflood 攻击能力。</p>
-<p>但是开启了SO_REUSEPORT后，内核没法感知你的worker是不是特别忙，只是按Hash逻辑派发连接。也就是SO_REUSEPORT会导致rt偏差更大（抖动明显一些）。<a href="https://plantegg.github.io/2020/06/05/MySQL%E7%BA%BF%E7%A8%8B%E6%B1%A0%E5%AF%BC%E8%87%B4%E7%9A%84%E5%BB%B6%E6%97%B6%E5%8D%A1%E9%A1%BF%E6%8E%92%E6%9F%A5/" target="_blank" rel="external">这跟MySQL Thread Pool导致的卡顿原理类似，多个Pool类似这里的SO_REUSEPORT。</a></p>
-<p>用图形展示大概如下：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/49d19ef1eaf13638b488ad126beb58ef.png" alt="image.png"></p>
-<p>比如中间的worker即使处理得很慢，内核还是正常派连接过来，即使其它worker空闲</p>
-<h4 id="SO-REUSEPORT另外的问题"><a href="#SO-REUSEPORT另外的问题" class="headerlink" title="SO_REUSEPORT另外的问题"></a>SO_REUSEPORT另外的问题</h4><p>在OS层面一个连接hash到了某个socket fd，但是正好这个 listen socket fd 被关了，已经被分到这个 listen socket fd 的 accept 队列上的请求会被丢掉，具体可以<a href="https://engineeringblog.yelp.com/2015/04/true-zero-downtime-haproxy-reloads.html" target="_blank" rel="external">参考</a> 和 LWN 上的 <a href="https://lwn.net/Articles/542866/" target="_blank" rel="external">comment</a></p>
-<p>从 Linux 4.5 开始引入了 SO_ATTACH_REUSEPORT_CBPF 和 SO_ATTACH_REUSEPORT_EBPF 这两个 BPF 相关的 socket option。通过巧妙的设计，应该可以避免掉建连请求被丢掉的情况。</p>
-<h3 id="EPOLLEXCLUSIVE"><a href="#EPOLLEXCLUSIVE" class="headerlink" title="EPOLLEXCLUSIVE"></a>EPOLLEXCLUSIVE</h3><p>epoll引起的accept惊群，在4.5内核中再次引入<strong>EPOLLEXCLUSIVE</strong>来解决，且需要应用层的配合，Ngnix 在 1.11.3 之后添加了NGX_EXCLUSIVE_EVENT来支持。像tengine尚不支持，所以只能在应用层面上来避免惊群，开启accept_mutex才可避免惊群。</p>
-<p>在epoll_ctl ADD描述符时设置 EPOLLEXCLUSIVE 标识。</p>
-<pre><code>epoll_ctl
-ep_insert
-ep_ptable_queue_proc
-    /* 在这里，初始化等待任务，把等待任务加入到socket等待队列的头部 */
-     * 注意，和标准accept的等待任务不同，这里并没有给等待任务设置WQ_FLAG_EXCLUSIVE。
-     */
-    init_waitqueue_func_entry(&amp;pwq-&gt;wait, ep_poll_callback);
-    /* 检查应用程序是否设置了EPOLLEXCLUSIVE标识 */
-    if (epi-&gt;event.events &amp; EPOLLEXCLUSIVE)
-        /* 新增逻辑，等待任务携带WQ_FLAG_EXCLUSIVE标识，之后只唤醒一个进程 */
-        add_wait_queue_exclusive(whead, &amp;pwq-&gt;wait);
-    else
-        /* 原来逻辑，等待任务没有WQ_FLAG_EXCLUSIVE标识，会唤醒所有等待进程 */
-        add_wait_queue(whead, &amp;pwq-&gt;wait);
-</code></pre><p>在加入listen socket的sk_sleep队列的唤醒队列里使用了 add_wait_queue_exculsive()函数，当tcp收到三次握手最后一个 ack 报文时调用sock_def_readable时，只唤醒一个等待源，从而避免‘惊群’.<br>调用栈如下：</p>
-<pre><code>//  tcp_v4_do_rcv()
-//  --&gt;tcp_child_process()
-//  ---&gt;sock_def_readable()
-//  ----&gt;wake_up_interruptible_sync_poll()
-//  -----&gt;__wake_up_sync_key()
-</code></pre><p>EPOLLEXCLUSIVE可以在单个Listen Queue对多个Worker Process的时候均衡压力，不会惊群。</p>
-<p><img src="https://blog.cloudflare.com/content/images/2017/10/worker2.png" alt=""></p>
-<p>连接从一个队列里由内核分发，不需要惊群，对worker是否忙也能感知（忙的worker就不分发连接过去）</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/9bbf15909be8d1bffd3ee1958463c041.png" alt="image.png"></p>
-<p>图中的电话机相当于一个worker，只是<strong>实际内核中空闲的worker像是在一个堆栈中（LIFO），有连接过来，worker堆栈会出栈，处理完毕又入栈，如此反复</strong>。而需要处理的消息是一个队列（FIFO），所以总会发现栈顶的几个worker做的事情更多。</p>
-<h4 id="EPOLLEXCLUSIVE-带来的问题"><a href="#EPOLLEXCLUSIVE-带来的问题" class="headerlink" title="EPOLLEXCLUSIVE 带来的问题"></a>EPOLLEXCLUSIVE 带来的问题</h4><p>下面这个case是观察发现Nginx在压力不大的情况下会导致最后几个核cpu消耗时间更多一些，如下图看到的：</p>
-<p><img src="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/6551777f24be3da9d2b41ceb20a2b040.png" alt="image.png"></p>
-<p>这是如前面所述，所有worker像是在一个栈（LIFO）中等着任务处理，在压力不大的时候会导致连接总是在少数几个worker上（栈底的worker没什么机会出栈），如果并发任务多，导致worker栈经常空掉，这个问题就不存在了。当然最终来看EPOLLEXCLUSIVE没有产生什么实质性的不好的影响。值得推荐</p>
-<p>epoll的accept模型为LIFO，倾向于唤醒最活跃的进程。多进程场景下：默认的accept(非复用)是FIFO，进程加入到监听socket等待队列的尾部，唤醒时从头部开始唤醒；epoll的accept是LIFO，在epoll_wait时把进程加入到监听socket等待队列的头部，唤醒时从头部开始唤醒。</p>
-<p>当并发数较小时，只有最后几个进程会被唤醒，它们使用的CPU时间会远高于其它进程。当并发数较大时，所有的进程都有机会被唤醒，各个进程之间的差距不大。内核社区中关于epoll accept是使用LIFO还是RR有过讨论，在4.9内核和最新版本中使用的都是LIFO。</p>
-<p>比如这个case，压力低的worker进程和压力高的worker进程差异比较大：</p>
-<p><img src="https://blog.cloudflare.com/content/images/2017/10/sharedqueue.png" alt=""></p>
-<h3 id="比较下EPOLLEXCLUSIVE-和-SO-REUSEPORT"><a href="#比较下EPOLLEXCLUSIVE-和-SO-REUSEPORT" class="headerlink" title="比较下EPOLLEXCLUSIVE 和 SO_REUSEPORT"></a>比较下EPOLLEXCLUSIVE 和 SO_REUSEPORT</h3><p>EPOLLEXCLUSIVE 和 SO_REUSEPORT 都是在内核层面将连接分到多个worker，解决了epoll下的惊群，SO_REUSEPORT 会更均衡一些，EPOLLEXCLUSIVE在压力不大的时候会导致连接总是在少数几个worker上（但这个不会产生任何不利影响）。 SO_REUSEPORT在最坏的情况下会导致一个worker即使Hang了，OS也依然会派连接过去，这是非常致命的，所以4.5内核引入了 EPOLLEXCLUSIVE（总是给闲置等待队列的第一个worker派连接）</p>
-<p>相对 SO_REUSEPORT导致的stuck, EPOLLEXCLUSIV 还是更好接受一些。</p>
-<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://blog.csdn.net/lyztyycode/article/details/78648798" target="_blank" rel="external">Linux惊群效应详解（最详细的了吧）</a></p>
-<p><a href="https://blog.csdn.net/dog250/article/details/80837278" target="_blank" rel="external">再谈Linux epoll惊群问题的原因和解决方案</a></p>
-<p><a href="https://www.atatech.org/articles/117111" target="_blank" rel="external">epoll lifo引发的nginx “负载不均”</a> </p>
-<p><a href="https://blog.cloudflare.com/the-sad-state-of-linux-socket-balancing/" target="_blank" rel="external">Why does one NGINX worker take all the load?</a></p>
-<p><a href="https://www.atatech.org/articles/89653" target="_blank" rel="external">一次Nginx Gzip 导致的诡异健康检查失败问题调查</a> </p>
-<p><a href="https://www.atatech.org/articles/174248" target="_blank" rel="external">Gzip 导致 Nginx worker Hang 问题解法</a></p>
-<p><a href="https://www.atatech.org/articles/112471" target="_blank" rel="external">Socket多进程分发原理</a></p>
-<p><a href="https://blog.csdn.net/dog250/article/details/107227145" target="_blank" rel="external">从SO_REUSEPORT服务器的一个弊端看多队列服务模型</a></p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
@@ -5366,7 +5274,7 @@ ep_ptable_queue_proc
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">111</span>
+                <span class="site-state-item-count">112</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -5388,7 +5296,7 @@ ep_ptable_queue_proc
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">199</span>
+                <span class="site-state-item-count">203</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>

@@ -103,12 +103,13 @@
 <meta property="og:site_name" content="plantegg">
 <meta property="og:description" content="epoll和惊群本文尝试追踪不同的内核版本增加的方案来看内核是如何来尝试解决惊群问题的。以及像 SO_REUSEPORT 和EPOLLEXCLUSIVE又带来了什么小问题。 先上总结非IO复用的惊群在2.6内核就通过增加WQ_FLAG_EXCLUSIVE在内核中就行排他解决惊群了；epoll的惊群在3.10内核加了SO_REUSEPORT来解决惊群，但同时带来了不同的worker有的饥饿有的排队假">
 <meta property="og:image" content="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/64ae30f3d1937d913f2a440d5ae3c920.png">
+<meta property="og:image" content="https://mmbiz.qpic.cn/mmbiz_png/yiaiaFLiaflYRTRy6F9YcnuFfYn7ESbWldtibYIVFRL84nRwtZuOgWYdOTI4BuRodRdR7LvWLlDXZl5cZ23l3AUgOQ/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/49d19ef1eaf13638b488ad126beb58ef.png">
 <meta property="og:image" content="https://blog.cloudflare.com/content/images/2017/10/worker2.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/9bbf15909be8d1bffd3ee1958463c041.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/6551777f24be3da9d2b41ceb20a2b040.png">
 <meta property="og:image" content="https://blog.cloudflare.com/content/images/2017/10/sharedqueue.png">
-<meta property="og:updated_time" content="2020-12-18T08:17:34.805Z">
+<meta property="og:updated_time" content="2020-12-27T09:28:51.105Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="epoll和惊群">
 <meta name="twitter:description" content="epoll和惊群本文尝试追踪不同的内核版本增加的方案来看内核是如何来尝试解决惊群问题的。以及像 SO_REUSEPORT 和EPOLLEXCLUSIVE又带来了什么小问题。 先上总结非IO复用的惊群在2.6内核就通过增加WQ_FLAG_EXCLUSIVE在内核中就行排他解决惊群了；epoll的惊群在3.10内核加了SO_REUSEPORT来解决惊群，但同时带来了不同的worker有的饥饿有的排队假">
@@ -480,6 +481,8 @@ __wake_up_common
 <li>Linux内核解决了epoll_wait 惊群的问题，Nginx 1.9.1利用Linux3.10 的reuseport也能解决惊群、提升性能。</li>
 <li>内核的reuseport中相当于所有listen同一个端口的进程是一个组合，内核收包时不管查找到哪个socket，都能映射到他们所属的 reuseport 数组，再通过五元组哈希选择一个socket，这样只有这个socket队列里有数据，所以即便所有的进程都添加了epoll事件，也只有一个进程会被唤醒。</li>
 </ul>
+<p>当有包进来，根据5元组，如果socket是ESTABLISHED那么直接给对应的socket，如果是握手，根据<strong>SO_REUSEPORT</strong>匹配到对应的监听port的多个线程中的一个</p>
+<p><img src="https://mmbiz.qpic.cn/mmbiz_png/yiaiaFLiaflYRTRy6F9YcnuFfYn7ESbWldtibYIVFRL84nRwtZuOgWYdOTI4BuRodRdR7LvWLlDXZl5cZ23l3AUgOQ/640?wx_fmt=png&amp;tp=webp&amp;wxfrom=5&amp;wx_lazy=1&amp;wx_co=1" alt=""></p>
 <h4 id="SO-REUSEPORT-带来的小问题"><a href="#SO-REUSEPORT-带来的小问题" class="headerlink" title="SO_REUSEPORT 带来的小问题"></a>SO_REUSEPORT 带来的小问题</h4><p>SO_REUSEPORT打开后，再有请求进来不再是各个进程一起去抢，而是内核通过五元组Hash来分配，所以不再会惊群了。但是可能会导致撑死或者饿死的问题，比如一个cpu一直在做一件耗时的任务（比如压缩），但是内核通过hash分配过来的时候是不知道的（抢锁就不会发生这种情况，你没空就不会去抢），以Nginx为例</p>
 <p><a href="https://www.atatech.org/articles/89653" target="_blank" rel="external">因为Nginx是ET模式，epoll要一直将事件处理完毕才能进入epoll_wait（才能响应新的请求）。带来了新的问题：如果有一个慢请求（比如gzip压缩文件需要2分钟），那么处理这个慢请求的进程在reuseport模式下还是会被内核分派到，但是这个时候他如同hang死了，新分配进来的请求无法处理。如果不是reuseport模式，他在处理慢请求就根本腾不出来时间去在惊群中抢到锁。</a></p>
 <p>如果不开启SO_REUSEPORT模式，那么即使有一个进程在处理慢请求，那么他就不会去抢accept锁，也就没有accept新连接，这样就不应影响新连接的处理。</p>
@@ -535,6 +538,7 @@ ep_ptable_queue_proc
 <p><a href="https://www.atatech.org/articles/174248" target="_blank" rel="external">Gzip 导致 Nginx worker Hang 问题解法</a></p>
 <p><a href="https://www.atatech.org/articles/112471" target="_blank" rel="external">Socket多进程分发原理</a></p>
 <p><a href="https://blog.csdn.net/dog250/article/details/107227145" target="_blank" rel="external">从SO_REUSEPORT服务器的一个弊端看多队列服务模型</a></p>
+<p><a href="https://my.oschina.net/alchemystar/blog/3008840" target="_blank" rel="external">https://my.oschina.net/alchemystar/blog/3008840</a></p>
 
       
     </div>
@@ -676,7 +680,7 @@ ep_ptable_queue_proc
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">111</span>
+                <span class="site-state-item-count">112</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -698,7 +702,7 @@ ep_ptable_queue_proc
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">199</span>
+                <span class="site-state-item-count">203</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>

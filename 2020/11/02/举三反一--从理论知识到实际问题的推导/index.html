@@ -104,7 +104,8 @@
 <meta property="og:description" content="举三反一–从理论知识到实际问题的推导 怎么样才能获取举三反一的秘籍， 普通人为什么要案例来深化对理论知识的理解。  什么是工程效率，什么是知识效率有些人纯看理论就能掌握好一门技能，还能举三反一，这是知识效率，这种人非常少； 大多数普通人都是看点知识然后结合实践来强化理解理论，要经过反反复复才能比较好地掌握一个知识，这就是工程效率，讲究技巧、工具来达到目的。 对于费曼（参考费曼学习法）这样的聪明人就">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b3d075782450b0c8d2615c5d2b75d923.png">
 <meta property="og:image" content="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/2703fc07dfc4dd5b6e1bb4c2ce620e59.png">
-<meta property="og:updated_time" content="2020-12-18T08:17:34.877Z">
+<meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/53da85a5113a1decd7ab5896c8fa04e0.png">
+<meta property="og:updated_time" content="2020-12-27T09:28:51.153Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="举三反一--从理论知识到实际问题的推导">
 <meta name="twitter:description" content="举三反一–从理论知识到实际问题的推导 怎么样才能获取举三反一的秘籍， 普通人为什么要案例来深化对理论知识的理解。  什么是工程效率，什么是知识效率有些人纯看理论就能掌握好一门技能，还能举三反一，这是知识效率，这种人非常少； 大多数普通人都是看点知识然后结合实践来强化理解理论，要经过反反复复才能比较好地掌握一个知识，这就是工程效率，讲究技巧、工具来达到目的。 对于费曼（参考费曼学习法）这样的聪明人就">
@@ -421,6 +422,10 @@
 <p>这个case的最终原因是因为<strong>OS的open files设置的是1024,达到了上限</strong>，进而导致server不能accept，但这个时候的tcp连接状态已经是ESTABLISHED了（这个状态变换是取决于内核收发包，跟应用是否accept()无关）。</p>
 <p>同时从这里可以推断 netstat 即使看到一个tcp连接状态是ESTABLISHED也不能代表占用了 open files句柄。此时client可以正常发送数据了，只是应用服务在accept之前没法receive数据和close连接。</p>
 </blockquote>
+<p>这个结论的图解如下：</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/53da85a5113a1decd7ab5896c8fa04e0.png" alt="image.png"></p>
+<p>假如全连接队列满了，握手第三步后对于client端来说是无法感知的，client端只需要回复ack后这个连接对于client端就是ESTABLISHED了，这时client是可以发送数据的。但是Server会扔掉收到的ack，回复syn+ack给client。</p>
+<p>如果全连接队列没满，但是fd不够，那么，在Server端这个Socket也能成为ESTABLISHED，但是只是暂存在全连接队列中，等待应用来accept，这个时候client端同样无法感知这个连接没有被accept，client是可以发送数据的，这个数据会保存在tcp receive mem buf中，等到accept后再给应用。</p>
 <p>如果自己无法得到上面的分析，那么再来看看如果把 CLOSE_WAIT 状态更细化地分析下(类似有老师帮你把知识点揉开跟实际案例联系下—-未必是上面的案例)，看完后再来分析下上面的案例。</p>
 <h2 id="CLOSE-WAIT-状态拆解"><a href="#CLOSE-WAIT-状态拆解" class="headerlink" title="CLOSE_WAIT 状态拆解"></a>CLOSE_WAIT 状态拆解</h2><p>通常，CLOSE_WAIT 状态在服务器停留时间很短，如果你发现大量的 CLOSE_WAIT 状态，那么就意味着被动关闭的一方没有及时发出 FIN 包，一般有如下几种可能：</p>
 <ul>
@@ -592,7 +597,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">111</span>
+                <span class="site-state-item-count">112</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -614,7 +619,7 @@
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">199</span>
+                <span class="site-state-item-count">203</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>

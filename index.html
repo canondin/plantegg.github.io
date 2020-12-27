@@ -433,6 +433,167 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/12/25/一个有意思的问题/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2020/12/25/一个有意思的问题/" itemprop="url">一个有意思的问题</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-12-25T17:30:03+08:00">
+                2020-12-25
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2020/12/25/一个有意思的问题/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2020/12/25/一个有意思的问题/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="ssd-san-sas-磁盘性能比较"><a href="#ssd-san-sas-磁盘性能比较" class="headerlink" title="ssd/san/sas 磁盘性能比较"></a>ssd/san/sas 磁盘性能比较</h1><h1 id="一个有意思的问题"><a href="#一个有意思的问题" class="headerlink" title="一个有意思的问题"></a>一个有意思的问题</h1><h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">$mysql -N -h127.0.0.1 -e &quot;select id from sbtest1 limit 1&quot;</div><div class="line">+--------+</div><div class="line">| 100024 |</div><div class="line">+--------+</div><div class="line"></div><div class="line">$mysql -N -h127.0.0.1 -e &quot;select id from sbtest1 limit 1&quot; | cat</div><div class="line">100024</div><div class="line"></div><div class="line">$mysql -t -N -h127.0.0.1 -e &quot;select id from sbtest1 limit 1&quot; | cat</div><div class="line">+--------+</div><div class="line">| 100024 |</div><div class="line">+--------+</div></pre></td></tr></table></figure>
+<p>如上第一和第二个语句，为什么mysql client的输出重定向后就没有ascii制表符了呢？ 语句三加上 -t后再经过管道，也有制表符了。</p>
+<p><a href="https://stackoverflow.com/questions/15640287/change-output-format-for-mysql-command-line-results-to-csv/17910254" target="_blank" rel="external">这里也有很多人有同样的疑问</a>，不过不但没有给出第三行的解法，更没有人讲清楚这个里面的原理</p>
+<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>strace看看第一个语句：</p>
+<p><img src="D:%5Cali%5Ccase%5Cimage%5Cimage-20201225223135452.png" alt="image-20201225223135452"></p>
+<p>再对比下第二个语句的strace：</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/984bcce23ff8766b52fdede8ff3eadec.png" alt="image.png"></p>
+<p>从上面两个比较来看，似乎mysql client能检测到要输出到命名管道（S_IFIFO ）还是character device（S_IFCHR），如果是命名管道的话就不要输出制表符了，如果是character device那么就输出ascii制表符。</p>
+<p><a href="https://linux.die.net/man/2/fstat64" target="_blank" rel="external">fstats里面的说明</a>：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line"></div><div class="line">printf(&quot;File type:                &quot;);</div><div class="line"></div><div class="line">   switch (sb.st_mode &amp; S_IFMT) &#123;</div><div class="line">    case S_IFBLK:  printf(&quot;block device\n&quot;);            break;</div><div class="line">    case S_IFCHR:  printf(&quot;character device\n&quot;);        break;</div><div class="line">    case S_IFDIR:  printf(&quot;directory\n&quot;);               break;</div><div class="line">    case S_IFIFO:  printf(&quot;FIFO/pipe\n&quot;);               break;</div><div class="line">    case S_IFLNK:  printf(&quot;symlink\n&quot;);                 break;</div><div class="line">    case S_IFREG:  printf(&quot;regular file\n&quot;);            break;</div><div class="line">    case S_IFSOCK: printf(&quot;socket\n&quot;);                  break;</div><div class="line">    default:       printf(&quot;unknown?\n&quot;);                break;</div><div class="line">    &#125;</div></pre></td></tr></table></figure>
+<h2 id="误解"><a href="#误解" class="headerlink" title="误解"></a>误解</h2><p>误解：觉得管道在后，mysql client不应该知道后面是管道，mysql client输出内容到stdout，然后os将stdout的内容重定向给管道。</p>
+<p>实际上mysql是可以检测（detect）输出目标的，如果是管道类的非交互输出那么没必要徒增一些制表符；如果是交互式界面那么就输出一些制表符好看一些。</p>
+<p>背后的<a href="https://stackoverflow.com/questions/1312922/detect-if-stdin-is-a-terminal-or-pipe" target="_blank" rel="external">实现</a>大概是这样：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">#include &lt;stdio.h&gt;</div><div class="line">#include &lt;io.h&gt;</div><div class="line">...    </div><div class="line">if (isatty(fileno(stdout)))</div><div class="line">    printf( &quot;stdout is a terminal\n&quot; );      // 输出制表符</div><div class="line">else</div><div class="line">    printf( &quot;stdout is a file or a pipe\n&quot;); // 不输出制表符</div></pre></td></tr></table></figure>
+<p><a href="https://linux.die.net/man/3/isatty" target="_blank" rel="external">isatty的解释</a></p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://www.pyrosoft.co.uk/blog/2014/09/08/how-to-stop-mysql-ascii-tables-column-separators-from-being-lost-when-redirecting-bash-output/" target="_blank" rel="external">https://www.pyrosoft.co.uk/blog/2014/09/08/how-to-stop-mysql-ascii-tables-column-separators-from-being-lost-when-redirecting-bash-output/</a></p>
+<p><a href="https://www.oreilly.com/library/view/mysql-cookbook/0596001452/ch01s22.html" target="_blank" rel="external">https://www.oreilly.com/library/view/mysql-cookbook/0596001452/ch01s22.html</a></p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/11/30/一台机器上最多能创建多少个TCP连接/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1585,7 +1746,7 @@
       
         
           
-            <h1 id="Linux内存–PageCache"><a href="#Linux内存–PageCache" class="headerlink" title="Linux内存–PageCache"></a>Linux内存–PageCache</h1><p>Page Cache 是在应用程序读写文件的过程中产生的</p>
+            <h1 id="Linux内存–PageCache"><a href="#Linux内存–PageCache" class="headerlink" title="Linux内存–PageCache"></a>Linux内存–PageCache</h1><p>Page Cache 是在应用程序读写文件的过程中产生的， </p>
 <p>手动回收系统Cache、Buffer，这个文件可以设置的值分别为1、2、3。它们所表示的含义为：</p>
 <p><strong>echo 1 &gt; /proc/sys/vm/drop_caches</strong>:表示清除pagecache。</p>
 <p><strong>echo 2 &gt; /proc/sys/vm/drop_caches</strong>:表示清除回收slab分配器中的对象（包括目录项缓存和inode缓存）。slab分配器是内核中管理内存的一种机制，其中很多缓存数据实现都是用的pagecache。</p>
@@ -2042,7 +2203,7 @@
 <p>这就是所谓的<strong>零拷贝（Zero-copy）技术，因为我们没有在内存层面去拷贝数据，也就是说全程没有通过 CPU 来搬运数据，所有的数据都是通过 DMA 来进行传输的。</strong>。</p>
 <p>零拷贝技术的文件传输方式相比传统文件传输的方式，减少了 2 次上下文切换和数据拷贝次数，<strong>只需要 2 次上下文切换和数据拷贝次数，就可以完成文件的传输，而且 2 次的数据拷贝过程，都不需要通过 CPU，2 次都是由 DMA 来搬运。</strong></p>
 <p>所以，总体来看，<strong>零拷贝技术可以把文件传输的性能提高至少一倍以上</strong>。</p>
-<h3 id="零拷贝应用"><a href="#零拷贝应用" class="headerlink" title="零拷贝应用"></a>零拷贝应用</h3><p>kafaka这个开源项目，就利用了「零拷贝」技术，从而大幅提升了 I/O 的吞吐率，这也是 Kafka 在处理海量数据为什么这么快的原因之一。</p>
+<h3 id="零拷贝应用"><a href="#零拷贝应用" class="headerlink" title="零拷贝应用"></a>零拷贝应用</h3><p>kafaka就利用了「零拷贝」技术，从而大幅提升了 I/O 的吞吐率，这也是 Kafka 在处理海量数据为什么这么快的原因之一。</p>
 <p>如果你追溯 Kafka 文件传输的代码，你会发现，最终它调用了 Java NIO 库里的 <code>transferTo</code> 方法：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@Overridepublic</span> </div><div class="line"><span class="function"><span class="keyword">long</span> <span class="title">transferFrom</span><span class="params">(FileChannel fileChannel, <span class="keyword">long</span> position, <span class="keyword">long</span> count)</span> <span class="keyword">throws</span> IOException </span>&#123; </div><div class="line">    <span class="keyword">return</span> fileChannel.transferTo(position, count, socketChannel);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
 <p>如果 Linux 系统支持 <code>sendfile()</code> 系统调用，那么 <code>transferTo()</code> 实际上最后就会使用到 <code>sendfile()</code> 系统调用函数。</p>
@@ -2462,6 +2623,10 @@
 <p>这个case的最终原因是因为<strong>OS的open files设置的是1024,达到了上限</strong>，进而导致server不能accept，但这个时候的tcp连接状态已经是ESTABLISHED了（这个状态变换是取决于内核收发包，跟应用是否accept()无关）。</p>
 <p>同时从这里可以推断 netstat 即使看到一个tcp连接状态是ESTABLISHED也不能代表占用了 open files句柄。此时client可以正常发送数据了，只是应用服务在accept之前没法receive数据和close连接。</p>
 </blockquote>
+<p>这个结论的图解如下：</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/53da85a5113a1decd7ab5896c8fa04e0.png" alt="image.png"></p>
+<p>假如全连接队列满了，握手第三步后对于client端来说是无法感知的，client端只需要回复ack后这个连接对于client端就是ESTABLISHED了，这时client是可以发送数据的。但是Server会扔掉收到的ack，回复syn+ack给client。</p>
+<p>如果全连接队列没满，但是fd不够，那么，在Server端这个Socket也能成为ESTABLISHED，但是只是暂存在全连接队列中，等待应用来accept，这个时候client端同样无法感知这个连接没有被accept，client是可以发送数据的，这个数据会保存在tcp receive mem buf中，等到accept后再给应用。</p>
 <p>如果自己无法得到上面的分析，那么再来看看如果把 CLOSE_WAIT 状态更细化地分析下(类似有老师帮你把知识点揉开跟实际案例联系下—-未必是上面的案例)，看完后再来分析下上面的案例。</p>
 <h2 id="CLOSE-WAIT-状态拆解"><a href="#CLOSE-WAIT-状态拆解" class="headerlink" title="CLOSE_WAIT 状态拆解"></a>CLOSE_WAIT 状态拆解</h2><p>通常，CLOSE_WAIT 状态在服务器停留时间很短，如果你发现大量的 CLOSE_WAIT 状态，那么就意味着被动关闭的一方没有及时发出 FIN 包，一般有如下几种可能：</p>
 <ul>
@@ -4639,203 +4804,6 @@ LEVEL4_CACHE_LINESIZE              0
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/24/程序员如何学习和构建网络知识体系/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2020/05/24/程序员如何学习和构建网络知识体系/" itemprop="url">程序员如何学习和构建网络知识体系</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-05-24T17:30:03+08:00">
-                2020-05-24
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/network/" itemprop="url" rel="index">
-                    <span itemprop="name">network</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2020/05/24/程序员如何学习和构建网络知识体系/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2020/05/24/程序员如何学习和构建网络知识体系/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="程序员如何学习和构建网络知识体系"><a href="#程序员如何学习和构建网络知识体系" class="headerlink" title="程序员如何学习和构建网络知识体系"></a>程序员如何学习和构建网络知识体系</h1><p>大家学习网络知识的过程中经常发现当时看懂了，很快又忘了，最典型的比如TCP三次握手、为什么要握手，大家基本都看过，但是种感觉还差那么一点点。都要看是因为面试官总要问，所以不能不知道啊。</p>
-<p>我们来看一个典型的面试问题：</p>
-<blockquote>
-<p>问：为什么TCP是可靠的？<br>答：因为TCP有连接（或者回答因为TCP有握手）</p>
-<p>追问：为什么有连接就可靠了？（面试的人估计心里在骂，你这不是傻逼么，有连接就可靠啊）</p>
-<p>追问：这个TCP连接的本质是什么？网络上给你保留了一个带宽所以能可靠？<br>答：……懵了（或者因为TCP有ack，所以可靠）</p>
-<p>追问：握手的本质是什么？为什么握手就可靠了<br>答：因为握手需要ack<br>追问：那这个ack也只是保证握手可靠，握手是怎么保证后面可靠的？握手本质做了什么事情？</p>
-<p>追问：有了ack可靠后还会带来什么问题（比如发一个包ack一下，肯定是可考虑，但是效率不行，面试官想知道的是这里TCP怎么传输的，从而引出各个buffer、拥塞窗口的概念）</p>
-</blockquote>
-<p>基本上我发现99%的程序员会回答TCP相对UDP是可靠的，70%以上的程序员会告诉你可靠是因为有ack（其他的会告诉你可靠是因为握手或者有连接）</p>
-<p>我的理解：</p>
-<blockquote>
-<p>物理上没有一个连接的东西在这里，udp也类似会占用端口、ip，但是大家都没说过udp的连接。而本质上我们说tcp的握手是指tcp是协商和维护一些状态信息的，这个状态信息就包含seq、ack、窗口/buffer，tcp握手就是协商出来这些初始值。这些状态才是我们平时所说的tcp连接的本质。</p>
-</blockquote>
-<p>这说明大部分程序员对问题的本质的理解上出了问题，或者教科书描述的过于教条不够接地气所以看完书本质没get到。</p>
-<p>想想 <code>费曼学习方法</code> 中对<strong>事物本质</strong>的理解的重要性。</p>
-<h2 id="再来看一个案例"><a href="#再来看一个案例" class="headerlink" title="再来看一个案例"></a>再来看一个案例</h2><p>我第一次看<a href="https://tools.ietf.org/html/rfc1180" target="_blank" rel="external">RFC1180</a>的时候是震惊的，觉得讲述的太好了，2000字就把一本教科书的知识阐述的无比清晰、透彻。但是实际上我发现很快就忘了，而且大部分程序员基本都是这样</p>
-<blockquote>
-<p>写的确实很好，清晰简洁，图文并茂，结构逻辑合理，但是对于95%的程序员没有什么用，当时看的时候很爽、也觉得自己理解了、学会了，实际上看完几周后就忘得差不多了。问题出在这种RFC偏理论多一点看起来完全没有体感无法感同身受，所以即使似乎当时看懂了，但是忘得也快，需要一篇结合实践的文章来帮助理解</p>
-</blockquote>
-<p>在这个问题上，让我深刻地理解到：</p>
-<blockquote>
-<p>一流的人看RFC就够了，差一些的人看《TCP/IP卷1》，再差些的人要看一个个案例带出来的具体知识的书籍了，比如<a href="https://book.douban.com/subject/26268767/" target="_blank" rel="external">《wireshark抓包艺术》</a>，人和人的学习能力有差别必须要承认。</p>
-</blockquote>
-<p>也就是我们要认识到每个个人的<a href="https://mp.weixin.qq.com/s/JlXWLpQSyj3Z_KMyUmzBPA" target="_blank" rel="external">学习能力的差异</a>，我超级认同这篇文章中的一个评论</p>
-<blockquote>
-<p>看完深有感触，尤其是后面的知识效率和工程效率型的区别。以前总是很中二的觉得自己看一遍就理解记住了，结果一次次失败又怀疑自己的智商是不是有问题，其实就是把自己当作知识效率型来用了。一个不太恰当的形容就是，有颗公主心却没公主命！</p>
-</blockquote>
-<p>嗯，大部分时候我们都觉得自己看一遍就理解了记住了能实用解决问题了，实际上了是马上忘了，停下来想想自己是不是这样的？在网络的相关知识上大部分看RFC、TCP卷1等东西是很难实际理解的，还是要靠实践来建立对知识的具体的理解，而网络相关的东西基本离大家有点远（大家不回去读tcp、ip源码，纯粹是靠对书本的理解），所以很难建立具体的概念，所以这里有个必杀技就是学会抓包和用wireshark看包，同时针对实际碰到的文题来抓包、看包分析。</p>
-<p>比如我的这篇《<a href="https://mp.weixin.qq.com/s/x-ScSwEm3uQ2SFv-nAzNaA" target="_blank" rel="external">从计算机知识到落地能力，你欠缺了什么？</a>》就对上述问题最好的阐述，程序员最常碰到的网络问题就是为啥为啥不通？</p>
-<p>这是最好建立对网络知识具体理解和实践的机会，你把《<a href="https://mp.weixin.qq.com/s/x-ScSwEm3uQ2SFv-nAzNaA" target="_blank" rel="external">从计算机知识到落地能力，你欠缺了什么？</a>》实践完再去看<a href="https://tools.ietf.org/html/rfc1180" target="_blank" rel="external">RFC1180</a> 就明白了。</p>
-<h2 id="不要追求知识的广度"><a href="#不要追求知识的广度" class="headerlink" title="不要追求知识的广度"></a>不要追求知识的广度</h2><p>学习网络知识过程中，不建议每个知识点都去看，因为很快会忘记，我的方法是只看经常碰到的问题点，碰到一个点把他学透理解明白。</p>
-<p>比如我曾经碰到过 <a href="https://plantegg.github.io/2019/01/09/就是要你懂ping--nslookup-OK-but-ping-fail/" target="_blank" rel="external">nslookup OK but ping fail–看看老司机是如何解决问题的，解决问题的方法肯定比知识点重要多了，同时透过一个问题怎么样通篇来理解一大块知识，让这块原理真正在你的只是提示中扎根下来</a> , 这个问题Google上很多人在搜索，说明很普遍，但是没找到有资料能把这个问题说清楚，所以借着这个机会就把 Linux下的 NSS（name service switch）的原理搞懂了。要不然碰到问题老司机告诉你改下 /etc/hosts 或者  /etc/nsswitch 或者 /etc/resolv.conf 之类的问题就能解决，但是你一直不知道这三个文件怎么起作用的，也就是你碰到过这种问题也解决过但是下次碰到类似的问题你不一定能解决。</p>
-<p>当然对我来说为了解决这个问题最后写了4篇跟域名解析相关的文章，从windows到linux，涉及到vpn、glibc、docker等各种场景，我把他叫做场景驱动。</p>
-<p>关于<a href="https://mp.weixin.qq.com/s/JlXWLpQSyj3Z_KMyUmzBPA" target="_blank" rel="external">场景驱动学习的方法可以看这篇总结</a></p>
-<h2 id="TCP是最复杂的，不要追求点点都到"><a href="#TCP是最复杂的，不要追求点点都到" class="headerlink" title="TCP是最复杂的，不要追求点点都到"></a>TCP是最复杂的，不要追求点点都到</h2><p>比如拥塞算法基本大家不会用到，了解下就行。还有拥塞窗口、慢启动，这个实际中碰到的概率不高，面试要问你基本上是属于炫技类型。实际碰到更多的是传输效率（<a href="https://mp.weixin.qq.com/s/fKWJrDNSAZjLsyobolIQKw" target="_blank" rel="external">对BDP、Buffer、各种窗口、rt的理解和运用</a>），还有为什么连不通、<a href="https://mp.weixin.qq.com/s/yH3PzGEFopbpA-jw4MythQ" target="_blank" rel="external">连接建立不起来</a>、为什么收到包不回复、为什么要reset、为什么丢包了之类的问题。</p>
-<p>关于为什么连不通，我碰到了<a href="https://plantegg.github.io/2019/05/16/%E7%BD%91%E7%BB%9C%E9%80%9A%E4%B8%8D%E9%80%9A%E6%98%AF%E4%B8%AA%E5%A4%A7%E9%97%AE%E9%A2%98--%E5%8D%8A%E5%A4%9C%E9%B8%A1%E5%8F%AB/" target="_blank" rel="external">这个问题</a>，随后在这个问题的基础上进行了总结，得到客户端建立连接的时候抛异常，可能的原因（握手失败，建不上连接）：</p>
-<ul>
-<li>网络不通，诊断：ping ip</li>
-<li>端口不通,  诊断：telnet ip port</li>
-<li>rp_filter 命中(rp_filter=1, 多网卡环境）， 诊断:  netstat -s | grep -i filter ;</li>
-<li>snat/dnat的时候宿主机port冲突，内核会扔掉 syn包。诊断: sudo conntrack -S | grep  insert_failed //有不为0的</li>
-<li>全连接队列满的情况，诊断： netstat -s | egrep “listen|LISTEN” </li>
-<li>syn flood攻击, 诊断：同上</li>
-<li>若远端服务器的内核参数 net.ipv4.tcp_tw_recycle 和 net.ipv4.tcp_timestamps 的值都为 1，则远端服务器会检查每一个报文中的时间戳（Timestamp），若 Timestamp 不是递增的关系，不会响应这个报文。配置 NAT 后，远端服务器看到来自不同的客户端的源 IP 相同，但 NAT 前每一台客户端的时间可能会有偏差，报文中的 Timestamp 就不是递增的情况。nat后的连接，开启timestamp。因为快速回收time_wait的需要，会校验时间该ip上次tcp通讯的timestamp大于本次tcp(nat后的不同机器经过nat后ip一样，保证不了timestamp递增），诊断：是否有nat和是否开启了timestamps</li>
-<li>NAT 哈希表满导致 ECS 实例丢包 nf_conntrack full， 诊断: dmesg |grep conntrack</li>
-</ul>
-<h2 id="总结一下"><a href="#总结一下" class="headerlink" title="总结一下"></a>总结一下</h2><ul>
-<li>一定要会用tcpdump和wireshark（纯工具，没有任何门槛）</li>
-<li>多实践（因为网络知识离我们有点远、有点抽象）,用好各种工具，工具能帮我们看到、摸到</li>
-<li>不要追求知识面的广度，深抠几个具体的知识点然后让这些点建立体系</li>
-<li>不要为那些基本用不到的偏门知识花太多精力，天天用的都学不过来对吧。</li>
-</ul>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
@@ -4885,7 +4853,7 @@ LEVEL4_CACHE_LINESIZE              0
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">111</span>
+                <span class="site-state-item-count">112</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -4907,7 +4875,7 @@ LEVEL4_CACHE_LINESIZE              0
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">199</span>
+                <span class="site-state-item-count">203</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>
