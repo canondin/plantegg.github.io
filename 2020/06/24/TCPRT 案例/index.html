@@ -95,13 +95,13 @@
 
 
 
-<meta name="description" content="TCPRT 案例在分布式、微服务场景下如果rt出现问题一般都有pinpoint、Dapper、鹰眼之类的工具能帮忙分析是哪个服务慢了，但是如果是网络慢了这些工具就没有办法区分了。 TCPRT是从网络层面把整个服务的响应时间分成：网络传输时间+服务处理时间，这样一旦响应时间慢了很容易看到是网络慢了、丢包、抖动了，还是就是服务处理慢了。 如下案例都有tcpdump抓包来证明TCPRT的正确性，实际上在">
+<meta name="description" content="TCPRT 案例 – rtt、丢包率、rt、qps之间的关系在分布式、微服务场景下如果rt出现问题一般都有pinpoint、Dapper、鹰眼之类的工具能帮忙分析是哪个服务慢了，但是如果是网络慢了这些工具就没有办法区分了。 TCPRT是从网络层面把整个服务的响应时间分成：网络传输时间+服务处理时间，这样一旦响应时间慢了很容易看到是网络慢了、丢包、抖动了，还是就是服务处理慢了。 如下案例都有tcpd">
 <meta name="keywords" content="Linux,network,Performance,TCP,tcprt">
 <meta property="og:type" content="article">
 <meta property="og:title" content="TCPRT 案例">
 <meta property="og:url" content="http://yoursite.com/2020/06/24/TCPRT 案例/index.html">
 <meta property="og:site_name" content="plantegg">
-<meta property="og:description" content="TCPRT 案例在分布式、微服务场景下如果rt出现问题一般都有pinpoint、Dapper、鹰眼之类的工具能帮忙分析是哪个服务慢了，但是如果是网络慢了这些工具就没有办法区分了。 TCPRT是从网络层面把整个服务的响应时间分成：网络传输时间+服务处理时间，这样一旦响应时间慢了很容易看到是网络慢了、丢包、抖动了，还是就是服务处理慢了。 如下案例都有tcpdump抓包来证明TCPRT的正确性，实际上在">
+<meta property="og:description" content="TCPRT 案例 – rtt、丢包率、rt、qps之间的关系在分布式、微服务场景下如果rt出现问题一般都有pinpoint、Dapper、鹰眼之类的工具能帮忙分析是哪个服务慢了，但是如果是网络慢了这些工具就没有办法区分了。 TCPRT是从网络层面把整个服务的响应时间分成：网络传输时间+服务处理时间，这样一旦响应时间慢了很容易看到是网络慢了、丢包、抖动了，还是就是服务处理慢了。 如下案例都有tcpd">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/6f6862dec810933f34b7793018cfb0da.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/166e466bb43215556ccdf73e8f1476e3.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/865355ab81bc4c1804ff26c2ab2ecf23.png">
@@ -122,10 +122,10 @@
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/07d3ca12864a69b622a6f69b933d9a82.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/78d2cc459976ef868fa85359b33bda5a.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d137e3e615cac8ba927f960a8c9a616e.png">
-<meta property="og:updated_time" content="2020-10-14T10:16:37.833Z">
+<meta property="og:updated_time" content="2021-01-06T02:17:30.669Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="TCPRT 案例">
-<meta name="twitter:description" content="TCPRT 案例在分布式、微服务场景下如果rt出现问题一般都有pinpoint、Dapper、鹰眼之类的工具能帮忙分析是哪个服务慢了，但是如果是网络慢了这些工具就没有办法区分了。 TCPRT是从网络层面把整个服务的响应时间分成：网络传输时间+服务处理时间，这样一旦响应时间慢了很容易看到是网络慢了、丢包、抖动了，还是就是服务处理慢了。 如下案例都有tcpdump抓包来证明TCPRT的正确性，实际上在">
+<meta name="twitter:description" content="TCPRT 案例 – rtt、丢包率、rt、qps之间的关系在分布式、微服务场景下如果rt出现问题一般都有pinpoint、Dapper、鹰眼之类的工具能帮忙分析是哪个服务慢了，但是如果是网络慢了这些工具就没有办法区分了。 TCPRT是从网络层面把整个服务的响应时间分成：网络传输时间+服务处理时间，这样一旦响应时间慢了很容易看到是网络慢了、丢包、抖动了，还是就是服务处理慢了。 如下案例都有tcpd">
 <meta name="twitter:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/6f6862dec810933f34b7793018cfb0da.png">
 
 
@@ -404,7 +404,7 @@
       
 
       
-        <h1 id="TCPRT-案例"><a href="#TCPRT-案例" class="headerlink" title="TCPRT 案例"></a>TCPRT 案例</h1><p>在分布式、微服务场景下如果rt出现问题一般都有pinpoint、Dapper、鹰眼之类的工具能帮忙分析是哪个服务慢了，但是如果是网络慢了这些工具就没有办法区分了。</p>
+        <h1 id="TCPRT-案例-–-rtt、丢包率、rt、qps之间的关系"><a href="#TCPRT-案例-–-rtt、丢包率、rt、qps之间的关系" class="headerlink" title="TCPRT 案例 – rtt、丢包率、rt、qps之间的关系"></a>TCPRT 案例 – rtt、丢包率、rt、qps之间的关系</h1><p>在分布式、微服务场景下如果rt出现问题一般都有pinpoint、Dapper、鹰眼之类的工具能帮忙分析是哪个服务慢了，但是如果是网络慢了这些工具就没有办法区分了。</p>
 <p>TCPRT是从网络层面把整个服务的响应时间分成：网络传输时间+服务处理时间，这样一旦响应时间慢了很容易看到是网络慢了、丢包、抖动了，还是就是服务处理慢了。</p>
 <p>如下案例都有tcpdump抓包来证明TCPRT的正确性，实际上在没有TCPRT之前处理类似问题只能抓包+等待重现，来排查问题。开启TCPRT之后会实时记录每一个请求响应的网络传输时间、服务处理时间、网络丢包率等各种数据，而对性能的影响非常非常小，控制在1%以内。</p>
 <p>总的来说TCPRT区分了网络传输时间和服务处理时间，并记录了丢包、重传等各种数据，从此天下无包可抓。</p>
@@ -413,9 +413,9 @@
 <h2 id="图形化监控数据"><a href="#图形化监控数据" class="headerlink" title="图形化监控数据"></a>图形化监控数据</h2><p>捞取同一段时间内同样压力下tcprt监控数据后展示出来的图形：</p>
 <ol>
 <li>最开始正常网络情况下QPS 40K，总RT 4.1ms（含网络），业务处理时间3.9ms，两者差就是网络传输时间；</li>
-<li>突然网络变差，rtt从0.1ms降到了17ms，相应地QPS降到了8200，总RT 19.9ms（含网络），业务处理时间2.8ms（因为压力变小了，实际业务处理时间也快了）；</li>
+<li>突然网络变差，rtt从0.2ms降到了17ms，相应地QPS降到了8200，总RT 19.9ms（含网络），业务处理时间2.8ms（因为压力变小了，实际业务处理时间也快了）；</li>
 <li>接着rtt回到7ms，QPS回升到16400，总RT 9.9ms（含网络），业务处理时间2.82ms；</li>
-<li>rtt恢复到0.1ms，同时client到tomcat丢包率为0.1%，QPS 39.5K，总RT 4.1ms（含网络），业务处理时间3.7ms. 对QPS的影响基本可以忽略；</li>
+<li>rtt恢复到0.2ms，同时client到tomcat丢包率为0.1%，QPS 39.5K，总RT 4.1ms（含网络），业务处理时间3.7ms. 对QPS的影响基本可以忽略；</li>
 <li>client到tomcat丢包率为1%，QPS 31.8K，总RT 5.08ms（含网络），业务处理时间2.87ms；</li>
 <li>tomcat到client和RDS丢包率都为1%，QPS 23.2K，总RT 7.03ms（含网络），业务处理时间4.88ms，tomcat调用RDS的rt也从2.6ms上升到了4.6ms。</li>
 </ol>
@@ -473,14 +473,15 @@
 <p>如果 limit 164567, 1 的时候只有一个response，得到所有分片都返回来才开始发数据给client；但是当 limit 164567,5 的时候因为这个SQL下推到多个分片，第一个response很快发出来，但是最后一个response需要等很久。在tcprt眼中，这里传输花了很久（一旦开始response，所有时间都是传输时间），但实际这里response卡顿了。</p>
 <p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/07d3ca12864a69b622a6f69b933d9a82.png" alt=""></p>
 <p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/78d2cc459976ef868fa85359b33bda5a.png" alt="image.png"></p>
-<p>从 jstack 抓的堆栈看到返回最后一个包之前，DRDS 在做 result.close()，因为关闭流模式结果集太耗时所以卡了。可以做的一个优化是提前发出 sendPacketEnd，然后异步去做物理连接的 result.close() 和 conn.close() 。</p>
+<p>从 jstack 抓的堆栈看到返回最后一个包之前，应用 在做 result.close()，因为关闭流模式结果集太耗时所以卡了。可以做的一个优化是提前发出 sendPacketEnd，然后异步去做物理连接的 result.close() 和 conn.close() 。</p>
 <p>这是因为close的时候要挨个把所有记录处理掉，但是这里还在挨个做对象转换并抛弃。</p>
 <p>这可以算是通过tcprt发现了程序的bug或者说可以优化的地方。</p>
 <h2 id="重传内核监控"><a href="#重传内核监控" class="headerlink" title="重传内核监控"></a>重传内核监控</h2><p>TCP 重传率是通过解析 /proc/net/snmp 这个文件里的指标计算出来的，这个文件里面和 TCP 有关的关键指标如下：</p>
 <p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d137e3e615cac8ba927f960a8c9a616e.png" alt="image.png"></p>
 <p>为了让 Linux 用户更方便地观察 TCP 重传事件，4.16 内核版本中专门添加了TCP tracepoint来解析 TCP 重传事件。如果你使用的操作系统是 CentOS-7 以及更老的版本，就无法使用该 Tracepoint 来观察了；如果你的版本是 CentOS-8 以及后续更新的版本，那你可以直接使用这个 Tracepoint 来追踪 TCP 重传，可以使用如下命令：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">$ cd /sys/kernel/debug/tracing/events/</div><div class="line">$ echo 1 &gt; tcp/tcp_retransmit_skb/enable</div><div class="line"></div><div class="line">$ cat trace_pipe</div><div class="line">&lt;idle&gt;-0     [007] ..s. 265119.290232: tcp_retransmit_skb: sport=22 dport=62264 saddr=172.23.245.8 daddr=172.30.18.225 saddrv6=::ffff:172.23.245.8 daddrv6=::ffff:172.30.18.225 state=TCP_ESTABLISHED</div><div class="line"></div><div class="line">//关闭</div><div class="line">$ echo 0 &gt; tcp/tcp_retransmit_skb/enable</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">$ cat /sys/kernel/debug/tracing/tracing_on</div><div class="line">1</div><div class="line">$ cd /sys/kernel/debug/tracing/</div><div class="line">$ echo 1 &gt; events/tcp/tcp_retransmit_skb/enable</div><div class="line"></div><div class="line">$ cat trace_pipe</div><div class="line">          &lt;idle&gt;-0     [007] ..s. 265119.290232: tcp_retransmit_skb: sport=22 dport=62264 saddr=172.23.245.8 daddr=172.30.18.225 saddrv6=::ffff:172.23.245.8 daddrv6=::ffff:172.30.18.225 state=TCP_ESTABLISHED</div><div class="line"></div><div class="line">          &lt;idle&gt;-0     [001] ..s. 8898413.028276: tcp_retransmit_skb: sport=3306 dport=62460 saddr=10.0.186.140 daddr=10.0.186.70 saddrv6=::ffff:10.0.186.140 daddrv6=::ffff:10.0.186.70</div><div class="line">          &lt;idle&gt;-0     [000] ..s. 8898414.216218: tcp_retransmit_skb: sport=11236 dport=80 saddr=10.0.186.140 daddr=100.100.30.25 saddrv6=::ffff:10.0.186.140 daddrv6=::ffff:100.100.30.25</div><div class="line"></div><div class="line">//关闭</div><div class="line">$ echo 0 &gt; events/tcp/tcp_retransmit_skb/enable</div></pre></td></tr></table></figure>
 <p>可以看到，当 TCP 重传发生时，该事件的基本信息就会被打印出来。</p>
+<p>由于 Kprobe 是通过异常（Exception）这种方式来工作的，所以它还是有一些性能开销的，在 TCP 发包快速路径上还是要避免使用 Kprobe。不过，由于重传路径是慢速路径，所以在重传路径上添加 Kprobe 也无需担心性能开销。</p>
 <h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://zhuanlan.zhihu.com/p/37112986" target="_blank" rel="external">https://zhuanlan.zhihu.com/p/37112986</a></p>
 
       
@@ -623,7 +624,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">112</span>
+                <span class="site-state-item-count">113</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -687,7 +688,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#TCPRT-案例"><span class="nav-number">1.</span> <span class="nav-text">TCPRT 案例</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#图形化监控数据"><span class="nav-number">1.1.</span> <span class="nav-text">图形化监控数据</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#深圳盒子慢查询定位"><span class="nav-number">1.2.</span> <span class="nav-text">深圳盒子慢查询定位</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#丢包造成rt过高"><span class="nav-number">1.3.</span> <span class="nav-text">丢包造成rt过高</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#丢包率对性能影响"><span class="nav-number">1.4.</span> <span class="nav-text">丢包率对性能影响</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#时延增加对数据的影响"><span class="nav-number">1.5.</span> <span class="nav-text">时延增加对数据的影响</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#delay-ack-client卡顿导致server-rt偏高"><span class="nav-number">1.6.</span> <span class="nav-text">delay ack + client卡顿导致server rt偏高</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Delay-ACK-原理解析"><span class="nav-number">1.6.1.</span> <span class="nav-text">Delay ACK 原理解析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#从tcpdump抓包来分析原因"><span class="nav-number">1.6.2.</span> <span class="nav-text">从tcpdump抓包来分析原因</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#原因总结"><span class="nav-number">1.6.3.</span> <span class="nav-text">原因总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#delay-ack拉高实际rt的case"><span class="nav-number">1.7.</span> <span class="nav-text">delay ack拉高实际rt的case</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#最后一个数据发送慢导致计时显示网络rt偏高"><span class="nav-number">1.8.</span> <span class="nav-text">最后一个数据发送慢导致计时显示网络rt偏高</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#重传内核监控"><span class="nav-number">1.9.</span> <span class="nav-text">重传内核监控</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">1.10.</span> <span class="nav-text">参考资料</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#TCPRT-案例-–-rtt、丢包率、rt、qps之间的关系"><span class="nav-number">1.</span> <span class="nav-text">TCPRT 案例 – rtt、丢包率、rt、qps之间的关系</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#图形化监控数据"><span class="nav-number">1.1.</span> <span class="nav-text">图形化监控数据</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#深圳盒子慢查询定位"><span class="nav-number">1.2.</span> <span class="nav-text">深圳盒子慢查询定位</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#丢包造成rt过高"><span class="nav-number">1.3.</span> <span class="nav-text">丢包造成rt过高</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#丢包率对性能影响"><span class="nav-number">1.4.</span> <span class="nav-text">丢包率对性能影响</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#时延增加对数据的影响"><span class="nav-number">1.5.</span> <span class="nav-text">时延增加对数据的影响</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#delay-ack-client卡顿导致server-rt偏高"><span class="nav-number">1.6.</span> <span class="nav-text">delay ack + client卡顿导致server rt偏高</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Delay-ACK-原理解析"><span class="nav-number">1.6.1.</span> <span class="nav-text">Delay ACK 原理解析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#从tcpdump抓包来分析原因"><span class="nav-number">1.6.2.</span> <span class="nav-text">从tcpdump抓包来分析原因</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#原因总结"><span class="nav-number">1.6.3.</span> <span class="nav-text">原因总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#delay-ack拉高实际rt的case"><span class="nav-number">1.7.</span> <span class="nav-text">delay ack拉高实际rt的case</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#最后一个数据发送慢导致计时显示网络rt偏高"><span class="nav-number">1.8.</span> <span class="nav-text">最后一个数据发送慢导致计时显示网络rt偏高</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#重传内核监控"><span class="nav-number">1.9.</span> <span class="nav-text">重传内核监控</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">1.10.</span> <span class="nav-text">参考资料</span></a></li></ol></li></ol></div>
             
 
           </div>
@@ -713,7 +714,7 @@
 <div class="copyright" >
   
   &copy; 
-  <span itemprop="copyrightYear">2020</span>
+  <span itemprop="copyrightYear">2021</span>
   <span class="with-love">
     <i class="fa fa-heart"></i>
   </span>

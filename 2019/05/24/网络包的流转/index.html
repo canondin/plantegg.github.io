@@ -95,13 +95,13 @@
 
 
 
-<meta name="description" content="Linux Network Stack一个网络包进到网卡后续如何流转，中间有哪些关键参数，有什么工具能帮忙可以看到各个环节的一些指征，怎么调整他们 接收流程 网络包进到网卡，网卡驱动校验MAC，看是否扔掉，取决是否是混杂 promiscuous mode 网卡在启动时会申请一个接收ring buffer，其条目都会指向一个skb的内存。 DMA完成数据报文从网卡硬件到内存到拷贝 网卡发送一个中断通">
+<meta name="description" content="Linux Network Stack从一个网络包进到网卡后续如何流转，进而了解中间有哪些关键参数可以控制他们，有什么工具能帮忙可以看到各个环节的一些指征，怎么调整他们。 接收流程 网络包进到网卡，网卡驱动校验MAC，看是否扔掉，取决是否是混杂 promiscuous mode 网卡在启动时会申请一个接收ring buffer，其条目都会指向一个skb的内存。 DMA完成数据报文从网卡硬件到内存到">
 <meta name="keywords" content="Linux,network,TCP">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux Network Stack">
 <meta property="og:url" content="http://yoursite.com/2019/05/24/网络包的流转/index.html">
 <meta property="og:site_name" content="plantegg">
-<meta property="og:description" content="Linux Network Stack一个网络包进到网卡后续如何流转，中间有哪些关键参数，有什么工具能帮忙可以看到各个环节的一些指征，怎么调整他们 接收流程 网络包进到网卡，网卡驱动校验MAC，看是否扔掉，取决是否是混杂 promiscuous mode 网卡在启动时会申请一个接收ring buffer，其条目都会指向一个skb的内存。 DMA完成数据报文从网卡硬件到内存到拷贝 网卡发送一个中断通">
+<meta property="og:description" content="Linux Network Stack从一个网络包进到网卡后续如何流转，进而了解中间有哪些关键参数可以控制他们，有什么工具能帮忙可以看到各个环节的一些指征，怎么调整他们。 接收流程 网络包进到网卡，网卡驱动校验MAC，看是否扔掉，取决是否是混杂 promiscuous mode 网卡在启动时会申请一个接收ring buffer，其条目都会指向一个skb的内存。 DMA完成数据报文从网卡硬件到内存到">
 <meta property="og:image" content="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1557292725626-2e4b452b-8a9e-4d9f-91a6-64357fbd4e0e.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ddd50d2c70215d477d72734b0834410a.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/ba2f1764fab3a7b3f485836e8e566ffb.png">
@@ -117,10 +117,10 @@
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/955fc732d8620561a9ebce992b0129b1.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/d42ccdb0b8f6270d8b559145c0b89c86.png">
 <meta property="og:image" content="https://ata2-img.cn-hangzhou.oss-pub.aliyun-inc.com/a067b484c593aa3a4b6a525d1f93506e.png">
-<meta property="og:updated_time" content="2020-12-27T09:28:51.185Z">
+<meta property="og:updated_time" content="2021-01-06T02:17:30.753Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Linux Network Stack">
-<meta name="twitter:description" content="Linux Network Stack一个网络包进到网卡后续如何流转，中间有哪些关键参数，有什么工具能帮忙可以看到各个环节的一些指征，怎么调整他们 接收流程 网络包进到网卡，网卡驱动校验MAC，看是否扔掉，取决是否是混杂 promiscuous mode 网卡在启动时会申请一个接收ring buffer，其条目都会指向一个skb的内存。 DMA完成数据报文从网卡硬件到内存到拷贝 网卡发送一个中断通">
+<meta name="twitter:description" content="Linux Network Stack从一个网络包进到网卡后续如何流转，进而了解中间有哪些关键参数可以控制他们，有什么工具能帮忙可以看到各个环节的一些指征，怎么调整他们。 接收流程 网络包进到网卡，网卡驱动校验MAC，看是否扔掉，取决是否是混杂 promiscuous mode 网卡在启动时会申请一个接收ring buffer，其条目都会指向一个skb的内存。 DMA完成数据报文从网卡硬件到内存到">
 <meta name="twitter:image" content="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1557292725626-2e4b452b-8a9e-4d9f-91a6-64357fbd4e0e.png">
 
 
@@ -399,18 +399,18 @@
       
 
       
-        <h1 id="Linux-Network-Stack"><a href="#Linux-Network-Stack" class="headerlink" title="Linux Network Stack"></a>Linux Network Stack</h1><p>一个网络包进到网卡后续如何流转，中间有哪些关键参数，有什么工具能帮忙可以看到各个环节的一些指征，怎么调整他们</p>
+        <h1 id="Linux-Network-Stack"><a href="#Linux-Network-Stack" class="headerlink" title="Linux Network Stack"></a>Linux Network Stack</h1><p>从一个网络包进到网卡后续如何流转，进而了解中间有哪些关键参数可以控制他们，有什么工具能帮忙可以看到各个环节的一些指征，怎么调整他们。</p>
 <h2 id="接收流程"><a href="#接收流程" class="headerlink" title="接收流程"></a>接收流程</h2><ol>
 <li>网络包进到网卡，网卡驱动校验MAC，看是否扔掉，取决是否是混杂 promiscuous mode</li>
 <li>网卡在启动时会申请一个接收ring buffer，其条目都会指向一个skb的内存。</li>
 <li>DMA完成数据报文从网卡硬件到内存到拷贝</li>
 <li>网卡发送一个中断通知CPU。</li>
 <li>CPU执行网卡驱动注册的中断处理函数，中断处理函数只做一些必要的工作，如读取硬件状态等，并把当前该网卡挂在NAPI的链表中;</li>
-<li>Driver “触发” soft IRQ(NET_RX_SOFTIRQ (其实就是设置对应软中断的标志位) </li>
-<li>CPU中断处理函数返回后，会检查是否有软中断需要执行。因第三步设置了NET_RX_SOFTIRQ，则执行报文接收软中断。</li>
-<li>在NET_RX_SOFTIRQ软中断中，执行NAPI操作，回调第三步挂载的驱动poll函数。</li>
+<li><strong>Driver “触发” soft IRQ(NET_RX_SOFTIRQ (其实就是设置对应软中断的标志位)</strong> </li>
+<li>CPU中断处理函数返回后，会检查是否有软中断需要执行。因第6步设置了NET_RX_SOFTIRQ，则执行报文接收软中断。</li>
+<li>在NET_RX_SOFTIRQ软中断中，执行NAPI操作，回调第5步挂载的驱动poll函数。</li>
 <li>驱动会对interface进行poll操作，检查网卡是否有接收完毕的数据报文。</li>
-<li>将网卡中已经接收完毕的数据报文取出，继续在软中断进行后续处理。注：驱动对interface执行poll操作时，会尝试循环检查网卡是否有接收完毕的报文，直到系统设置的net.core.netdev_budget上限(默认300)，或者已经就绪报文。</li>
+<li>将网卡中已经接收完毕的数据报文取出，继续在软中断进行后续处理。注：驱动对interface执行poll操作时，会尝试循环检查网卡是否有接收完毕的报文，直到系统设置的<strong>net.core.netdev_budget</strong>上限(默认300)，或者已经就绪报文。</li>
 <li><strong>net_rx_action</strong></li>
 <li>内核分配 sk_buff 内存</li>
 <li>内核填充 metadata: 协议等，移除 ethernet 包头信息</li>
@@ -418,7 +418,7 @@
 <li><code>__netif_receive_skb_core</code>：将数据送到抓包点（tap）或协议层(i.e. tcpdump)</li>
 <li>进入到由 netdev_max_backlog 控制的qdisc</li>
 <li>开始 <strong>ip_rcv</strong> 处理流程，主要处理ip协议包头相关信息</li>
-<li>调用内核 netfilter 框架(iptables PREROUTING)</li>
+<li><strong>调用内核 netfilter 框架(iptables PREROUTING)</strong></li>
 <li>进入L4 protocol <strong>tcp_v4_rcv</strong></li>
 <li>找到对应的socket</li>
 <li>根据 tcp_rmem 进入接收缓冲队列</li>
@@ -736,7 +736,7 @@ sysctl -w net.core.netdev_max_backlog=1024 //临时性增大
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">112</span>
+                <span class="site-state-item-count">113</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -826,7 +826,7 @@ sysctl -w net.core.netdev_max_backlog=1024 //临时性增大
 <div class="copyright" >
   
   &copy; 
-  <span itemprop="copyrightYear">2020</span>
+  <span itemprop="copyrightYear">2021</span>
   <span class="with-love">
     <i class="fa fa-heart"></i>
   </span>

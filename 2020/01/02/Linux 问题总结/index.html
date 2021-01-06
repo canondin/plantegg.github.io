@@ -104,7 +104,7 @@
 <meta property="og:description" content="Linux 问题总结文件权限的坑crond第一次加载的时候（刚启动）会去检查文件属性，不是644的话以后都不会执行了，即使后面chmod改成了644.  手工随便修改一下该文件的内容就能触发自动执行了，或者重启crond, 或者 sudo service crond reload， 或者 /etc/cron.d/下有任何修改都会触发crond reload配置(包含 touch )。 总之 cro">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b646979272e71e015de4a47c62b89747.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/ee2e438907fa72c70d5393a651dc9113.png">
-<meta property="og:updated_time" content="2020-11-20T08:01:56.609Z">
+<meta property="og:updated_time" content="2021-01-06T02:17:30.637Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Linux 问题总结">
 <meta name="twitter:description" content="Linux 问题总结文件权限的坑crond第一次加载的时候（刚启动）会去检查文件属性，不是644的话以后都不会执行了，即使后面chmod改成了644.  手工随便修改一下该文件的内容就能触发自动执行了，或者重启crond, 或者 sudo service crond reload， 或者 /etc/cron.d/下有任何修改都会触发crond reload配置(包含 touch )。 总之 cro">
@@ -395,6 +395,13 @@
 <p>可以修改容器中的 ulimit 不要超过默认的65535或者修改容器的启动参数来解决。</p>
 <p>子进程都会继承父进程的一些环境变量，比如 limits.conf, sudo/su/crond/passwd等都会触发重新加载limits, </p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">grep -rin pam_limit /etc/pam.d //可以看到触发重新加载的场景</div></pre></td></tr></table></figure>
+<h2 id="debug-crond"><a href="#debug-crond" class="headerlink" title="debug crond"></a>debug crond</h2><p>先停掉 crond service，然后开启debug参数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">systemctl stop crond</div><div class="line">crond -x proc //不想真正执行的话：test</div></pre></td></tr></table></figure>
+<p>或者增加更多的debug信息， debug sudo/sudoers , 在 /etc/sudo.conf 中增加了：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">Debug sudo /var/log/sudo_debug all@warn</div><div class="line">Debug sudoers.so /var/log/sudoers_debug all@debug</div></pre></td></tr></table></figure>
+<h2 id="systemd-limits"><a href="#systemd-limits" class="headerlink" title="systemd limits"></a>systemd limits</h2><p>/etc/security/limits.conf 的配置，只适用于通过PAM 认证登录用户的资源限制，它对systemd 的service 的资源限制不生效。</p>
+<p>因此登录用户的限制，通过/etc/security/limits.conf 与/etc/security/limits.d 下的文件设置即可。</p>
+<p>对于systemd service 的资源设置，则需修改全局配置，全局配置文件放在/etc/systemd/system.conf 和/etc/systemd/user.conf，同时也会加载两个对应目录中的所有.conf 文件/etc/systemd/system.conf.d/.conf<br>和/etc/systemd/user.conf.d/.conf。</p>
 <h3 id="关于ulimit的一些知识点"><a href="#关于ulimit的一些知识点" class="headerlink" title="关于ulimit的一些知识点"></a>关于ulimit的一些知识点</h3><p>参考 <a href="https://feichashao.com/ulimit_demo/" target="_blank" rel="external">Ulimit</a> <a href="http://blog.yufeng.info/archives/2568" target="_blank" rel="external">http://blog.yufeng.info/archives/2568</a></p>
 <ul>
 <li>limit的设定值是 per-process 的</li>
@@ -509,13 +516,6 @@
 </tr>
 </tbody>
 </table>
-<h2 id="debug-crond"><a href="#debug-crond" class="headerlink" title="debug crond"></a>debug crond</h2><p>先停掉 crond service，然后开启debug参数</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">systemctl stop crond</div><div class="line">crond -x proc //不想真正执行的话：test</div></pre></td></tr></table></figure>
-<p>或者增加更多的debug信息， debug sudo/sudoers , 在 /etc/sudo.conf 中增加了：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">Debug sudo /var/log/sudo_debug all@warn</div><div class="line">Debug sudoers.so /var/log/sudoers_debug all@debug</div></pre></td></tr></table></figure>
-<h2 id="systemd-limits"><a href="#systemd-limits" class="headerlink" title="systemd limits"></a>systemd limits</h2><p>/etc/security/limits.conf 的配置，只适用于通过PAM 认证登录用户的资源限制，它对systemd 的service 的资源限制不生效。</p>
-<p>因此登录用户的限制，通过/etc/security/limits.conf 与/etc/security/limits.d 下的文件设置即可。</p>
-<p>对于systemd service 的资源设置，则需修改全局配置，全局配置文件放在/etc/systemd/system.conf 和/etc/systemd/user.conf，同时也会加载两个对应目录中的所有.conf 文件/etc/systemd/system.conf.d/.conf<br>和/etc/systemd/user.conf.d/.conf。</p>
 <h2 id="强制重启系统"><a href="#强制重启系统" class="headerlink" title="强制重启系统"></a>强制重启系统</h2><p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/ee2e438907fa72c70d5393a651dc9113.png" alt="image.png"></p>
 <h2 id="hostname"><a href="#hostname" class="headerlink" title="hostname"></a>hostname</h2><p>hostname -i 是根据机器的hostname去解析ip，如果 /etc/hosts里面没有指定hostname对应的ip就会走dns 流程libnss_myhostname 返回所有ip</p>
 <h2 id="yum-源问题处理"><a href="#yum-源问题处理" class="headerlink" title="yum 源问题处理"></a>yum 源问题处理</h2><p><a href="https://access.redhat.com/solutions/641093" target="_blank" rel="external">Yum commands error “pycurl.so: undefined symbol”</a></p>
@@ -531,7 +531,7 @@
 <p>软中断和进程上下文切换比较起来，进程上下文切换是从用户进程A切换到了用户进程B。而软中断切换是从用户进程A切换到了内核线程ksoftirqd上。而ksoftirqd作为一个内核控制路径，其处理程序比一个用户进程要轻量，所以上下文切换开销相对比进程切换要少一些（实际数据基本差不多）。</p>
 <p>系统调用只是在进程内将用户态切换到内核态，然后再切回来，而上下文切换可是直接从进程A切换到了进程B。显然这个上下文切换需要完成的工作量更大。</p>
 <h3 id="软中断开销计算"><a href="#软中断开销计算" class="headerlink" title="软中断开销计算"></a><a href="https://mp.weixin.qq.com/s?__biz=MjM5Njg5NDgwNA==&amp;mid=2247483827&amp;idx=3&amp;sn=8b897c8d6d3038ea79bd156a0e88db10&amp;scene=21#wechat_redirect" target="_blank" rel="external">软中断开销计算</a></h3><ul>
-<li><strong>查看软中断总耗时</strong>， 首先用top命令可以看出每个核上软中断的开销占比，是在si列（1.2%）</li>
+<li><strong>查看软中断总耗时</strong>， 首先用top命令可以看出每个核上软中断的开销占比，是在si列（1.2%–1秒[1000ms]中的1.2%）</li>
 <li><strong>查看软中断次数</strong>，再用vmstat命令可以看到软中断的次数（in列 56000）</li>
 <li><strong>计算每次软中断的耗时</strong>，该机器是16核的物理实机，故可以得出每个软中断需要的CPU时间是=12ms/(56000/16)次=3.428us。从实验数据来看，一次软中断CPU开销大约3.4us左右</li>
 </ul>
@@ -676,7 +676,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">112</span>
+                <span class="site-state-item-count">113</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -740,7 +740,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Linux-问题总结"><span class="nav-number">1.</span> <span class="nav-text">Linux 问题总结</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#文件权限的坑"><span class="nav-number">1.1.</span> <span class="nav-text">文件权限的坑</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#容器中ulimit限制了crond的执行"><span class="nav-number">1.2.</span> <span class="nav-text">容器中ulimit限制了crond的执行</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#关于ulimit的一些知识点"><span class="nav-number">1.2.1.</span> <span class="nav-text">关于ulimit的一些知识点</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#deleted-文件"><span class="nav-number">1.3.</span> <span class="nav-text">deleted 文件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pam-权限报错"><span class="nav-number">1.4.</span> <span class="nav-text">pam 权限报错</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#PAM-认证过程"><span class="nav-number">1.4.1.</span> <span class="nav-text">PAM 认证过程</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#第一部分"><span class="nav-number">1.4.1.1.</span> <span class="nav-text">第一部分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#第二部分"><span class="nav-number">1.4.1.2.</span> <span class="nav-text">第二部分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#第三部分"><span class="nav-number">1.4.1.3.</span> <span class="nav-text">第三部分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#第四部分"><span class="nav-number">1.4.1.4.</span> <span class="nav-text">第四部分</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#常用的PAM模块介绍"><span class="nav-number">1.4.2.</span> <span class="nav-text">常用的PAM模块介绍</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#debug-crond"><span class="nav-number">1.5.</span> <span class="nav-text">debug crond</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#systemd-limits"><span class="nav-number">1.6.</span> <span class="nav-text">systemd limits</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#强制重启系统"><span class="nav-number">1.7.</span> <span class="nav-text">强制重启系统</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#hostname"><span class="nav-number">1.8.</span> <span class="nav-text">hostname</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#yum-源问题处理"><span class="nav-number">1.9.</span> <span class="nav-text">yum 源问题处理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#软中断、系统调用和上下文切换"><span class="nav-number">1.10.</span> <span class="nav-text">软中断、系统调用和上下文切换</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#软中断开销计算"><span class="nav-number">1.10.1.</span> <span class="nav-text">软中断开销计算</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文章"><span class="nav-number">1.11.</span> <span class="nav-text">参考文章</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Linux-问题总结"><span class="nav-number">1.</span> <span class="nav-text">Linux 问题总结</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#文件权限的坑"><span class="nav-number">1.1.</span> <span class="nav-text">文件权限的坑</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#容器中ulimit限制了crond的执行"><span class="nav-number">1.2.</span> <span class="nav-text">容器中ulimit限制了crond的执行</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#debug-crond"><span class="nav-number">1.3.</span> <span class="nav-text">debug crond</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#systemd-limits"><span class="nav-number">1.4.</span> <span class="nav-text">systemd limits</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#关于ulimit的一些知识点"><span class="nav-number">1.4.1.</span> <span class="nav-text">关于ulimit的一些知识点</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#deleted-文件"><span class="nav-number">1.5.</span> <span class="nav-text">deleted 文件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pam-权限报错"><span class="nav-number">1.6.</span> <span class="nav-text">pam 权限报错</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#PAM-认证过程"><span class="nav-number">1.6.1.</span> <span class="nav-text">PAM 认证过程</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#第一部分"><span class="nav-number">1.6.1.1.</span> <span class="nav-text">第一部分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#第二部分"><span class="nav-number">1.6.1.2.</span> <span class="nav-text">第二部分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#第三部分"><span class="nav-number">1.6.1.3.</span> <span class="nav-text">第三部分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#第四部分"><span class="nav-number">1.6.1.4.</span> <span class="nav-text">第四部分</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#常用的PAM模块介绍"><span class="nav-number">1.6.2.</span> <span class="nav-text">常用的PAM模块介绍</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#强制重启系统"><span class="nav-number">1.7.</span> <span class="nav-text">强制重启系统</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#hostname"><span class="nav-number">1.8.</span> <span class="nav-text">hostname</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#yum-源问题处理"><span class="nav-number">1.9.</span> <span class="nav-text">yum 源问题处理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#软中断、系统调用和上下文切换"><span class="nav-number">1.10.</span> <span class="nav-text">软中断、系统调用和上下文切换</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#软中断开销计算"><span class="nav-number">1.10.1.</span> <span class="nav-text">软中断开销计算</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文章"><span class="nav-number">1.11.</span> <span class="nav-text">参考文章</span></a></li></ol></li></ol></div>
             
 
           </div>
@@ -766,7 +766,7 @@
 <div class="copyright" >
   
   &copy; 
-  <span itemprop="copyrightYear">2020</span>
+  <span itemprop="copyrightYear">2021</span>
   <span class="with-love">
     <i class="fa fa-heart"></i>
   </span>
