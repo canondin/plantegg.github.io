@@ -281,6 +281,292 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/06/02/就是要你懂SSH--SSH花式玩法/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/06/02/就是要你懂SSH--SSH花式玩法/" itemprop="url">就是要你懂SSH--SSH花式玩法</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-06-02T17:30:03+08:00">
+                2018-06-02
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/06/02/就是要你懂SSH--SSH花式玩法/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2018/06/02/就是要你懂SSH--SSH花式玩法/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="就是要你懂SSH–你没见过的花式玩法"><a href="#就是要你懂SSH–你没见过的花式玩法" class="headerlink" title="就是要你懂SSH–你没见过的花式玩法"></a>就是要你懂SSH–你没见过的花式玩法</h1><h3 id="本文试图解决的问题："><a href="#本文试图解决的问题：" class="headerlink" title="本文试图解决的问题："></a>本文试图解决的问题：</h3><ul>
+<li>线上跳板机要输入动态token，太麻烦了，反复输入动态密码也很浪费时间；</li>
+<li>比如多机房总是要走跳板机，如何绕过跳板机直连； </li>
+<li>日常环境如何免打通、免密码、直达；</li>
+<li>ssh如何调试诊断……</li>
+</ul>
+<h3 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h3><ul>
+<li>ssh是指的openSSH 命令工具</li>
+<li>本文仅适用于各种Linux、MacOS，Windows的话各种可视化工具都可以复制session、配置tunnel来实现类似功能。</li>
+<li>如果文章中提到的文件、文件夹不存在可以直接创建出来。</li>
+<li>所有配置都是在你的笔记本上（相当于ssh client上，只有日常跳板机免登如要在日常跳板机上配置一下）</li>
+</ul>
+<h3 id="科学上网"><a href="#科学上网" class="headerlink" title="科学上网"></a>科学上网</h3><p>有时候风声比较近的话阿里郎的网络加速会关闭，这个时候科学上网还得靠自己，一行ssh命令来科学上网:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">nohup ssh -qTfnN -D 127.0.0.1:18080 root@1.1.1.1 &quot;vmstat 10&quot; 2&gt;&amp;1 &gt;/dev/null &amp;</div></pre></td></tr></table></figure>
+<p>上面的 1.1.1.1 是你在境外的一台服务器，已经做好了免密登陆（要不你每次还得输一下密码），这句话的意思就是在本地启动一个18080的端口，上面收到的任何东西都会转发给 1.1.1.1:22（做了ssh加密），然后1.1.1.1:22 会解密收到的东西，再然后把他们转发给google/twitter 之类的网站，结果依然通过原路返回</p>
+<p> 127.0.0.1:18080  socks5 就是要填入到你的浏览器中的代理服务器，真的什么都不需要装，简单到不能再简单</p>
+<p>原理图如下：<br><img src="https://intranetproxy.alipay.com/skylark/lark/0/2019/png/33359/1561367815573-0b793473-67fa-4edc-ae58-04e7c4c51b87.png" alt="undefined"> </p>
+<h4 id="科学上网之http特殊代理"><a href="#科学上网之http特殊代理" class="headerlink" title="科学上网之http特殊代理"></a>科学上网之http特殊代理</h4><p>前面所说的代理是socks5代理，一般浏览器都有插件支持，但是比如你的docker（或者其他程序）需要通过http去<br>拉取镜像就会出现如下错误：</p>
+<pre><code>Sending build context to Docker daemon 8.704 kB
+Step 1 : FROM k8s.gcr.io/kube-cross:v1.10.1-1
+Get https://k8s.gcr.io/v1/_ping: dial tcp 108.177.125.82:443: i/o timeout
+</code></pre><p><a href="https://www.atatech.org/articles/102153" target="_blank" rel="external">如果是git这样的应用内部可以配置socks5和http代理服务器，请参考另外一篇文章</a>，但是有些应用就不能配置了，当然最终通过ssh大法还是可以解决这个问题：</p>
+<pre><code>sudo ssh -L 443:108.177.125.82:443 root@1.1.1.1 //在本地监听443，转发给远程108.177.125.82的443端口
+</code></pre><p>然后再在 /etc/hosts 中将域名 k8s.gcr.io 指向 127.0.0.1， 那么本来要访问 k8s.gcr.io:443的，变成了访问本地 127.0.0.1:443 而 127.0.0.1:443 又通过ssh重定向到了 108.177.125.82:443 这样就实现了http代理或者说这种特殊情况下的科学上网。</p>
+<p>当然网上也有socks5代理转http代理的，很麻烦，我上面这个方案不需要装任何东西，但是每个访问目标都要这样处理，好在这种情况不多</p>
+<h3 id="内部线上跳板机都需要密码-动态码，太复杂了，怎么解？"><a href="#内部线上跳板机都需要密码-动态码，太复杂了，怎么解？" class="headerlink" title="内部线上跳板机都需要密码+动态码，太复杂了，怎么解？"></a>内部线上跳板机都需要密码+动态码，太复杂了，怎么解？</h3><pre><code>ren@ren-VirtualBox:~$ cat ~/.ssh/config 
+#reuse the same connection
+ControlMaster auto
+ControlPath ~/tmp/ssh_mux_%h_%p_%r
+
+#查了下ControlPersist是在5.6加入的，KFC机器是OpenSSH 5.3，还不支持
+#不支持的话直接把这行删了，不影响功能
+#keep one connection in 72hour
+#ControlPersist 72h
+#复用连接的配置到这里，后面的配置与复用无关
+
+#其它也很有用的配置
+GSSAPIAuthentication=no
+StrictHostKeyChecking=no
+TCPKeepAlive=yes
+CheckHostIP=no
+# &quot;ServerAliveInterval [seconds]&quot; configuration in the SSH configuration so that your ssh client sends a &quot;dummy packet&quot; on a regular interval so that the router thinks that the connection is active even if it&apos;s particularly quiet
+ServerAliveInterval=15
+#ServerAliveCountMax=6
+ForwardAgent=yes
+
+UserKnownHostsFile /dev/null
+</code></pre><p>在你的ssh配置文件增加上述参数，意味着72小时内登录同一台跳板机只有第一次需要输入密码，以后都是重用之前的连接，所以也就不再需要输入密码了。</p>
+<p>加了如上参数后的登录过程就有这样的东东：</p>
+<pre><code>debug1: setting up multiplex master socket
+debug3: muxserver_listen: temporary control path /home/ren/tmp/ssh_mux_10.16.*.*_22_alibaba.86g3C34vy36tvCtn
+debug2: fd 3 setting O_NONBLOCK
+debug3: fd 3 is O_NONBLOCK
+debug3: fd 3 is O_NONBLOCK
+debug1: channel 0: new [/home/ren/tmp/ssh_mux_10.16.*.*_22_alibaba]
+debug3: muxserver_listen: mux listener channel 0 fd 3
+debug1: control_persist_detach: backgrounding master process
+debug2: control_persist_detach: background process is 15154
+debug2: fd 3 setting O_NONBLOCK
+debug1: forking to background
+debug1: Entering interactive session.
+debug2: set_control_persist_exit_time: schedule exit in 259200 seconds
+debug1: multiplexing control connection
+</code></pre><p> /home/ren/tmp/ssh_mux_10.16.<em>.</em>_22_alibaba 这个就是保存好的socket，下次可以重用，免密码。 in 259200 seconds 对应 72小时</p>
+<p>看动画过程，注意过程中都是通过 -vvv 来看到ssh的具体行为<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/43c4e0b4ad0f6aa5cb76a7008e53e4cd.gif" alt="ssh-demo.gif"></p>
+<h3 id="我有很多不同机房（或者说不同客户）的机器都需要跳板机来登录，能一次直接ssh上去吗？"><a href="#我有很多不同机房（或者说不同客户）的机器都需要跳板机来登录，能一次直接ssh上去吗？" class="headerlink" title="我有很多不同机房（或者说不同客户）的机器都需要跳板机来登录，能一次直接ssh上去吗？"></a>我有很多不同机房（或者说不同客户）的机器都需要跳板机来登录，能一次直接ssh上去吗？</h3><p>比如有一批客户机房的机器IP都是192.168.<em>.</em>, 然后需要走跳板机100.10.1.2才能访问到，那么我希望以后在笔记本上直接 ssh 192.168.1.5 就能连上</p>
+<pre><code>$ cat /etc/ssh/ssh_config
+
+Host 192.168.*.*
+ProxyCommand ssh -l ali-renxijun 100.10.1.2 exec /usr/bin/nc %h %p
+</code></pre><p>上面配置的意思是执行 ssh 192.168.1.5的时候命中规则 Host 192.168.<em>.</em> 所以执行 ProxyCommand 先连上跳板机再通过跳板机连向192.168.1.5 。这样在你的笔记本上就跟192.168.<em>.</em> 的机器仿佛在一起</p>
+<p><strong>划重点：阿里集团的线上跳板机做了特殊限制，限制了这个技能。日常环境跳板机支持这个功能</strong></p>
+<p>比如我的跳板配置：</p>
+<pre><code>#到美国的机器用美国的跳板机速度更快
+Host 10.74.*
+ProxyCommand ssh -l user us.jump exec /bin/nc %h %p 2&gt;/dev/null
+
+Host 192.168.0.*
+ProxyCommand ssh -l user 1.1.1.1 exec /usr/bin/nc %h %p
+</code></pre><p>其实我的配置文件里面还有很多规则，懒得一个个隐藏IP了，这些规则是可以重复匹配的</p>
+<p>来看一个例子 </p>
+<pre><code>ren@ren-VirtualBox:/$ ping -c 1 10.16.1.*
+PING 10.16.1.* (10.16.1.*) 56(84) bytes of data.
+
+^C
+--- 10.16.1.* ping statistics ---
+1 packets transmitted, 0 received, 100% packet loss, time 0ms
+
+ren@ren-VirtualBox:~$ ssh -l alibaba 10.16.1.* -vvv
+OpenSSH_6.7p1 Ubuntu-5ubuntu1, OpenSSL 1.0.1f 6 Jan 2014
+debug1: Reading configuration data /home/ren/.ssh/config
+debug1: Reading configuration data /etc/ssh/ssh_config
+debug1: /etc/ssh/ssh_config line 28: Applying options for *
+debug1: /etc/ssh/ssh_config line 44: Applying options for 10.16.*.*
+debug1: /etc/ssh/ssh_config line 68: Applying options for *
+debug1: auto-mux: Trying existing master
+debug1: Control socket &quot;/home/ren/tmp/ssh_mux_10.16.1.*_22_alibaba&quot; does not exist
+debug1: Executing proxy command: exec ssh -l alibaba 139.*.*.* exec /usr/bin/nc 10.16.1.* 22
+</code></pre><p>本来我的笔记本跟 10.16.1.<em> 是不通的(ping 不通），但是ssh可以直接连上，实际ssh登录过程中自动走跳板机139.</em>.<em>.</em> 就连上了</p>
+<p>-vvv 参数是debug，把ssh登录过程的日志全部打印出来。 </p>
+<h3 id="ssh-免打通、免登陆跳板机、免密码直接访问日常环境机器"><a href="#ssh-免打通、免登陆跳板机、免密码直接访问日常环境机器" class="headerlink" title="ssh 免打通、免登陆跳板机、免密码直接访问日常环境机器"></a>ssh 免打通、免登陆跳板机、免密码直接访问日常环境机器</h3><p>先来看效果图：<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/0d6bc0800b3dc8b8988f6cb7ab410010.gif" alt="ssh_docker.gif"></p>
+<h4 id="实现过程："><a href="#实现过程：" class="headerlink" title="实现过程："></a>实现过程：</h4><ol>
+<li>先ssh到线上跳板机：login1.cm10.alibaba.org</li>
+<li>复制 ~/.ssh/id_dsa.pub 和 ~/.ssh/id_dsa到你的笔记本的~/.ssh/ 下</li>
+<li>复制 ~/.ssh/id_dsa.pub 和 ~/.ssh/id_dsa到日常跳板机（ login1.et2sqa.tbsite.net ）的~/.ssh/ 下</li>
+<li>日常跳板机上：echo “eval `keychain –eval id_dsa`“ &gt;&gt;~/.bash_profile</li>
+<li>设置这两个文件权限为600</li>
+<li>在你笔记本的 /etc/ssh/ssh_config 中增加如下两行配置 </li>
+</ol>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">Host 11.239.*.*</div><div class="line">ProxyCommand ssh -l xijun.rxj login1.et2sqa.tbsite.net exec /usr/bin/nc %h %p</div></pre></td></tr></table></figure>
+<p><strong>第一次需要输入你的域账户密码，只要你的域账户密码不改以后永远不需要再次输入了。另外你需要在kfc上申请过机器的访问权限，kfc帮你打通了免密登陆，不仅仅是Docker，t4也默认打通了账号</strong><br>这个技能基本综合了前面所有技巧，综合性比较强，需要点时间配合-vvv慢慢理解消化</p>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b4e460a501c21eac1e4104b9324910d3.png" alt="image.png"></p>
+<h3 id="为什么有时候ssh-比较慢，比如总是需要30秒钟后才能正常登录"><a href="#为什么有时候ssh-比较慢，比如总是需要30秒钟后才能正常登录" class="headerlink" title="为什么有时候ssh 比较慢，比如总是需要30秒钟后才能正常登录"></a>为什么有时候ssh 比较慢，比如总是需要30秒钟后才能正常登录</h3><p>先了解如下知识点，在 ~/.ssh/config 配置文件中：</p>
+<pre><code>GSSAPIAuthentication=no
+</code></pre><p>禁掉 GSSAPI认证，GSSAPIAuthentication是个什么鬼东西请自行 Google(多一次没必要的授权认证过程，然后等待超时)。 这里要理解ssh登录的时候有很多种认证方式（公钥、密码等等），具体怎么调试请记住强大的命令参数 ssh -vvv 上面讲到的技巧都能通过 -vvv 看到具体过程。</p>
+<p>比如我第一次碰到ssh 比较慢总是需要30秒后才登录，不能忍受，于是登录的时候加上 -vvv明显看到控制台停在了：GSSAPIAuthentication 然后Google了一下，禁掉就好了</p>
+<h3 id="批量打通所有机器之间的ssh登录免密码"><a href="#批量打通所有机器之间的ssh登录免密码" class="headerlink" title="批量打通所有机器之间的ssh登录免密码"></a>批量打通所有机器之间的ssh登录免密码</h3><p><strong> Expect在集团是禁止的，我只用于打通我自己通过docker创建的容器</strong></p>
+<p>ssh免密码的原理是将本机的pub key复制到目标机器的 ~/.ssh/authorized_keys 里面。可以手工复制粘贴，也可以 ssh-copy-id 等</p>
+<p>如果有100台机器，互相两两打通还是比较费事（大概需要100*99次copy key）。 下面通过 expect 来解决输入密码，然后配合shell脚本来批量解决这个问题。</p>
+<p><img src="http://i.imgur.com/S9jLW7B.png" alt=""></p>
+<p>这个脚本需要四个参数：目标IP、用户名、密码、home目录，也就是ssh到一台机器的时候帮我们自动填上yes，和密码，这样就不需要人肉一个个输入了。</p>
+<p>再在外面写一个循环对每个IP执行如下操作：</p>
+<p><img src="http://i.imgur.com/4SZcnvc.png" alt=""></p>
+<p>if代码部分检查本机~/.ssh/下有没有id_rsa.pub，也就是是否以前生成过秘钥对，没生成的话就帮忙生成一次。</p>
+<p>for循环部分一次把生成的密钥对和authorized_keys复制到所有机器上，这样所有机器之间都不需要输入密码就能互相登陆了（当然本机也不需要输入密码登录所有机器）</p>
+<p>最后一行代码： </p>
+<pre><code>ssh $user@$n &quot;hostname -i&quot;
+</code></pre><p>验证一下没有输密码是否能成功ssh上去。</p>
+<p><strong>思考一下，为什么这么做就可以打通两两之间的免密码登录，这里没有把所有机器的pub key复制到其他所有机器上去啊</strong></p>
+<blockquote>
+<p>等了好久也没有同学回答上面的问题，其实这个脚本做了一个取巧投机的事，那就是让所有机器共享一套公钥、私钥。<br>有时候我也会把我的windows笔记本和我专用的某台虚拟机共享一套秘钥，这样任何新申请的机器打通一次账号就可以在两台机器上随便登录</p>
+</blockquote>
+<h4 id="留个作业：第一次ssh某台机器的时候总是出来一个警告，需要yes确认才能往下走，怎么干掉他？"><a href="#留个作业：第一次ssh某台机器的时候总是出来一个警告，需要yes确认才能往下走，怎么干掉他？" class="headerlink" title="留个作业：第一次ssh某台机器的时候总是出来一个警告，需要yes确认才能往下走，怎么干掉他？"></a>留个作业：第一次ssh某台机器的时候总是出来一个警告，需要yes确认才能往下走，怎么干掉他？</h4><p><strong>如果按照文章操作不work，推荐就近问身边的同学。问我的话请cat 配置文件  然后把ssh -vvv user@ip (user、ip请替换成你的），再截图发给我。</strong></p>
+<p>测试成功的同学也请留言说下什么os、版本，以及openssl版本，我被问崩溃了</p>
+<hr>
+<p><strong>这里只是帮大家入门了解ssh，掌握好这些配置文件和-vvv后有好多好玩的可以去挖掘，同时也请在留言中说出你的黑技能</strong></p>
+<h2 id="调试ssh"><a href="#调试ssh" class="headerlink" title="调试ssh"></a>调试ssh</h2><ul>
+<li>客户端增加参数 -vvv 会把所有流程在控制台显示出来。卡在哪个环节；密码不对还是key不对一看就知道</li>
+<li>server端还可以：/usr/sbin/sshd -d -p 2222 在2222端口对sshd进行debug，看输出信息验证为什么pub key不能login等</li>
+</ul>
+<p>参考资料：</p>
+<p><a href="http://docs.alibaba-inc.com/pages/editpage.action?pageId=203555361" target="_blank" rel="external">http://docs.alibaba-inc.com/pages/editpage.action?pageId=203555361</a><br><a href="https://wiki.archlinux.org/index.php/SSH_keys_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87" target="_blank" rel="external">https://wiki.archlinux.org/index.php/SSH_keys_(%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87</a>)</p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/05/23/如何在工作中学习/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1024,6 +1310,8 @@ net.ipv4.route.min_pmtu = 552
 <li><code>OUTPUT</code>: 由 <code>NF_IP_LOCAL_OUT</code> hook 触发</li>
 <li><code>POSTROUTING</code>: 由 <code>NF_IP_POST_ROUTING</code> hook 触发</li>
 </ul>
+<h2 id="tracing-point-监控"><a href="#tracing-point-监控" class="headerlink" title="tracing_point 监控"></a>tracing_point 监控</h2><p>对于 4.19内核的kernel，可以通过tracing point来监控重传以及reset包</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div></pre></td><td class="code"><pre><div class="line"># grep tcp:tcp /sys/kernel/debug/tracing/available_events</div><div class="line">tcp:tcp_probe</div><div class="line">tcp:tcp_retransmit_synack</div><div class="line">tcp:tcp_rcv_space_adjust</div><div class="line">tcp:tcp_destroy_sock</div><div class="line">tcp:tcp_receive_reset</div><div class="line">tcp:tcp_send_reset</div><div class="line">tcp:tcp_retransmit_skb</div><div class="line"></div><div class="line">#开启本机发出的 reset 监控，默认输出到：/sys/kernel/debug/tracing/trace_pipe</div><div class="line"># echo 1 &gt; /sys/kernel/debug/tracing/events/tcp/tcp_send_reset/enable</div><div class="line"></div><div class="line">#如下是开启重传以及reset的记录，本机ip 10.0.186.140</div><div class="line"># cat trace_pipe</div><div class="line">//重传</div><div class="line">          &lt;idle&gt;-0     [002] ..s. 9520196.657431: tcp_retransmit_skb: sport=3306 dport=62460 saddr=10.0.186.140 daddr=10.0.186.70 saddrv6=::ffff:10.0.186.140 daddrv6=::ffff:10.0.186.70          </div><div class="line"> Wisp-Root-Worke-540   [000] .... 9522308.074233: tcp_destroy_sock: sport=3306 dport=20594 saddr=10.0.186.140 daddr=10.0.186.70 saddrv6=::ffff:10.0.186.140 daddrv6=::ffff:10.0.186.70 sock_cookie=51a</div><div class="line"> C2 CompilerThre-543   [002] ..s. 9522308.074296: tcp_destroy_sock: sport=3306 dport=20670 saddr=10.0.186.140 daddr=10.0.186.70 saddrv6=::ffff:10.0.186.140 daddrv6=::ffff:10.0.186.70 sock_cookie=574</div><div class="line"> </div><div class="line">// 被reset</div><div class="line">  Wisp-Root-Worke-540   [002] ..s. 9522519.353756: tcp_receive_reset: sport=33822 dport=8080 saddr=10.0.186.140 daddr=10.0.171.193 saddrv6=::ffff:10.0.186.140 daddrv6=::ffff:10.0.171.193 sock_cookie=5dd</div><div class="line">// 主动reset  </div><div class="line">     DragoonAgent-28297 [002] .... 9522433.144611: tcp_send_reset: sport=8182 dport=61783 saddr=10.0.186.140 daddr=10.0.171.174 saddrv6=::ffff:10.0.186.140 daddrv6=::ffff:10.0.171.174</div><div class="line">  Wisp-Root-Worke-540   [002] ..s. 9522519.353773: tcp_send_reset: sport=33822 dport=8080 saddr=10.0.186.140 daddr=10.0.171.193 saddrv6=::ffff:10.0.186.140 daddrv6=::ffff:10.0.171.193</div><div class="line">  </div><div class="line"> // 3306对端中断 </div><div class="line">              cat-28727 [000] ..s. 9524341.650740: inet_sock_set_state: family=AF_INET protocol=IPPROTO_TCP sport=3306 dport=23262 saddr=10.0.186.140 daddr=10.0.186.70 saddrv6=::ffff:10.0.186.140 daddrv6=::ffff:10.0.186.70 oldstate=TCP_SYN_RECV newstate=TCP_ESTABLISHED</div><div class="line">          &lt;idle&gt;-0     [000] .ns. 9524397.184608: inet_sock_set_state: family=AF_INET protocol=IPPROTO_TCP sport=3306 dport=23262 saddr=10.0.186.140 daddr=10.0.186.70 saddrv6=::ffff:10.0.186.140 daddrv6=::ffff:10.0.186.70 oldstate=TCP_ESTABLISHED newstate=TCP_CLOSE</div><div class="line">         </div><div class="line">//8182 主动关闭         </div><div class="line">          &lt;idle&gt;-0     [000] .Ns. 9525499.045236: inet_sock_set_state: family=AF_INET protocol=IPPROTO_TCP sport=8182 dport=25448 saddr=10.0.186.140 daddr=10.0.171.174 saddrv6=::ffff:10.0.186.140 daddrv6=::ffff:10.0.171.174 oldstate=TCP_SYN_RECV newstate=TCP_ESTABLISHED</div><div class="line">    DragoonAgent-6240  [001] .... 9525499.118092: inet_sock_set_state: family=AF_INET protocol=IPPROTO_TCP sport=8182 dport=25448 saddr=10.0.186.140 daddr=10.0.171.174 saddrv6=::ffff:10.0.186.140 daddrv6=::ffff:10.0.171.174 oldstate=TCP_ESTABLISHED newstate=TCP_FIN_WAIT1</div><div class="line">          &lt;idle&gt;-0     [000] ..s. 9525499.159032: inet_sock_set_state: family=AF_INET protocol=IPPROTO_TCP sport=8182 dport=25448 saddr=10.0.186.140 daddr=10.0.171.174 saddrv6=::ffff:10.0.186.140 daddrv6=::ffff:10.0.171.174 oldstate=TCP_FIN_WAIT1 newstate=TCP_FIN_WAIT2</div><div class="line">          &lt;idle&gt;-0     [000] .Ns. 9525499.159056: inet_sock_set_state: family=AF_INET protocol=IPPROTO_TCP sport=8182 dport=25448 saddr=10.0.186.140 daddr=10.0.171.174 saddrv6=::ffff:10.0.186.140 daddrv6=::ffff:10.0.171.174 oldstate=TCP_FIN_WAIT2 newstate=TCP_CLOSE</div><div class="line"></div><div class="line">//3306 被动关闭</div><div class="line">          &lt;idle&gt;-0     [002] .Ns. 9524484.864509: inet_sock_set_state: family=AF_INET protocol=IPPROTO_TCP sport=3306 dport=23360 saddr=10.0.186.140 daddr=10.0.186.70 saddrv6=::ffff:10.0.186.140 daddrv6=::ffff:10.0.186.70 oldstate=TCP_SYN_RECV newstate=TCP_ESTABLISHED</div><div class="line">             cat-28568 [002] ..s. 9524496.913199: inet_sock_set_state: family=AF_INET protocol=IPPROTO_TCP sport=3306 dport=23360 saddr=10.0.186.140 daddr=10.0.186.70 saddrv6=::ffff:10.0.186.140 daddrv6=::ffff:10.0.186.70 oldstate=TCP_ESTABLISHED newstate=TCP_CLOSE_WAIT</div><div class="line"> Wisp-Root-Worke-540   [003] .... 9524496.915450: inet_sock_set_state: family=AF_INET protocol=IPPROTO_TCP sport=3306 dport=23360 saddr=10.0.186.140 daddr=10.0.186.70 saddrv6=::ffff:10.0.186.140 daddrv6=::ffff:10.0.186.70 oldstate=TCP_CLOSE_WAIT newstate=TCP_LAST_ACK</div><div class="line"> Wisp-Root-Worke-539   [002] .Ns. 9524496.915572: inet_sock_set_state: family=AF_INET protocol=IPPROTO_TCP sport=3306 dport=23360 saddr=10.0.186.140 daddr=10.0.186.70 saddrv6=::ffff:10.0.186.140 daddrv6=::ffff:10.0.186.70 oldstate=TCP_LAST_ACK newstate=TCP_CLOSE</div></pre></td></tr></table></figure>
 <h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="http://arthurchiao.art/blog/deep-dive-into-iptables-and-netfilter-arch-zh/" target="_blank" rel="external">深入理解 iptables 和 netfilter 架构</a></p>
 <p><a href="http://arthurchiao.art/blog/nat-zh/" target="_blank" rel="external">NAT - 网络地址转换（2016）</a></p>
 
@@ -2328,8 +2616,10 @@ ProxyCommand ssh -l root 2.2.2.2 exec /usr/bin/nc %h %p
 <p>[Service]<br>Type=notify<br>Environment=PATH=/opt/kube/bin:/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/usr/X11R6/bin:/opt/satools:/root/bin</p>
 </blockquote>
 <h2 id="容器没有systemctl"><a href="#容器没有systemctl" class="headerlink" title="容器没有systemctl"></a>容器没有systemctl</h2><p><strong>Failed to get D-Bus connection: Operation not permitted: systemd容器中默认无法启动，需要启动容器的时候</strong> </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">docker run -itd --privileged --name=ren drds_base:centos init //init 必须要</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">docker run -itd --privileged --name=ren drds_base:centos init //init 必须要或者systemd</div></pre></td></tr></table></figure>
 <p>1号进程需要是systemd(init 是systemd的link)，才可以使用systemctl，推荐用这个来解决：<a href="https://github.com/gdraheim/docker-systemctl-replacement" target="_blank" rel="external">https://github.com/gdraheim/docker-systemctl-replacement</a></p>
+<p>systemd是用来取代init的，之前init管理所有进程启动，是串行的，耗时久，也不管最终状态，systemd主要是串行并监控进程状态能反复重启。</p>
+<p><strong>新版本init link向了systemd</strong></p>
 <h2 id="busybox-Alpine-Scratch"><a href="#busybox-Alpine-Scratch" class="headerlink" title="busybox/Alpine/Scratch"></a>busybox/Alpine/Scratch</h2><p>busybox集成了常用的linux工具(nc/telnet/cat……），保持精细，方便一张软盘能装下。</p>
 <p>Alpine一个精简版的Linux 发行版，更小更安全，用的musl libc而不是glibc</p>
 <p>scratch一个空的框架，什么也没有</p>
@@ -3843,6 +4133,186 @@ sudo tcptrack -r 5 -i eth0 host 10.0.48.1 //filter 语法和tcpdump一样
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/10/31/磁盘爆掉的几种情况/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2017/10/31/磁盘爆掉的几种情况/" itemprop="url">磁盘爆掉的几种情况</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-10-31T12:30:03+08:00">
+                2017-10-31
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index">
+                    <span itemprop="name">Linux</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2017/10/31/磁盘爆掉的几种情况/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2017/10/31/磁盘爆掉的几种情况/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="磁盘爆掉的几种情况"><a href="#磁盘爆掉的几种情况" class="headerlink" title="磁盘爆掉的几种情况"></a>磁盘爆掉的几种情况</h1><h2 id="磁盘爆掉的几种情况-1"><a href="#磁盘爆掉的几种情况-1" class="headerlink" title="磁盘爆掉的几种情况"></a>磁盘爆掉的几种情况</h2><ol>
+<li>系统磁盘没有空间，解决办法：删掉 /var/log/ 下边的带日期的日志，清空 /var/log/messages 内容</li>
+<li>容器使用的大磁盘空间不够，又有三个地方会使用大量的磁盘<ul>
+<li>容器内部日志非常大，处理办法见方法一</li>
+<li>容器内部产生非常多或者非常大的文件，但是这个文件的位置又通过volume 挂载到了物理机上，处理办法见方法二</li>
+<li>对特别老的部署环境，还有可能是容器的系统日志没有限制大小，处理办法见方法三</li>
+</ul>
+</li>
+</ol>
+<h2 id="现场的同学按如下方法依次检查"><a href="#现场的同学按如下方法依次检查" class="headerlink" title="现场的同学按如下方法依次检查"></a>现场的同学按如下方法依次检查</h2><h3 id="方法零：-检查系统根目录下每个文件夹的大小"><a href="#方法零：-检查系统根目录下每个文件夹的大小" class="headerlink" title="方法零： 检查系统根目录下每个文件夹的大小"></a>方法零： 检查系统根目录下每个文件夹的大小</h3><p><code>sudo du / -lh --max-depth=1 --exclude=overlay --exclude=proc</code></p>
+<p>看看除了容器之外有没有其它目录使用磁盘特别大，如果有那么一层层进去通过du命令来查看，比如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">#sudo du / -lh --max-depth=1 --exclude=overlay --exclude=proc</div><div class="line">16K	/dev</div><div class="line">16K	/lost+found</div><div class="line">4.0K	/media</div><div class="line">17G	/home</div><div class="line">136M	/boot</div><div class="line">832K	/run</div><div class="line">1.9G	/usr</div><div class="line">75M	/tmp</div><div class="line">12K	/log</div><div class="line">8.5G	/var</div><div class="line">4.0K	/srv</div><div class="line">0	/proc</div><div class="line">22M	/etc</div><div class="line">84G	/root</div><div class="line">4.0K	/mnt</div><div class="line">508M	/opt</div><div class="line">0	/sys</div><div class="line">112G	/</div></pre></td></tr></table></figure>
+<p>那么这个案例中应该查看 /root下为什么用掉了84G（总共用了112G）， 先 cd /root 然后执行： sudo du . -lh –max-depth=1 –exclude=overlay 进一步查看 /root 目录下每个文件夹的大小</p>
+<p><strong>如果方法零没找到占用特别大的磁盘文件，那么一般来说是容器日志占用太多的磁盘空间，请看方法一</strong></p>
+<h3 id="方法一：-容器内部日志非常大（请确保先按方法零检查过了）"><a href="#方法一：-容器内部日志非常大（请确保先按方法零检查过了）" class="headerlink" title="方法一： 容器内部日志非常大（请确保先按方法零检查过了）"></a>方法一： 容器内部日志非常大（请确保先按方法零检查过了）</h3><p>在磁盘不够的物理机上执行如下脚本：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">sudo docker ps -a -q &gt;containers.list</div><div class="line"></div><div class="line">sudo cat containers.list | xargs sudo docker inspect $1 | grep merged | awk -F \&quot; &apos;&#123; print $4 &#125;&apos; | sed &apos;s/\/merged//g&apos; | xargs sudo du  --max-depth=0 $1 &gt;containers.size </div><div class="line"></div><div class="line">sudo paste containers.list containers.size | awk &apos;&#123; print $1, $2 &#125;&apos;  | sort -nk2 &gt;real_size.log</div><div class="line"></div><div class="line">sudo tail -10 real_size.log  | awk &apos;BEGIN &#123;print &quot;\tcontainer     size\tunit&quot;&#125; &#123; print NR&quot;:\t&quot; $0&quot;\t kB&quot; &#125;&apos;</div></pre></td></tr></table></figure>
+<h5 id="执行完后会输出如下格式："><a href="#执行完后会输出如下格式：" class="headerlink" title="执行完后会输出如下格式："></a>执行完后会输出如下格式：</h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">container     size	unit</div><div class="line">1:	22690f16822f 3769980	 kb</div><div class="line">2:	82b4ae98eeed 4869324	 kb</div><div class="line">3:	572a1b7c8ef6 10370404	 kb</div><div class="line">4:	9f9250d98df6 10566776	 kb</div><div class="line">5:	7fab70481929 13745648	 kb</div><div class="line">6:	4a14b58e3732 29873504	 kb</div><div class="line">7:	8a01418b6df2 30432068	 kb</div><div class="line">8:	83dc85caaa5c 31010960	 kb</div><div class="line">9:	433e51df88b1 35647052	 kb</div><div class="line">10:	4b42818a8148 61962416	 kb</div></pre></td></tr></table></figure>
+<p>第二列是容器id，第三列是磁盘大小，第四列是单位， 占用最大的排在最后面</p>
+<h5 id="然后进到容器后通过-du-–max-depth-2-快速发现大文件"><a href="#然后进到容器后通过-du-–max-depth-2-快速发现大文件" class="headerlink" title="然后进到容器后通过 du / –max-depth=2 快速发现大文件"></a>然后进到容器后通过 du / –max-depth=2 快速发现大文件</h5><h3 id="方法二：-容器使用的volume使用过大"><a href="#方法二：-容器使用的volume使用过大" class="headerlink" title="方法二： 容器使用的volume使用过大"></a>方法二： 容器使用的volume使用过大</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">$sudo du -l /data/lib/docker/defaultVolumes --max-depth=1 | sort -rn</div><div class="line">456012884	/data/lib/docker/defaultVolumes</div><div class="line">42608332	/data/lib/docker/defaultVolumes/task_3477_g0_ark-metadb_miniDBPaaS-MetaDB_1</div><div class="line">32322220	/data/lib/docker/defaultVolumes/task_3477_g0_dbpaas-metadb_dbpaas_1</div><div class="line">27461120	/data/lib/docker/defaultVolumes/task_3001_g0_ark-metadb_miniDBPaaS-MetaDB_1</div><div class="line">27319360	/data/lib/docker/defaultVolumes/task_36000_g0_ark-metadb_miniDBPaaS-MetaDB</div><div class="line">27313836	/data/lib/docker/defaultVolumes/task_3600_g0_dbpaas-metadb_minidbpaas</div><div class="line">27278692	/data/lib/docker/defaultVolumes/task_3604_g0_ark-metadb_miniDBPaaS-MetaDB_1</div><div class="line">27277004	/data/lib/docker/defaultVolumes/task_3603_g0_ark-metadb_miniDBPaaS-MetaDB_1</div><div class="line">27275736	/data/lib/docker/defaultVolumes/task_3542_g0_ark-metadb_miniDBPaaS-MetaDB</div><div class="line">27271428	/data/lib/docker/defaultVolumes/task_3597_g0_ark-metadb_miniDBPaaS-MetaDB</div><div class="line">27270840	/data/lib/docker/defaultVolumes/task_3603_g0_dbpaas-metadb_minidbpaas_1</div><div class="line">27270492	/data/lib/docker/defaultVolumes/task_3603_g0_dbpaas-metadb_minidbpaas</div><div class="line">27270468	/data/lib/docker/defaultVolumes/task_3600_g0_ark-metadb_miniDBPaaS-MetaDB</div><div class="line">27270252	/data/lib/docker/defaultVolumes/task_3535_g0_ark-metadb_miniDBPaaS-MetaDB</div><div class="line">27270244	/data/lib/docker/defaultVolumes/task_3538_g0_ark-metadb_miniDBPaaS-MetaDB</div><div class="line">27270244	/data/lib/docker/defaultVolumes/task_3536_g0_ark-metadb_miniDBPaaS-MetaDB</div><div class="line">25312404	/data/lib/docker/defaultVolumes/task_3477_g0_dncs-server_middleware-dncs_2</div></pre></td></tr></table></figure>
+<p>/data/lib/docker/defaultVolumes 参数是方舟默认volume存放的目录（一般是docker的存储路径下 –graph=/data/lib/docker) ，第一列是大小，后面是容器名</p>
+<p>volume路径在物理机上也有可能是 /var/lib/docker 或者 /mw/mvdocker/ 之类的路径下，这个要依据安装参数来确定，可以用如下命令来找到这个路径：</p>
+<p><code>sudo systemctl status docker -l | grep --color graph</code></p>
+<p>结果如下，红色参数后面的路径就是docker 安装目录，到里面去找带volume的字眼：</p>
+<p><img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1558521949392-d1ab9886-9f08-4ebf-bfdb-5283461ed9de.png#align=left&amp;display=inline&amp;height=165&amp;originHeight=165&amp;originWidth=930&amp;size=0&amp;status=done&amp;width=930" alt=""></p>
+<p>找到 volume很大的文件件后同样可以进到这个文件夹中执行如下命令快速发现大文件：</p>
+<p><code>du . --max-depth=2</code></p>
+<h3 id="方法三-容器的系统日志没有限制大小"><a href="#方法三-容器的系统日志没有限制大小" class="headerlink" title="方法三 容器的系统日志没有限制大小"></a>方法三 容器的系统日志没有限制大小</h3><p>这种情况只针对2017年上半年之前的部署环境，后面部署的环境默认都控制了这些日志不会超过150M</p>
+<p>按照方法二的描述先找到docker 安装目录，cd 进去，然后 ：</p>
+<p><code>du ./containers --max-depth=2</code></p>
+<p>就很快找到那个大json格式的日志文件了,然后执行清空这个大文件的内容：</p>
+<p><code>echo &#39;&#39; | sudo tee 大文件名</code></p>
+<h3 id="一些其他可能占用空间的地方"><a href="#一些其他可能占用空间的地方" class="headerlink" title="一些其他可能占用空间的地方"></a>一些其他可能占用空间的地方</h3><ul>
+<li>机器上镜像太多，可以删掉一些没用的： sudo docker images -q | xargs sudo docker rmi</li>
+<li>机器上残留的volume太多，删：sudo docker volume ls -q | xargs sudo docker volume rm</li>
+<li>物理文件被删了，但是还有进程占用这个文件句柄，导致文件对应的磁盘空间没有释放，检查： lsof |　grep deleted  如果这个文件非常大的话，只能通过重启这个进程来真正释放磁盘空间</li>
+</ul>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/08/28/netstat --timer/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -4035,458 +4505,6 @@ sudo tcptrack -r 5 -i eth0 host 10.0.48.1 //filter 语法和tcpdump一样
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/07/24/Linux crond的问题总结/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/07/24/Linux crond的问题总结/" itemprop="url">Linux crond的问题总结</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-07-24T17:30:03+08:00">
-                2017-07-24
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2017/07/24/Linux crond的问题总结/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2017/07/24/Linux crond的问题总结/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="Linux-crond的问题总结"><a href="#Linux-crond的问题总结" class="headerlink" title="Linux crond的问题总结"></a>Linux crond的问题总结</h1><h2 id="文件权限的坑"><a href="#文件权限的坑" class="headerlink" title="文件权限的坑"></a>文件权限的坑</h2><p>crond第一次加载的时候（刚启动）会去检查文件属性，不是644的话以后都不会执行了，即使后面chmod改成了644. </p>
-<p>手工随便修改一下该文件的内容就能触发自动执行了，或者重启crond, 或者 sudo service crond reload， 或者 /etc/cron.d/下有任何修改都会触发crond reload配置(包含 touch )。</p>
-<p>总之 crond会每分钟去检查job有没有change，有的话才触发reload，这个change看的时候change time有没有变化，不看权限的变化，仅仅是权限的变化不会触发crond reload。</p>
-<p> crond会每分钟去检查一下job有没有修改，有修改的话会reload，但是这个<strong>修改不包含权限的修改</strong>。可以简单地理解这个修改是指文件的change time。</p>
-<h2 id="容器中ulimit限制了crond的执行"><a href="#容器中ulimit限制了crond的执行" class="headerlink" title="容器中ulimit限制了crond的执行"></a>容器中ulimit限制了crond的执行</h2><p>容器启动的时候默认nofile为65535（可以通过 docker run –ulimit nofile=655360 来设置），如果容器中的 /etc/security/limits.conf 中设置的nofile大于 65535就会报错，因为容器的1号进程就是65535了，比如在容器中用root用户执行sudo ls报错：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">#sudo ls</div><div class="line">sudo: pam_open_session: Permission denied</div><div class="line">sudo: policy plugin failed session initialization</div></pre></td></tr></table></figure>
-<p>可以修改容器中的 ulimit 不要超过默认的65535或者修改容器的启动参数来解决。</p>
-<p>子进程都会继承父进程的一些环境变量，比如 limits.conf, sudo/su/crond/passwd等都会触发重新加载limits, </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">grep -rin pam_limit /etc/pam.d //可以看到触发重新加载的场景</div></pre></td></tr></table></figure>
-<h3 id="关于ulimit的一些知识点"><a href="#关于ulimit的一些知识点" class="headerlink" title="关于ulimit的一些知识点"></a>关于ulimit的一些知识点</h3><p>参考 <a href="https://feichashao.com/ulimit_demo/" target="_blank" rel="external">Ulimit</a> <a href="http://blog.yufeng.info/archives/2568" target="_blank" rel="external">http://blog.yufeng.info/archives/2568</a></p>
-<ul>
-<li>limit的设定值是 per-process 的</li>
-<li>在 Linux 中，每个普通进程可以调用 getrlimit() 来查看自己的 limits，也可以调用 setrlimit() 来改变自身的 soft limits</li>
-<li>要改变 hard limit, 则需要进程有 CAP_SYS_RESOURCE 权限</li>
-<li>进程 fork() 出来的子进程，会继承父进程的 limits 设定</li>
-<li><code>ulimit</code> 是 shell 的内置命令。在执行<code>ulimit</code>命令时，其实是 shell 自身调用 getrlimit()/setrlimit() 来获取/改变自身的 limits. 当我们在 shell 中执行应用程序时，相应的进程就会继承当前 shell 的 limits 设定</li>
-<li>shell 的初始 limits 是谁设定的: 通常是 pam_limits 设定的。顾名思义，pam_limits 是一个 PAM 模块，用户登录后，pam_limits 会给用户的 shell 设定在 limits.conf 定义的值</li>
-</ul>
-<p>ulimit, limits.conf 和 pam_limits 的关系，大致是这样的：</p>
-<ol>
-<li>用户进行登录，触发 pam_limits;</li>
-<li>pam_limits 读取 limits.conf，相应地设定用户所获得的 shell 的 limits；</li>
-<li>用户在 shell 中，可以通过 ulimit 命令，查看或者修改当前 shell 的 limits;</li>
-<li>当用户在 shell 中执行程序时，该程序进程会继承 shell 的 limits 值。于是，limits 在进程中生效了</li>
-</ol>
-<h2 id="pam-权限报错"><a href="#pam-权限报错" class="headerlink" title="pam 权限报错"></a>pam 权限报错</h2><p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b646979272e71e015de4a47c62b89747.png" alt="image.png"></p>
-<p>从debug信息看如果是pam权限报错的话，需要将 required 改成 sufficientS</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">$cat /etc/pam.d/crond </div><div class="line">#</div><div class="line"># The PAM configuration file for the cron daemon</div><div class="line">#</div><div class="line">#</div><div class="line"># No PAM authentication called, auth modules not needed</div><div class="line">account    required   pam_access.so</div><div class="line">account    include    system-auth</div><div class="line">session    required   pam_loginuid.so //required 改成 sufficient</div><div class="line">session    include    system-auth</div><div class="line">auth       include    system-auth</div></pre></td></tr></table></figure>
-<p>PAM 提供四个安全领域的特性，但是应用程序不太可能同时需要所有这些方面。例如，<code>passwd</code> 命令只需要下面列表中的第三组：</p>
-<ul>
-<li><code>account</code> 处理账户限制。对于有效的用户，允许他做什么？</li>
-<li><code>auth</code> 处理用户识别 — 例如，通过输入用户名和密码。</li>
-<li><code>password</code> 只处理与密码相关的问题，比如设置新密码。</li>
-<li><code>session</code> 处理连接管理，包括日志记录。</li>
-</ul>
-<p>在 /etc/pam.d 目录中为将使用 PAM 的每个应用程序创建一个配置文件，文件名与应用程序名相同。例如，<code>login</code> 命令的配置文件是 /etc/pam.d/login。</p>
-<p>必须定义将应用哪些模块，创建一个动作 “堆”。PAM 运行堆中的所有模块，根据它们的结果允许或拒绝用户的请求。还必须定义检查是否是必需的。最后，<em>other</em> 文件为没有特殊规则的所有应用程序提供默认规则。</p>
-<ul>
-<li><code>optional</code> 模块可以成功，也可以失败；PAM 根据模块是否最终成功返回 <code>success</code> 或 <code>failure</code>。</li>
-<li><code>required</code> 模块必须成功。如果失败，PAM 返回 <code>failure</code>，但是会在运行堆中的其他模块之后返回。</li>
-<li><code>requisite</code> 模块也必须成功。但是，如果失败，PAM 立即返回 <code>failure</code>，不再运行其他模块。</li>
-<li><code>sufficient</code> 模块在成功时导致 PAM 立即返回 <code>success</code>，不再运行其他模块。</li>
-</ul>
-<p>当pam安装之后有两大部分：在/lib64/security目录下的各种pam模块以及/etc/pam.d和/etc/pam.d目录下的针对各种服务和应用已经定义好的pam配置文件。当某一个有认证需求的应用程序需要验证的时候，一般在应用程序中就会定义负责对其认证的PAM配置文件。以vsftpd为例，在它的配置文件/etc/vsftpd/vsftpd.conf中就有这样一行定义：</p>
-<blockquote>
-<p>pam_service_name=vsftpd</p>
-</blockquote>
-<p>表示登录FTP服务器的时候进行认证是根据/etc/pam.d/vsftpd文件定义的内容进行。</p>
-<h3 id="PAM-认证过程"><a href="#PAM-认证过程" class="headerlink" title="PAM 认证过程"></a>PAM 认证过程</h3><p>当程序需要认证的时候已经找到相关的pam配置文件，认证过程是如何进行的？下面我们将通过解读/etc/pam.d/system-auth文件予以说明。</p>
-<p>首先要声明一点的是：system-auth是一个非常重要的pam配置文件，主要负责用户登录系统的认证工作。而且该文件不仅仅只是负责用户登录系统认证，其它的程序和服务通过include接口也可以调用到它，从而节省了很多重新自定义配置的工作。所以应该说该文件是系统安全的总开关和核心的pam配置文件。</p>
-<p>下面是/etc/pam.d/system-auth文件的全部内容：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line">$cat /etc/pam.d/system-auth</div><div class="line">#%PAM-1.0</div><div class="line"># This file is auto-generated.</div><div class="line"># User changes will be destroyed the next time authconfig is run.</div><div class="line">auth        required      pam_env.so</div><div class="line">auth        required      pam_faildelay.so delay=2000000</div><div class="line">auth        sufficient    pam_unix.so nullok try_first_pass</div><div class="line">auth        requisite     pam_succeed_if.so uid &gt;= 1000 quiet_success</div><div class="line">auth        required      pam_deny.so</div><div class="line"></div><div class="line">account     required      pam_unix.so</div><div class="line">account     sufficient    pam_localuser.so</div><div class="line">account     sufficient    pam_succeed_if.so uid &lt; 1000 quiet</div><div class="line">account     required      pam_permit.so</div><div class="line"></div><div class="line">password    requisite     pam_pwquality.so try_first_pass local_users_only retry=3 authtok_type=</div><div class="line">password    sufficient    pam_unix.so sha512 shadow nullok try_first_pass use_authtok</div><div class="line">password    required      pam_deny.so</div><div class="line"></div><div class="line">session     optional      pam_keyinit.so revoke</div><div class="line">session     required      pam_limits.so</div><div class="line">-session     optional      pam_systemd.so</div><div class="line">session     [success=1 default=ignore] pam_succeed_if.so service in crond quiet use_uid</div><div class="line">session     required      pam_unix.so</div></pre></td></tr></table></figure>
-<h4 id="第一部分"><a href="#第一部分" class="headerlink" title="第一部分"></a>第一部分</h4><p>当用户登录的时候，首先会通过auth类接口对用户身份进行识别和密码认证。所以在该过程中验证会经过几个带auth的配置项。</p>
-<p>其中的第一步是通过pam_env.so模块来定义用户登录之后的环境变量， pam_env.so允许设置和更改用户登录时候的环境变量，默认情况下，若没有特别指定配置文件，将依据/etc/security/pam_env.conf进行用户登录之后环境变量的设置。</p>
-<p>然后通过pam_unix.so模块来提示用户输入密码，并将用户密码与/etc/shadow中记录的密码信息进行对比，如果密码比对结果正确则允许用户登录，而且<strong>该配置项的使用的是“sufficient”控制位，即表示只要该配置项的验证通过，用户即可完全通过认证而不用再去走下面的认证项</strong>。不过在特殊情况下，用户允许使用空密码登录系统，例如当将某个用户在/etc/shadow中的密码字段删除之后，该用户可以只输入用户名直接登录系统。</p>
-<p>下面的配置项中，通过pam_succeed_if.so对用户的登录条件做一些限制，表示允许uid大于500的用户在通过密码验证的情况下登录，在Linux系统中，一般系统用户的uid都在500之内，所以该项即表示允许使用useradd命令以及默认选项建立的普通用户直接由本地控制台登录系统。</p>
-<p>最后通过pam_deny.so模块对所有不满足上述任意条件的登录请求直接拒绝，pam_deny.so是一个特殊的模块，该模块返回值永远为否，类似于大多数安全机制的配置准则，在所有认证规则走完之后，对不匹配任何规则的请求直接拒绝。</p>
-<h4 id="第二部分"><a href="#第二部分" class="headerlink" title="第二部分"></a>第二部分</h4><p>三个配置项主要表示通过account账户类接口来识别账户的合法性以及登录权限。</p>
-<p>第一行仍然使用pam_unix.so模块来声明用户需要通过密码认证。第二行承认了系统中uid小于500的系统用户的合法性。之后对所有类型的用户登录请求都开放控制台。</p>
-<h4 id="第三部分"><a href="#第三部分" class="headerlink" title="第三部分"></a>第三部分</h4><p>会通过password口令类接口来确认用户使用的密码或者口令的合法性。第一行配置项表示需要的情况下将调用pam_cracklib来验证用户密码复杂度。如果用户输入密码不满足复杂度要求或者密码错，最多将在三次这种错误之后直接返回密码错误的提示，否则期间任何一次正确的密码验证都允许登录。需要指出的是，pam_cracklib.so是一个常用的控制密码复杂度的pam模块，关于其用法举例我们会在之后详细介绍。之后带pam_unix.so和pam_deny.so的两行配置项的意思与之前类似。都表示需要通过密码认证并对不符合上述任何配置项要求的登录请求直接予以拒绝。不过用户如果执行的操作是单纯的登录，则这部分配置是不起作用的。</p>
-<h4 id="第四部分"><a href="#第四部分" class="headerlink" title="第四部分"></a>第四部分</h4><p>主要将通过session会话类接口为用户初始化会话连接。其中几个比较重要的地方包括，使用pam_keyinit.so表示当用户登录的时候为其建立相应的密钥环，并在用户登出的时候予以撤销。不过该行配置的控制位使用的是optional，表示这并非必要条件。之后通过pam_limits.so限制用户登录时的会话连接资源，相关pam_limit.so配置文件是/etc/security/limits.conf，默认情况下对每个登录用户都没有限制。关于该模块的配置方法在后面也会详细介绍。</p>
-<h3 id="常用的PAM模块介绍"><a href="#常用的PAM模块介绍" class="headerlink" title="常用的PAM模块介绍"></a>常用的PAM模块介绍</h3><table>
-<thead>
-<tr>
-<th>PAM模块</th>
-<th>结合管理类型</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>pam_unix.so</td>
-<td>auth</td>
-<td>提示用户输入密码,并与/etc/shadow文件相比对.匹配返回0</td>
-</tr>
-<tr>
-<td>pam_unix.so</td>
-<td>account</td>
-<td>检查用户的账号信息(包括是否过期等).帐号可用时,返回0.</td>
-</tr>
-<tr>
-<td>pam_unix.so</td>
-<td>password</td>
-<td>修改用户的密码. 将用户输入的密码,作为用户的新密码更新shadow文件</td>
-</tr>
-<tr>
-<td>pam_shells.so</td>
-<td>auth、account</td>
-<td>如果用户想登录系统，那么它的shell必须是在/etc/shells文件中之一的shell</td>
-</tr>
-<tr>
-<td>pam_deny.so</td>
-<td>account、auth、password、session</td>
-<td>该模块可用于拒绝访问</td>
-</tr>
-<tr>
-<td>pam_permit.so</td>
-<td>account、auth、password、session</td>
-<td>模块任何时候都返回成功.</td>
-</tr>
-<tr>
-<td>pam_securetty.so</td>
-<td>auth</td>
-<td>如果用户要以root登录时,则登录的tty必须在/etc/securetty之中.</td>
-</tr>
-<tr>
-<td>pam_listfile.so</td>
-<td>account、auth、password、session</td>
-<td>访问应用程的控制开关</td>
-</tr>
-<tr>
-<td>pam_cracklib.so</td>
-<td>password</td>
-<td>这个模块可以插入到一个程序的密码栈中,用于检查密码的强度.</td>
-</tr>
-<tr>
-<td>pam_limits.so</td>
-<td>session</td>
-<td>定义使用系统资源的上限，root用户也会受此限制，可以通过/etc/security/limits.conf或/etc/security/limits.d/*.conf来设定</td>
-</tr>
-</tbody>
-</table>
-<h2 id="debug-crond"><a href="#debug-crond" class="headerlink" title="debug crond"></a>debug crond</h2><p>先停掉 crond service，然后开启debug参数</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">systemctl stop crond</div><div class="line">crond -x proc //不想真正执行的话：test</div></pre></td></tr></table></figure>
-<p>或者增加更多的debug信息， debug sudo/sudoers , 在 /etc/sudo.conf 中增加了：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">Debug sudo /var/log/sudo_debug all@warn</div><div class="line">Debug sudoers.so /var/log/sudoers_debug all@debug</div></pre></td></tr></table></figure>
-<h2 id="systemd-limits"><a href="#systemd-limits" class="headerlink" title="systemd limits"></a>systemd limits</h2><p>/etc/security/limits.conf 的配置，只适用于通过PAM 认证登录用户的资源限制，它对systemd 的service 的资源限制不生效。</p>
-<p>因此登录用户的限制，通过/etc/security/limits.conf 与/etc/security/limits.d 下的文件设置即可。</p>
-<p>对于systemd service 的资源设置，则需修改全局配置，全局配置文件放在/etc/systemd/system.conf 和/etc/systemd/user.conf，同时也会加载两个对应目录中的所有.conf 文件/etc/systemd/system.conf.d/.conf<br>和/etc/systemd/user.conf.d/.conf。</p>
-<h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a href="https://www.cnblogs.com/kevingrace/p/8671964.html" target="_blank" rel="external">https://www.cnblogs.com/kevingrace/p/8671964.html</a></p>
-<p><a href="https://www.jianshu.com/p/ac3e7009a764" target="_blank" rel="external">https://www.jianshu.com/p/ac3e7009a764</a></p>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/06/14/high_load/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/06/14/high_load/" itemprop="url">High Load and Low CPU usage</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-06-14T10:30:03+08:00">
-                2017-06-14
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/performance/" itemprop="url" rel="index">
-                    <span itemprop="name">performance</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2017/06/14/high_load/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2017/06/14/high_load/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="Load很高，CPU使用率很低"><a href="#Load很高，CPU使用率很低" class="headerlink" title="Load很高，CPU使用率很低"></a>Load很高，CPU使用率很低</h1><blockquote>
-<p>第一次碰到这种Case：物理机的Load很高，CPU使用率很低</p>
-</blockquote>
-<h3 id="先看CPU、Load情况"><a href="#先看CPU、Load情况" class="headerlink" title="先看CPU、Load情况"></a>先看CPU、Load情况</h3><p>如图一：<br>vmstat显示很有多任务等待排队执行（r）top都能看到Load很高，但是CPU idle 95%以上<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/046077102b3a0fd89e53f62cf32874c0.png" alt="image.png"><br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d905abc4576e0c6ac952c71005696131.png" alt="image.png"></p>
-<p>这个现象不太合乎常规，也许是在等磁盘IO、也许在等网络返回会导致CPU利用率很低而Load很高</p>
-<p>贴个vmstat 说明文档（图片来源于网络N年了，找不到出处）<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/9a0c040b24699d4128bbecae1af08b1d.png" alt="image.png"></p>
-<h3 id="检查磁盘状态，很正常（vmstat-第二列也一直为0）"><a href="#检查磁盘状态，很正常（vmstat-第二列也一直为0）" class="headerlink" title="检查磁盘状态，很正常（vmstat 第二列也一直为0）"></a>检查磁盘状态，很正常（vmstat 第二列也一直为0）</h3><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/19d7d02c9472ddb2b057a4d09b497463.png" alt="image.png"></p>
-<h3 id="再看Load是在5号下午15：50突然飙起来的："><a href="#再看Load是在5号下午15：50突然飙起来的：" class="headerlink" title="再看Load是在5号下午15：50突然飙起来的："></a>再看Load是在5号下午15：50突然飙起来的：</h3><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/71127256e8e33a716770f74cb563a1b6.png" alt="image.png"></p>
-<h3 id="同一时间段的网络流量、TCP连接相关数据很平稳："><a href="#同一时间段的网络流量、TCP连接相关数据很平稳：" class="headerlink" title="同一时间段的网络流量、TCP连接相关数据很平稳："></a>同一时间段的网络流量、TCP连接相关数据很平稳：</h3><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/8f7ff0bf2f313409f521f6863f2375aa.png" alt="image.png"></p>
-<p>所以分析到此，可以得出：<strong>Load高跟磁盘、网络、压力都没啥关系</strong></p>
-<h3 id="物理机上是跑的Docker，分析了一下CPUSet情况："><a href="#物理机上是跑的Docker，分析了一下CPUSet情况：" class="headerlink" title="物理机上是跑的Docker，分析了一下CPUSet情况："></a>物理机上是跑的Docker，分析了一下CPUSet情况：</h3><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/e7996a82da2c140594835e3264c6ef4b.png" alt="image.png"></p>
-<p><strong>发现基本上所有容器都绑定在CPU1上</strong></p>
-<h3 id="进而检查top每个核的状态，果然CPU1-的idle一直为0"><a href="#进而检查top每个核的状态，果然CPU1-的idle一直为0" class="headerlink" title="进而检查top每个核的状态，果然CPU1 的idle一直为0"></a>进而检查top每个核的状态，果然CPU1 的idle一直为0</h3><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/2b32adb2071b3fdb334e0735db899a2e.png" alt="image.png"></p>
-<p>看到这里大致明白了，虽然CPU整体很闲但是因为很多进程都绑定在CPU1上，导致CPU1上排队很长，看前面tsar的–load负载截图的 等待运行进程排队长度（runq）确实也很长。</p>
-<blockquote>
-<p>物理机有32个核，如果100个任务同时进来，Load大概是3，这是正常的。如果这100个任务都跑在CPU1上，Load还是3（因为Load是所有核的平均值）。但是如果有源源不断的100个任务进来，前面100个还没完后面又来了100个，这个时候CPU1前面队列很长，其它31个核没事做，这个时候整体Load就是6了，时间一长很快Load就能到几百。</p>
-<p>这是典型的瓶颈导致积压进而高Load。</p>
-</blockquote>
-<h3 id="为什么会出现这种情况"><a href="#为什么会出现这种情况" class="headerlink" title="为什么会出现这种情况"></a>为什么会出现这种情况</h3><p>检查Docker系统日志，发现同一时间点所有物理机同时批量执行docker update 把几百个容器都绑定到CPU1上，导致这个核忙死了，其它核闲得要死（所以看到整体CPU不忙，最忙的那个核被平均掩盖掉了），但是Load高（CPU1上排队太长，即使平均到32个核，这个队列还是长，这就是瓶颈啊）。</p>
-<p>如下Docker日志，Load飙升的那个时间点有人批量调docker update 把所有容器都绑定到CPU1上：<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/f4925c698c9fd4edb56fcfc2ebb9f625.png" alt="image.png"></p>
-<p>检查Docker集群Swarm的日志，发现Swarm没有发起这样的update操作，似乎是每个Docker Daemon自己的行为，谁触发了这个CPU的绑定过程的原因还没找到，求指点。</p>
-<h3 id="手动执行docker-update-把容器打散到不同的cpu核上，恢复正常："><a href="#手动执行docker-update-把容器打散到不同的cpu核上，恢复正常：" class="headerlink" title="手动执行docker update, 把容器打散到不同的cpu核上，恢复正常："></a>手动执行docker update, 把容器打散到不同的cpu核上，恢复正常：</h3><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/9e1adae472cf0b4f95af83390adaead9.png" alt="image.png"></p>
-<h2 id="关于这个Case的总结"><a href="#关于这个Case的总结" class="headerlink" title="关于这个Case的总结"></a>关于这个Case的总结</h2><ul>
-<li>技术拓展商业边界，同样技能、熟练能力能拓展解决问题的能力。 开始我注意到了Swarm集群显示的CPU绑定过多，同时也发现有些容器绑定在CPU1上。所以我尝试通过API： GET /containers/json 拿到了所有容器的参数，然后搜索里面的CPUSet，结果这个API返回来的参数不包含CPUSet，那我只能挨个 GET /containers/id/json, 要写个循环，偷懒没写，所以没发现这个问题。</li>
-<li>这种多个进程绑定到同一个核然后导致Load过高的情况确实很少见，也算是个教训</li>
-<li>自己观察top 单核的时候不够仔细，只是看到CPU1 的US 60%，没留意idle，同时以为这个60%就是偶尔一个进程在跑，耐心不够（主要也是没意识到这种极端情况，疏忽了）</li>
-</ul>
-<h2 id="关于Load高的总结"><a href="#关于Load高的总结" class="headerlink" title="关于Load高的总结"></a>关于Load高的总结</h2><ul>
-<li>Load高一般对应着CPU高，就是CPU负载过大，检查CPU具体执行任务是否合理</li>
-<li>如果Load高，CPU使用率不高的检查一下IO、网络等是否比较慢</li>
-<li>如果是虚拟机，检查是否物理机超卖或者物理机其它ECS抢占CPU、IO导致的（<a href="https://www.atatech.org/articles/77929" target="_blank" rel="external">https://www.atatech.org/articles/77929</a> ）</li>
-<li>如果两台一样的机器一样的流量，Load有一台偏高的话检查硬件信息，比如CPU被降频了，QPI，内存效率等等（<a href="https://www.atatech.org/articles/12201" target="_blank" rel="external">https://www.atatech.org/articles/12201</a> ），这个时候可能需要硬件相关同学加入一起排查了，当然牛逼的工程师能把这块也Cover了排查效率自然更高</li>
-</ul>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
@@ -4536,7 +4554,7 @@ sudo tcptrack -r 5 -i eth0 host 10.0.48.1 //filter 语法和tcpdump一样
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">113</span>
+                <span class="site-state-item-count">115</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -4558,7 +4576,7 @@ sudo tcptrack -r 5 -i eth0 host 10.0.48.1 //filter 语法和tcpdump一样
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">203</span>
+                <span class="site-state-item-count">206</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>

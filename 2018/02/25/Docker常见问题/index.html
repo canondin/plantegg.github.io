@@ -104,7 +104,7 @@
 <meta property="og:description" content="Docker 常见问题启动docker daemon启动的时候如果报 socket错误，是因为daemon启动参数配置了： -H fd://  ，但是 docker.socket是disable状态，启动daemon依赖socket，但是systemctl又拉不起来docker.socket，因为被disable了，先  sudo systemctl enable docker.socket 就可">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/2ba8bc014d93ad4b6e77c889a024772f.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/dbc4dac5a9a0289b58952375c5759b15.gif">
-<meta property="og:updated_time" content="2021-01-06T02:17:30.617Z">
+<meta property="og:updated_time" content="2021-01-20T06:43:32.215Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Docker 常见问题">
 <meta name="twitter:description" content="Docker 常见问题启动docker daemon启动的时候如果报 socket错误，是因为daemon启动参数配置了： -H fd://  ，但是 docker.socket是disable状态，启动daemon依赖socket，但是systemctl又拉不起来docker.socket，因为被disable了，先  sudo systemctl enable docker.socket 就可">
@@ -419,8 +419,10 @@
 <p>[Service]<br>Type=notify<br>Environment=PATH=/opt/kube/bin:/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/usr/X11R6/bin:/opt/satools:/root/bin</p>
 </blockquote>
 <h2 id="容器没有systemctl"><a href="#容器没有systemctl" class="headerlink" title="容器没有systemctl"></a>容器没有systemctl</h2><p><strong>Failed to get D-Bus connection: Operation not permitted: systemd容器中默认无法启动，需要启动容器的时候</strong> </p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">docker run -itd --privileged --name=ren drds_base:centos init //init 必须要</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">docker run -itd --privileged --name=ren drds_base:centos init //init 必须要或者systemd</div></pre></td></tr></table></figure>
 <p>1号进程需要是systemd(init 是systemd的link)，才可以使用systemctl，推荐用这个来解决：<a href="https://github.com/gdraheim/docker-systemctl-replacement" target="_blank" rel="external">https://github.com/gdraheim/docker-systemctl-replacement</a></p>
+<p>systemd是用来取代init的，之前init管理所有进程启动，是串行的，耗时久，也不管最终状态，systemd主要是串行并监控进程状态能反复重启。</p>
+<p><strong>新版本init link向了systemd</strong></p>
 <h2 id="busybox-Alpine-Scratch"><a href="#busybox-Alpine-Scratch" class="headerlink" title="busybox/Alpine/Scratch"></a>busybox/Alpine/Scratch</h2><p>busybox集成了常用的linux工具(nc/telnet/cat……），保持精细，方便一张软盘能装下。</p>
 <p>Alpine一个精简版的Linux 发行版，更小更安全，用的musl libc而不是glibc</p>
 <p>scratch一个空的框架，什么也没有</p>
@@ -566,7 +568,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">113</span>
+                <span class="site-state-item-count">115</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -588,7 +590,7 @@
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">203</span>
+                <span class="site-state-item-count">206</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>

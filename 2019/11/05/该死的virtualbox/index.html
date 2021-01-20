@@ -102,7 +102,7 @@
 <meta property="og:url" content="http://yoursite.com/2019/11/05/该死的virtualbox/index.html">
 <meta property="og:site_name" content="plantegg">
 <meta property="og:description" content="该死的错误virtualbox+ubuntu用了快10年了，各种莫名其妙的问题，一直没有换掉，也怪自己 virtualbox+ubuntu组合也许确实奇葩吧，每次碰到问题都没法google到真正的答案了。 问题用的过程中突然发现挂载的数据盘找不到了（主要存放工作文件）， 看历史记录发现自己执行了： sudo dd if=/dev/urandom of=/dev/sdb1 bs=1M count=5">
-<meta property="og:updated_time" content="2019-11-05T02:13:03.088Z">
+<meta property="og:updated_time" content="2021-01-13T02:00:38.011Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="该死的错误">
 <meta name="twitter:description" content="该死的错误virtualbox+ubuntu用了快10年了，各种莫名其妙的问题，一直没有换掉，也怪自己 virtualbox+ubuntu组合也许确实奇葩吧，每次碰到问题都没法google到真正的答案了。 问题用的过程中突然发现挂载的数据盘找不到了（主要存放工作文件）， 看历史记录发现自己执行了： sudo dd if=/dev/urandom of=/dev/sdb1 bs=1M count=5">
@@ -564,7 +564,21 @@ Nov  4 18:06:57 vb kernel: [    6.754747] sd 4:0:0:0: [sdc] Mode Sense: 00 3a 00
 Nov  4 18:06:57 vb kernel: [    6.754757] sd 4:0:0:0: [sdc] Write cache: enabled, read cache: enabled, doesn&apos;t support DPO or FUA
 Nov  4 18:06:57 vb kernel: [    6.767797]  sdc: sdc1 sdc2 &lt; sdc5 &gt;
 Nov  4 18:06:57 vb kernel: [    6.768061] sd 4:0:0:0: [sdc] Attached SCSI disk
-</code></pre><h2 id="奇葩问题"><a href="#奇葩问题" class="headerlink" title="奇葩问题"></a>奇葩问题</h2><p>virtualbox 太多命名其妙的问题了，争取早日换掉</p>
+</code></pre><h2 id="磁盘自检失败，进入emergency-mode"><a href="#磁盘自检失败，进入emergency-mode" class="headerlink" title="磁盘自检失败，进入emergency mode"></a>磁盘自检失败，进入emergency mode</h2><p>修复参考方案：<a href="https://www.jianshu.com/p/7433e0bb38e9" target="_blank" rel="external">https://www.jianshu.com/p/7433e0bb38e9</a></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">welcome to emergency mode. ......  journalctl -xb...</div><div class="line">Press enter for maintenance</div><div class="line">(or type Control-D to continue):</div></pre></td></tr></table></figure>
+<p>解决方法有两个：</p>
+<p><strong>第一种：跳过检测受损分区</strong></p>
+<p>１、按照提示　执行　journalctl -xb</p>
+<p>　　在日志记录中向下翻页找到损坏的分区是哪个，一般是红色的字体，也可以输入/ fsck fail，按N/n来快速查找（我的是/dev/sda11，这个分区我挂载的是/home）</p>
+<p>２、vi /etc/fstab </p>
+<p>编辑fstab这个文件，注释掉对应的mount行。或将损坏的分区后面的数字从２改为０（０代表启动时不检查该分区）</p>
+<p>３、执行reboot 　重启</p>
+<p><strong>第二种方法：修复受损的分区</strong></p>
+<p>１、执行命令 umount /dev/sdb1 （对应自己出错的设备）卸载设备;</p>
+<p>２、执行命令 fsck -y /dev/sdb1 执行fsck校验并修复文件;</p>
+<p>3、重新mount就可以使用了</p>
+<p>两种方法我都解决了我的问题，不过我还是使用了第二种，第一种总感觉治标不治本！</p>
+<h2 id="奇葩问题"><a href="#奇葩问题" class="headerlink" title="奇葩问题"></a>奇葩问题</h2><p>virtualbox 太多命名其妙的问题了，争取早日换掉</p>
 <h3 id="磁盘uuid重复后，生成新的uuid"><a href="#磁盘uuid重复后，生成新的uuid" class="headerlink" title="磁盘uuid重复后，生成新的uuid"></a>磁盘uuid重复后，生成新的uuid</h3><p>[/drives/c/Program Files/Oracle/VirtualBox]<br>$./VBoxManage.exe internalcommands sethduuid “D:\vb\ubuntu-disk.vmdk”</p>
 <h3 id="Windows系统突然dns不工作了"><a href="#Windows系统突然dns不工作了" class="headerlink" title="Windows系统突然dns不工作了"></a>Windows系统突然dns不工作了</h3><p>VirtualBox为啥导致了这个问题就是一个很偏的方向，我实在无能为力了，尝试找到了一个和VirtualBox的DNS相关的开关命令，只能死马当活马医了（像极了算命大师和老中医）</p>
 <pre><code>./VBoxManage.exe  modifyvm &quot;ubuntu&quot; --natdnshostresolver1 on
@@ -712,7 +726,7 @@ Nov  4 18:06:57 vb kernel: [    6.768061] sd 4:0:0:0: [sdc] Attached SCSI disk
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">113</span>
+                <span class="site-state-item-count">115</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -734,7 +748,7 @@ Nov  4 18:06:57 vb kernel: [    6.768061] sd 4:0:0:0: [sdc] Attached SCSI disk
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">203</span>
+                <span class="site-state-item-count">206</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>
@@ -776,7 +790,7 @@ Nov  4 18:06:57 vb kernel: [    6.768061] sd 4:0:0:0: [sdc] Attached SCSI disk
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#该死的错误"><span class="nav-number">1.</span> <span class="nav-text">该死的错误</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#问题"><span class="nav-number">1.1.</span> <span class="nav-text">问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#尝试"><span class="nav-number">1.2.</span> <span class="nav-text">尝试</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mount"><span class="nav-number">1.3.</span> <span class="nav-text">mount</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#修复记录"><span class="nav-number">1.4.</span> <span class="nav-text">修复记录</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#奇葩问题"><span class="nav-number">1.5.</span> <span class="nav-text">奇葩问题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#磁盘uuid重复后，生成新的uuid"><span class="nav-number">1.5.1.</span> <span class="nav-text">磁盘uuid重复后，生成新的uuid</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Windows系统突然dns不工作了"><span class="nav-number">1.5.2.</span> <span class="nav-text">Windows系统突然dns不工作了</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ubuntu-鼠标中键不能复制粘贴的恢复办法-gpointing-device-settings"><span class="nav-number">1.5.3.</span> <span class="nav-text">ubuntu 鼠标中键不能复制粘贴的恢复办法 gpointing-device-settings</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ubuntu无法关闭锁屏，无法修改配置："><span class="nav-number">1.5.4.</span> <span class="nav-text">ubuntu无法关闭锁屏，无法修改配置：</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#感受"><span class="nav-number">1.6.</span> <span class="nav-text">感受</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#历史老问题"><span class="nav-number">1.7.</span> <span class="nav-text">历史老问题</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#该死的错误"><span class="nav-number">1.</span> <span class="nav-text">该死的错误</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#问题"><span class="nav-number">1.1.</span> <span class="nav-text">问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#尝试"><span class="nav-number">1.2.</span> <span class="nav-text">尝试</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mount"><span class="nav-number">1.3.</span> <span class="nav-text">mount</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#修复记录"><span class="nav-number">1.4.</span> <span class="nav-text">修复记录</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#磁盘自检失败，进入emergency-mode"><span class="nav-number">1.5.</span> <span class="nav-text">磁盘自检失败，进入emergency mode</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#奇葩问题"><span class="nav-number">1.6.</span> <span class="nav-text">奇葩问题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#磁盘uuid重复后，生成新的uuid"><span class="nav-number">1.6.1.</span> <span class="nav-text">磁盘uuid重复后，生成新的uuid</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Windows系统突然dns不工作了"><span class="nav-number">1.6.2.</span> <span class="nav-text">Windows系统突然dns不工作了</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ubuntu-鼠标中键不能复制粘贴的恢复办法-gpointing-device-settings"><span class="nav-number">1.6.3.</span> <span class="nav-text">ubuntu 鼠标中键不能复制粘贴的恢复办法 gpointing-device-settings</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ubuntu无法关闭锁屏，无法修改配置："><span class="nav-number">1.6.4.</span> <span class="nav-text">ubuntu无法关闭锁屏，无法修改配置：</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#感受"><span class="nav-number">1.7.</span> <span class="nav-text">感受</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#历史老问题"><span class="nav-number">1.8.</span> <span class="nav-text">历史老问题</span></a></li></ol></li></ol></div>
             
 
           </div>

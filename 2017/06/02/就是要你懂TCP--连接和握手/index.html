@@ -95,13 +95,13 @@
 
 
 
-<meta name="description" content="就是要你懂TCP–握手和挥手 看过太多tcp相关文章，但是看完总是不过瘾，似懂非懂，反复考虑过后，我觉得是那些文章太过理论，看起来没有体感，所以吸收不了。 希望这篇文章能做到言简意赅，帮助大家透过案例来理解原理  tcp的特点这个大家基本都能说几句，面试的时候候选人也肯定会告诉你这些：  三次握手 四次挥手 可靠连接 丢包重传 速度自我调整  但是我只希望大家记住一个核心的：tcp是可以可靠传输协">
+<meta name="description" content="就是要你懂TCP–握手和挥手 看过太多tcp相关文章，但是看完总是不过瘾，似懂非懂，反复考虑过后，我觉得是那些文章太过理论，看起来没有体感，所以吸收不了。 希望这篇文章能做到言简意赅，帮助大家透过案例来理解原理  tcp的特点这个大家基本都能说几句，面试的时候候选人也肯定会告诉你这些：  三次握手 四次挥手 可靠连接 丢包重传 速度自我调整  但是我只希望大家记住一个核心的：tcp是可靠传输协议，">
 <meta name="keywords" content="TCP,TCP connection">
 <meta property="og:type" content="article">
 <meta property="og:title" content="就是要你懂TCP--握手和挥手">
 <meta property="og:url" content="http://yoursite.com/2017/06/02/就是要你懂TCP--连接和握手/index.html">
 <meta property="og:site_name" content="plantegg">
-<meta property="og:description" content="就是要你懂TCP–握手和挥手 看过太多tcp相关文章，但是看完总是不过瘾，似懂非懂，反复考虑过后，我觉得是那些文章太过理论，看起来没有体感，所以吸收不了。 希望这篇文章能做到言简意赅，帮助大家透过案例来理解原理  tcp的特点这个大家基本都能说几句，面试的时候候选人也肯定会告诉你这些：  三次握手 四次挥手 可靠连接 丢包重传 速度自我调整  但是我只希望大家记住一个核心的：tcp是可以可靠传输协">
+<meta property="og:description" content="就是要你懂TCP–握手和挥手 看过太多tcp相关文章，但是看完总是不过瘾，似懂非懂，反复考虑过后，我觉得是那些文章太过理论，看起来没有体感，所以吸收不了。 希望这篇文章能做到言简意赅，帮助大家透过案例来理解原理  tcp的特点这个大家基本都能说几句，面试的时候候选人也肯定会告诉你这些：  三次握手 四次挥手 可靠连接 丢包重传 速度自我调整  但是我只希望大家记住一个核心的：tcp是可靠传输协议，">
 <meta property="og:image" content="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/6d66dadecb72e11e3e5ab765c6c3ea2e.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/1423013fe76719cfa3088ebc4704c023.png">
 <meta property="og:image" content="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b6f4a952cdf8ffbb8f6e9434d1432e05.png">
@@ -112,10 +112,10 @@
 <meta property="og:image" content="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/5322d0cf77a3a1ae6c87a972cc5843d0.png">
 <meta property="og:image" content="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/2703fc07dfc4dd5b6e1bb4c2ce620e59.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b3d075782450b0c8d2615c5d2b75d923.png">
-<meta property="og:updated_time" content="2020-12-18T08:17:34.909Z">
+<meta property="og:updated_time" content="2021-01-13T02:00:37.987Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="就是要你懂TCP--握手和挥手">
-<meta name="twitter:description" content="就是要你懂TCP–握手和挥手 看过太多tcp相关文章，但是看完总是不过瘾，似懂非懂，反复考虑过后，我觉得是那些文章太过理论，看起来没有体感，所以吸收不了。 希望这篇文章能做到言简意赅，帮助大家透过案例来理解原理  tcp的特点这个大家基本都能说几句，面试的时候候选人也肯定会告诉你这些：  三次握手 四次挥手 可靠连接 丢包重传 速度自我调整  但是我只希望大家记住一个核心的：tcp是可以可靠传输协">
+<meta name="twitter:description" content="就是要你懂TCP–握手和挥手 看过太多tcp相关文章，但是看完总是不过瘾，似懂非懂，反复考虑过后，我觉得是那些文章太过理论，看起来没有体感，所以吸收不了。 希望这篇文章能做到言简意赅，帮助大家透过案例来理解原理  tcp的特点这个大家基本都能说几句，面试的时候候选人也肯定会告诉你这些：  三次握手 四次挥手 可靠连接 丢包重传 速度自我调整  但是我只希望大家记住一个核心的：tcp是可靠传输协议，">
 <meta name="twitter:image" content="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/6d66dadecb72e11e3e5ab765c6c3ea2e.png">
 
 
@@ -406,7 +406,7 @@
 <li>丢包重传</li>
 <li>速度自我调整</li>
 </ul>
-<p>但是我只希望大家记住一个核心的：<strong>tcp是可以可靠传输协议，它的所有特点都为这个可靠传输服务</strong>。</p>
+<p>但是我只希望大家记住一个核心的：<strong>tcp是可靠传输协议，它的所有特点都为这个可靠传输服务</strong>。</p>
 <h3 id="那么tcp是怎么样来保障可靠传输呢？"><a href="#那么tcp是怎么样来保障可靠传输呢？" class="headerlink" title="那么tcp是怎么样来保障可靠传输呢？"></a>那么tcp是怎么样来保障可靠传输呢？</h3><p>tcp在传输过程中都有一个ack，接收方通过ack告诉发送方收到那些包了。这样发送方能知道有没有丢包，进而确定重传</p>
 <h3 id="tcp建连接的三次握手"><a href="#tcp建连接的三次握手" class="headerlink" title="tcp建连接的三次握手"></a>tcp建连接的三次握手</h3><p>来看一个java代码连接数据库的三次握手过程</p>
 <p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/6d66dadecb72e11e3e5ab765c6c3ea2e.png" alt="image.png"></p>
@@ -670,7 +670,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">113</span>
+                <span class="site-state-item-count">115</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -692,7 +692,7 @@
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">203</span>
+                <span class="site-state-item-count">206</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>
