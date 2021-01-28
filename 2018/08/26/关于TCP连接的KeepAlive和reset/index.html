@@ -95,20 +95,20 @@
 
 
 
-<meta name="description" content="关于TCP连接的Keepalive和reset先来看一个现象 Server: socat -dd tcp-listen:2000,keepalive,keepidle=10,keepcnt=2,reuseaddr,keepintvl=1 - Client: socat -dd - tcp:localhost:2000,keepalive,keepidle=10,keepcnt=2,keepintv">
+<meta name="description" content="关于TCP连接的Keepalive和reset先来看一个现象，下面是测试代码： Server: socat -dd tcp-listen:2000,keepalive,keepidle=10,keepcnt=2,reuseaddr,keepintvl=1 - Client: socat -dd - tcp:localhost:2000,keepalive,keepidle=10,keepcnt=2">
 <meta name="keywords" content="Linux,troubleshooting,network,TCP,keepalive,reset">
 <meta property="og:type" content="article">
 <meta property="og:title" content="关于TCP连接的Keepalive和reset">
 <meta property="og:url" content="http://yoursite.com/2018/08/26/关于TCP连接的KeepAlive和reset/index.html">
 <meta property="og:site_name" content="plantegg">
-<meta property="og:description" content="关于TCP连接的Keepalive和reset先来看一个现象 Server: socat -dd tcp-listen:2000,keepalive,keepidle=10,keepcnt=2,reuseaddr,keepintvl=1 - Client: socat -dd - tcp:localhost:2000,keepalive,keepidle=10,keepcnt=2,keepintv">
+<meta property="og:description" content="关于TCP连接的Keepalive和reset先来看一个现象，下面是测试代码： Server: socat -dd tcp-listen:2000,keepalive,keepidle=10,keepcnt=2,reuseaddr,keepintvl=1 - Client: socat -dd - tcp:localhost:2000,keepalive,keepidle=10,keepcnt=2">
 <meta property="og:image" content="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/90d1c4919d86764242ab726b4c69f006.png">
 <meta property="og:image" content="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/c2893e5ad89ee450c61a370ec7bf6f06.png">
 <meta property="og:image" content="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/78427c329e72d526aa8908942409f092.png">
-<meta property="og:updated_time" content="2021-01-06T02:17:30.713Z">
+<meta property="og:updated_time" content="2021-01-28T10:05:10.521Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="关于TCP连接的Keepalive和reset">
-<meta name="twitter:description" content="关于TCP连接的Keepalive和reset先来看一个现象 Server: socat -dd tcp-listen:2000,keepalive,keepidle=10,keepcnt=2,reuseaddr,keepintvl=1 - Client: socat -dd - tcp:localhost:2000,keepalive,keepidle=10,keepcnt=2,keepintv">
+<meta name="twitter:description" content="关于TCP连接的Keepalive和reset先来看一个现象，下面是测试代码： Server: socat -dd tcp-listen:2000,keepalive,keepidle=10,keepcnt=2,reuseaddr,keepintvl=1 - Client: socat -dd - tcp:localhost:2000,keepalive,keepidle=10,keepcnt=2">
 <meta name="twitter:image" content="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/90d1c4919d86764242ab726b4c69f006.png">
 
 
@@ -387,7 +387,7 @@
       
 
       
-        <h1 id="关于TCP连接的Keepalive和reset"><a href="#关于TCP连接的Keepalive和reset" class="headerlink" title="关于TCP连接的Keepalive和reset"></a>关于TCP连接的Keepalive和reset</h1><p>先来看一个现象</p>
+        <h1 id="关于TCP连接的Keepalive和reset"><a href="#关于TCP连接的Keepalive和reset" class="headerlink" title="关于TCP连接的Keepalive和reset"></a>关于TCP连接的Keepalive和reset</h1><p>先来看一个现象，下面是测试代码：</p>
 <pre><code>Server: socat -dd tcp-listen:2000,keepalive,keepidle=10,keepcnt=2,reuseaddr,keepintvl=1 -
 Client: socat -dd - tcp:localhost:2000,keepalive,keepidle=10,keepcnt=2,keepintvl=1
 
@@ -544,7 +544,7 @@ Drop Connection (Unplug Cable, Shut down Link(WiFi/Interface)): sudo iptables -A
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">115</span>
+                <span class="site-state-item-count">116</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -566,7 +566,7 @@ Drop Connection (Unplug Cable, Shut down Link(WiFi/Interface)): sudo iptables -A
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">206</span>
+                <span class="site-state-item-count">208</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>
