@@ -54,6 +54,70 @@
   </entry>
   
   <entry>
+    <title>一个黑盒程序奇怪行为的分析</title>
+    <link href="http://yoursite.com/2021/02/10/%E4%B8%80%E4%B8%AA%E9%BB%91%E7%9B%92%E7%A8%8B%E5%BA%8F%E5%A5%87%E6%80%AA%E7%9A%84%E8%A1%8C%E4%B8%BA%E5%88%86%E6%9E%90/"/>
+    <id>http://yoursite.com/2021/02/10/一个黑盒程序奇怪的行为分析/</id>
+    <published>2021-02-10T02:30:03.000Z</published>
+    <updated>2021-02-10T03:35:38.714Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="一个黑盒程序奇怪行为的分析"><a href="#一个黑盒程序奇怪行为的分析" class="headerlink" title="一个黑盒程序奇怪行为的分析"></a>一个黑盒程序奇怪行为的分析</h1><h2 id="问题描述："><a href="#问题描述：" class="headerlink" title="问题描述："></a>问题描述：</h2><blockquote>
+<p>从金主baba手里拿到一个区块链程序，监听4000，在我们的环境中4000端口上很快就全连接队列溢出了，导致整个程序不响应了。这个程序是黑盒子，没有源代码，但是在金主baba自己的环境运行正常（一样的OS）</p>
+</blockquote>
+<p>如下图所示：</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/623ca2f46084958efa447882cbb58e72.png" alt="image.png"></p>
+<p>ss -lnt 看到全连接队列增长到了39，但是netstat -ant找不到这39个连接，本来是想看看队列堆了这么多连接，都是哪些ip连过来的，实际看不到这就奇怪了</p>
+<p>同时验证过程发现我们的环境4000端口上开了slb，也就是slb会不停滴探活4000端口，关掉slb探活后一切正常了。</p>
+<p>所以总结下来问题就是：</p>
+<ol>
+<li><p>为什么全连接队列里面的连接netstat/ss都看不到(ss能看到总数) </p>
+</li>
+<li><p>为什么关掉slb就正常了 </p>
+</li>
+<li><p>为什么应用不accept连接,也不close（应用是个黑盒子） </p>
+</li>
+</ol>
+<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><h3 id="为什么全连接队列里面的连接netstat-ss都看不到-ss能看到总数"><a href="#为什么全连接队列里面的连接netstat-ss都看不到-ss能看到总数" class="headerlink" title="为什么全连接队列里面的连接netstat/ss都看不到(ss能看到总数)"></a>为什么全连接队列里面的连接netstat/ss都看不到(ss能看到总数)</h3><p>这是因为这些连接都是探活连接，三次握手后很快被slb reset了，在OS层面这个连接已经被释放，所以肯定看不见。反过来想要是netstat能看见这个连接，那么它的状态是什么？ reset吗？tcp连接状态里肯定是没有reset状态的。</p>
+<h4 id="为什么会产生这个错误理解–全连接队列里面的连接netstat一定要能看到？"><a href="#为什么会产生这个错误理解–全连接队列里面的连接netstat一定要能看到？" class="headerlink" title="为什么会产生这个错误理解–全连接队列里面的连接netstat一定要能看到？"></a>为什么会产生这个错误理解–全连接队列里面的连接netstat一定要能看到？</h4><p>那是因为正常情况都是能看到的，从没有考虑过握手后很快reset的情况。也没反问过如果能看到这个连接该是什么状态呢？</p>
+<h4 id="这个连接被reset后，OS会将全连接队列数量减1吗？"><a href="#这个连接被reset后，OS会将全连接队列数量减1吗？" class="headerlink" title="这个连接被reset后，OS会将全连接队列数量减1吗？"></a>这个连接被reset后，OS会将全连接队列数量减1吗？</h4><p>不会，按照我们的理解连接被reset释放后，上层没有accept，那么OS要释放全连接队列里面的这个连接。实际上内核认为所有 listen 到的连接, 必须要 accept 走, 用户有权利知道, 有过这么一个连接存在过。</p>
+<p>所以应用accept后队列才会减1，accept这个空连接后读写会报错。</p>
+<h3 id="为什么关掉slb就正常了"><a href="#为什么关掉slb就正常了" class="headerlink" title="为什么关掉slb就正常了"></a>为什么关掉slb就正常了</h3><p>slb探活逻辑是向监听端口发起三次握手，握手成功后立即发送一个reset断开连接</p>
+<p>这是一个完整的探活过程：</p>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b81dcbaea26a5130383d0bc8317fd3c5.png" alt="image.png"></p>
+<p>关掉就正常后要结合第三个问题来讲</p>
+<h3 id="为什么应用不accept连接-也不close（应用是个黑盒子）"><a href="#为什么应用不accept连接-也不close（应用是个黑盒子）" class="headerlink" title="为什么应用不accept连接,也不close（应用是个黑盒子）"></a>为什么应用不accept连接,也不close（应用是个黑盒子）</h3><p>因为应用是个黑盒子，看不到源代码，只能从行为来分析了</p>
+<p>从行为来看，这个应用在三次握手后，会主动给client发送一个12字节的数据，但是这个逻辑写在了accept主逻辑内部，一旦主动给client发12字节数据失败（比如这个连接reset了）那么一直卡在这里导致应用不再accept也不再close。</p>
+<p>正确的实现逻辑是，accept在一个单独的线程里，一旦accept到一个新连接，那么就开启一个新的线程来处理这个新连接的读写。accept线程专注accept</p>
+<h2 id="一些验证"><a href="#一些验证" class="headerlink" title="一些验证"></a>一些验证</h2><h3 id="nc测试连接4000端口"><a href="#nc测试连接4000端口" class="headerlink" title="nc测试连接4000端口"></a>nc测试连接4000端口</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"># nc -p 12346 dcep-blockchain-1 4000</div><div class="line"></div><div class="line"></div><div class="line">抓包：</div><div class="line">11:03:16.762547 IP dcep-blockchain-1.12346 &gt; dcep-blockchain-1.terabase: Flags [S], seq 397659761, win 43690, options [mss 65495,sackOK,TS val 2329725964 ecr 0,nop,wscale 7], length 0</div><div class="line">04:42:24.466211 IP dcep-blockchain-1.terabase &gt; dcep-blockchain-1.12346: Flags [S.], seq 4239354556, ack 397659762, win 43690, options [mss 65495,sackOK,TS val 2329725964 ecr 2329725964,nop,wscale 7], length 0</div><div class="line">11:03:16.762571 IP dcep-blockchain-1.12346 &gt; dcep-blockchain-1.terabase: Flags [.], ack 1, win 342, options [nop,nop,TS val 2329725964 ecr 2329725964], length 0</div><div class="line"></div><div class="line">----到这三次握手完毕，下面是隔了大概1.5ms，4000发了12字节给nc</div><div class="line">11:03:16.763893 IP dcep-blockchain-1.terabase &gt; dcep-blockchain-1.12346: Flags [P.], seq 1:13, ack 1, win 342, options [nop,nop,TS val 2329725966 ecr 2329725964], length 12</div><div class="line">11:03:16.763904 IP dcep-blockchain-1.12346 &gt; dcep-blockchain-1.terabase: Flags [.], ack 13, win 342, options [nop,nop,TS val 2329725966 ecr 2329725966], length 0</div></pre></td></tr></table></figure>
+<p>如果在上面的1.5ms之间nc  reset了这个连接，那么这12字节就发不出来了</p>
+<h3 id="tcpping-模拟slb-探活"><a href="#tcpping-模拟slb-探活" class="headerlink" title="tcpping 模拟slb 探活"></a>tcpping 模拟slb 探活</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">python tcpping.py -R -i 0.1 -t 1 dcep-blockchain-1 4000</div></pre></td></tr></table></figure>
+<p>-i 间隔0.1秒 </p>
+<p>-R reset断开连接</p>
+<p>-t 超时时间1秒</p>
+<p>执行如上代码，跟4000端口握手，然后立即发出reset断开连接（完全模拟slb探活行为），很快重现了问题</p>
+<p>增加延时</p>
+<p>-D 0.01表示握手成功后10ms后再发出reset（让应用有机会成功发出那12个字节），应用工作正常</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">python tcpping.py -R -i 0.1 -t 1 -D 0.01 dcep-blockchain-1 4000</div></pre></td></tr></table></figure>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>最大的错误认知就是 ss 看到的全连接队列数量，netstat也能看到。实际是不一定</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;一个黑盒程序奇怪行为的分析&quot;&gt;&lt;a href=&quot;#一个黑盒程序奇怪行为的分析&quot; class=&quot;headerlink&quot; title=&quot;一个黑盒程序奇怪行为的分析&quot;&gt;&lt;/a&gt;一个黑盒程序奇怪行为的分析&lt;/h1&gt;&lt;h2 id=&quot;问题描述：&quot;&gt;&lt;a href=&quot;#问题描述
+    
+    </summary>
+    
+      <category term="技巧" scheme="http://yoursite.com/categories/%E6%8A%80%E5%B7%A7/"/>
+    
+    
+      <category term="TCP" scheme="http://yoursite.com/tags/TCP/"/>
+    
+      <category term="accept" scheme="http://yoursite.com/tags/accept/"/>
+    
+      <category term="listen" scheme="http://yoursite.com/tags/listen/"/>
+    
+  </entry>
+  
+  <entry>
     <title>journald和rsyslogd</title>
     <link href="http://yoursite.com/2021/01/28/journald%E5%92%8Crsyslog/"/>
     <id>http://yoursite.com/2021/01/28/journald和rsyslog/</id>
@@ -264,7 +328,7 @@ sudo ip tcp_metrics delete 100.118.58.7
     <link href="http://yoursite.com/2020/12/25/%E4%B8%80%E4%B8%AA%E6%9C%89%E6%84%8F%E6%80%9D%E7%9A%84%E9%97%AE%E9%A2%98/"/>
     <id>http://yoursite.com/2020/12/25/一个有意思的问题/</id>
     <published>2020-12-25T09:30:03.000Z</published>
-    <updated>2021-01-06T02:17:30.693Z</updated>
+    <updated>2021-02-10T03:30:17.126Z</updated>
     
     <content type="html"><![CDATA[<h1 id="一个有意思的问题"><a href="#一个有意思的问题" class="headerlink" title="一个有意思的问题"></a>一个有意思的问题</h1><h2 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">$mysql -N -h127.0.0.1 -e &quot;select id from sbtest1 limit 1&quot;</div><div class="line">+--------+</div><div class="line">| 100024 |</div><div class="line">+--------+</div><div class="line"></div><div class="line">$mysql -N -h127.0.0.1 -e &quot;select id from sbtest1 limit 1&quot; | cat</div><div class="line">100024</div><div class="line"></div><div class="line">$mysql -t -N -h127.0.0.1 -e &quot;select id from sbtest1 limit 1&quot; | cat</div><div class="line">+--------+</div><div class="line">| 100024 |</div><div class="line">+--------+</div></pre></td></tr></table></figure>
 <p>如上第一和第二个语句，<strong>为什么mysql client的输出重定向后就没有ascii制表符了呢</strong>？ 语句三加上 -t后再经过管道，也有制表符了。</p>
@@ -283,15 +347,15 @@ sudo ip tcp_metrics delete 100.118.58.7
 </blockquote>
 <p>而是：</p>
 <blockquote>
-<p>​        <strong>mysql client 可以检测到不同的输出目标然后输出不同的内容吗？</strong> </p>
+<p>​        <strong>mysql client 可以检测到不同的输出目标然后输出不同的内容吗？</strong> 管道或者重定向是一个应用能感知的输出目标吗？</p>
 </blockquote>
-<p>管道或者重定向是一个应用能感知的输出目标吗？</p>
 <p>误解：觉得管道写在后面，mysql client不应该知道后面是管道，mysql client输出内容到stdout，然后os将stdout的内容重定向给管道。</p>
 <p>实际上mysql是可以检测（detect）输出目标的，如果是管道类的非交互输出那么没必要徒增一些制表符；如果是交互式界面那么就输出一些制表符好看一些。</p>
 <p>要是想想在Unix下一切皆文件就更好理解了，输出到管道这个管道也是个文件，所以mysql client是可以感知各种输出文件的属性的。</p>
 <p>背后的<a href="https://stackoverflow.com/questions/1312922/detect-if-stdin-is-a-terminal-or-pipe" target="_blank" rel="external">实现</a>大概是这样：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">#include &lt;stdio.h&gt;</div><div class="line">#include &lt;io.h&gt;</div><div class="line">...    </div><div class="line">if (isatty(fileno(stdout)))</div><div class="line">    printf( &quot;stdout is a terminal\n&quot; );      // 输出制表符</div><div class="line">else</div><div class="line">    printf( &quot;stdout is a file or a pipe\n&quot;); // 不输出制表符</div></pre></td></tr></table></figure>
 <p><a href="https://linux.die.net/man/3/isatty" target="_blank" rel="external">isatty的解释</a></p>
+<p>结论就是 mysql client根据输出目标的不同（stdout、重定向）输出不同的内容，不过这种做法对用户体感上不是太好。</p>
 <h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://www.pyrosoft.co.uk/blog/2014/09/08/how-to-stop-mysql-ascii-tables-column-separators-from-being-lost-when-redirecting-bash-output/" target="_blank" rel="external">https://www.pyrosoft.co.uk/blog/2014/09/08/how-to-stop-mysql-ascii-tables-column-separators-from-being-lost-when-redirecting-bash-output/</a></p>
 <p><a href="https://www.oreilly.com/library/view/mysql-cookbook/0596001452/ch01s22.html" target="_blank" rel="external">https://www.oreilly.com/library/view/mysql-cookbook/0596001452/ch01s22.html</a></p>
 ]]></content>
@@ -1644,7 +1708,7 @@ net.ipv4.tcp_mem = 88560        118080  177120
     <link href="http://yoursite.com/2020/09/22/kubernetes%20service%20%E5%92%8C%20kube-proxy%E8%AF%A6%E8%A7%A3/"/>
     <id>http://yoursite.com/2020/09/22/kubernetes service 和 kube-proxy详解/</id>
     <published>2020-09-22T09:30:03.000Z</published>
-    <updated>2020-12-02T13:52:20.703Z</updated>
+    <updated>2021-02-10T03:30:17.099Z</updated>
     
     <content type="html"><![CDATA[<h1 id="kubernetes-service-和-kube-proxy详解"><a href="#kubernetes-service-和-kube-proxy详解" class="headerlink" title="kubernetes service 和 kube-proxy详解"></a>kubernetes service 和 kube-proxy详解</h1><blockquote>
 <p>service 是Kubernetes里面非常重要的一个功能，用以解决负载均衡、弹性伸缩、升级灰度等等 </p>
@@ -1684,17 +1748,21 @@ net.ipv4.tcp_mem = 88560        118080  177120
 <h3 id="iptables-实现负载均衡的工作流程"><a href="#iptables-实现负载均衡的工作流程" class="headerlink" title="iptables 实现负载均衡的工作流程"></a>iptables 实现负载均衡的工作流程</h3><p>如果kube-proxy不是用的ipvs模式，那么主要靠iptables来做DNAT和SNAT以及负载均衡</p>
 <p>iptables+clusterIP工作流程：</p>
 <ol>
-<li>集群内访问svc 10.10.35.224:3306 命中 kube-services iptables</li>
+<li>集群内访问svc 10.10.35.224:3306 命中 kube-services iptables（两条规则，宿主机、以及pod内）</li>
 <li>iptables 规则：KUBE-SEP-F4QDAAVSZYZMFXZQ 对应到  KUBE-SEP-F4QDAAVSZYZMFXZQ</li>
 <li>KUBE-SEP-F4QDAAVSZYZMFXZQ 指示 DNAT到 宿主机：192.168.0.83:10379（在内核中将包改写了ip port）</li>
 <li>从svc description中可以看到这个endpoint的地址 192.168.0.83:10379（pod使用Host network）</li>
 </ol>
 <p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/52e050ebb7841d70b7e3ea62e18d5b30.png" alt="image.png"></p>
+<p>iptables规则解析如下（不一样的case）：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div></pre></td><td class="code"><pre><div class="line">-t nat -A &#123;PREROUTING, OUTPUT&#125; -m conntrack --ctstate NEW -j KUBE-SERVICES</div><div class="line"></div><div class="line"># 宿主机访问 nginx Service 的流量，同时满足 4 个条件：</div><div class="line"># 1. src_ip 不是 Pod 网段</div><div class="line"># 2. dst_ip=3.3.3.3/32 (ClusterIP)</div><div class="line"># 3. proto=TCP</div><div class="line"># 4. dport=80</div><div class="line"># 如果匹配成功，直接跳转到 KUBE-MARK-MASQ；否则，继续匹配下面一条（iptables 是链式规则，高优先级在前）</div><div class="line"># 跳转到 KUBE-MARK-MASQ 是为了保证这些包出宿主机时，src_ip 用的是宿主机 IP。</div><div class="line">-A KUBE-SERVICES ! -s 1.1.0.0/16 -d 3.3.3.3/32 -p tcp -m tcp --dport 80 -j KUBE-MARK-MASQ</div><div class="line"># Pod 访问 nginx Service 的流量：同时满足 4 个条件：</div><div class="line"># 1. 没有匹配到前一条的，（说明 src_ip 是 Pod 网段）</div><div class="line"># 2. dst_ip=3.3.3.3/32 (ClusterIP)</div><div class="line"># 3. proto=TCP</div><div class="line"># 4. dport=80</div><div class="line">-A KUBE-SERVICES -d 3.3.3.3/32 -p tcp -m tcp --dport 80 -j KUBE-SVC-NGINX</div><div class="line"></div><div class="line"># 以 50% 的概率跳转到 KUBE-SEP-NGINX1</div><div class="line">-A KUBE-SVC-NGINX -m statistic --mode random --probability 0.50 -j KUBE-SEP-NGINX1</div><div class="line"># 如果没有命中上面一条，则以 100% 的概率跳转到 KUBE-SEP-NGINX2</div><div class="line">-A KUBE-SVC-NGINX -j KUBE-SEP-NGINX2</div><div class="line"></div><div class="line"># 如果 src_ip=1.1.1.1/32，说明是 Service-&gt;client 流量，则</div><div class="line"># 需要做 SNAT（MASQ 是动态版的 SNAT），替换 src_ip -&gt; svc_ip，这样客户端收到包时，</div><div class="line"># 看到就是从 svc_ip 回的包，跟它期望的是一致的。</div><div class="line">-A KUBE-SEP-NGINX1 -s 1.1.1.1/32 -j KUBE-MARK-MASQ</div><div class="line"># 如果没有命令上面一条，说明 src_ip != 1.1.1.1/32，则说明是 client-&gt; Service 流量，</div><div class="line"># 需要做 DNAT，将 svc_ip -&gt; pod1_ip，</div><div class="line">-A KUBE-SEP-NGINX1 -p tcp -m tcp -j DNAT --to-destination 1.1.1.1:80</div><div class="line"># 同理，见上面两条的注释</div><div class="line">-A KUBE-SEP-NGINX2 -s 1.1.1.2/32 -j KUBE-MARK-MASQ</div><div class="line">-A KUBE-SEP-NGINX2 -p tcp -m tcp -j DNAT --to-destination 1.1.1.2:80</div></pre></td></tr></table></figure>
+<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/dc0aa14d0eedf9f8f6f8bca1eee34cf8.png" alt="image.png"></p>
 <p>在对应的宿主机上可以清楚地看到容器中的mysqld进程正好监听着 10379端口</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">[root@az1-drds-83 ~]# ss -lntp |grep 10379</div><div class="line">LISTEN     0      128         :::10379                   :::*                   users:((&quot;mysqld&quot;,pid=17707,fd=18))</div><div class="line">[root@az1-drds-83 ~]# ps auxff | grep 17707 -B2</div><div class="line">root     13606  0.0  0.0  10720  3764 ?        Sl   17:09   0:00  \_ containerd-shim -namespace moby -workdir /var/lib/containerd/io.containerd.runtime.v1.linux/moby/ead57b52b11902b9b5004db0b72abb060b56a1af7ee7ad7066bd09c946abcb97 -address /run/containerd/containerd.sock -containerd-binary /usr/bin/containerd -runtime-root /var/run/docker/runtime-runc</div><div class="line"></div><div class="line">root     13624  0.0  0.0 103044 10424 ?        Ss   17:09   0:00  |   \_ python /entrypoint.py</div><div class="line">root     14835  0.0  0.0  11768  1636 ?        S    17:10   0:00  |   \_ /bin/sh /u01/xcluster/bin/mysqld_safe --defaults-file=/home/mysql/my10379.cnf</div><div class="line">alidb    17707  0.6  0.0 1269128 67452 ?       Sl   17:10   0:25  |       \_ /u01/xcluster_20200303/bin/mysqld --defaults-file=/home/mysql/my10379.cnf --basedir=/u01/xcluster_20200303 --datadir=/home/mysql/data10379/dbs10379 --plugin-dir=/u01/xcluster_20200303/lib/plugin --user=mysql --log-error=/home/mysql/data10379/mysql/master-error.log --open-files-limit=8192 --pid-file=/home/mysql/data10379/dbs10379/az1-drds-83.pid --socket=/home/mysql/data10379/tmp/mysql.sock --port=10379</div></pre></td></tr></table></figure>
 <p>对应的这个pod的description：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div></pre></td><td class="code"><pre><div class="line">#kubectl describe pod apsaradbcluster010-cv6w</div><div class="line">Name:         apsaradbcluster010-cv6w</div><div class="line">Namespace:    default</div><div class="line">Priority:     0</div><div class="line">Node:         az1-drds-83/192.168.0.83</div><div class="line">Start Time:   Thu, 10 Sep 2020 17:09:33 +0800</div><div class="line">Labels:       alisql.clusterName=apsaradbcluster010</div><div class="line">              alisql.pod_name=apsaradbcluster010-cv6w</div><div class="line">              alisql.pod_role=leader</div><div class="line">Annotations:  apsara.metric.pod_name: apsaradbcluster010-cv6w</div><div class="line">Status:       Running</div><div class="line">IP:           192.168.0.83</div><div class="line">IPs:</div><div class="line">  IP:           192.168.0.83</div><div class="line">Controlled By:  ApsaradbCluster/apsaradbcluster010</div><div class="line">Containers:</div><div class="line">  engine:</div><div class="line">    Container ID:   docker://ead57b52b11902b9b5004db0b72abb060b56a1af7ee7ad7066bd09c946abcb97</div><div class="line">    Image:          reg.docker.alibaba-inc.com/apsaradb/alisqlcluster-engine:develop-20200910140415</div><div class="line">    Image ID:       docker://sha256:7ad5cc53c87b34806eefec829d70f5f0192f4127c7ee4e867cb3da3bb6c2d709</div><div class="line">    Ports:          10379/TCP, 20383/TCP, 46846/TCP</div><div class="line">    Host Ports:     10379/TCP, 20383/TCP, 46846/TCP</div><div class="line">    State:          Running</div><div class="line">      Started:      Thu, 10 Sep 2020 17:09:35 +0800</div><div class="line">    Ready:          True</div><div class="line">    Restart Count:  0</div><div class="line">    Environment:</div><div class="line">      ALISQL_POD_NAME:  apsaradbcluster010-cv6w (v1:metadata.name)</div><div class="line">      ALISQL_POD_PORT:  10379</div><div class="line">    Mounts:</div><div class="line">      /dev/shm from devshm (rw)</div><div class="line">      /etc/localtime from etclocaltime (rw)</div><div class="line">      /home/mysql/data from data-dir (rw)</div><div class="line">      /var/run/secrets/kubernetes.io/serviceaccount from default-token-n2bmn (ro)</div><div class="line">  exporter:</div><div class="line">    Container ID:  docker://b49865b7798f9036b431203d54994ac8fdfcadacb01a2ab4494b13b2681c482d</div><div class="line">    Image:         reg.docker.alibaba-inc.com/apsaradb/alisqlcluster-exporter:latest</div><div class="line">    Image ID:      docker://sha256:432cdd0a0e7c74c6eb66551b6f6af9e4013f60fb07a871445755f6577b44da19</div><div class="line">    Port:          47272/TCP</div><div class="line">    Host Port:     47272/TCP</div><div class="line">    Args:</div><div class="line">      --web.listen-address=:47272</div><div class="line">      --collect.binlog_size</div><div class="line">      --collect.engine_innodb_status</div><div class="line">      --collect.info_schema.innodb_metrics</div><div class="line">      --collect.info_schema.processlist</div><div class="line">      --collect.info_schema.tables</div><div class="line">      --collect.info_schema.tablestats</div><div class="line">      --collect.slave_hosts</div><div class="line">    State:          Running</div><div class="line">      Started:      Thu, 10 Sep 2020 17:09:35 +0800</div><div class="line">    Ready:          True</div><div class="line">    Restart Count:  0</div><div class="line">    Environment:</div><div class="line">      ALISQL_POD_NAME:   apsaradbcluster010-cv6w (v1:metadata.name)</div><div class="line">      DATA_SOURCE_NAME:  root:@(127.0.0.1:10379)/</div><div class="line">    Mounts:</div><div class="line">      /dev/shm from devshm (rw)</div><div class="line">      /etc/localtime from etclocaltime (rw)</div><div class="line">      /home/mysql/data from data-dir (rw)</div><div class="line">      /var/run/secrets/kubernetes.io/serviceaccount from default-token-n2bmn (ro)</div></pre></td></tr></table></figure>
 <p>DNAT 规则的作用，就是<strong>在 PREROUTING 检查点之前，也就是在路由之前，将流入 IP 包的目的地址和端口，改成–to-destination 所指定的新的目的地址和端口</strong>。可以看到，这个目的地址和端口，正是被代理 Pod 的 IP 地址和端口。</p>
+<h4 id="完整的iptables规则解析"><a href="#完整的iptables规则解析" class="headerlink" title="完整的iptables规则解析"></a>完整的iptables规则解析</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"></div><div class="line"></div></pre></td></tr></table></figure>
 <h4 id="如下是一个iptables来实现service的案例中的iptables流量分配规则："><a href="#如下是一个iptables来实现service的案例中的iptables流量分配规则：" class="headerlink" title="如下是一个iptables来实现service的案例中的iptables流量分配规则："></a>如下是一个iptables来实现service的案例中的iptables流量分配规则：</h4><p>三个pod，每个pod承担三分之一的流量</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">iptables-save | grep 3306</div><div class="line"></div><div class="line">iptables-save | grep KUBE-SERVICES</div><div class="line"></div><div class="line">#iptables-save |grep KUBE-SVC-RVEVH2XMONK6VC5O</div><div class="line">:KUBE-SVC-RVEVH2XMONK6VC5O - [0:0]</div><div class="line">-A KUBE-SERVICES -d 10.10.70.95/32 -p tcp -m comment --comment &quot;drds/mysql-read:mysql cluster IP&quot; -m tcp --dport 3306 -j KUBE-SVC-RVEVH2XMONK6VC5O</div><div class="line">-A KUBE-SVC-RVEVH2XMONK6VC5O -m comment --comment &quot;drds/mysql-read:mysql&quot; -m statistic --mode random --probability 0.33333333349 -j KUBE-SEP-XC4TZYIZFYB653VI</div><div class="line">-A KUBE-SVC-RVEVH2XMONK6VC5O -m comment --comment &quot;drds/mysql-read:mysql&quot; -m statistic --mode random --probability 0.50000000000 -j KUBE-SEP-MK4XPBZUIJGFXKED</div><div class="line">-A KUBE-SVC-RVEVH2XMONK6VC5O -m comment --comment &quot;drds/mysql-read:mysql&quot; -j KUBE-SEP-AAYXWGQJBDHUJUQ3</div></pre></td></tr></table></figure>
 <p>到这里我们基本可以看到，利用iptables规则，宿主机内核把发到宿主机上的流量按照iptables规则做dnat后发给service后端的pod，同时iptables规则可以配置每个pod的流量大小。再辅助kube-proxy监听pod的起停和健康状态并相应地更新iptables规则，这样整个service实现逻辑就很清晰了。</p>
@@ -1735,7 +1803,7 @@ net.ipv4.tcp_mem = 88560        118080  177120
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"># ipvsadm -L -n  |grep 70.130 -A12</div><div class="line">TCP  10.68.70.130:12380 rr</div><div class="line">  -&gt; 172.20.185.217:9376          Masq    1      0          0</div></pre></td></tr></table></figure>
 <h2 id="为什么clusterIP不能ping通"><a href="#为什么clusterIP不能ping通" class="headerlink" title="为什么clusterIP不能ping通"></a>为什么clusterIP不能ping通</h2><p><a href="https://cizixs.com/2017/03/30/kubernetes-introduction-service-and-kube-proxy/" target="_blank" rel="external">集群内访问cluster ip（不能ping，只能cluster ip+port）就是在到达网卡之前被内核iptalbes做了dnat/snat</a>, cluster IP是一个虚拟ip，可以针对具体的服务固定下来，这样服务后面的pod可以随便变化。</p>
 <p>iptables模式的svc会ping不通clusterIP，可以看如下iptables和route（留意：–reject-with icmp-port-unreachable）：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">#ping 10.96.229.40</div><div class="line">PING 10.96.229.40 (10.96.229.40) 56(84) bytes of data.</div><div class="line">^C</div><div class="line">--- 10.96.229.40 ping statistics ---</div><div class="line">2 packets transmitted, 0 received, 100% packet loss, time 999ms</div><div class="line"></div><div class="line"></div><div class="line">#iptables-save |grep 10.96.229.40</div><div class="line">-A KUBE-SERVICES -d 10.96.229.40/32 -p tcp -m comment --comment &quot;***-service:https has no endpoints&quot; -m tcp --dport 8443 -j REJECT --reject-with icmp-port-unreachable</div><div class="line"></div><div class="line">#ip route get 10.96.229.40</div><div class="line">10.96.229.40 via 11.164.219.253 dev eth0  src 11.164.219.119 </div><div class="line">    cache</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">#ping 10.96.229.40</div><div class="line">PING 10.96.229.40 (10.96.229.40) 56(84) bytes of data.</div><div class="line">^C</div><div class="line">--- 10.96.229.40 ping statistics ---</div><div class="line">2 packets transmitted, 0 received, 100% packet loss, time 999ms</div><div class="line"></div><div class="line">#iptables-save |grep 10.96.229.40</div><div class="line">-A KUBE-SERVICES -d 10.96.229.40/32 -p tcp -m comment --comment &quot;***-service:https has no endpoints&quot; -m tcp --dport 8443 -j REJECT --reject-with icmp-port-unreachable</div><div class="line"></div><div class="line">#ip route get 10.96.229.40</div><div class="line">10.96.229.40 via 11.164.219.253 dev eth0  src 11.164.219.119 </div><div class="line">    cache</div></pre></td></tr></table></figure>
 <p>如果用ipvs实现的clusterIP是可以ping通的：</p>
 <ul>
 <li>如果用iptables 来做转发是ping不通的，因为iptables里面这条规则只处理tcp包，reject了icmp</li>
@@ -1748,7 +1816,19 @@ net.ipv4.tcp_mem = 88560        118080  177120
 <p>然后在本机抓包（到ipvs后端的pod上抓不到icmp包）：</p>
 <p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/1caea5b0eb23a47241191d1b5d8c5001.png" alt="image.png"></p>
 <p>从上面可以看出显然ipvs只会转发tcp包到后端pod，所以icmp包不会通过ipvs转发到pod上，同时在本地回环网卡lo上抓到了进去的icmp包。因为本地添加了一条路由规则，目标clusterIP被指示发到lo网卡上，lo网卡回复了这个ping包，所以通了。</p>
-<h2 id="NodePort-的一些问题"><a href="#NodePort-的一些问题" class="headerlink" title="NodePort 的一些问题"></a>NodePort 的一些问题</h2><ul>
+<h2 id="NodePort-Service"><a href="#NodePort-Service" class="headerlink" title="NodePort Service"></a>NodePort Service</h2><p>这种类型的 Service 也能被宿主机和 pod 访问，但与 ClusterIP 不同的是，<strong>它还能被 集群外的服务访问</strong>。</p>
+<ul>
+<li>External node IP + port in NodePort range to any endpoint (pod), e.g. 10.0.0.1:31000</li>
+<li>Enables access from outside</li>
+</ul>
+<p>实现上，kube-apiserver 会<strong>从预留的端口范围内分配一个端口给 Service</strong>，然后 <strong>每个宿主机上的 kube-proxy 都会创建以下规则</strong>：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">-t nat -A &#123;PREROUTING, OUTPUT&#125; -m conntrack --ctstate NEW -j KUBE-SERVICES</div><div class="line"></div><div class="line">-A KUBE-SERVICES ! -s 1.1.0.0/16 -d 3.3.3.3/32 -p tcp -m tcp --dport 80 -j KUBE-MARK-MASQ</div><div class="line">-A KUBE-SERVICES -d 3.3.3.3/32 -p tcp -m tcp --dport 80 -j KUBE-SVC-NGINX</div><div class="line"># 如果前面两条都没匹配到（说明不是 ClusterIP service 流量），并且 dst 是 LOCAL，跳转到 KUBE-NODEPORTS</div><div class="line">-A KUBE-SERVICES -m addrtype --dst-type LOCAL -j KUBE-NODEPORTS</div><div class="line"></div><div class="line">-A KUBE-NODEPORTS -p tcp -m tcp --dport 31000 -j KUBE-MARK-MASQ</div><div class="line">-A KUBE-NODEPORTS -p tcp -m tcp --dport 31000 -j KUBE-SVC-NGINX</div><div class="line"></div><div class="line">-A KUBE-SVC-NGINX -m statistic --mode random --probability 0.50 -j KUBE-SEP-NGINX1</div><div class="line">-A KUBE-SVC-NGINX -j KUBE-SEP-NGINX2</div></pre></td></tr></table></figure>
+<ol>
+<li>前面几步和 ClusterIP Service 一样；如果没匹配到 ClusterIP 规则，则跳转到 <code>KUBE-NODEPORTS</code> chain。</li>
+<li><code>KUBE-NODEPORTS</code> chain 里做 Service 匹配，但<strong>这次只匹配协议类型和目的端口号</strong>。</li>
+<li>匹配成功后，转到对应的 <code>KUBE-SVC-</code> chain，后面的过程跟 ClusterIP 是一样的。</li>
+</ol>
+<h3 id="NodePort-的一些问题"><a href="#NodePort-的一些问题" class="headerlink" title="NodePort 的一些问题"></a>NodePort 的一些问题</h3><ul>
 <li>首先endpoint回复不能走node 1给client，因为会被client reset（如果在node1上将src ip替换成node2的ip可能会路由不通）。回复包在 node1上要snat给node2</li>
 <li>经过snat后endpoint没法拿到client ip（slb之类是通过option带过来）</li>
 </ul>
@@ -1877,6 +1957,8 @@ net.ipv4.tcp_mem = 88560        118080  177120
 <p><a href="http://arthurchiao.art/blog/ebpf-and-k8s-zh/" target="_blank" rel="external">http://arthurchiao.art/blog/ebpf-and-k8s-zh/</a>  大规模微服务利器：eBPF 与 Kubernetes</p>
 <p><a href="http://arthurchiao.art/blog/cilium-life-of-a-packet-pod-to-service-zh/" target="_blank" rel="external">http://arthurchiao.art/blog/cilium-life-of-a-packet-pod-to-service-zh/</a>  Life of a Packet in Cilium：实地探索 Pod-to-Service 转发路径及 BPF 处理逻辑</p>
 <p><a href="http://arthurchiao.art/blog/understanding-ebpf-datapath-in-cilium-zh/" target="_blank" rel="external">http://arthurchiao.art/blog/understanding-ebpf-datapath-in-cilium-zh/</a>  深入理解 Cilium 的 eBPF 收发包路径（datapath）（KubeCon, 2019）</p>
+<p><a href="http://arthurchiao.art/blog/socket-acceleration-with-ebpf-zh/?hmsr=toutiao.io&amp;utm_medium=toutiao.io&amp;utm_source=toutiao.io#11-bpf-%E5%9F%BA%E7%A1%80" target="_blank" rel="external">利用 ebpf sockmap/redirection 提升 socket 性能</a></p>
+<p><a href="http://arthurchiao.art/blog/cilium-scale-k8s-service-with-bpf-zh/" target="_blank" rel="external">利用 eBPF 支撑大规模 K8s Service (LPC, 2019)</a></p>
 <p><a href="https://jiayu0x.com/2014/12/02/iptables-essential-summary/" target="_blank" rel="external">https://jiayu0x.com/2014/12/02/iptables-essential-summary/</a></p>
 <p><a href="https://k8s.imroc.io/" target="_blank" rel="external">imroc 电子书</a></p>
 ]]></content>
@@ -2179,109 +2261,6 @@ net.ipv4.tcp_mem = 88560        118080  177120
       <category term="net_write_timeout" scheme="http://yoursite.com/tags/net-write-timeout/"/>
     
       <category term="timeout" scheme="http://yoursite.com/tags/timeout/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>如何创建一个自己连自己的TCP连接</title>
-    <link href="http://yoursite.com/2020/07/01/%E5%A6%82%E4%BD%95%E5%88%9B%E5%BB%BA%E4%B8%80%E4%B8%AA%E8%87%AA%E5%B7%B1%E8%BF%9E%E8%87%AA%E5%B7%B1%E7%9A%84TCP%E8%BF%9E%E6%8E%A5/"/>
-    <id>http://yoursite.com/2020/07/01/如何创建一个自己连自己的TCP连接/</id>
-    <published>2020-07-01T09:30:03.000Z</published>
-    <updated>2020-11-30T01:15:33.422Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="如何创建一个自己连自己的TCP连接"><a href="#如何创建一个自己连自己的TCP连接" class="headerlink" title="如何创建一个自己连自己的TCP连接"></a>如何创建一个自己连自己的TCP连接</h1><blockquote>
-<p>能不能建立一个tcp连接， src-ip:src-port 等于dest-ip:dest-port 呢？</p>
-</blockquote>
-<p>执行</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># nc 192.168.0.79 18082 -p 18082</div></pre></td></tr></table></figure>
-<p>然后就能看到</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># netstat -ant |grep 18082</div><div class="line">tcp        0      0 192.168.0.79:18082      192.168.0.79:18082      ESTABLISHED</div></pre></td></tr></table></figure>
-<p>比较神奇，这个连接的srcport等于destport，并且完全可以工作，也能收发数据。这有点颠覆大家的理解，端口能重复使用？</p>
-<h2 id="port-range"><a href="#port-range" class="headerlink" title="port range"></a>port range</h2><p>我们都知道linux下本地端口范围由参数控制</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># cat /proc/sys/net/ipv4/ip_local_port_range </div><div class="line">10000	65535</div></pre></td></tr></table></figure>
-<p>所以也经常看到一个<strong>误解</strong>：一台机器上最多能创建65535个TCP连接</p>
-<h2 id="到底一台机器上最多能创建多少个TCP连接"><a href="#到底一台机器上最多能创建多少个TCP连接" class="headerlink" title="到底一台机器上最多能创建多少个TCP连接"></a>到底一台机器上最多能创建多少个TCP连接</h2><p>在内存、文件句柄足够的话可以创建的连接是没有限制的，那么/proc/sys/net/ipv4/ip_local_port_range指定的端口范围到底是什么意思呢？</p>
-<p>一个TCP连接只要保证四元组(src-ip src-port dest-ip dest-port)唯一就可以了，而不是要求src port唯一，比如：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"># netstat -ant |grep 18089</div><div class="line">tcp        0      0 192.168.1.79:18089      192.168.1.79:22         ESTABLISHED</div><div class="line">tcp        0      0 192.168.1.79:18089      192.168.1.79:18080      ESTABLISHED</div><div class="line">tcp        0      0 192.168.0.79:18089      192.168.0.79:22         TIME_WAIT </div><div class="line">tcp        0      0 192.168.1.79:22         192.168.1.79:18089      ESTABLISHED</div><div class="line">tcp        0      0 192.168.1.79:18080      192.168.1.79:18089      ESTABLISHED</div></pre></td></tr></table></figure>
-<p>从前三行可以清楚地看到18089被用了三次，第一第二行src-ip、dest-ip也是重复的，但是dest port不一样，第三行的src-port还是18089，但是src-ip变了。</p>
-<p>所以一台机器能创建的TCP连接是没有限制的，而ip_local_port_range是指没有bind的时候OS随机分配端口的范围，但是分配到的端口要同时满足五元组唯一，这样 ip_local_port_range 限制的是连同一个目标（dest-ip和dest-port一样）的port的数量（请忽略本地多网卡的情况，因为dest-ip为以后route只会选用一个本地ip）。</p>
-<p>但是如果程序调用的是bind函数(bind(ip,port=0))这个时候是让系统绑定到某个网卡和自动分配的端口，此时系统没有办法确定接下来这个socket是要去connect还是listen. 如果是listen的话，那么肯定是不能出现端口冲突的，如果是connect的话，只要满足4元组唯一即可。在这种情况下，系统只能尽可能满足更强的要求，就是先要求端口不能冲突，即使之后去connect的时候4元组是唯一的。</p>
-<p>bind()的时候内核是还不知道四元组的，只知道src_ip、src_port，所以这个时候单网卡下src_port是没法重复的，但是connect()的时候已经知道了四元组的全部信息，所以只要保证四元组唯一就可以了，那么这里的src_port完全是可以重复使用的。</p>
-<h3 id="TCP-SO-REUSEADDR"><a href="#TCP-SO-REUSEADDR" class="headerlink" title="TCP SO_REUSEADDR"></a>TCP SO_REUSEADDR</h3><p>SO_REUSEADDR 主要解决的是重用TIME_WAIT状态的port, 程序崩溃后立即重启失败（Address Already in use），可以通过在调用bind函数之前设置SO_REUSEADDR来解决。</p>
-<blockquote>
-<p>What exactly does SO_REUSEADDR do?</p>
-<p>This socket option tells the kernel that even if this port is busy (in the TIME_WAIT state), go ahead and reuse it anyway. If it is busy, but with another state, you will still get an address already in use error. It is useful if your server has been shut down, and then restarted right away while sockets are still active on its port. You should be aware that if any unexpected data comes in, it may confuse your server, but while this is possible, it is not likely.</p>
-<p>It has been pointed out that “A socket is a 5 tuple (proto, local addr, local port, remote addr, remote port). SO_REUSEADDR just says that you can reuse local addresses. The 5 tuple still must be unique!” This is true, and this is why it is very unlikely that unexpected data will ever be seen by your server. The danger is that such a 5 tuple is still floating around on the net, and while it is bouncing around, a new connection from the same client, on the same system, happens to get the same remote port. </p>
-</blockquote>
-<p>By setting <code>SO_REUSEADDR</code> user informs the kernel of an intention to share the bound port with anyone else, but only if it doesn’t cause a conflict on the protocol layer. There are at least three situations when this flag is useful:</p>
-<ol>
-<li>Normally after binding to a port and stopping a server it’s neccesary to wait for a socket to time out before another server can bind to the same port. With <code>SO_REUSEADDR</code> set it’s possible to rebind immediately, even if the socket is in a <code>TIME_WAIT</code> state.</li>
-<li>When one server binds to <code>INADDR_ANY</code>, say <code>0.0.0.0:1234</code>, it’s impossible to have another server binding to a specific address like <code>192.168.1.21:1234</code>. With <code>SO_REUSEADDR</code> flag this behaviour is allowed.</li>
-<li>When using the bind before connect trick only a single connection can use a single outgoing source port. With this flag, it’s possible for many connections to reuse the same source port, given that they connect to different destination addresses.</li>
-</ol>
-<h3 id="TCP-SO-REUSEPORT"><a href="#TCP-SO-REUSEPORT" class="headerlink" title="TCP SO_REUSEPORT"></a>TCP SO_REUSEPORT</h3><p>SO_REUSEPORT主要用来解决惊群、性能等问题。</p>
-<blockquote>
-<p>SO_REUSEPORT is also useful for eliminating the try-10-times-to-bind hack in ftpd’s data connection setup routine.  Without SO_REUSEPORT, only one ftpd thread can bind to TCP (lhost, lport, INADDR_ANY, 0) in preparation for connecting back to the client.  Under conditions of heavy load, there are more threads colliding here than the try-10-times hack can accomodate.  With SO_REUSEPORT, things  work nicely and the hack becomes unnecessary.</p>
-</blockquote>
-<p>SO_REUSEPORT使用场景：linux kernel 3.9 引入了最新的SO_REUSEPORT选项，使得多进程或者多线程创建多个绑定同一个ip:port的监听socket，提高服务器的接收链接的并发能力,程序的扩展性更好；此时需要设置SO_REUSEPORT（<strong>注意所有进程都要设置才生效</strong>）。</p>
-<p>setsockopt(listenfd, SOL_SOCKET, SO_REUSEPORT,(const void *)&amp;reuse , sizeof(int));</p>
-<p>目的：每一个进程有一个独立的监听socket，并且bind相同的ip:port，独立的listen()和accept()；提高接收连接的能力。（例如nginx多进程同时监听同一个ip:port）</p>
-<blockquote>
-<p>(a) on Linux SO_REUSEPORT is meant to be used <em>purely</em> for load balancing multiple incoming UDP packets or incoming TCP connection requests across multiple sockets belonging to the same app.  ie. it’s a work around for machines with a lot of cpus, handling heavy load, where a single listening socket becomes a bottleneck because of cross-thread contention on the in-kernel socket lock (and state).</p>
-<p>(b) set IP_BIND_ADDRESS_NO_PORT socket option for tcp sockets before binding to a specific source ip<br>with port 0 if you’re going to use the socket for connect() rather then listen() this allows the kernel<br>to delay allocating the source port until connect() time at which point it is much cheaper</p>
-</blockquote>
-<h2 id="自己连自己的连接"><a href="#自己连自己的连接" class="headerlink" title="自己连自己的连接"></a>自己连自己的连接</h2><p>我们来看自己连自己发生了什么</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line"><span class="comment"># strace nc 192.168.0.79 18084 -p 18084</span></div><div class="line">execve(<span class="string">"/usr/bin/nc"</span>, [<span class="string">"nc"</span>, <span class="string">"192.168.0.79"</span>, <span class="string">"18084"</span>, <span class="string">"-p"</span>, <span class="string">"18084"</span>], [/* 31 vars */]) = 0</div><div class="line">brk(NULL)                               = 0x23d4000</div><div class="line">mmap(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f213f394000</div><div class="line">access(<span class="string">"/etc/ld.so.preload"</span>, R_OK)      = -1 ENOENT (No such file or directory)</div><div class="line">open(<span class="string">"/etc/ld.so.cache"</span>, O_RDONLY|O_CLOEXEC) = 3</div><div class="line">fstat(3, &#123;st_mode=S_IFREG|0644, st_size=23295, ...&#125;) = 0</div><div class="line">mmap(NULL, 23295, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7f213f38e000</div><div class="line">close(3)                                = 0</div><div class="line">open(<span class="string">"/lib64/libssl.so.10"</span>, O_RDONLY|O_CLOEXEC) = 3</div><div class="line">………………</div><div class="line">munmap(0x7f213f393000, 4096)            = 0</div><div class="line">open(<span class="string">"/usr/share/ncat/ca-bundle.crt"</span>, O_RDONLY) = -1 ENOENT (No such file or directory)</div><div class="line">socket(AF_INET, SOCK_STREAM, IPPROTO_TCP) = 3</div><div class="line">fcntl(3, F_GETFL)                       = 0x2 (flags O_RDWR)</div><div class="line">fcntl(3, F_SETFL, O_RDWR|O_NONBLOCK)    = 0</div><div class="line">setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0</div><div class="line"><span class="built_in">bind</span>(3, &#123;sa_family=AF_INET, sin_port=htons(18084), sin_addr=inet_addr(<span class="string">"0.0.0.0"</span>)&#125;, 16) = 0</div><div class="line">//注意这里<span class="built_in">bind</span>后直接就是connect，没有listen</div><div class="line">connect(3, &#123;sa_family=AF_INET, sin_port=htons(18084), sin_addr=inet_addr(<span class="string">"192.168.0.79"</span>)&#125;, 16) = -1 EINPROGRESS (Operation now <span class="keyword">in</span> progress)</div><div class="line">select(4, [3], [3], [3], &#123;10, 0&#125;)       = 1 (out [3], left &#123;9, 999998&#125;)</div><div class="line">getsockopt(3, SOL_SOCKET, SO_ERROR, [0], [4]) = 0</div><div class="line">select(4, [0 3], [], [], NULL</div></pre></td></tr></table></figure>
-<p>抓包看看，正常三次握手，但是syn的seq和syn+ack的seq是一样的</p>
-<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/341f2891253baa4eebdaeaf34aa60c4b.png" alt="image.png"></p>
-<p>这里算是常说的TCP simultaneous open，simultaneous open指的是两个不同port同时发syn建连接。而这里是先创建了一个socket，然后socket bind到18084端口上（作为local port，因为nc指定了local port），然后执行 connect, 连接到的目标也是192.168.0.79:18084，而这个目标正好是刚刚创建的socket，也就是自己连自己（连接双方总共只有一个socket）。因为一个socket充当了两个角色（client、server），握手的时候发syn，自己收到自己发的syn，就相当于两个角色simultaneous open了。</p>
-<p>正常一个连接一定需要两个socket参与（这两个socket不一定要在两台机器上），而这个连接只用了一个socket就创建了，还能正常传输数据。但是仔细观察发数据的时候发放的seq增加（注意tcp_len 11那里的seq），收方的seq也增加了11，这是因为本来这就是用的同一个socket。正常两个socket通讯不是这样的。</p>
-<p>那么这种情况为什么没有当做bug被处理呢？</p>
-<h2 id="TCP-simultanous-open"><a href="#TCP-simultanous-open" class="headerlink" title="TCP simultanous open"></a>TCP simultanous open</h2><p>在tcp连接的定义中，通常都是一方先发起连接，假如两边同时发起连接，也就是两个socket同时给对方发 syn 呢？ 这在内核中是支持的，就叫同时打开（simultaneous open）。</p>
-<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b9a0144a3835759c844f697bc45103fa.png" alt="image.png"></p>
-<p>​                                                                       摘自《tcp/ip卷1》</p>
-<p>可以清楚地看到这个连接建立用了四次握手，然后连接建立了，当然也有 simultanous close(3次挥手成功关闭连接)。如下内核代码 net/ipv4/tcp_input.c 的5924行中就说明了允许这种自己连自己的连接（当然也允许simultanous open). 也就是允许一个socket本来应该收到 syn+ack(发出syn后), 结果收到了syn的情况，而一个socket自己连自己又是这种情况的特例。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div></pre></td><td class="code"><pre><div class="line">	static int tcp_rcv_synsent_state_process(struct sock *sk, struct sk_buff *skb,</div><div class="line">                     const struct tcphdr *th)</div><div class="line">	&#123;</div><div class="line">5916         /* PAWS check. */</div><div class="line">5917         if (tp-&gt;rx_opt.ts_recent_stamp &amp;&amp; tp-&gt;rx_opt.saw_tstamp &amp;&amp;</div><div class="line">5918             tcp_paws_reject(&amp;tp-&gt;rx_opt, 0))</div><div class="line">5919                 goto discard_and_undo;</div><div class="line">5920         //在socket发送syn后收到了一个syn(正常应该收到syn+ack),这里是允许的。</div><div class="line">5921         if (th-&gt;syn) &#123;</div><div class="line">5922                 /* We see SYN without ACK. It is attempt of</div><div class="line">5923                  * simultaneous connect with crossed SYNs.</div><div class="line">5924                  * Particularly, it can be connect to self.  //自己连自己</div><div class="line">5925                  */</div><div class="line">5926                 tcp_set_state(sk, TCP_SYN_RECV);</div><div class="line">5927 </div><div class="line">5928                 if (tp-&gt;rx_opt.saw_tstamp) &#123;</div><div class="line">5929                         tp-&gt;rx_opt.tstamp_ok = 1;</div><div class="line">5930                         tcp_store_ts_recent(tp);</div><div class="line">5931                         tp-&gt;tcp_header_len =</div><div class="line">5932                                 sizeof(struct tcphdr) + TCPOLEN_TSTAMP_ALIGNED;</div><div class="line">5933                 &#125; else &#123;</div><div class="line">5934                         tp-&gt;tcp_header_len = sizeof(struct tcphdr);</div><div class="line">5935                 &#125;</div><div class="line">5936 </div><div class="line">5937                 tp-&gt;rcv_nxt = TCP_SKB_CB(skb)-&gt;seq + 1;</div><div class="line">5938                 tp-&gt;copied_seq = tp-&gt;rcv_nxt;</div><div class="line">5939                 tp-&gt;rcv_wup = TCP_SKB_CB(skb)-&gt;seq + 1;</div><div class="line">5940 </div><div class="line">5941                 /* RFC1323: The window in SYN &amp; SYN/ACK segments is</div><div class="line">5942                  * never scaled.</div><div class="line">5943                  */</div></pre></td></tr></table></figure>
-<p>也就是在发送syn进入SYN_SENT状态之后，收到对端发来的syn包后不会RST，而是处理流程如下，调用tcp_set_state(sk, TCP_SYN_RECV)进入SYN_RECV状态，以及调用tcp_send_synack(sk)向对端发送syn+ack。</p>
-<h2 id="自己连自己的原理解释"><a href="#自己连自己的原理解释" class="headerlink" title="自己连自己的原理解释"></a>自己连自己的原理解释</h2><p>第一我们要理解Kernel是支持simultaneous open（同时打开）的，也就是说socket发走syn后，本来应该收到一个syn+ack的，但是实际收到了一个syn（没有ack），这是允许的。这叫TCP连接同时打开（同时给对方发syn），四次握手然后建立连接成功。</p>
-<p>自己连自己又是simultaneous open的一个特例，特别在这个连接只有一个socket参与，发送、接收都是同一个socket，自然也会是发syn后收到了自己的syn（自己发给自己），然后依照simultaneous open连接也能创建成功。</p>
-<p>这个bind到18084 local port的socket又要连接到 18084 port上，而这个18084 socket已经bind到了socket（也就是自己），就形成了两个socket 的simultaneous open一样，内核又允许这种simultaneous open，所以就形成了自己连自己，也就是一个socket在自己给自己收发数据，所以看到收方和发放的seq是一样的。</p>
-<p>可以用python来重现这个连接连自己的过程：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div></pre></td><td class="code"><pre><div class="line">import socket</div><div class="line">import time</div><div class="line"></div><div class="line">connected=False</div><div class="line">while (not connected):</div><div class="line">        try:</div><div class="line">                sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)</div><div class="line">                sock.setsockopt(socket.IPPROTO_TCP,socket.TCP_NODELAY,1)</div><div class="line">				sock.bind((&apos;&apos;, 18084))               //sock 先bind到18084</div><div class="line">                sock.connect((&apos;127.0.0.1&apos;,18084))    //然后同一个socket连自己</div><div class="line">                connected=True</div><div class="line">        except socket.error,(value,message):</div><div class="line">                print message</div><div class="line"></div><div class="line">        if not connected:</div><div class="line">                print &quot;reconnect&quot;</div><div class="line">               </div><div class="line">print &quot;tcp self connection occurs!&quot;</div><div class="line">print &quot;netstat -an|grep 18084&quot;</div><div class="line">time.sleep(1800)</div></pre></td></tr></table></figure>
-<p>这里connect前如果没有bind那么系统就会从 local port range 分配一个可用port。</p>
-<p>bind成功后会将ip+port放入hash表来判重，这就是我们常看到的 Bind to <em>*</em> failed (IOD #1): Address already in use 异常。所以一台机器上，如果有多个ip，是可以将同一个port bind多次的，但是bind的时候如果不指定ip，也就是bind(‘0’, port) 还是会冲突。</p>
-<p>connect成功后会将四元组放入ehash来判定连接的重复性。如果connect四元组冲突了就会报如下错误</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"># nc 192.168.0.82 8080 -p 29798 -s 192.168.0.79</div><div class="line">Ncat: Cannot assign requested address.</div></pre></td></tr></table></figure>
-<h2 id="bind-和-connect、listen"><a href="#bind-和-connect、listen" class="headerlink" title="bind 和 connect、listen"></a>bind 和 connect、listen</h2><p>当对一个TCP socket调用connect函数时，如果这个socket没有bind指定的端口号，操作系统会为它选择一个当前未被使用的端口号，这个端口号被称为ephemeral port, 范围可以在/proc/sys/net/ipv4/ip_local_port_range里查看。假设30000这个端口被选为ephemeral port。</p>
-<p>如果这个socket指定了local port那么socket创建后会执行bind将这个socket bind到这个port。比如：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">socket(AF_INET, SOCK_STREAM, IPPROTO_TCP) = 3</div><div class="line">fcntl(3, F_GETFL)                       = 0x2 (flags O_RDWR)</div><div class="line">fcntl(3, F_SETFL, O_RDWR|O_NONBLOCK)    = 0</div><div class="line">setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0</div><div class="line">bind(3, &#123;sa_family=AF_INET, sin_port=htons(18084), sin_addr=inet_addr(&quot;0.0.0.0&quot;)&#125;, 16) = 0</div></pre></td></tr></table></figure>
-<p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/5373ecfe0d4496d106c64d3f370c893c.png" alt="image.png"></p>
-<h3 id="listen"><a href="#listen" class="headerlink" title="listen"></a>listen</h3><p><img src="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/4d188cab03e919f055bb9dbe3da0188c.png" alt="image-20200702131215819"></p>
-<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a href="https://segmentfault.com/a/1190000002396411" target="_blank" rel="external">https://segmentfault.com/a/1190000002396411</a></p>
-<p><a href="https://blog.csdn.net/a364572/article/details/40628171" target="_blank" rel="external">linux中TCP的socket、bind、listen、connect和accept的实现</a></p>
-<p><a href="https://ops.tips/blog/how-linux-tcp-introspection/" target="_blank" rel="external">How Linux allows TCP introspection The inner workings of bind and listen on Linux.</a></p>
-<p><a href="https://idea.popcount.org/2014-04-03-bind-before-connect/" target="_blank" rel="external">https://idea.popcount.org/2014-04-03-bind-before-connect/</a></p>
-]]></content>
-    
-    <summary type="html">
-    
-      &lt;h1 id=&quot;如何创建一个自己连自己的TCP连接&quot;&gt;&lt;a href=&quot;#如何创建一个自己连自己的TCP连接&quot; class=&quot;headerlink&quot; title=&quot;如何创建一个自己连自己的TCP连接&quot;&gt;&lt;/a&gt;如何创建一个自己连自己的TCP连接&lt;/h1&gt;&lt;blockquote&gt;
-
-    
-    </summary>
-    
-      <category term="TCP" scheme="http://yoursite.com/categories/TCP/"/>
-    
-    
-      <category term="Linux" scheme="http://yoursite.com/tags/Linux/"/>
-    
-      <category term="network" scheme="http://yoursite.com/tags/network/"/>
-    
-      <category term="TCP" scheme="http://yoursite.com/tags/TCP/"/>
-    
-      <category term="simultaneous" scheme="http://yoursite.com/tags/simultaneous/"/>
-    
-      <category term="自连接" scheme="http://yoursite.com/tags/%E8%87%AA%E8%BF%9E%E6%8E%A5/"/>
     
   </entry>
   

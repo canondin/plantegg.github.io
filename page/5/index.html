@@ -281,6 +281,165 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/07/26/优酷双11全链路压测中通过Perf发现的一个SpringMVC 的性能问题/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="weibo @plantegg">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="plantegg">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2018/07/26/优酷双11全链路压测中通过Perf发现的一个SpringMVC 的性能问题/" itemprop="url">双11全链路压测中通过Perf发现的一个SpringMVC 的性能问题</a></h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-07-26T16:30:03+08:00">
+                2018-07-26
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/troubleshooting/" itemprop="url" rel="index">
+                    <span itemprop="name">troubleshooting</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/07/26/优酷双11全链路压测中通过Perf发现的一个SpringMVC 的性能问题/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2018/07/26/优酷双11全链路压测中通过Perf发现的一个SpringMVC 的性能问题/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="双11全链路压测中通过Perf发现的一个SpringMVC-的性能问题"><a href="#双11全链路压测中通过Perf发现的一个SpringMVC-的性能问题" class="headerlink" title="双11全链路压测中通过Perf发现的一个SpringMVC 的性能问题"></a>双11全链路压测中通过Perf发现的一个SpringMVC 的性能问题</h1><blockquote>
+<p>在最近的全链路压测中TPS不够理想，然后通过perf 工具（perf record 采样， perf report 展示）看到(可以点击看大图)：</p>
+</blockquote>
+<p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b5610fa7e994b1e4578d38347a1478a7" alt="screenshot"></p>
+<h2 id="再来看CPU消耗的火焰图："><a href="#再来看CPU消耗的火焰图：" class="headerlink" title="再来看CPU消耗的火焰图："></a>再来看CPU消耗的火焰图：</h2><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/d228b47200f56fbbf5aadf0da56cbf15" alt="screenshot"></p>
+<p>图中CPU的消耗占21%，不太正常。</p>
+<blockquote>
+<p>可以看到Spring框架消耗了比较多的CPU，具体原因就是在Spring MVC中会大量使用到<br>@RequestMapping<br>@PathVariable<br>带来使用上的便利</p>
+</blockquote>
+<h2 id="业务方修改代码去掉spring中的methodMapping解析后的结果（性能提升了40-）："><a href="#业务方修改代码去掉spring中的methodMapping解析后的结果（性能提升了40-）：" class="headerlink" title="业务方修改代码去掉spring中的methodMapping解析后的结果（性能提升了40%）："></a>业务方修改代码去掉spring中的methodMapping解析后的结果（性能提升了40%）：</h2><p><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/a97e6f1da93173055b1385eebba8e327.png" alt="screenshot.png"></p>
+<p>图中核心业务逻辑能抢到的cpu是21%（之前是15%）。spring methodMapping相关的也在火焰图中找不到了</p>
+<h3 id="Spring收到请求URL后要取出请求变量和做业务运算，具体代码-对照第一个图的调用堆栈）："><a href="#Spring收到请求URL后要取出请求变量和做业务运算，具体代码-对照第一个图的调用堆栈）：" class="headerlink" title="Spring收到请求URL后要取出请求变量和做业务运算，具体代码(对照第一个图的调用堆栈）："></a>Spring收到请求URL后要取出请求变量和做业务运算，具体代码(对照第一个图的调用堆栈）：</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line">170	public RequestMappingInfo More ...getMatchingCondition(HttpServletRequest request) &#123;</div><div class="line">171		RequestMethodsRequestCondition methods = methodsCondition.getMatchingCondition(request);</div><div class="line">172		ParamsRequestCondition params = paramsCondition.getMatchingCondition(request);</div><div class="line">173		HeadersRequestCondition headers = headersCondition.getMatchingCondition(request);</div><div class="line">174		ConsumesRequestCondition consumes = consumesCondition.getMatchingCondition(request);</div><div class="line">175		ProducesRequestCondition produces = producesCondition.getMatchingCondition(request);</div><div class="line">176</div><div class="line">177		if (methods == null || params == null || headers == null || consumes == null || produces == null) &#123;</div><div class="line">178			return null;</div><div class="line">179		&#125;</div><div class="line">180</div><div class="line">181		PatternsRequestCondition patterns = patternsCondition.getMatchingCondition(request);</div><div class="line">182		if (patterns == null) &#123;</div><div class="line">183			return null;</div><div class="line">184		&#125;</div><div class="line">185</div><div class="line">186		RequestConditionHolder custom = customConditionHolder.getMatchingCondition(request);</div><div class="line">187		if (custom == null) &#123;</div><div class="line">188			return null;</div><div class="line">189		&#125;</div><div class="line">190</div><div class="line">191		return new RequestMappingInfo(patterns, methods, params, headers, consumes, produces, custom.getCondition());</div><div class="line">192	&#125;</div></pre></td></tr></table></figure>
+<h3 id="doMatch-代码："><a href="#doMatch-代码：" class="headerlink" title="doMatch 代码："></a>doMatch 代码：</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div><div class="line">99</div><div class="line">100</div><div class="line">101</div><div class="line">102</div><div class="line">103</div><div class="line">104</div><div class="line">105</div><div class="line">106</div><div class="line">107</div><div class="line">108</div><div class="line">109</div><div class="line">110</div><div class="line">111</div><div class="line">112</div><div class="line">113</div><div class="line">114</div><div class="line">115</div><div class="line">116</div><div class="line">117</div><div class="line">118</div><div class="line">119</div><div class="line">120</div><div class="line">121</div><div class="line">122</div><div class="line">123</div><div class="line">124</div><div class="line">125</div><div class="line">126</div><div class="line">127</div></pre></td><td class="code"><pre><div class="line">96 </div><div class="line">97 	protected boolean More ...doMatch(String pattern, String path, boolean fullMatch,</div><div class="line">98 			Map&lt;String, String&gt; uriTemplateVariables) &#123;</div><div class="line">99 </div><div class="line">100		if (path.startsWith(this.pathSeparator) != pattern.startsWith(this.pathSeparator)) &#123;</div><div class="line">101			return false;</div><div class="line">102		&#125;</div><div class="line">103</div><div class="line">104		String[] pattDirs = StringUtils.tokenizeToStringArray(pattern, this.pathSeparator, this.trimTokens, true);</div><div class="line">105		String[] pathDirs = StringUtils.tokenizeToStringArray(path, this.pathSeparator, this.trimTokens, true);</div><div class="line">106</div><div class="line">107		int pattIdxStart = 0;</div><div class="line">108		int pattIdxEnd = pattDirs.length - 1;</div><div class="line">109		int pathIdxStart = 0;</div><div class="line">110		int pathIdxEnd = pathDirs.length - 1;</div><div class="line">111</div><div class="line">112		// Match all elements up to the first **</div><div class="line">113		while (pattIdxStart &lt;= pattIdxEnd &amp;&amp; pathIdxStart &lt;= pathIdxEnd) &#123;</div><div class="line">114			String patDir = pattDirs[pattIdxStart];</div><div class="line">115			if (&quot;**&quot;.equals(patDir)) &#123;</div><div class="line">116				break;</div><div class="line">117			&#125;</div><div class="line">118			if (!matchStrings(patDir, pathDirs[pathIdxStart], uriTemplateVariables)) &#123;</div><div class="line">119				return false;</div><div class="line">120			&#125;</div><div class="line">121			pattIdxStart++;</div><div class="line">122			pathIdxStart++;</div><div class="line">123		&#125;</div><div class="line">124</div><div class="line">125		if (pathIdxStart &gt; pathIdxEnd) &#123;</div><div class="line">126			// Path is exhausted, only match if rest of pattern is * or **&apos;s</div><div class="line">127			if (pattIdxStart &gt; pattIdxEnd) &#123;</div><div class="line">128				return (pattern.endsWith(this.pathSeparator) ? path.endsWith(this.pathSeparator) :</div><div class="line">129						!path.endsWith(this.pathSeparator));</div><div class="line">130			&#125;</div><div class="line">131			if (!fullMatch) &#123;</div><div class="line">132				return true;</div><div class="line">133			&#125;</div><div class="line">134			if (pattIdxStart == pattIdxEnd &amp;&amp; pattDirs[pattIdxStart].equals(&quot;*&quot;) &amp;&amp; path.endsWith(this.pathSeparator)) &#123;</div><div class="line">135				return true;</div><div class="line">136			&#125;</div><div class="line">137			for (int i = pattIdxStart; i &lt;= pattIdxEnd; i++) &#123;</div><div class="line">138				if (!pattDirs[i].equals(&quot;**&quot;)) &#123;</div><div class="line">139					return false;</div><div class="line">140				&#125;</div><div class="line">141			&#125;</div><div class="line">142			return true;</div><div class="line">143		&#125;</div><div class="line">144		else if (pattIdxStart &gt; pattIdxEnd) &#123;</div><div class="line">145			// String not exhausted, but pattern is. Failure.</div><div class="line">146			return false;</div><div class="line">147		&#125;</div><div class="line">148		else if (!fullMatch &amp;&amp; &quot;**&quot;.equals(pattDirs[pattIdxStart])) &#123;</div><div class="line">149			// Path start definitely matches due to &quot;**&quot; part in pattern.</div><div class="line">150			return true;</div><div class="line">151		&#125;</div><div class="line">152</div><div class="line">153		// up to last &apos;**&apos;</div><div class="line">154		while (pattIdxStart &lt;= pattIdxEnd &amp;&amp; pathIdxStart &lt;= pathIdxEnd) &#123;</div><div class="line">155			String patDir = pattDirs[pattIdxEnd];</div><div class="line">156			if (patDir.equals(&quot;**&quot;)) &#123;</div><div class="line">157				break;</div><div class="line">158			&#125;</div><div class="line">159			if (!matchStrings(patDir, pathDirs[pathIdxEnd], uriTemplateVariables)) &#123;</div><div class="line">160				return false;</div><div class="line">161			&#125;</div><div class="line">162			pattIdxEnd--;</div><div class="line">163			pathIdxEnd--;</div><div class="line">164		&#125;</div><div class="line">165		if (pathIdxStart &gt; pathIdxEnd) &#123;</div><div class="line">166			// String is exhausted</div><div class="line">167			for (int i = pattIdxStart; i &lt;= pattIdxEnd; i++) &#123;</div><div class="line">168				if (!pattDirs[i].equals(&quot;**&quot;)) &#123;</div><div class="line">169					return false;</div><div class="line">170				&#125;</div><div class="line">171			&#125;</div><div class="line">172			return true;</div><div class="line">173		&#125;</div><div class="line">174</div><div class="line">175		while (pattIdxStart != pattIdxEnd &amp;&amp; pathIdxStart &lt;= pathIdxEnd) &#123;</div><div class="line">176			int patIdxTmp = -1;</div><div class="line">177			for (int i = pattIdxStart + 1; i &lt;= pattIdxEnd; i++) &#123;</div><div class="line">178				if (pattDirs[i].equals(&quot;**&quot;)) &#123;</div><div class="line">179					patIdxTmp = i;</div><div class="line">180					break;</div><div class="line">181				&#125;</div><div class="line">182			&#125;</div><div class="line">183			if (patIdxTmp == pattIdxStart + 1) &#123;</div><div class="line">184				// &apos;**/**&apos; situation, so skip one</div><div class="line">185				pattIdxStart++;</div><div class="line">186				continue;</div><div class="line">187			&#125;</div><div class="line">188			// Find the pattern between padIdxStart &amp; padIdxTmp in str between</div><div class="line">189			// strIdxStart &amp; strIdxEnd</div><div class="line">190			int patLength = (patIdxTmp - pattIdxStart - 1);</div><div class="line">191			int strLength = (pathIdxEnd - pathIdxStart + 1);</div><div class="line">192			int foundIdx = -1;</div><div class="line">193</div><div class="line">194			strLoop:</div><div class="line">195			for (int i = 0; i &lt;= strLength - patLength; i++) &#123;</div><div class="line">196				for (int j = 0; j &lt; patLength; j++) &#123;</div><div class="line">197					String subPat = pattDirs[pattIdxStart + j + 1];</div><div class="line">198					String subStr = pathDirs[pathIdxStart + i + j];</div><div class="line">199					if (!matchStrings(subPat, subStr, uriTemplateVariables)) &#123;</div><div class="line">200						continue strLoop;</div><div class="line">201					&#125;</div><div class="line">202				&#125;</div><div class="line">203				foundIdx = pathIdxStart + i;</div><div class="line">204				break;</div><div class="line">205			&#125;</div><div class="line">206</div><div class="line">207			if (foundIdx == -1) &#123;</div><div class="line">208				return false;</div><div class="line">209			&#125;</div><div class="line">210</div><div class="line">211			pattIdxStart = patIdxTmp;</div><div class="line">212			pathIdxStart = foundIdx + patLength;</div><div class="line">213		&#125;</div><div class="line">214</div><div class="line">215		for (int i = pattIdxStart; i &lt;= pattIdxEnd; i++) &#123;</div><div class="line">216			if (!pattDirs[i].equals(&quot;**&quot;)) &#123;</div><div class="line">217				return false;</div><div class="line">218			&#125;</div><div class="line">219		&#125;</div><div class="line">220</div><div class="line">221		return true;</div><div class="line">222	&#125;</div></pre></td></tr></table></figure>
+<p>最后补一个找到瓶颈点后 Google到类似问题的文章，并给出了具体数据和解决方法：<a href="http://www.cnblogs.com/ucos/articles/5542012.html" target="_blank" rel="external">http://www.cnblogs.com/ucos/articles/5542012.html</a></p>
+<p>以及这篇文章中给出的优化前后对比图：<br><img src="http://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/3c61ad759ae5f44bbb2a24e4714c2ee8" alt="screenshot"></p>
+
+          
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/06/14/就是要你懂TCP--最经典的TCP性能问题/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -4450,186 +4609,6 @@ sudo tcptrack -r 5 -i eth0 host 10.0.48.1 //filter 语法和tcpdump一样
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2017/10/31/磁盘爆掉的几种情况/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="weibo @plantegg">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="plantegg">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h2 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2017/10/31/磁盘爆掉的几种情况/" itemprop="url">磁盘爆掉的几种情况</a></h2>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-10-31T12:30:03+08:00">
-                2017-10-31
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index">
-                    <span itemprop="name">Linux</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2017/10/31/磁盘爆掉的几种情况/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2017/10/31/磁盘爆掉的几种情况/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="磁盘爆掉的几种情况"><a href="#磁盘爆掉的几种情况" class="headerlink" title="磁盘爆掉的几种情况"></a>磁盘爆掉的几种情况</h1><h2 id="磁盘爆掉的几种情况-1"><a href="#磁盘爆掉的几种情况-1" class="headerlink" title="磁盘爆掉的几种情况"></a>磁盘爆掉的几种情况</h2><ol>
-<li>系统磁盘没有空间，解决办法：删掉 /var/log/ 下边的带日期的日志，清空 /var/log/messages 内容</li>
-<li>容器使用的大磁盘空间不够，又有三个地方会使用大量的磁盘<ul>
-<li>容器内部日志非常大，处理办法见方法一</li>
-<li>容器内部产生非常多或者非常大的文件，但是这个文件的位置又通过volume 挂载到了物理机上，处理办法见方法二</li>
-<li>对特别老的部署环境，还有可能是容器的系统日志没有限制大小，处理办法见方法三</li>
-</ul>
-</li>
-</ol>
-<h2 id="现场的同学按如下方法依次检查"><a href="#现场的同学按如下方法依次检查" class="headerlink" title="现场的同学按如下方法依次检查"></a>现场的同学按如下方法依次检查</h2><h3 id="方法零：-检查系统根目录下每个文件夹的大小"><a href="#方法零：-检查系统根目录下每个文件夹的大小" class="headerlink" title="方法零： 检查系统根目录下每个文件夹的大小"></a>方法零： 检查系统根目录下每个文件夹的大小</h3><p><code>sudo du / -lh --max-depth=1 --exclude=overlay --exclude=proc</code></p>
-<p>看看除了容器之外有没有其它目录使用磁盘特别大，如果有那么一层层进去通过du命令来查看，比如：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">#sudo du / -lh --max-depth=1 --exclude=overlay --exclude=proc</div><div class="line">16K	/dev</div><div class="line">16K	/lost+found</div><div class="line">4.0K	/media</div><div class="line">17G	/home</div><div class="line">136M	/boot</div><div class="line">832K	/run</div><div class="line">1.9G	/usr</div><div class="line">75M	/tmp</div><div class="line">12K	/log</div><div class="line">8.5G	/var</div><div class="line">4.0K	/srv</div><div class="line">0	/proc</div><div class="line">22M	/etc</div><div class="line">84G	/root</div><div class="line">4.0K	/mnt</div><div class="line">508M	/opt</div><div class="line">0	/sys</div><div class="line">112G	/</div></pre></td></tr></table></figure>
-<p>那么这个案例中应该查看 /root下为什么用掉了84G（总共用了112G）， 先 cd /root 然后执行： sudo du . -lh –max-depth=1 –exclude=overlay 进一步查看 /root 目录下每个文件夹的大小</p>
-<p><strong>如果方法零没找到占用特别大的磁盘文件，那么一般来说是容器日志占用太多的磁盘空间，请看方法一</strong></p>
-<h3 id="方法一：-容器内部日志非常大（请确保先按方法零检查过了）"><a href="#方法一：-容器内部日志非常大（请确保先按方法零检查过了）" class="headerlink" title="方法一： 容器内部日志非常大（请确保先按方法零检查过了）"></a>方法一： 容器内部日志非常大（请确保先按方法零检查过了）</h3><p>在磁盘不够的物理机上执行如下脚本：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">sudo docker ps -a -q &gt;containers.list</div><div class="line"></div><div class="line">sudo cat containers.list | xargs sudo docker inspect $1 | grep merged | awk -F \&quot; &apos;&#123; print $4 &#125;&apos; | sed &apos;s/\/merged//g&apos; | xargs sudo du  --max-depth=0 $1 &gt;containers.size </div><div class="line"></div><div class="line">sudo paste containers.list containers.size | awk &apos;&#123; print $1, $2 &#125;&apos;  | sort -nk2 &gt;real_size.log</div><div class="line"></div><div class="line">sudo tail -10 real_size.log  | awk &apos;BEGIN &#123;print &quot;\tcontainer     size\tunit&quot;&#125; &#123; print NR&quot;:\t&quot; $0&quot;\t kB&quot; &#125;&apos;</div></pre></td></tr></table></figure>
-<h5 id="执行完后会输出如下格式："><a href="#执行完后会输出如下格式：" class="headerlink" title="执行完后会输出如下格式："></a>执行完后会输出如下格式：</h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">container     size	unit</div><div class="line">1:	22690f16822f 3769980	 kb</div><div class="line">2:	82b4ae98eeed 4869324	 kb</div><div class="line">3:	572a1b7c8ef6 10370404	 kb</div><div class="line">4:	9f9250d98df6 10566776	 kb</div><div class="line">5:	7fab70481929 13745648	 kb</div><div class="line">6:	4a14b58e3732 29873504	 kb</div><div class="line">7:	8a01418b6df2 30432068	 kb</div><div class="line">8:	83dc85caaa5c 31010960	 kb</div><div class="line">9:	433e51df88b1 35647052	 kb</div><div class="line">10:	4b42818a8148 61962416	 kb</div></pre></td></tr></table></figure>
-<p>第二列是容器id，第三列是磁盘大小，第四列是单位， 占用最大的排在最后面</p>
-<h5 id="然后进到容器后通过-du-–max-depth-2-快速发现大文件"><a href="#然后进到容器后通过-du-–max-depth-2-快速发现大文件" class="headerlink" title="然后进到容器后通过 du / –max-depth=2 快速发现大文件"></a>然后进到容器后通过 du / –max-depth=2 快速发现大文件</h5><h3 id="方法二：-容器使用的volume使用过大"><a href="#方法二：-容器使用的volume使用过大" class="headerlink" title="方法二： 容器使用的volume使用过大"></a>方法二： 容器使用的volume使用过大</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">$sudo du -l /data/lib/docker/defaultVolumes --max-depth=1 | sort -rn</div><div class="line">456012884	/data/lib/docker/defaultVolumes</div><div class="line">42608332	/data/lib/docker/defaultVolumes/task_3477_g0_ark-metadb_miniDBPaaS-MetaDB_1</div><div class="line">32322220	/data/lib/docker/defaultVolumes/task_3477_g0_dbpaas-metadb_dbpaas_1</div><div class="line">27461120	/data/lib/docker/defaultVolumes/task_3001_g0_ark-metadb_miniDBPaaS-MetaDB_1</div><div class="line">27319360	/data/lib/docker/defaultVolumes/task_36000_g0_ark-metadb_miniDBPaaS-MetaDB</div><div class="line">27313836	/data/lib/docker/defaultVolumes/task_3600_g0_dbpaas-metadb_minidbpaas</div><div class="line">27278692	/data/lib/docker/defaultVolumes/task_3604_g0_ark-metadb_miniDBPaaS-MetaDB_1</div><div class="line">27277004	/data/lib/docker/defaultVolumes/task_3603_g0_ark-metadb_miniDBPaaS-MetaDB_1</div><div class="line">27275736	/data/lib/docker/defaultVolumes/task_3542_g0_ark-metadb_miniDBPaaS-MetaDB</div><div class="line">27271428	/data/lib/docker/defaultVolumes/task_3597_g0_ark-metadb_miniDBPaaS-MetaDB</div><div class="line">27270840	/data/lib/docker/defaultVolumes/task_3603_g0_dbpaas-metadb_minidbpaas_1</div><div class="line">27270492	/data/lib/docker/defaultVolumes/task_3603_g0_dbpaas-metadb_minidbpaas</div><div class="line">27270468	/data/lib/docker/defaultVolumes/task_3600_g0_ark-metadb_miniDBPaaS-MetaDB</div><div class="line">27270252	/data/lib/docker/defaultVolumes/task_3535_g0_ark-metadb_miniDBPaaS-MetaDB</div><div class="line">27270244	/data/lib/docker/defaultVolumes/task_3538_g0_ark-metadb_miniDBPaaS-MetaDB</div><div class="line">27270244	/data/lib/docker/defaultVolumes/task_3536_g0_ark-metadb_miniDBPaaS-MetaDB</div><div class="line">25312404	/data/lib/docker/defaultVolumes/task_3477_g0_dncs-server_middleware-dncs_2</div></pre></td></tr></table></figure>
-<p>/data/lib/docker/defaultVolumes 参数是方舟默认volume存放的目录（一般是docker的存储路径下 –graph=/data/lib/docker) ，第一列是大小，后面是容器名</p>
-<p>volume路径在物理机上也有可能是 /var/lib/docker 或者 /mw/mvdocker/ 之类的路径下，这个要依据安装参数来确定，可以用如下命令来找到这个路径：</p>
-<p><code>sudo systemctl status docker -l | grep --color graph</code></p>
-<p>结果如下，红色参数后面的路径就是docker 安装目录，到里面去找带volume的字眼：</p>
-<p><img src="https://cdn.nlark.com/yuque/0/2019/png/162611/1558521949392-d1ab9886-9f08-4ebf-bfdb-5283461ed9de.png#align=left&amp;display=inline&amp;height=165&amp;originHeight=165&amp;originWidth=930&amp;size=0&amp;status=done&amp;width=930" alt=""></p>
-<p>找到 volume很大的文件件后同样可以进到这个文件夹中执行如下命令快速发现大文件：</p>
-<p><code>du . --max-depth=2</code></p>
-<h3 id="方法三-容器的系统日志没有限制大小"><a href="#方法三-容器的系统日志没有限制大小" class="headerlink" title="方法三 容器的系统日志没有限制大小"></a>方法三 容器的系统日志没有限制大小</h3><p>这种情况只针对2017年上半年之前的部署环境，后面部署的环境默认都控制了这些日志不会超过150M</p>
-<p>按照方法二的描述先找到docker 安装目录，cd 进去，然后 ：</p>
-<p><code>du ./containers --max-depth=2</code></p>
-<p>就很快找到那个大json格式的日志文件了,然后执行清空这个大文件的内容：</p>
-<p><code>echo &#39;&#39; | sudo tee 大文件名</code></p>
-<h3 id="一些其他可能占用空间的地方"><a href="#一些其他可能占用空间的地方" class="headerlink" title="一些其他可能占用空间的地方"></a>一些其他可能占用空间的地方</h3><ul>
-<li>机器上镜像太多，可以删掉一些没用的： sudo docker images -q | xargs sudo docker rmi</li>
-<li>机器上残留的volume太多，删：sudo docker volume ls -q | xargs sudo docker volume rm</li>
-<li>物理文件被删了，但是还有进程占用这个文件句柄，导致文件对应的磁盘空间没有释放，检查： lsof |　grep deleted  如果这个文件非常大的话，只能通过重启这个进程来真正释放磁盘空间</li>
-</ul>
-
-          
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
@@ -4679,7 +4658,7 @@ sudo tcptrack -r 5 -i eth0 host 10.0.48.1 //filter 语法和tcpdump一样
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">116</span>
+                <span class="site-state-item-count">117</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -4701,7 +4680,7 @@ sudo tcptrack -r 5 -i eth0 host 10.0.48.1 //filter 语法和tcpdump一样
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">209</span>
+                <span class="site-state-item-count">211</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>
