@@ -106,7 +106,7 @@
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/b646979272e71e015de4a47c62b89747.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/ee2e438907fa72c70d5393a651dc9113.png">
 <meta property="og:image" content="https://ata2-img.oss-cn-zhangjiakou.aliyuncs.com/72197d600425656ec9a8ed18bcc5853b.png">
-<meta property="og:updated_time" content="2021-02-10T03:30:17.111Z">
+<meta property="og:updated_time" content="2021-02-14T13:56:38.039Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Linux 问题总结">
 <meta name="twitter:description" content="Linux 问题总结crond文件权限的坑crond第一次加载的时候（刚启动）会去检查文件属性，不是644的话以后都不会执行了，即使后面chmod改成了644.  手工随便修改一下该文件的内容就能触发自动执行了，或者重启crond, 或者 sudo service crond reload， 或者 /etc/cron.d/下有任何修改都会触发crond reload配置(包含 touch )。 总">
@@ -529,6 +529,9 @@
 <p>因为 /etc/localtime 是deleted状态</p>
 <h2 id="yum-源问题处理"><a href="#yum-源问题处理" class="headerlink" title="yum 源问题处理"></a>yum 源问题处理</h2><p><a href="https://access.redhat.com/solutions/641093" target="_blank" rel="external">Yum commands error “pycurl.so: undefined symbol”</a></p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div></pre></td><td class="code"><pre><div class="line"># yum check update</div><div class="line">There was a problem importing one of the Python modules</div><div class="line">required to run yum. The error leading to this problem was:</div><div class="line"></div><div class="line">/usr/lib64/python2.6/site-packages/pycurl.so: undefined symbol: CRYPTO_set_locking_callback</div><div class="line"></div><div class="line">Please install a package which provides this module, or</div><div class="line">verify that the module is installed correctly.</div><div class="line"></div><div class="line">It&apos;s possible that the above module doesn&apos;t match the</div><div class="line">current version of Python, which is:</div><div class="line">2.6.6 (r266:84292, Sep  4 2013, 07:46:00)</div><div class="line">[GCC 4.4.7 20120313 (Red Hat 4.4.7-3)]</div><div class="line"></div><div class="line">If you cannot solve this problem yourself, please go to</div><div class="line">the yum faq at:</div><div class="line">http://yum.baseurl.org/wiki/Faq</div></pre></td></tr></table></figure>
+<ul>
+<li>Check and fix the related library paths or remove 3rd party libraries, usually <code>libcurl</code> or <code>libssh2</code>. On a x86_64 system, the standard paths for those libraries are <code>/usr/lib64/libcurl.so.4</code> and <code>/usr/lib64/libssh2.so.1</code></li>
+</ul>
 <h2 id="软中断、系统调用和上下文切换"><a href="#软中断、系统调用和上下文切换" class="headerlink" title="软中断、系统调用和上下文切换"></a>软中断、系统调用和上下文切换</h2><p>“你可以把内核看做是不断对请求进行响应的服务器，这些请求可能来自在CPU上执行的进程，也可能来自发出中断的外部设备。老板的请求相当于中断，而顾客的请求相当于用户态进程发出的系统调用”。</p>
 <p>软中断和系统调用一样，都是CPU停止掉当前用户态上下文，保存工作现场，然后陷入到内核态继续工作。二者的唯一区别是系统调用是切换到同进程的内核态上下文，而软中断是则是切换到了另外一个内核进程ksoftirqd上。</p>
 <blockquote>
@@ -685,7 +688,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">117</span>
+                <span class="site-state-item-count">118</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
